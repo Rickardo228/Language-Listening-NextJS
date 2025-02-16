@@ -401,6 +401,24 @@ export default function Home() {
     </button>
   );
 
+  // Close fullscreen on esc key
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setFullscreen(false); // Exit fullscreen when Escape is pressed
+      }
+    };
+
+    // Attach event listener
+    window.addEventListener("keydown", handleKeyDown);
+
+    // Cleanup event listener when component unmounts
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
+
+
   // Settings button (similar style to the full screen button)
   const SettingsButton = (
     <button

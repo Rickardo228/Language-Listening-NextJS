@@ -98,7 +98,7 @@ export function PresentationView({
       )}
       {enableAutumnLeaves && <AutumnLeaves fullScreen={fullScreen} />}
       {enableCherryBlossom && <CherryBlossom fullScreen={fullScreen} />}
-
+      {/* 
 
       {fullScreen && (
         <button
@@ -112,7 +112,7 @@ export function PresentationView({
               d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
-      )}
+      )} */}
       <div className={`text-center p-12 absolute flex bg-opacity-90 flex-col
 `}
         style={{ alignItems: 'center', justifyContent: 'center', backgroundColor: (textBg.slice(0, -1) + ' 0.9)').replaceAll(' ', ',') }}>
