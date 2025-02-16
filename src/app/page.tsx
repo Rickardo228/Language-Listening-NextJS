@@ -10,6 +10,8 @@ interface AudioSegment {
   duration: number; // in seconds (may be estimated)
 }
 
+export type RomanizedOutput = string[];
+
 const languageOptions = [
   { code: 'en-GB', label: 'English (UK)' },
   { code: 'en-US', label: 'English (US)' },
@@ -289,6 +291,7 @@ export default function Home() {
   const [translated, setTranslated] = useState<string[]>([]);
   const [inputAudioSegments, setInputAudioSegments] = useState<AudioSegment[]>([]);
   const [outputAudioSegments, setOutputAudioSegments] = useState<AudioSegment[]>([]);
+  const [romanizedOutput, setRomanizedOutput] = useState<RomanizedOutput[]>([]);
   // Playback and sequence control
   const [currentPhraseIndex, setCurrentPhraseIndex] = useState<number>(-1);
   const [currentPhase, setCurrentPhase] = useState<'input' | 'output'>('input');
@@ -330,6 +333,8 @@ export default function Home() {
     setTranslated(data.translated || []);
     setInputAudioSegments(data.inputAudioSegments || []);
     setOutputAudioSegments(data.outputAudioSegments || []);
+    setRomanizedOutput(data.romanizedOutput || []);
+    console.log(data.romanizedOutput)
     setCurrentPhraseIndex(0);
     setCurrentPhase('input');
     setFinished(false);
@@ -504,6 +509,7 @@ export default function Home() {
             enableCherryBlossom={enableCherryBlossom}
             containerBg={containerBg}
             textBg={textBg}
+            romanizedOutput={romanizedOutput[currentPhraseIndex]}
           />
         </>
       )}

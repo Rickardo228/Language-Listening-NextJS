@@ -2,6 +2,7 @@
 
 import { AutumnLeaves } from "./Effects/AutumnLeaves";
 import CherryBlossom from "./Effects/CherryBlossom";
+import { RomanizedOutput } from "./page";
 
 interface PresentationViewProps {
   currentPhrase: string;
@@ -16,6 +17,7 @@ interface PresentationViewProps {
   enableCherryBlossom?: boolean;
   containerBg?: string; // New prop for container background color class (default: 'bg-teal-500')
   textBg?: string;      // New prop for text container background color class (default: 'bg-rose-400')
+  romanizedOutput?: RomanizedOutput;
 }
 
 export function PresentationView({
@@ -31,6 +33,7 @@ export function PresentationView({
   enableCherryBlossom,
   containerBg = "bg-teal-500", // default value if not provided
   textBg = "bg-rose-400",        // default value if not provided
+  romanizedOutput
 }: PresentationViewProps) {
   // Conditionally set container classes based on the fullScreen prop.
   const containerClass =
@@ -42,8 +45,8 @@ export function PresentationView({
     ? "text-5xl font-bold text-white mb-4"
     : "text-xl font-bold text-white mb-2";
   const subtitleClass = fullScreen
-    ? "text-xl italic text-gray-300"
-    : "text-sm italic text-gray-600";
+    ? "text-2xl font-bold text-gray-200"
+    : "text-md text-white";
 
   // Build container style: if backgroundImage is provided, add background styling.
   const containerStyle = backgroundImage
@@ -110,11 +113,18 @@ export function PresentationView({
           </svg>
         </button>
       )}
-      <div className={`text-center p-12 absolute flex bg-opacity-90`}
+      <div className={`text-center p-12 absolute flex bg-opacity-90 flex-col
+`}
         style={{ alignItems: 'center', justifyContent: 'center', backgroundColor: (textBg.slice(0, -1) + ' 0.9)').replaceAll(' ', ',') }}>
         <h2 className={titleClass} style={{ margin: 0, padding: 0 }}>
           {currentPhase === 'input' ? currentPhrase?.trim() : currentTranslated?.trim()}
         </h2>
+        {currentPhase === 'output' && romanizedOutput && (
+          <h2 className={subtitleClass} style={{ marginTop: '10px' }}>
+            ({romanizedOutput})
+          </h2>
+        )}
+
       </div>
     </div>
   );
