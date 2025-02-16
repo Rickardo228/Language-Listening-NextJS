@@ -24,7 +24,7 @@ const languageOptions = [
   { code: 'zh-CN', label: 'Chinese (Simplified)' },
 ];
 
-const DELAY_BETWEEN_PHRASES = 2000;
+const DELAY_BETWEEN_PHRASES = 1000;
 
 /**
  * A list of background color options.
@@ -334,7 +334,6 @@ export default function Home() {
     setInputAudioSegments(data.inputAudioSegments || []);
     setOutputAudioSegments(data.outputAudioSegments || []);
     setRomanizedOutput(data.romanizedOutput || []);
-    console.log(data.romanizedOutput)
     setCurrentPhraseIndex(0);
     setCurrentPhase('input');
     setFinished(false);
@@ -360,8 +359,10 @@ export default function Home() {
     if (currentPhase === 'input') {
       setTimeout(() => {
         setCurrentPhase('output');
-      }, DELAY_BETWEEN_PHRASES / 2);
+      }, DELAY_BETWEEN_PHRASES);
     } else {
+      const outputDuration = audioRef.current?.duration || 1000; // Default to 1s if duration is unavailable
+      console.log(outputDuration)
       setTimeout(() => {
         if (currentPhraseIndex < (inputAudioSegments?.length || 0) - 1) {
           setCurrentPhraseIndex(currentPhraseIndex + 1);
@@ -369,9 +370,10 @@ export default function Home() {
         } else {
           setFinished(true);
         }
-      }, DELAY_BETWEEN_PHRASES);
+      }, (outputDuration * 1500) + DELAY_BETWEEN_PHRASES); // Convert duration to milliseconds
     }
   };
+
 
   const handleReplay = () => {
     setCurrentPhraseIndex(0);
