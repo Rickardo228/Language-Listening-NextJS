@@ -303,6 +303,7 @@ export default function Home() {
   const [containerBg, setContainerBg] = useState<string>("rgb(20 184 166)"); // default to teal-500 rgb value
   const [textBg, setTextBg] = useState<string>("rgb(20 184 166)");          // default to rose-500 rgb value
   const [enableSnow, setEnableSnow] = useState<boolean>(false);
+  const [enableLeaves, setEnableLeaves] = useState<boolean>(false);
 
   // Ref for the audio element
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -496,6 +497,7 @@ export default function Home() {
             backgroundImage={bgImage || undefined}
             onClose={() => setFullscreen(false)}
             enableSnow={enableSnow}
+            enableLeaves={enableLeaves}
             containerBg={containerBg}
             textBg={textBg}
           />
@@ -590,6 +592,18 @@ export default function Home() {
                 />
                 <label htmlFor="enableSnow" className="font-medium">
                   Enable Snow Effect
+                </label>
+              </div>
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="enableLeaves"
+                  checked={enableLeaves}
+                  onChange={(e) => setEnableLeaves(e.target.checked)}
+                  className="mr-2"
+                />
+                <label htmlFor="enableLeaves" className="font-medium">
+                  Enable Leaves Effect
                 </label>
               </div>
             </div>

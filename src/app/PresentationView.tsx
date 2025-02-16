@@ -8,6 +8,7 @@ interface PresentationViewProps {
   onClose: () => void;
   backgroundImage?: string;
   enableSnow?: boolean;
+  enableLeaves?: boolean;
   containerBg?: string; // New prop for container background color class (default: 'bg-teal-500')
   textBg?: string;      // New prop for text container background color class (default: 'bg-rose-400')
 }
@@ -20,6 +21,7 @@ export function PresentationView({
   onClose,
   backgroundImage,
   enableSnow,
+  enableLeaves,
   containerBg = "bg-teal-500", // default value if not provided
   textBg = "bg-rose-400"        // default value if not provided
 }: PresentationViewProps) {
@@ -60,6 +62,25 @@ export function PresentationView({
           <div className="snow layer2"></div>
           <div className="snow layer3 a"></div>
           <div className="snow layer3"></div>
+        </div>
+      )}
+      {enableLeaves && (
+        <div id="leaves" style={{ position: fullScreen ? 'absolute' : 'static' }}>
+          <i></i>
+          <i></i>
+          <i></i>
+          <i></i>
+          <i></i>
+          <i></i>
+          <i></i>
+          <i></i>
+          <i></i>
+          <i></i>
+          <i></i>
+          <i></i>
+          <i></i>
+          <i></i>
+          <i></i>
         </div>
       )}
       {fullScreen && (
