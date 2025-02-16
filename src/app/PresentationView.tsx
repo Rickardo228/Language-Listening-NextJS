@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from "react";
 import { AutumnLeaves } from "./Effects/AutumnLeaves";
 import CherryBlossom from "./Effects/CherryBlossom";
 import { RomanizedOutput } from "./page";
@@ -7,7 +8,7 @@ import { RomanizedOutput } from "./page";
 interface PresentationViewProps {
   currentPhrase: string;
   currentTranslated: string;
-  currentPhase: 'input' | 'output';
+  currentPhase: "input" | "output";
   fullScreen: boolean; // if true, use fullscreen styles; if false, use inline styles
   onClose: () => void;
   backgroundImage?: string;
@@ -15,8 +16,8 @@ interface PresentationViewProps {
   enableLeaves?: boolean;
   enableAutumnLeaves?: boolean;
   enableCherryBlossom?: boolean;
-  containerBg?: string; // New prop for container background color class (default: 'bg-teal-500')
-  textBg?: string;      // New prop for text container background color class (default: 'bg-rose-400')
+  containerBg?: string; // New prop for container background color (default: 'bg-teal-500')
+  textBg?: string;      // New prop for text container background color (default: 'bg-rose-400')
   romanizedOutput?: RomanizedOutput;
 }
 
@@ -32,21 +33,49 @@ export function PresentationView({
   enableAutumnLeaves,
   enableCherryBlossom,
   containerBg = "bg-teal-500", // default value if not provided
-  textBg = "bg-rose-400",        // default value if not provided
-  romanizedOutput
+  textBg = "bg-rose-400",       // default value if not provided
+  romanizedOutput,
 }: PresentationViewProps) {
-  // Conditionally set container classes based on the fullScreen prop.
+  // State to track if the mouse is idle.
+  const [isIdle, setIsIdle] = useState(false);
+
+  // useEffect to detect mouse movement and mark idle after 1 second.
+  useEffect(() => {
+    let idleTimer: NodeJS.Timeout;
+
+    const handleMouseMove = () => {
+      // When moving the mouse, ensure the cursor is visible.
+      setIsIdle(false);
+      clearTimeout(idleTimer);
+      idleTimer = setTimeout(() => {
+        setIsIdle(true);
+      }, 1000);
+    };
+
+    window.addEventListener("mousemove", handleMouseMove);
+    // Set the initial timer.
+    idleTimer = setTimeout(() => {
+      setIsIdle(true);
+    }, 1000);
+
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      clearTimeout(idleTimer);
+    };
+  }, []);
+
+  // Set container classes based on the fullScreen prop.
   const containerClass =
     `inset-0 flex flex-col items-center justify-center ` +
     (fullScreen ? "fixed z-50" : "relative p-4 rounded shadow w-96 h-24");
 
   // Conditionally set title and subtitle classes.
   const titleClass = fullScreen
-    ? "text-5xl font-bold text-white mb-4"
+    ? "text-7xl font-bold text-white mb-4"
     : "text-xl font-bold text-white mb-2";
   const subtitleClass = fullScreen
-    ? "text-2xl font-bold text-gray-100 mt-5"
-    : "text-md font-bold text-gray-100 text-gray-100 mt-3";
+    ? "text-5xl font-bold text-gray-100 mt-5"
+    : "text-md font-bold text-gray-100 mt-3";
 
   // Build container style: if backgroundImage is provided, add background styling.
   const containerStyle = backgroundImage
@@ -55,19 +84,18 @@ export function PresentationView({
       backgroundImage: `url(${backgroundImage})`,
       backgroundSize: "cover",
       backgroundPosition: "center",
-      overflow: 'hidden'
+      overflow: "hidden",
     }
     : {
       backgroundColor: containerBg,
-      overflow: 'hidden'
+      overflow: "hidden",
     };
 
-
-
   return (
-    <div className={containerClass} style={containerStyle}>
+    // Append the 'cursor-none' class when idle.
+    <div className={`${containerClass} ${isIdle ? "cursor-none" : ""}`} style={containerStyle}>
       {enableSnow && (
-        <div className="wrapper" style={{ position: fullScreen ? 'absolute' : 'static' }}>
+        <div className="wrapper" style={{ position: fullScreen ? "absolute" : "static" }}>
           <div className="snow layer1 a"></div>
           <div className="snow layer1"></div>
           <div className="snow layer2 a"></div>
@@ -77,8 +105,7 @@ export function PresentationView({
         </div>
       )}
       {enableLeaves && (
-
-        <div id="leaves" style={{ position: fullScreen ? 'absolute' : 'static' }}>
+        <div id="leaves" style={{ position: fullScreen ? "absolute" : "static" }}>
           <i></i>
           <i></i>
           <i></i>
@@ -98,36 +125,26 @@ export function PresentationView({
       )}
       {enableAutumnLeaves && <AutumnLeaves fullScreen={fullScreen} />}
       {enableCherryBlossom && <CherryBlossom fullScreen={fullScreen} />}
-      {/* 
 
-      {fullScreen && (
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 p-2 text-white hover:text-gray-300"
-          title="Exit Presentation Mode"
+      {(currentTranslated || currentPhrase) && (
+        <div
+          className={`text-center p-12 absolute flex bg-opacity-90 flex-col`}
+          style={{
+            alignItems: "center",
+            justifyContent: "center",
+            backgroundColor: textBg.includes("rgb")
+              ? (textBg.slice(0, -1) + " 0.9)").replaceAll(" ", ",")
+              : textBg,
+          }}
         >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none"
-            viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-              d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
-      )} */}
-      <div className={`text-center p-12 absolute flex bg-opacity-90 flex-col
-`}
-        style={{ alignItems: 'center', justifyContent: 'center', backgroundColor: (textBg.slice(0, -1) + ' 0.9)').replaceAll(' ', ',') }}>
-        <h2 className={titleClass} style={{ margin: 0, padding: 0 }}>
-          {currentPhase === 'input' ? currentPhrase?.trim() : currentTranslated?.trim()}
-        </h2>
-        {currentPhase === 'output' && romanizedOutput && (
-          <h2 className={subtitleClass}>
-            {romanizedOutput}
+          <h2 className={titleClass} style={{ margin: 0, padding: 0 }}>
+            {currentPhase === "input" ? currentPhrase?.trim() : currentTranslated?.trim()}
           </h2>
-        )}
-
-      </div>
+          {currentPhase === "output" && romanizedOutput && (
+            <h2 className={subtitleClass}>{romanizedOutput}</h2>
+          )}
+        </div>
+      )}
     </div>
   );
 }
-
-
