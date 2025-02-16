@@ -22,6 +22,11 @@ body {
 html,
 body {
   margin: 0;
+  font-family: var(--font-playpen-sans), sans-serif;
+}
+
+h2 {
+  font-family: var(--font-mplus-rounded), sans-serif;
 }
 
 .wrapper {
