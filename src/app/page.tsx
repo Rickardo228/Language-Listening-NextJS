@@ -303,6 +303,7 @@ export default function Home() {
   const [containerBg, setContainerBg] = useState<string>("rgb(20 184 166)"); // default to teal-500 rgb value
   const [textBg, setTextBg] = useState<string>("rgb(20 184 166)");          // default to rose-500 rgb value
   const [enableSnow, setEnableSnow] = useState<boolean>(false);
+  const [enableCherryBlossom, setEnableCherryBlossom] = useState<boolean>(false);
   const [enableLeaves, setEnableLeaves] = useState<boolean>(false);
   const [enableAutumnLeaves, setEnableAutumnLeaves] = useState<boolean>(false);
 
@@ -500,6 +501,7 @@ export default function Home() {
             enableSnow={enableSnow}
             enableLeaves={enableLeaves}
             enableAutumnLeaves={enableAutumnLeaves}
+            enableCherryBlossom={enableCherryBlossom}
             containerBg={containerBg}
             textBg={textBg}
           />
@@ -618,6 +620,18 @@ export default function Home() {
                 />
                 <label htmlFor="enableAutumnLeaves" className="font-medium">
                   Enable Autumn Leaves Effect
+                </label>
+              </div>
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="enableCherryBlossom"
+                  checked={enableCherryBlossom}
+                  onChange={(e) => setEnableCherryBlossom(e.target.checked)}
+                  className="mr-2"
+                />
+                <label htmlFor="enableCherryBlossom" className="font-medium">
+                  Enable Cherry Blossom Effect
                 </label>
               </div>
             </div>
