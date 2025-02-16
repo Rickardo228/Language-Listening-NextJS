@@ -45,8 +45,8 @@ export function PresentationView({
     ? "text-5xl font-bold text-white mb-4"
     : "text-xl font-bold text-white mb-2";
   const subtitleClass = fullScreen
-    ? "text-2xl font-bold text-gray-200"
-    : "text-md text-white";
+    ? "text-2xl font-bold text-gray-100 mt-5"
+    : "text-md font-bold text-gray-100 text-gray-100 mt-3";
 
   // Build container style: if backgroundImage is provided, add background styling.
   const containerStyle = backgroundImage
@@ -120,8 +120,8 @@ export function PresentationView({
           {currentPhase === 'input' ? currentPhrase?.trim() : currentTranslated?.trim()}
         </h2>
         {currentPhase === 'output' && romanizedOutput && (
-          <h2 className={subtitleClass} style={{ marginTop: '10px' }}>
-            ({romanizedOutput})
+          <h2 className={subtitleClass}>
+            {romanizedOutput}
           </h2>
         )}
 
