@@ -16,6 +16,7 @@ interface PresentationViewProps {
   enableLeaves?: boolean;
   enableAutumnLeaves?: boolean;
   enableCherryBlossom?: boolean;
+  enableOrtonEffect?: boolean;
   containerBg?: string; // New prop for container background color (default: 'bg-teal-500')
   textBg?: string;      // New prop for text container background color (default: 'bg-rose-400')
   romanizedOutput?: RomanizedOutput;
@@ -32,6 +33,7 @@ export function PresentationView({
   enableLeaves,
   enableAutumnLeaves,
   enableCherryBlossom,
+  enableOrtonEffect,
   containerBg = "bg-teal-500", // default value if not provided
   textBg = "bg-rose-400",       // default value if not provided
   romanizedOutput,
@@ -85,6 +87,7 @@ export function PresentationView({
       backgroundSize: "cover",
       backgroundPosition: "center",
       overflow: "hidden",
+
     }
     : {
       backgroundColor: containerBg,
@@ -94,6 +97,14 @@ export function PresentationView({
   return (
     // Append the 'cursor-none' class when idle.
     <div className={`${containerClass} ${isIdle ? "cursor-none" : ""}`} style={containerStyle}>
+      {enableOrtonEffect && <div style={{
+        mixBlendMode: "lighten",
+        filter: "blur(50px)",
+        opacity: "50%",
+        backgroundImage: `url(${backgroundImage})`,
+        width: '100%',
+        height: '100%'
+      }}></div>}
       {enableSnow && (
         <div className="wrapper" style={{ position: fullScreen ? "absolute" : "static" }}>
           <div className="snow layer1 a"></div>

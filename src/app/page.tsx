@@ -40,6 +40,7 @@ type Config = {
   enableCherryBlossom: boolean;
   enableLeaves: boolean;
   enableAutumnLeaves: boolean;
+  enableOrtonEffect: boolean;
 };
 
 export default function Home() {
@@ -57,6 +58,8 @@ export default function Home() {
   const [enableCherryBlossom, setEnableCherryBlossom] = useState<boolean>(false);
   const [enableLeaves, setEnableLeaves] = useState<boolean>(false);
   const [enableAutumnLeaves, setEnableAutumnLeaves] = useState<boolean>(false);
+  const [enableOrtonEffect, setEnableOrtonEffect] = useState<boolean>(false);
+
 
   // Playback and sequence control states...
   const [currentPhraseIndex, setCurrentPhraseIndex] = useState<number>(-1);
@@ -147,6 +150,7 @@ export default function Home() {
     setEnableCherryBlossom(config.enableCherryBlossom);
     setEnableLeaves(config.enableLeaves);
     setEnableAutumnLeaves(config.enableAutumnLeaves);
+    setEnableOrtonEffect(config.enableOrtonEffect);
   };
 
   // Save the current config into localStorage.
@@ -178,6 +182,7 @@ export default function Home() {
       enableCherryBlossom,
       enableLeaves,
       enableAutumnLeaves,
+      enableOrtonEffect,
     };
 
     const updatedConfigs = [...savedConfigs, newConfig];
@@ -453,6 +458,7 @@ export default function Home() {
             enableLeaves={enableLeaves}
             enableAutumnLeaves={enableAutumnLeaves}
             enableCherryBlossom={enableCherryBlossom}
+            enableOrtonEffect={enableOrtonEffect}
             containerBg={containerBg}
             textBg={textBg}
             romanizedOutput={romanizedOutput[currentPhraseIndex]}
@@ -584,6 +590,18 @@ export default function Home() {
                 />
                 <label htmlFor="enableCherryBlossom" className="font-medium">
                   Enable Cherry Blossom Effect
+                </label>
+              </div>
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="enableOrtonEffect"
+                  checked={enableOrtonEffect}
+                  onChange={(e) => setEnableOrtonEffect(e.target.checked)}
+                  className="mr-2"
+                />
+                <label htmlFor="enableOrtonEffect" className="font-medium">
+                  Enable Orton Effect
                 </label>
               </div>
             </div>
