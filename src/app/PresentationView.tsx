@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { AutumnLeaves } from "./Effects/AutumnLeaves";
 import CherryBlossom from "./Effects/CherryBlossom";
-import { RomanizedOutput } from "./page";
+import { RomanizedOutput } from './types';
 
 interface PresentationViewProps {
   currentPhrase: string;
