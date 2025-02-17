@@ -17,18 +17,7 @@ export type Config = {
   phrasesInput: string;
   inputLang: string;
   targetLang: string;
-  // TODO - Spread the presentation configuration values:
-  bgImage: string | null;
-  containerBg: string;
-  textBg: string;
-  enableSnow: boolean;
-  enableCherryBlossom: boolean;
-  enableLeaves: boolean;
-  enableAutumnLeaves: boolean;
-  enableOrtonEffect: boolean;
-  postProcessDelay: number;
-  delayBetweenPhrases: number;
-};
+} & PresentationConfig;
 
 export type RomanizedOutput = string[];
 
@@ -44,8 +33,16 @@ export const languageOptions = [
   { code: "zh-CN", label: "Chinese (Simplified)" },
 ];
 
-export interface AudioSegment {
+export type AudioSegment = {
   audioUrl: string;
   localFilePath: string;
   duration: number;
-}
+};
+
+export type Phrase = {
+  input: string;
+  translated: string;
+  inputAudio: AudioSegment | null;
+  outputAudio: AudioSegment | null;
+  romanized: string;
+};

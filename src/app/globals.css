@@ -21,8 +21,6 @@ body {
 } */
 html,
 body {
-  width: 1422px;
-  height: 800px;
   margin: 0;
   font-family: var(--font-playpen-sans), sans-serif;
 }
