@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { AutumnLeaves } from "./Effects/AutumnLeaves";
 import CherryBlossom from "./Effects/CherryBlossom";
-import { RomanizedOutput } from './types';
 
 interface PresentationViewProps {
   currentPhrase: string;
@@ -20,7 +19,7 @@ interface PresentationViewProps {
   enableOrtonEffect?: boolean;
   containerBg?: string; // New prop for container background color (default: 'bg-teal-500')
   textBg?: string;      // New prop for text container background color (default: 'bg-rose-400')
-  romanizedOutput?: RomanizedOutput;
+  romanizedOutput?: string;
 }
 
 export function PresentationView({

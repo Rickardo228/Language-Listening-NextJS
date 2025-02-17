@@ -54,16 +54,16 @@ export default function Home() {
       .filter(Boolean);
     if (!splitPhrases.length) return;
 
-    // Save the initial (editable) phrases into our phrases state.
-    // (At this point, the translation/audio/romanized fields are empty.)
-    const initialPhrases: Phrase[] = splitPhrases.map((p) => ({
-      input: p,
-      translated: '',
-      inputAudio: null,
-      outputAudio: null,
-      romanized: '',
-    }));
-    setPhrases(initialPhrases);
+    // // Save the initial (editable) phrases into our phrases state.
+    // // (At this point, the translation/audio/romanized fields are empty.)
+    // const initialPhrases: Phrase[] = splitPhrases.map((p) => ({
+    //   input: p,
+    //   translated: '',
+    //   inputAudio: null,
+    //   outputAudio: null,
+    //   romanized: '',
+    // }));
+    // setPhrases(initialPhrases);
 
     setLoading(true);
     try {
@@ -137,14 +137,14 @@ export default function Home() {
       .split('\n')
       .map((line) => line.trim())
       .filter(Boolean)
-      .map((p, index) => ({
+      .map((p) => ({
         input: p,
-        translated: '', // You could store full phrase objects in your config if needed.
+        translated: '',
         inputAudio: null,
         outputAudio: null,
         romanized: '',
       }));
-    setPhrases(loadedPhrases);
+    // setPhrases(loadedPhrases);
   };
 
   // Save the current config into localStorage.
@@ -388,28 +388,8 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Editable Inputs for Each Phrase */}
-      {phrases.length > 0 && (
-        <div className="mb-4">
-          <h3 className="text-xl font-bold mb-2">Edit Phrases</h3>
-          {phrases.map((phrase, index) => (
-            <input
-              key={index}
-              type="text"
-              value={phrase.input}
-              onChange={(e) => {
-                const newPhrases = [...phrases];
-                newPhrases[index] = { ...newPhrases[index], input: e.target.value };
-                setPhrases(newPhrases);
-              }}
-              className="w-96 p-2 border border-gray-300 rounded mb-2"
-            />
-          ))}
-        </div>
-      )}
-
       {/* Presentation View and Controls */}
-      {typeof currentPhraseIndex === "number" && phrases[currentPhraseIndex] && (
+      {Boolean(typeof currentPhraseIndex === "number" && phrases?.length) && (
         <>
           <div className="flex mb-2 items-center gap-2">
             <button
@@ -426,7 +406,7 @@ export default function Home() {
             >
               <Settings className="h-8 w-8 text-gray-700" />
             </button>
-            {phrases.length > 0 && currentPhraseIndex > 0 && (
+            {phrases.length > 0 && (
               <button
                 onClick={handleReplay}
                 className="ml-2 px-6 py-3 bg-green-500 text-white rounded hover:bg-green-600"
@@ -436,8 +416,9 @@ export default function Home() {
             )}
           </div>
           <PresentationView
-            currentPhrase={phrases[currentPhraseIndex].input}
-            currentTranslated={phrases[currentPhraseIndex].translated}
+            currentPhrase={phrases[currentPhraseIndex]?.input}
+            currentTranslated={phrases[currentPhraseIndex]?.translated}
+            romanizedOutput={phrases[currentPhraseIndex]?.romanized}
             currentPhase={currentPhase}
             fullScreen={fullscreen}
             backgroundImage={presentationConfig.bgImage || undefined}
@@ -449,10 +430,59 @@ export default function Home() {
             enableOrtonEffect={presentationConfig.enableOrtonEffect}
             containerBg={presentationConfig.containerBg}
             textBg={presentationConfig.textBg}
-            romanizedOutput={phrases[currentPhraseIndex].romanized}
           />
         </>
       )}
+
+      {/* Editable Inputs for Each Phrase */}
+      {/* {phrases.length > 0 && (
+        <div className="mb-4">
+          <h3 className="text-xl font-bold mb-2">Edit Phrases</h3>
+          {phrases.map((phrase, index) => (
+            <div key={index} className="mb-4 border p-2 rounded">
+              <div className="mb-2">
+                <label className="block font-medium mb-1">Input:</label>
+                <input
+                  type="text"
+                  value={phrase.input}
+                  onChange={(e) => {
+                    const newPhrases = [...phrases];
+                    newPhrases[index] = { ...newPhrases[index], input: e.target.value };
+                    setPhrases(newPhrases);
+                  }}
+                  className="w-96 p-2 border border-gray-300 rounded"
+                />
+              </div>
+              <div className="mb-2">
+                <label className="block font-medium mb-1">Translated:</label>
+                <input
+                  type="text"
+                  value={phrase.translated}
+                  onChange={(e) => {
+                    const newPhrases = [...phrases];
+                    newPhrases[index] = { ...newPhrases[index], translated: e.target.value };
+                    setPhrases(newPhrases);
+                  }}
+                  className="w-96 p-2 border border-gray-300 rounded"
+                />
+              </div>
+              <div className="mb-2">
+                <label className="block font-medium mb-1">Romanized:</label>
+                <input
+                  type="text"
+                  value={phrase.romanized}
+                  onChange={(e) => {
+                    const newPhrases = [...phrases];
+                    newPhrases[index] = { ...newPhrases[index], romanized: e.target.value };
+                    setPhrases(newPhrases);
+                  }}
+                  className="w-96 p-2 border border-gray-300 rounded"
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+      )} */}
     </div>
   );
 }
