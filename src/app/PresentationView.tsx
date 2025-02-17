@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
 import { AutumnLeaves } from "./Effects/AutumnLeaves";
 import CherryBlossom from "./Effects/CherryBlossom";
 import { RomanizedOutput } from "./page";
@@ -87,7 +88,6 @@ export function PresentationView({
       backgroundSize: "cover",
       backgroundPosition: "center",
       overflow: "hidden",
-
     }
     : {
       backgroundColor: containerBg,
@@ -97,14 +97,18 @@ export function PresentationView({
   return (
     // Append the 'cursor-none' class when idle.
     <div className={`${containerClass} ${isIdle ? "cursor-none" : ""}`} style={containerStyle}>
-      {enableOrtonEffect && <div style={{
-        mixBlendMode: "lighten",
-        filter: "blur(50px)",
-        opacity: "50%",
-        backgroundImage: `url(${backgroundImage})`,
-        width: '100%',
-        height: '100%'
-      }}></div>}
+      {enableOrtonEffect && (
+        <div
+          style={{
+            mixBlendMode: "lighten",
+            filter: "blur(50px)",
+            opacity: "50%",
+            backgroundImage: `url(${backgroundImage})`,
+            width: "100%",
+            height: "100%",
+          }}
+        ></div>
+      )}
       {enableSnow && (
         <div className="wrapper" style={{ position: fullScreen ? "absolute" : "static" }}>
           <div className="snow layer1 a"></div>
@@ -138,8 +142,12 @@ export function PresentationView({
       {enableCherryBlossom && <CherryBlossom fullScreen={fullScreen} />}
 
       {(currentTranslated || currentPhrase) && (
-        <div
-          className={`text-center p-12 absolute flex bg-opacity-90 flex-col`}
+        <motion.div
+          key={currentPhase}
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, ease: "easeOut" }}
+          className="text-center p-12 absolute flex bg-opacity-90 flex-col"
           style={{
             alignItems: "center",
             justifyContent: "center",
@@ -149,12 +157,14 @@ export function PresentationView({
           }}
         >
           <h2 className={titleClass} style={{ margin: 0, padding: 0 }}>
-            {currentPhase === "input" ? currentPhrase?.trim() : currentTranslated?.trim()}
+            {currentPhase === "input"
+              ? currentPhrase?.trim()
+              : currentTranslated?.trim()}
           </h2>
           {currentPhase === "output" && romanizedOutput && (
             <h2 className={subtitleClass}>{romanizedOutput}</h2>
           )}
-        </div>
+        </motion.div>
       )}
     </div>
   );

@@ -25,9 +25,7 @@ const languageOptions = [
   { code: 'zh-CN', label: 'Chinese (Simplified)' },
 ];
 
-const DELAY_BETWEEN_PHRASES = 1000;
-
-// Define the type for a saved config.
+// Updated Config type to include delay settings.
 type Config = {
   name: string;
   phrasesInput: string;
@@ -41,6 +39,8 @@ type Config = {
   enableLeaves: boolean;
   enableAutumnLeaves: boolean;
   enableOrtonEffect: boolean;
+  postProcessDelay: number;
+  delayBetweenPhrases: number;
 };
 
 export default function Home() {
@@ -60,6 +60,12 @@ export default function Home() {
   const [enableAutumnLeaves, setEnableAutumnLeaves] = useState<boolean>(false);
   const [enableOrtonEffect, setEnableOrtonEffect] = useState<boolean>(false);
 
+  // Delay states (in milliseconds) now part of config
+  const [postProcessDelay, setPostProcessDelay] = useState<number>(5000); // delay after processing finishes
+  const [delayBetweenPhrases, setDelayBetweenPhrases] = useState<number>(1000); // delay between phrases
+
+  // Loading state for processing
+  const [loading, setLoading] = useState<boolean>(false);
 
   // Playback and sequence control states...
   const [currentPhraseIndex, setCurrentPhraseIndex] = useState<number>(-1);
@@ -72,7 +78,7 @@ export default function Home() {
   const [outputAudioSegments, setOutputAudioSegments] = useState<AudioSegment[]>([]);
   const [romanizedOutput, setRomanizedOutput] = useState<RomanizedOutput[]>([]);
 
-  // New state for saved configs and the config name input.
+  // Config saving states.
   const [savedConfigs, setSavedConfigs] = useState<Config[]>([]);
   const [configName, setConfigName] = useState<string>('');
 
@@ -94,26 +100,32 @@ export default function Home() {
       .filter(Boolean);
     if (!phrases.length) return;
 
-    const response = await fetch('http://localhost:3000/process', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        phrases,
-        inputLang,
-        targetLang,
-      }),
-    });
-    const data = await response.json();
-    setTranslated(data.translated || []);
-    setInputAudioSegments(data.inputAudioSegments || []);
-    setOutputAudioSegments(data.outputAudioSegments || []);
-    setRomanizedOutput(data.romanizedOutput || []);
-    setCurrentPhraseIndex(-1);
-    setCurrentPhase('input');
-    setFinished(false);
+    setLoading(true);
+    try {
+      const response = await fetch('http://localhost:3000/process', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          phrases,
+          inputLang,
+          targetLang,
+        }),
+      });
+      const data = await response.json();
+      setTranslated(data.translated || []);
+      setInputAudioSegments(data.inputAudioSegments || []);
+      setOutputAudioSegments(data.outputAudioSegments || []);
+      setRomanizedOutput(data.romanizedOutput || []);
+      setCurrentPhraseIndex(-1);
+      setCurrentPhase('input');
+      setFinished(false);
+    } catch (err) {
+      console.error('Processing error:', err);
+    }
+    setLoading(false);
     setTimeout(() => {
       setCurrentPhraseIndex(0);
-    }, 5000); // Delay playback
+    }, postProcessDelay);
   };
 
   // Update audio source when phrase or phase changes.
@@ -137,8 +149,7 @@ export default function Home() {
     outputAudioSegments,
   ]);
 
-
-  // When a saved config is selected, load its state.
+  // When a saved config is selected, load its state (including delays).
   const handleLoadConfig = (config: Config) => {
     setPhrasesInput(config.phrasesInput);
     setInputLang(config.inputLang);
@@ -151,9 +162,11 @@ export default function Home() {
     setEnableLeaves(config.enableLeaves);
     setEnableAutumnLeaves(config.enableAutumnLeaves);
     setEnableOrtonEffect(config.enableOrtonEffect);
+    setPostProcessDelay(config.postProcessDelay);
+    setDelayBetweenPhrases(config.delayBetweenPhrases);
   };
 
-  // Save the current config into localStorage.
+  // Save the current config into localStorage (including delays).
   const handleSaveConfig = () => {
     const containerColorName =
       bgColorOptions.find((opt) => opt.value === containerBg)?.name || "Custom";
@@ -183,12 +196,14 @@ export default function Home() {
       enableLeaves,
       enableAutumnLeaves,
       enableOrtonEffect,
+      postProcessDelay,
+      delayBetweenPhrases,
     };
 
     const updatedConfigs = [...savedConfigs, newConfig];
     setSavedConfigs(updatedConfigs);
     localStorage.setItem('savedConfigs', JSON.stringify(updatedConfigs));
-    setConfigName(''); // clear the input after saving
+    setConfigName(''); // Clear the config name input after saving.
   };
 
   // Delete a config from the saved list.
@@ -208,7 +223,7 @@ export default function Home() {
     if (currentPhase === 'input') {
       const timeoutId = window.setTimeout(() => {
         setCurrentPhase('output');
-      }, DELAY_BETWEEN_PHRASES);
+      }, delayBetweenPhrases);
       timeoutIds.current.push(timeoutId);
     } else {
       const outputDuration = audioRef.current?.duration || 1; // Default to 1s if duration is unavailable
@@ -219,11 +234,10 @@ export default function Home() {
         } else {
           setFinished(true);
         }
-      }, (outputDuration * 1500) + DELAY_BETWEEN_PHRASES);
+      }, (outputDuration * 1500) + delayBetweenPhrases);
       timeoutIds.current.push(timeoutId);
     }
   };
-
 
   const handleReplay = () => {
     // Kill any existing timeouts.
@@ -234,10 +248,9 @@ export default function Home() {
     setFinished(false);
     const timeoutId = window.setTimeout(() => {
       setCurrentPhraseIndex(0);
-    }, 5000);
+    }, postProcessDelay);
     timeoutIds.current.push(timeoutId);
   };
-
 
   // Handle background image upload; create a blob URL from the selected file.
   const handleImageUpload = (e: ChangeEvent<HTMLInputElement>) => {
@@ -248,8 +261,7 @@ export default function Home() {
     }
   };
 
-
-  // Close fullscreen on esc key
+  // Close fullscreen on Esc key press.
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
@@ -263,7 +275,7 @@ export default function Home() {
     };
   }, []);
 
-  // Settings button
+  // Optional Settings button (if needed elsewhere)
   const SettingsButton = (
     <button
       onClick={() => setSettingsOpen(true)}
@@ -275,7 +287,7 @@ export default function Home() {
   );
 
   useEffect(() => {
-    // Only update if the user hasn't typed anything.
+    // Auto-generate a config name if none is provided.
     if (!configName.trim()) {
       const containerColorName =
         bgColorOptions.find((opt) => opt.value === containerBg)?.name || "Custom";
@@ -301,7 +313,6 @@ export default function Home() {
     enableAutumnLeaves,
     configName,
   ]);
-
 
   // Render UI
   return (
@@ -357,7 +368,7 @@ export default function Home() {
         className="w-full p-2 text-lg border border-gray-300 rounded mb-4"
       />
 
-      {/* New Config Save/Load Controls */}
+      {/* Config Save/Load Controls */}
       <div className="flex flex-col gap-4 mb-4">
         <div className="flex flex-col gap-2">
           <input
@@ -402,11 +413,17 @@ export default function Home() {
         </div>
       </div>
 
+      {/* Process Button with Loading Spinner */}
       <button
         onClick={handleProcess}
-        className="px-4 py-2 text-lg bg-blue-500 text-white rounded hover:bg-blue-600 mb-4"
+        disabled={loading}
+        className="px-4 py-2 text-lg bg-blue-500 text-white rounded hover:bg-blue-600 mb-4 flex items-center justify-center"
       >
-        Process
+        {loading ? (
+          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+        ) : (
+          "Process"
+        )}
       </button>
 
       {/* Audio element for playback */}
@@ -438,7 +455,7 @@ export default function Home() {
             >
               <Settings className="h-8 w-8 text-gray-700" />
             </button>
-            {(currentPhraseIndex && (currentPhraseIndex > 0)) && (
+            {(currentPhraseIndex && currentPhraseIndex > 0) && (
               <button
                 onClick={handleReplay}
                 className="ml-2 px-6 py-3 bg-green-500 text-white rounded hover:bg-green-600"
@@ -603,6 +620,31 @@ export default function Home() {
                 <label htmlFor="enableOrtonEffect" className="font-medium">
                   Enable Orton Effect
                 </label>
+              </div>
+              {/* Delay Settings as part of the config */}
+              <div>
+                <label htmlFor="postProcessDelay" className="block font-medium mb-1">
+                  Delay After Processing (ms)
+                </label>
+                <input
+                  type="number"
+                  id="postProcessDelay"
+                  value={postProcessDelay}
+                  onChange={(e) => setPostProcessDelay(Number(e.target.value))}
+                  className="w-full p-2 border border-gray-300 rounded"
+                />
+              </div>
+              <div>
+                <label htmlFor="delayBetweenPhrases" className="block font-medium mb-1">
+                  Delay Between Phrases (ms)
+                </label>
+                <input
+                  type="number"
+                  id="delayBetweenPhrases"
+                  value={delayBetweenPhrases}
+                  onChange={(e) => setDelayBetweenPhrases(Number(e.target.value))}
+                  className="w-full p-2 border border-gray-300 rounded"
+                />
               </div>
             </div>
             <datalist id="bgColorOptions">
