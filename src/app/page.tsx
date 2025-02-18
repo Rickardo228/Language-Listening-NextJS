@@ -91,6 +91,7 @@ export default function Home() {
       setFinished(false);
     } catch (err) {
       console.error('Processing error:', err);
+      alert(err)
     }
     setLoading(false);
     setTimeout(() => {
@@ -120,17 +121,9 @@ export default function Home() {
     setPhrasesInput(config.phrasesInput);
     setInputLang(config.inputLang);
     setTargetLang(config.targetLang);
+    setConfigName(config.name)
     setPresentationConfig({
-      bgImage: config.bgImage,
-      containerBg: config.containerBg,
-      textBg: config.textBg,
-      enableSnow: config.enableSnow,
-      enableCherryBlossom: config.enableCherryBlossom,
-      enableLeaves: config.enableLeaves,
-      enableAutumnLeaves: config.enableAutumnLeaves,
-      enableOrtonEffect: config.enableOrtonEffect,
-      postProcessDelay: config.postProcessDelay,
-      delayBetweenPhrases: config.delayBetweenPhrases,
+      ...config
     });
     // (Optionally, re-split the phrasesInput to update the phrases array.)
     const loadedPhrases = config.phrasesInput
@@ -208,7 +201,7 @@ export default function Home() {
 
   const handleReplay = () => {
     clearAllTimeouts();
-    setCurrentPhraseIndex(-1);
+    setCurrentPhraseIndex(prev => prev < 0 ? prev - 1 : -1);
     setCurrentPhase('input');
     setFinished(false);
     const timeoutId = window.setTimeout(() => {
@@ -240,21 +233,21 @@ export default function Home() {
   }, []);
 
   // Auto-generate a config name if none is provided.
-  useEffect(() => {
-    if (!configName.trim()) {
-      const containerColorName =
-        bgColorOptions.find((opt) => opt.value === presentationConfig.containerBg)?.name || "Custom";
-      const textColorName =
-        bgColorOptions.find((opt) => opt.value === presentationConfig.textBg)?.name || "Custom";
-      const defaultName =
-        `${inputLang}→${targetLang} [C:${containerColorName}, T:${textColorName}]` +
-        (presentationConfig.enableSnow ? " ❄️" : "") +
-        (presentationConfig.enableCherryBlossom ? " 🌸" : "") +
-        (presentationConfig.enableLeaves ? " 🍂" : "") +
-        (presentationConfig.enableAutumnLeaves ? " 🍁" : "");
-      setConfigName(defaultName);
-    }
-  }, [inputLang, targetLang, presentationConfig, configName]);
+  // useEffect(() => {
+  //   if (!configName.trim()) {
+  //     const containerColorName =
+  //       bgColorOptions.find((opt) => opt.value === presentationConfig.containerBg)?.name || "Custom";
+  //     const textColorName =
+  //       bgColorOptions.find((opt) => opt.value === presentationConfig.textBg)?.name || "Custom";
+  //     const defaultName =
+  //       `${inputLang}→${targetLang} [C:${containerColorName}, T:${textColorName}]` +
+  //       (presentationConfig.enableSnow ? " ❄️" : "") +
+  //       (presentationConfig.enableCherryBlossom ? " 🌸" : "") +
+  //       (presentationConfig.enableLeaves ? " 🍂" : "") +
+  //       (presentationConfig.enableAutumnLeaves ? " 🍁" : "");
+  //     setConfigName(defaultName);
+  //   }
+  // }, [inputLang, targetLang, presentationConfig, configName]);
 
   return (
     <div className="p-5 font-sans">
@@ -416,20 +409,15 @@ export default function Home() {
             )}
           </div>
           <PresentationView
+            key={currentPhraseIndex < 0 ? currentPhraseIndex : 'fakeKey'}
+            title={currentPhraseIndex < 0 ? configName : undefined}
             currentPhrase={phrases[currentPhraseIndex]?.input}
             currentTranslated={phrases[currentPhraseIndex]?.translated}
             romanizedOutput={phrases[currentPhraseIndex]?.romanized}
             currentPhase={currentPhase}
             fullScreen={fullscreen}
-            backgroundImage={presentationConfig.bgImage || undefined}
             onClose={() => setFullscreen(false)}
-            enableSnow={presentationConfig.enableSnow}
-            enableLeaves={presentationConfig.enableLeaves}
-            enableAutumnLeaves={presentationConfig.enableAutumnLeaves}
-            enableCherryBlossom={presentationConfig.enableCherryBlossom}
-            enableOrtonEffect={presentationConfig.enableOrtonEffect}
-            containerBg={presentationConfig.containerBg}
-            textBg={presentationConfig.textBg}
+            {...presentationConfig}
           />
         </>
       )}
