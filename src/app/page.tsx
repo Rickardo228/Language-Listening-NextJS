@@ -152,18 +152,19 @@ export default function Home() {
       (presentationConfig.enableCherryBlossom ? " 🌸" : "") +
       (presentationConfig.enableLeaves ? " 🍂" : "") +
       (presentationConfig.enableAutumnLeaves ? " 🍁" : "");
+    console.log(configName)
     const finalName = configName.trim() ? configName.trim() : generatedName;
     const newConfig: Config = {
+      ...presentationConfig,
       name: finalName,
       phrasesInput,
       inputLang,
       targetLang,
-      ...presentationConfig,
     };
     const updatedConfigs = [...savedConfigs, newConfig];
     setSavedConfigs(updatedConfigs);
     localStorage.setItem('savedConfigs', JSON.stringify(updatedConfigs));
-    setConfigName('');
+    // setConfigName('');
   };
 
   // Delete a config from the saved list.
@@ -232,22 +233,7 @@ export default function Home() {
     };
   }, []);
 
-  // Auto-generate a config name if none is provided.
-  // useEffect(() => {
-  //   if (!configName.trim()) {
-  //     const containerColorName =
-  //       bgColorOptions.find((opt) => opt.value === presentationConfig.containerBg)?.name || "Custom";
-  //     const textColorName =
-  //       bgColorOptions.find((opt) => opt.value === presentationConfig.textBg)?.name || "Custom";
-  //     const defaultName =
-  //       `${inputLang}→${targetLang} [C:${containerColorName}, T:${textColorName}]` +
-  //       (presentationConfig.enableSnow ? " ❄️" : "") +
-  //       (presentationConfig.enableCherryBlossom ? " 🌸" : "") +
-  //       (presentationConfig.enableLeaves ? " 🍂" : "") +
-  //       (presentationConfig.enableAutumnLeaves ? " 🍁" : "");
-  //     setConfigName(defaultName);
-  //   }
-  // }, [inputLang, targetLang, presentationConfig, configName]);
+
 
   return (
     <div className="p-5 font-sans">
@@ -423,7 +409,7 @@ export default function Home() {
       )}
 
       {/* Editable Inputs for Each Phrase */}
-      {/* {phrases.length > 0 && (
+      {phrases.length > 0 && (
         <div className="mb-4">
           <h3 className="text-xl font-bold mb-2">Edit Phrases</h3>
           {phrases.map((phrase, index) => (
@@ -470,7 +456,7 @@ export default function Home() {
             </div>
           ))}
         </div>
-      )} */}
+      )}
     </div>
   );
 }

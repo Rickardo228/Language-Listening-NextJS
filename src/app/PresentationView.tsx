@@ -156,13 +156,16 @@ export function PresentationView({
             transition={{ duration: 1, ease: "easeOut", delay: 3 }}
             className="text-center absolute flex flex-col"
             style={{
-              maxWidth: "400px",
-              paddingTop: 20,
-              paddingBottom: 20,
+              maxWidth: "600px",
+              padding: 20,
               alignItems: "center",
               justifyContent: "center",
               textShadow: `2px 2px 2px ${textBg}`,
               color: textBg,
+              backgroundColor: textBg.includes("rgb")
+                ? (textBg.slice(0, -1) + " 0.7)").replaceAll(" ", ",")
+                : textBg,
+              borderRadius: '1rem'
             }}
           >
             <h1 className={titlePropClass} style={{ margin: 0, padding: 0 }}>
@@ -185,6 +188,8 @@ export function PresentationView({
                 backgroundColor: textBg.includes("rgb")
                   ? (textBg.slice(0, -1) + " 0.9)").replaceAll(" ", ",")
                   : textBg,
+                borderRadius: '1rem'
+
               }}
             >
               <h2 className={titleClass} style={{ margin: 0, padding: 0 }}>
