@@ -15,6 +15,7 @@ export type PresentationConfig = {
 export type Config = {
   name: string;
   phrasesInput: string;
+  phrases: Phrase[];
   inputLang: string;
   targetLang: string;
 } & PresentationConfig;

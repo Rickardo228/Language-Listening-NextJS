@@ -2,6 +2,7 @@
 import React from "react";
 import { PresentationConfig } from "./types";
 import { ConfigFieldDefinition } from "./configDefinitions";
+import bgColorOptions from "./utils/bgColorOptions";
 
 interface ConfigFieldsProps {
     definition: ConfigFieldDefinition[];
@@ -77,6 +78,29 @@ const ConfigFields: React.FC<ConfigFieldsProps> = ({
                             />
                         </div>
                     );
+                }
+
+                if (inputType === "color") {
+                    return <div key={key} className="flex flex-col">
+                        <label htmlFor={String(key)} className="block font-medium mb-1">
+                            {label}
+                        </label>
+                        <input
+                            list="bgColorOptions"
+                            type="text"
+                            id={String(key)}
+                            value={value}
+                            onChange={(e) => handleChange(key, e.target.value)}
+                            className="w-full p-2 border border-gray-300 rounded"
+                        />
+                        <datalist id="bgColorOptions">
+                            {bgColorOptions.map((option) => (
+                                <option key={option.name} value={option.value}>
+                                    {option.name}
+                                </option>
+                            ))}
+                        </datalist>
+                    </div>
                 }
 
                 // Render a text input (this covers text and color types, etc.)

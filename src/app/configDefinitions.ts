@@ -12,9 +12,9 @@ export const presentationConfigDefinition: ConfigFieldDefinition[] = [
   {
     key: "containerBg",
     label: "Container Background Color",
-    inputType: "text",
+    inputType: "color",
   },
-  { key: "textBg", label: "Text Background Color", inputType: "text" },
+  { key: "textBg", label: "Text Background Color", inputType: "color" },
   { key: "enableSnow", label: "Enable Snow Effect", inputType: "checkbox" },
   {
     key: "enableCherryBlossom",

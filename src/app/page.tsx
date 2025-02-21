@@ -30,6 +30,8 @@ export default function Home() {
   const [finished, setFinished] = useState<boolean>(false);
   const [fullscreen, setFullscreen] = useState<boolean>(false);
   const [settingsOpen, setSettingsOpen] = useState<boolean>(false);
+  const [recordScreen, setRecordScreen] = useState(false);
+  const [paused, setPaused] = useState(false);
 
   // Config saving states
   const [savedConfigs, setSavedConfigs] = useState<Config[]>([]);
@@ -118,26 +120,14 @@ export default function Home() {
 
   // When a saved config is selected, load its state.
   const handleLoadConfig = (config: Config) => {
-    setPhrasesInput(config.phrasesInput);
+    setPhrasesInput(config.phrases ? config.phrases.map(p => p.input).join('\n') : config.phrasesInput || '');
+    setPhrases(config.phrases || [])
     setInputLang(config.inputLang);
     setTargetLang(config.targetLang);
     setConfigName(config.name)
     setPresentationConfig({
       ...config
     });
-    // (Optionally, re-split the phrasesInput to update the phrases array.)
-    const loadedPhrases = config.phrasesInput
-      .split('\n')
-      .map((line) => line.trim())
-      .filter(Boolean)
-      .map((p) => ({
-        input: p,
-        translated: '',
-        inputAudio: null,
-        outputAudio: null,
-        romanized: '',
-      }));
-    // setPhrases(loadedPhrases);
   };
 
   // Save the current config into localStorage.
@@ -157,6 +147,7 @@ export default function Home() {
     const newConfig: Config = {
       ...presentationConfig,
       name: finalName,
+      phrases,
       phrasesInput,
       inputLang,
       targetLang,
@@ -180,6 +171,56 @@ export default function Home() {
     timeoutIds.current = [];
   };
 
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const recordedChunksRef = useRef<Blob[]>([]);
+
+  const startScreenRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getDisplayMedia({
+        video: true,
+        audio: true,
+        preferCurrentTab: true, // This is fine
+      });
+      console.log(stream)
+      mediaRecorderRef.current = new MediaRecorder(stream);
+      mediaRecorderRef.current.ondataavailable = (event) => {
+        console.log((mediaRecorderRef.current))
+        if (event.data.size > 0) {
+          recordedChunksRef.current.push(event.data);
+        }
+      };
+      mediaRecorderRef.current.onstop = () => {
+        const blob = new Blob(recordedChunksRef.current, { type: 'video/webm' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = 'screen-recording.webm';
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => {
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        }, 100);
+        // Stop all tracks to end the capture.
+        stream.getTracks().forEach((track) => track.stop());
+        recordedChunksRef.current = [];
+        mediaRecorderRef.current = null;
+      };
+      mediaRecorderRef.current.start();
+      console.log(mediaRecorderRef.current)
+    } catch (err) {
+      console.error('Error starting screen recording:', err);
+    }
+  };
+
+  const stopScreenRecording = () => {
+    console.log(mediaRecorderRef.current);
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      mediaRecorderRef.current.stop();
+    }
+  };
+
   const handleAudioEnded = () => {
     if (currentPhase === 'input') {
       const timeoutId = window.setTimeout(() => {
@@ -189,27 +230,41 @@ export default function Home() {
     } else {
       const outputDuration = audioRef.current?.duration || 1;
       const timeoutId = window.setTimeout(() => {
-        if (currentPhraseIndex < phrases.length - 1) {
+        if (currentPhraseIndex < phrases.length - 1 && !paused) {
           setCurrentPhraseIndex(currentPhraseIndex + 1);
           setCurrentPhase('input');
         } else {
           setFinished(true);
+          // Stop the recording after final audio.
+          if (recordScreen) stopScreenRecording();
         }
       }, (outputDuration * 1500) + presentationConfig.delayBetweenPhrases);
       timeoutIds.current.push(timeoutId);
     }
   };
 
-  const handleReplay = () => {
+
+
+  // In handleReplay:
+  const handleReplay = async () => {
     clearAllTimeouts();
+    // Start recording if enabled.
+    if (recordScreen) {
+      setPaused(true);
+      setFullscreen(true);
+      await startScreenRecording();
+      setPaused(false);
+    }
     setCurrentPhraseIndex(prev => prev < 0 ? prev - 1 : -1);
     setCurrentPhase('input');
     setFinished(false);
+
     const timeoutId = window.setTimeout(() => {
       setCurrentPhraseIndex(0);
     }, presentationConfig.postProcessDelay);
     timeoutIds.current.push(timeoutId);
   };
+
 
   // Handle background image upload via our config setter.
   const handleImageUpload = (e: ChangeEvent<HTMLInputElement>) => {
@@ -378,6 +433,17 @@ export default function Home() {
             >
               <Maximize2 className="h-8 w-8 text-gray-700" />
             </button>
+            <label className="flex items-center gap-1">
+              <input
+                type="checkbox"
+                checked={recordScreen}
+                onChange={(e) => setRecordScreen(e.target.checked)}
+              />
+              Record Screen
+            </label>
+            {recordScreen && <button onClick={stopScreenRecording}>
+              Stop Recording
+            </button>}
             <button
               onClick={() => setSettingsOpen(true)}
               className="p-2 bg-gray-200 rounded hover:bg-gray-300"
@@ -409,7 +475,7 @@ export default function Home() {
       )}
 
       {/* Editable Inputs for Each Phrase */}
-      {phrases.length > 0 && (
+      {phrases.length > 0 && !fullscreen && (
         <div className="mb-4">
           <h3 className="text-xl font-bold mb-2">Edit Phrases</h3>
           {phrases.map((phrase, index) => (
