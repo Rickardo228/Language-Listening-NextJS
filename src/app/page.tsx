@@ -1,13 +1,17 @@
 'use client'
 
 import { useState, useRef, useEffect, ChangeEvent } from 'react';
-import { PresentationView } from './PresentationView';
+import { PresentationView, TITLE_ANIMATION_DURATION } from './PresentationView';
 import { Maximize2, Settings, X } from 'lucide-react';
 import bgColorOptions from './utils/bgColorOptions';
 import { Config, languageOptions, Phrase } from './types';
 import { usePresentationConfig } from './hooks/usePresentationConfig';
 import { presentationConfigDefinition } from './configDefinitions';
 import ConfigFields from './ConfigFields';
+
+const DELAY_AFTER_OUTPUT_PHRASES_MULTIPLIER = 1.5;
+export const BLEED_START_DELAY = 3000;
+export const TITLE_DELAY = 3000;
 
 export default function Home() {
   // User input and language selection
@@ -32,6 +36,7 @@ export default function Home() {
   const [settingsOpen, setSettingsOpen] = useState<boolean>(false);
   const [recordScreen, setRecordScreen] = useState(false);
   const [paused, setPaused] = useState(false);
+  const [showTitle, setShowTitle] = useState(false);
 
   // Config saving states
   const [savedConfigs, setSavedConfigs] = useState<Config[]>([]);
@@ -39,6 +44,8 @@ export default function Home() {
 
   // Ref for the audio element
   const audioRef = useRef<HTMLAudioElement>(null);
+
+  const timeoutIds = useRef<number[]>([]);
 
   // Load saved configs from localStorage on mount.
   useEffect(() => {
@@ -56,18 +63,8 @@ export default function Home() {
       .filter(Boolean);
     if (!splitPhrases.length) return;
 
-    // // Save the initial (editable) phrases into our phrases state.
-    // // (At this point, the translation/audio/romanized fields are empty.)
-    // const initialPhrases: Phrase[] = splitPhrases.map((p) => ({
-    //   input: p,
-    //   translated: '',
-    //   inputAudio: null,
-    //   outputAudio: null,
-    //   romanized: '',
-    // }));
-    // setPhrases(initialPhrases);
-
     setLoading(true);
+
     try {
       const response = await fetch('http://localhost:3000/process', {
         method: 'POST',
@@ -91,14 +88,24 @@ export default function Home() {
       setCurrentPhraseIndex(-1);
       setCurrentPhase('input');
       setFinished(false);
+
+
+
     } catch (err) {
       console.error('Processing error:', err);
       alert(err)
     }
     setLoading(false);
-    setTimeout(() => {
+    setShowTitle(true);
+
+    const timeoutId = window.setTimeout(() => {
+      setShowTitle(false);
+    }, presentationConfig.postProcessDelay + BLEED_START_DELAY - TITLE_ANIMATION_DURATION - 1000);
+    timeoutIds.current.push(timeoutId)
+    const timeoutId2 = window.setTimeout(() => {
       setCurrentPhraseIndex(0);
-    }, presentationConfig.postProcessDelay);
+    }, presentationConfig.postProcessDelay + BLEED_START_DELAY);
+    timeoutIds.current.push(timeoutId2)
   };
 
   // Update audio source when phrase or phase changes.
@@ -142,7 +149,7 @@ export default function Home() {
       (presentationConfig.enableCherryBlossom ? " 🌸" : "") +
       (presentationConfig.enableLeaves ? " 🍂" : "") +
       (presentationConfig.enableAutumnLeaves ? " 🍁" : "");
-    console.log(configName)
+
     const finalName = configName.trim() ? configName.trim() : generatedName;
     const newConfig: Config = {
       ...presentationConfig,
@@ -165,7 +172,6 @@ export default function Home() {
     localStorage.setItem('savedConfigs', JSON.stringify(updatedConfigs));
   };
 
-  const timeoutIds = useRef<number[]>([]);
   const clearAllTimeouts = () => {
     timeoutIds.current.forEach((id) => clearTimeout(id));
     timeoutIds.current = [];
@@ -178,10 +184,9 @@ export default function Home() {
     try {
       const stream = await navigator.mediaDevices.getDisplayMedia({
         video: true,
-        audio: true,
         preferCurrentTab: true, // This is fine
       });
-      console.log(stream)
+
       mediaRecorderRef.current = new MediaRecorder(stream);
       mediaRecorderRef.current.ondataavailable = (event) => {
         console.log((mediaRecorderRef.current))
@@ -189,6 +194,7 @@ export default function Home() {
           recordedChunksRef.current.push(event.data);
         }
       };
+
       mediaRecorderRef.current.onstop = () => {
         const blob = new Blob(recordedChunksRef.current, { type: 'video/webm' });
         const url = URL.createObjectURL(blob);
@@ -202,13 +208,57 @@ export default function Home() {
           document.body.removeChild(a);
           URL.revokeObjectURL(url);
         }, 100);
+
         // Stop all tracks to end the capture.
         stream.getTracks().forEach((track) => track.stop());
         recordedChunksRef.current = [];
         mediaRecorderRef.current = null;
+
+        // Prepare and send data to the Node.js server.
+        (async () => {
+          try {
+            const formData = new FormData();
+            // Append the video blob.
+            formData.append('video', blob, 'screen-recording.webm');
+
+            // Append each audio segment as a Blob.
+            // Iterate over each phrase and fetch the blob for input and output audio.
+            const audioPromises = phrases.map(async (phrase, index) => {
+              if (phrase.inputAudio && phrase.inputAudio.audioUrl) {
+                const inputBlob = await fetch(phrase.inputAudio.audioUrl).then(res => res.blob());
+                formData.append(`inputAudio_${index}`, inputBlob, `input_${index}.webm`);
+              }
+              if (phrase.outputAudio && phrase.outputAudio.audioUrl) {
+                const outputBlob = await fetch(phrase.outputAudio.audioUrl).then(res => res.blob());
+                formData.append(`outputAudio_${index}`, outputBlob, `output_${index}.webm`);
+              }
+            });
+            await Promise.all(audioPromises);
+
+            // Append additional metadata.
+            formData.append('phrases', JSON.stringify(phrases));
+            formData.append('delayAfterOutputPhrasesMultiplier', DELAY_AFTER_OUTPUT_PHRASES_MULTIPLIER.toString());
+            formData.append('delayBetweenPhrases', (presentationConfig.delayBetweenPhrases ? presentationConfig.delayBetweenPhrases + 400 : 0).toString());
+            formData.append('introDelay', presentationConfig.postProcessDelay.toString());
+            formData.append('bleedStartDelay', BLEED_START_DELAY.toString());
+
+            // Send the formData to your backend endpoint.
+            const response = await fetch('http://localhost:3000/merge', {
+              method: 'POST',
+              body: formData,
+            });
+            if (!response.ok) {
+              throw new Error(`Server error: ${response.statusText}`);
+            }
+            const result = await response.json();
+            console.log('Server merge response:', result);
+          } catch (err) {
+            console.error('Error sending data to server:', err);
+          }
+        })();
       };
+
       mediaRecorderRef.current.start();
-      console.log(mediaRecorderRef.current)
     } catch (err) {
       console.error('Error starting screen recording:', err);
     }
@@ -228,7 +278,7 @@ export default function Home() {
       }, presentationConfig.delayBetweenPhrases);
       timeoutIds.current.push(timeoutId);
     } else {
-      const outputDuration = audioRef.current?.duration || 1;
+      const outputDuration = (audioRef.current?.duration || 1) * 1000;
       const timeoutId = window.setTimeout(() => {
         if (currentPhraseIndex < phrases.length - 1 && !paused) {
           setCurrentPhraseIndex(currentPhraseIndex + 1);
@@ -238,7 +288,7 @@ export default function Home() {
           // Stop the recording after final audio.
           if (recordScreen) stopScreenRecording();
         }
-      }, (outputDuration * 1500) + presentationConfig.delayBetweenPhrases);
+      }, (outputDuration * DELAY_AFTER_OUTPUT_PHRASES_MULTIPLIER) + presentationConfig.delayBetweenPhrases);
       timeoutIds.current.push(timeoutId);
     }
   };
@@ -258,10 +308,16 @@ export default function Home() {
     setCurrentPhraseIndex(prev => prev < 0 ? prev - 1 : -1);
     setCurrentPhase('input');
     setFinished(false);
+    setShowTitle(true);
+
+    const timeoutId1 = window.setTimeout(() => {
+      setShowTitle(false);
+    }, presentationConfig.postProcessDelay + BLEED_START_DELAY - TITLE_ANIMATION_DURATION - 1000);
+    timeoutIds.current.push(timeoutId1);
 
     const timeoutId = window.setTimeout(() => {
       setCurrentPhraseIndex(0);
-    }, presentationConfig.postProcessDelay);
+    }, presentationConfig.postProcessDelay + BLEED_START_DELAY);
     timeoutIds.current.push(timeoutId);
   };
 
@@ -461,8 +517,8 @@ export default function Home() {
             )}
           </div>
           <PresentationView
-            key={currentPhraseIndex < 0 ? currentPhraseIndex : 'fakeKey'}
-            title={currentPhraseIndex < 0 ? configName : undefined}
+            // key={currentPhraseIndex < 0 ? currentPhraseIndex : 'fakeKey'}
+            title={showTitle ? configName : undefined}
             currentPhrase={phrases[currentPhraseIndex]?.input}
             currentTranslated={phrases[currentPhraseIndex]?.translated}
             romanizedOutput={phrases[currentPhraseIndex]?.romanized}

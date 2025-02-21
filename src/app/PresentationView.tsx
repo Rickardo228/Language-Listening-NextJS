@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { AutumnLeaves } from "./Effects/AutumnLeaves";
 import CherryBlossom from "./Effects/CherryBlossom";
+import { BLEED_START_DELAY, TITLE_DELAY } from "./page";
 
 interface PresentationViewProps {
   currentPhrase: string;
@@ -22,6 +23,8 @@ interface PresentationViewProps {
   romanizedOutput?: string;
   title?: string;       // New optional prop for a title
 }
+
+export const TITLE_ANIMATION_DURATION = 1000
 
 export function PresentationView({
   currentPhrase,
@@ -151,9 +154,18 @@ export function PresentationView({
           <motion.div
             key="title"
             initial={{ opacity: 0, y: -20, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 20, scale: 0.98 }}
-            transition={{ duration: 1, ease: "easeOut", delay: 3 }}
+            animate={{
+              opacity: 1,
+              y: 0,
+              scale: 1,
+              transition: { duration: TITLE_ANIMATION_DURATION / 1000, ease: "easeOut", delay: (BLEED_START_DELAY + TITLE_DELAY) / 1000 }
+            }}
+            exit={{
+              opacity: 0,
+              y: 20,
+              scale: 0.98,
+              transition: { duration: TITLE_ANIMATION_DURATION / 1000, ease: "easeOut" } // no delay here
+            }}
             className="text-center absolute flex flex-col"
             style={{
               maxWidth: "600px",
@@ -165,13 +177,14 @@ export function PresentationView({
               backgroundColor: textBg.includes("rgb")
                 ? (textBg.slice(0, -1) + " 0.7)").replaceAll(" ", ",")
                 : textBg,
-              borderRadius: '1rem'
+              borderRadius: "1rem"
             }}
           >
             <h1 className={titlePropClass} style={{ margin: 0, padding: 0 }}>
               {title}
             </h1>
           </motion.div>
+
         ) : (
           // Otherwise, render the currentPhrase/currentTranslated view.
           (currentTranslated || currentPhrase) && (
