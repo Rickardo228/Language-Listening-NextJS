@@ -12,6 +12,7 @@ import ConfigFields from './ConfigFields';
 const DELAY_AFTER_OUTPUT_PHRASES_MULTIPLIER = 1.5;
 export const BLEED_START_DELAY = 3000;
 export const TITLE_DELAY = 3000;
+const LAG_COMPENSATION = 300;
 
 export default function Home() {
   // User input and language selection
@@ -238,7 +239,7 @@ export default function Home() {
             // Append additional metadata.
             formData.append('phrases', JSON.stringify(phrases));
             formData.append('delayAfterOutputPhrasesMultiplier', DELAY_AFTER_OUTPUT_PHRASES_MULTIPLIER.toString());
-            formData.append('delayBetweenPhrases', (presentationConfig.delayBetweenPhrases ? presentationConfig.delayBetweenPhrases + 400 : 0).toString());
+            formData.append('delayBetweenPhrases', (presentationConfig.delayBetweenPhrases ? presentationConfig.delayBetweenPhrases + LAG_COMPENSATION : 0).toString());
             formData.append('introDelay', presentationConfig.postProcessDelay.toString());
             formData.append('bleedStartDelay', BLEED_START_DELAY.toString());
 
