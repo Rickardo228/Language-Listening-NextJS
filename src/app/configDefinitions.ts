@@ -33,6 +33,16 @@ export const presentationConfigDefinition: ConfigFieldDefinition[] = [
     inputType: "checkbox",
   },
   {
+    key: "enableParticles",
+    label: "Enable Particle Effect",
+    inputType: "checkbox",
+  },
+  {
+    key: "enableSteam",
+    label: "Enable Steam Effect",
+    inputType: "checkbox",
+  },
+  {
     key: "postProcessDelay",
     label: "Delay After Processing (ms)",
     inputType: "number",

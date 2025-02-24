@@ -8,6 +8,8 @@ export type PresentationConfig = {
   enableLeaves: boolean;
   enableAutumnLeaves: boolean;
   enableOrtonEffect: boolean;
+  enableParticles?: boolean;
+  enableSteam?: boolean;
   postProcessDelay: number;
   delayBetweenPhrases: number;
 };

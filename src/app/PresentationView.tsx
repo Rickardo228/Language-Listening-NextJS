@@ -5,6 +5,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { AutumnLeaves } from "./Effects/AutumnLeaves";
 import CherryBlossom from "./Effects/CherryBlossom";
 import { BLEED_START_DELAY, TITLE_DELAY } from "./page";
+import ParticleEffect from "./Effects/Particles";
+import ParticleAnimation from "./Effects/ParticleGlow";
 
 interface PresentationViewProps {
   currentPhrase: string;
@@ -18,6 +20,8 @@ interface PresentationViewProps {
   enableAutumnLeaves?: boolean;
   enableCherryBlossom?: boolean;
   enableOrtonEffect?: boolean;
+  enableParticles?: boolean;
+  enableSteam?: boolean;
   containerBg?: string; // New prop for container background color (default: 'bg-teal-500')
   textBg?: string;      // New prop for text container background color (default: 'bg-rose-400')
   romanizedOutput?: string;
@@ -38,6 +42,8 @@ export function PresentationView({
   enableAutumnLeaves,
   enableCherryBlossom,
   enableOrtonEffect,
+  enableParticles,
+  enableSteam,
   containerBg = "bg-teal-500", // default value if not provided
   textBg = "bg-rose-400",       // default value if not provided
   romanizedOutput,
@@ -147,7 +153,14 @@ export function PresentationView({
       )}
       {enableAutumnLeaves && <AutumnLeaves fullScreen={fullScreen} />}
       {enableCherryBlossom && <CherryBlossom fullScreen={fullScreen} />}
+      {/* {<ParticleEffect />} */}
+      {fullScreen && enableParticles && <ParticleAnimation />
+      }
+      {enableSteam && <div style={{ position: 'absolute', width: '100%', height: '100%', top: '410px', left: '710px' }}>
+        <span className="steam" style={{
 
+        }}></span>
+      </div>}
       {/* Animate the title in/out with AnimatePresence */}
       <AnimatePresence mode={'sync'}>
         {title ? (

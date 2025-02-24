@@ -13,6 +13,8 @@ export function usePresentationConfig(initial?: Partial<PresentationConfig>) {
       enableLeaves: false,
       enableAutumnLeaves: false,
       enableOrtonEffect: false,
+      enableParticles: false,
+      enableSteam: false,
       postProcessDelay: 5000,
       delayBetweenPhrases: 1000,
       ...initial,
