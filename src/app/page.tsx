@@ -8,6 +8,8 @@ import { Config, languageOptions, Phrase } from './types';
 import { usePresentationConfig } from './hooks/usePresentationConfig';
 import { presentationConfigDefinition } from './configDefinitions';
 import ConfigFields from './ConfigFields';
+import { EditablePhrases } from './EditablePhrases';
+import { PresentationControls } from './PresentationControls';
 
 const DELAY_AFTER_OUTPUT_PHRASES_MULTIPLIER = 1.5;
 export const BLEED_START_DELAY = 3000;
@@ -392,48 +394,6 @@ export default function Home() {
         className="w-96 p-2 text-lg border border-gray-300 rounded mb-4"
       />
 
-      {/* Settings Modal */}
-      {settingsOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-4 rounded shadow-lg w-96 overflow-scroll max-h-svh">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold">Settings</h2>
-              <button
-                onClick={() => setSettingsOpen(false)}
-                className="p-2 text-gray-700 hover:text-gray-900"
-                title="Close Settings"
-              >
-                <X className="h-6 w-6" />
-              </button>
-            </div>
-            {/* Dynamic configuration fields */}
-            <ConfigFields
-              definition={presentationConfigDefinition}
-              config={presentationConfig}
-              setConfig={setPresentationConfig}
-              handleImageUpload={handleImageUpload}
-            />
-            {/* Save Config Input/Button moved into modal */}
-            <div className="mt-4 border-t pt-4">
-              <input
-                type="text"
-                id="configName"
-                placeholder="Enter config name (optional)"
-                value={configName}
-                onChange={(e) => setConfigName(e.target.value)}
-                className="w-full p-2 border border-gray-300 rounded mb-2"
-              />
-              <button
-                onClick={handleSaveConfig}
-                className="w-full px-4 py-2 bg-indigo-500 text-white rounded hover:bg-indigo-600"
-              >
-                Save Config
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Process Button */}
       <button
         onClick={handleProcess}
@@ -482,41 +442,24 @@ export default function Home() {
       {/* Presentation View and Controls */}
       {Boolean(typeof currentPhraseIndex === "number" && phrases?.length) && (
         <>
-          <div className="flex mb-2 items-center gap-2">
-            <button
-              onClick={() => setFullscreen(!fullscreen)}
-              className="p-2 bg-gray-200 rounded hover:bg-gray-300"
-              title={fullscreen ? "Exit Presentation Mode" : "Enter Presentation Mode"}
-            >
-              <Maximize2 className="h-8 w-8 text-gray-700" />
-            </button>
-            <label className="flex items-center gap-1">
-              <input
-                type="checkbox"
-                checked={recordScreen}
-                onChange={(e) => setRecordScreen(e.target.checked)}
-              />
-              Record Screen
-            </label>
-            {recordScreen && <button onClick={stopScreenRecording}>
-              Stop Recording
-            </button>}
-            <button
-              onClick={() => setSettingsOpen(true)}
-              className="p-2 bg-gray-200 rounded hover:bg-gray-300"
-              title="Settings"
-            >
-              <Settings className="h-8 w-8 text-gray-700" />
-            </button>
-            {phrases.length > 0 && (
-              <button
-                onClick={handleReplay}
-                className="ml-2 px-6 py-3 bg-green-500 text-white rounded hover:bg-green-600"
-              >
-                Replay
-              </button>
-            )}
-          </div>
+          <PresentationControls
+            fullscreen={fullscreen}
+            setFullscreen={setFullscreen}
+            recordScreen={recordScreen}
+            setRecordScreen={setRecordScreen}
+            stopScreenRecording={stopScreenRecording}
+            settingsOpen={settingsOpen}
+            setSettingsOpen={setSettingsOpen}
+            handleReplay={handleReplay}
+            hasPhrasesLoaded={phrases.length > 0}
+            configName={configName}
+            setConfigName={setConfigName}
+            onSaveConfig={handleSaveConfig}
+            presentationConfig={presentationConfig}
+            setPresentationConfig={setPresentationConfig}
+            presentationConfigDefinition={presentationConfigDefinition}
+            handleImageUpload={handleImageUpload}
+          />
           <PresentationView
             // key={currentPhraseIndex < 0 ? currentPhraseIndex : 'fakeKey'}
             title={showTitle ? configName : undefined}
@@ -533,52 +476,7 @@ export default function Home() {
 
       {/* Editable Inputs for Each Phrase */}
       {phrases.length > 0 && !fullscreen && (
-        <div className="mb-4">
-          <h3 className="text-xl font-bold mb-2">Edit Phrases</h3>
-          {phrases.map((phrase, index) => (
-            <div key={index} className="mb-4 border p-2 rounded">
-              <div className="mb-2">
-                <label className="block font-medium mb-1">Input:</label>
-                <input
-                  type="text"
-                  value={phrase.input}
-                  onChange={(e) => {
-                    const newPhrases = [...phrases];
-                    newPhrases[index] = { ...newPhrases[index], input: e.target.value };
-                    setPhrases(newPhrases);
-                  }}
-                  className="w-96 p-2 border border-gray-300 rounded"
-                />
-              </div>
-              <div className="mb-2">
-                <label className="block font-medium mb-1">Translated:</label>
-                <input
-                  type="text"
-                  value={phrase.translated}
-                  onChange={(e) => {
-                    const newPhrases = [...phrases];
-                    newPhrases[index] = { ...newPhrases[index], translated: e.target.value };
-                    setPhrases(newPhrases);
-                  }}
-                  className="w-96 p-2 border border-gray-300 rounded"
-                />
-              </div>
-              <div className="mb-2">
-                <label className="block font-medium mb-1">Romanized:</label>
-                <input
-                  type="text"
-                  value={phrase.romanized}
-                  onChange={(e) => {
-                    const newPhrases = [...phrases];
-                    newPhrases[index] = { ...newPhrases[index], romanized: e.target.value };
-                    setPhrases(newPhrases);
-                  }}
-                  className="w-96 p-2 border border-gray-300 rounded"
-                />
-              </div>
-            </div>
-          ))}
-        </div>
+        <EditablePhrases phrases={phrases} setPhrases={setPhrases} />
       )}
     </div>
   );
