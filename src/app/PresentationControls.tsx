@@ -1,7 +1,8 @@
 import { Maximize2, Settings } from 'lucide-react';
 import { SettingsModal } from './SettingsModal';
 import { Config, PresentationConfig } from './types';
-import { ConfigFieldDefinition } from './configDefinitions';
+import { ConfigDefinition } from './configDefinitions';
+import { useState } from 'react';
 
 interface PresentationControlsProps {
     fullscreen: boolean;
@@ -9,16 +10,14 @@ interface PresentationControlsProps {
     recordScreen: boolean;
     setRecordScreen: (value: boolean) => void;
     stopScreenRecording: () => void;
-    settingsOpen: boolean;
-    setSettingsOpen: (value: boolean) => void;
     handleReplay: () => void;
     hasPhrasesLoaded: boolean;
     configName: string;
     setConfigName: (name: string) => void;
     onSaveConfig: () => void;
     presentationConfig: PresentationConfig;
-    setPresentationConfig: (config: Partial<PresentationConfig>) => void;
-    presentationConfigDefinition: ConfigFieldDefinition[];
+    setPresentationConfig: (config: PresentationConfig) => void;
+    presentationConfigDefinition: ConfigDefinition;
     handleImageUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
@@ -28,8 +27,6 @@ export function PresentationControls({
     recordScreen,
     setRecordScreen,
     stopScreenRecording,
-    settingsOpen,
-    setSettingsOpen,
     handleReplay,
     hasPhrasesLoaded,
     configName,
@@ -40,6 +37,8 @@ export function PresentationControls({
     presentationConfigDefinition,
     handleImageUpload
 }: PresentationControlsProps) {
+    const [settingsOpen, setSettingsOpen] = useState(false);
+
     return (
         <>
             <div className="flex mb-2 items-center gap-2">

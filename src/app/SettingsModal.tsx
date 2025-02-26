@@ -10,7 +10,7 @@ interface SettingsModalProps {
     setConfigName: (name: string) => void;
     onSaveConfig: () => void;
     presentationConfig: PresentationConfig;
-    setPresentationConfig: (config: Partial<PresentationConfig>) => void;
+    setPresentationConfig: (config: PresentationConfig) => void;
     presentationConfigDefinition: ConfigFieldDefinition[];
     handleImageUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }

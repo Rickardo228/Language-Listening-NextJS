@@ -36,7 +36,6 @@ export default function Home() {
   const [currentPhase, setCurrentPhase] = useState<'input' | 'output'>('input');
   const [finished, setFinished] = useState<boolean>(false);
   const [fullscreen, setFullscreen] = useState<boolean>(false);
-  const [settingsOpen, setSettingsOpen] = useState<boolean>(false);
   const [recordScreen, setRecordScreen] = useState(false);
   const [paused, setPaused] = useState(false);
   const [showTitle, setShowTitle] = useState(false);
@@ -448,8 +447,6 @@ export default function Home() {
             recordScreen={recordScreen}
             setRecordScreen={setRecordScreen}
             stopScreenRecording={stopScreenRecording}
-            settingsOpen={settingsOpen}
-            setSettingsOpen={setSettingsOpen}
             handleReplay={handleReplay}
             hasPhrasesLoaded={phrases.length > 0}
             configName={configName}
