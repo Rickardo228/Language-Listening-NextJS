@@ -1,8 +1,8 @@
 import { Maximize2, Settings } from 'lucide-react';
 import { SettingsModal } from './SettingsModal';
 import { Config, PresentationConfig } from './types';
-import { ConfigDefinition } from './configDefinitions';
 import { useState } from 'react';
+import { ConfigFieldDefinition } from './configDefinitions';
 
 interface PresentationControlsProps {
     fullscreen: boolean;
@@ -17,8 +17,10 @@ interface PresentationControlsProps {
     onSaveConfig: () => void;
     presentationConfig: PresentationConfig;
     setPresentationConfig: (config: PresentationConfig) => void;
-    presentationConfigDefinition: ConfigDefinition;
+    presentationConfigDefinition: ConfigFieldDefinition[];
     handleImageUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
+    paused: boolean;
+    setPaused: (value: boolean) => void;
 }
 
 export function PresentationControls({
@@ -35,7 +37,9 @@ export function PresentationControls({
     presentationConfig,
     setPresentationConfig,
     presentationConfigDefinition,
-    handleImageUpload
+    handleImageUpload,
+    paused,
+    setPaused
 }: PresentationControlsProps) {
     const [settingsOpen, setSettingsOpen] = useState(false);
 
@@ -48,6 +52,13 @@ export function PresentationControls({
                     title={fullscreen ? "Exit Presentation Mode" : "Enter Presentation Mode"}
                 >
                     <Maximize2 className="h-8 w-8 text-gray-700" />
+                </button>
+                <button
+                    onClick={() => setPaused(!paused)}
+                    className="p-2 bg-gray-200 rounded hover:bg-gray-300"
+                    title={paused ? "Resume" : "Pause"}
+                >
+                    {paused ? "Resume" : "Pause"}
                 </button>
                 <label className="flex items-center gap-1">
                     <input

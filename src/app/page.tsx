@@ -456,6 +456,8 @@ export default function Home() {
             setPresentationConfig={setPresentationConfig}
             presentationConfigDefinition={presentationConfigDefinition}
             handleImageUpload={handleImageUpload}
+            paused={paused}
+            setPaused={setPaused}
           />
           <PresentationView
             // key={currentPhraseIndex < 0 ? currentPhraseIndex : 'fakeKey'}
@@ -473,7 +475,12 @@ export default function Home() {
 
       {/* Editable Inputs for Each Phrase */}
       {phrases.length > 0 && !fullscreen && (
-        <EditablePhrases phrases={phrases} setPhrases={setPhrases} />
+        <EditablePhrases
+          phrases={phrases}
+          setPhrases={setPhrases}
+          inputLanguage={inputLang}
+          outputLanguage={targetLang}
+        />
       )}
     </div>
   );
