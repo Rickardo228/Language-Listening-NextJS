@@ -128,15 +128,42 @@ export default function Home() {
   }, [currentPhraseIndex, currentPhase, phrases]);
 
   // When a saved config is selected, load its state.
-  const handleLoadConfig = (config: Config) => {
-    setPhrasesInput(config.phrases ? config.phrases.map(p => p.input).join('\n') : config.phrasesInput || '');
-    setPhrases(config.phrases || [])
-    setInputLang(config.inputLang);
-    setTargetLang(config.targetLang);
-    setConfigName(config.name)
-    setPresentationConfig({
-      ...config
-    });
+  const handleLoadConfig = async (config: Config) => {
+    setLoading(true);
+    try {
+      // First update the UI state with the saved config
+      setPhrasesInput(config.phrases ? config.phrases.map(p => p.input).join('\n') : config.phrasesInput || '');
+      setInputLang(config.inputLang);
+      setTargetLang(config.targetLang);
+      setConfigName(config.name);
+      setPresentationConfig({
+        ...config
+      });
+
+      // Then fetch fresh audio for all phrases
+      const response = await fetch('http://localhost:3000/load', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          phrases: config.phrases,
+          inputLang: config.inputLang,
+          targetLang: config.targetLang,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to load audio');
+      }
+
+      const data = await response.json();
+      setPhrases(data.phrases);
+    } catch (err) {
+      console.error('Loading error:', err);
+      alert('Error loading configuration: ' + err);
+    } finally {
+      setLoading(false);
+      setPaused(true);
+    }
   };
 
   // Save the current config into localStorage.
@@ -273,7 +300,27 @@ export default function Home() {
     }
   };
 
+  const handlePause = () => {
+    clearAllTimeouts();
+    if (audioRef.current) {
+      audioRef.current.pause();
+    }
+    setPaused(true);
+  };
+
+  const handlePlay = () => {
+    setPaused(false);
+    if (currentPhraseIndex < 0) {
+      handleReplay();
+    } else if (audioRef.current) {
+      audioRef.current.play();
+    }
+  };
+
+  // Update handleAudioEnded to respect paused state
   const handleAudioEnded = () => {
+    if (paused) return;
+
     if (currentPhase === 'input') {
       const timeoutId = window.setTimeout(() => {
         setCurrentPhase('output');
@@ -287,7 +334,6 @@ export default function Home() {
           setCurrentPhase('input');
         } else {
           setFinished(true);
-          // Stop the recording after final audio.
           if (recordScreen) stopScreenRecording();
         }
       }, (outputDuration * DELAY_AFTER_OUTPUT_PHRASES_MULTIPLIER) + presentationConfig.delayBetweenPhrases);
@@ -295,22 +341,19 @@ export default function Home() {
     }
   };
 
-
-
   // In handleReplay:
   const handleReplay = async () => {
-    clearAllTimeouts();
     // Start recording if enabled.
     if (recordScreen) {
-      setPaused(true);
+      handlePause();
       setFullscreen(true);
       await startScreenRecording();
-      setPaused(false);
     }
     setCurrentPhraseIndex(prev => prev < 0 ? prev - 1 : -1);
     setCurrentPhase('input');
-    setFinished(false);
     setShowTitle(true);
+    setFinished(false);
+    setPaused(false);
 
     const timeoutId1 = window.setTimeout(() => {
       setShowTitle(false);
@@ -321,8 +364,8 @@ export default function Home() {
       setCurrentPhraseIndex(0);
     }, presentationConfig.postProcessDelay + BLEED_START_DELAY);
     timeoutIds.current.push(timeoutId);
-  };
 
+  };
 
   // Handle background image upload via our config setter.
   const handleImageUpload = (e: ChangeEvent<HTMLInputElement>) => {
@@ -345,7 +388,6 @@ export default function Home() {
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, []);
-
 
 
   return (
@@ -457,7 +499,8 @@ export default function Home() {
             presentationConfigDefinition={presentationConfigDefinition}
             handleImageUpload={handleImageUpload}
             paused={paused}
-            setPaused={setPaused}
+            onPause={handlePause}
+            onPlay={handlePlay}
           />
           <PresentationView
             // key={currentPhraseIndex < 0 ? currentPhraseIndex : 'fakeKey'}

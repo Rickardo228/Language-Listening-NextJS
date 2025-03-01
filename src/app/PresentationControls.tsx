@@ -1,4 +1,4 @@
-import { Maximize2, Settings } from 'lucide-react';
+import { Maximize2, Settings, Pause, Play, Repeat } from 'lucide-react';
 import { SettingsModal } from './SettingsModal';
 import { Config, PresentationConfig } from './types';
 import { useState } from 'react';
@@ -20,7 +20,8 @@ interface PresentationControlsProps {
     presentationConfigDefinition: ConfigFieldDefinition[];
     handleImageUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
     paused: boolean;
-    setPaused: (value: boolean) => void;
+    onPause: () => void;
+    onPlay: () => void;
 }
 
 export function PresentationControls({
@@ -39,7 +40,8 @@ export function PresentationControls({
     presentationConfigDefinition,
     handleImageUpload,
     paused,
-    setPaused
+    onPause,
+    onPlay
 }: PresentationControlsProps) {
     const [settingsOpen, setSettingsOpen] = useState(false);
 
@@ -54,12 +56,24 @@ export function PresentationControls({
                     <Maximize2 className="h-8 w-8 text-gray-700" />
                 </button>
                 <button
-                    onClick={() => setPaused(!paused)}
+                    onClick={() => paused ? onPlay() : onPause()}
                     className="p-2 bg-gray-200 rounded hover:bg-gray-300"
                     title={paused ? "Resume" : "Pause"}
                 >
-                    {paused ? "Resume" : "Pause"}
+                    {paused ?
+                        <Play className="h-8 w-8 text-gray-700" /> :
+                        <Pause className="h-8 w-8 text-gray-700" />
+                    }
                 </button>
+                {hasPhrasesLoaded && (
+                    <button
+                        onClick={handleReplay}
+                        className="p-2 bg-gray-200 rounded hover:bg-gray-300"
+                        title="Replay"
+                    >
+                        <Repeat className="h-8 w-8 text-gray-700" />
+                    </button>
+                )}
                 <label className="flex items-center gap-1">
                     <input
                         type="checkbox"
@@ -80,14 +94,7 @@ export function PresentationControls({
                 >
                     <Settings className="h-8 w-8 text-gray-700" />
                 </button>
-                {hasPhrasesLoaded && (
-                    <button
-                        onClick={handleReplay}
-                        className="ml-2 px-6 py-3 bg-green-500 text-white rounded hover:bg-green-600"
-                    >
-                        Replay
-                    </button>
-                )}
+
             </div>
 
             <SettingsModal

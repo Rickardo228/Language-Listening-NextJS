@@ -22,10 +22,10 @@ const playpenSans = Playpen_Sans({
   subsets: ["latin"],
 });
 
-const mPlusRounded = M_PLUS_Rounded_1c({
-  variable: "--font-mplus-rounded",
-  subsets: ["latin"],
-  weight: ["400", "700"], // Adjust weights as needed
+const mPlusRounded1c = M_PLUS_Rounded_1c({
+  subsets: ['latin'],
+  weight: ['400', '700'],
+  display: 'swap',
 });
 
 export const metadata: Metadata = {
@@ -35,16 +35,12 @@ export const metadata: Metadata = {
 
 export default function RootLayout({
   children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+}: {
+  children: React.ReactNode
+}) {
   return (
-    <html lang="en">
-      <body
-        className={`${playpenSans.variable} ${mPlusRounded.variable} antialiased`}
-      >
-        {children}
-      </body>
+    <html lang="en" className={`${playpenSans.variable} ${mPlusRounded1c.className} antialiased`}>
+      <body>{children}</body>
     </html>
-  );
+  )
 }
