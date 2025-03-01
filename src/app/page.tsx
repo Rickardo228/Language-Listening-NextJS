@@ -112,7 +112,7 @@ export default function Home() {
 
   // Update audio source when phrase or phase changes.
   useEffect(() => {
-    if (currentPhraseIndex < 0) return;
+    if (currentPhraseIndex < 0 || paused) return;
     const currentPhraseObj = phrases[currentPhraseIndex];
     let src = '';
     if (currentPhase === 'input' && currentPhraseObj?.inputAudio) {

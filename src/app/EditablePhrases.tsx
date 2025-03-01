@@ -193,6 +193,15 @@ export function EditablePhrases({ phrases, setPhrases, inputLanguage, outputLang
                             disabled={inputLoading[index]}
                         />
                         {inputLoading[index] && <span className="text-gray-500 text-sm">Processing...</span>}
+                        {phrase.inputAudio && (
+                            <button
+                                onClick={() => new Audio(phrase.inputAudio?.audioUrl).play()}
+                                className="px-3 py-1 text-sm bg-green-100 hover:bg-green-200 rounded"
+                                title="Play input audio"
+                            >
+                                Play Input
+                            </button>
+                        )}
                     </div>
                     <div className="mb-2 flex items-center gap-2">
                         <label className="block font-medium mb-1">Translated:</label>
@@ -205,6 +214,15 @@ export function EditablePhrases({ phrases, setPhrases, inputLanguage, outputLang
                             disabled={outputLoading[index]}
                         />
                         {outputLoading[index] && <span className="text-gray-500 text-sm">Processing...</span>}
+                        {phrase.outputAudio && (
+                            <button
+                                onClick={() => new Audio(phrase.outputAudio?.audioUrl).play()}
+                                className="px-3 py-1 text-sm bg-green-100 hover:bg-green-200 rounded"
+                                title="Play translated audio"
+                            >
+                                Play Translated
+                            </button>
+                        )}
                     </div>
                     <div className="mb-2 flex items-center gap-2">
                         <label className="block font-medium mb-1">Romanized:</label>
