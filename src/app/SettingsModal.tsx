@@ -44,7 +44,7 @@ export function SettingsModal({
                 <ConfigFields
                     definition={presentationConfigDefinition}
                     config={presentationConfig}
-                    setConfig={setPresentationConfig}
+                    setConfig={(newConfig) => setPresentationConfig({ ...presentationConfig, ...newConfig })}
                     handleImageUpload={handleImageUpload}
                 />
                 <div className="mt-4 border-t pt-4">

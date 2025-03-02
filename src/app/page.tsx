@@ -503,7 +503,6 @@ export default function Home() {
             onPlay={handlePlay}
           />
           <PresentationView
-            // key={currentPhraseIndex < 0 ? currentPhraseIndex : 'fakeKey'}
             title={showTitle ? configName : undefined}
             currentPhrase={phrases[currentPhraseIndex]?.input}
             currentTranslated={phrases[currentPhraseIndex]?.translated}

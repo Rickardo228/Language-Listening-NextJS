@@ -38,7 +38,6 @@ export const languageOptions = [
 
 export type AudioSegment = {
   audioUrl: string;
-  localFilePath: string;
   duration: number;
 };
 
@@ -48,4 +47,5 @@ export type Phrase = {
   inputAudio: AudioSegment | null;
   outputAudio: AudioSegment | null;
   romanized: string;
+  useRomanizedForAudio?: boolean;
 };
