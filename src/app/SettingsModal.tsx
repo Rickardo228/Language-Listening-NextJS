@@ -1,5 +1,5 @@
 import { X } from 'lucide-react';
-import { Config, PresentationConfig } from './types';
+import { PresentationConfig } from './types';
 import ConfigFields from './ConfigFields';
 import { ConfigFieldDefinition } from './configDefinitions';
 

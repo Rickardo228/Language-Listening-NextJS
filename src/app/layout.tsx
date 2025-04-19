@@ -1,21 +1,9 @@
 import type { Metadata } from "next";
 import {
-  Geist,
-  Geist_Mono,
   Playpen_Sans,
   M_PLUS_Rounded_1c,
 } from "next/font/google";
 import "./globals.css";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
 
 const playpenSans = Playpen_Sans({
   variable: "--font-playpen-sans",

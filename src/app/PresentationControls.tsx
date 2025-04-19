@@ -8,7 +8,6 @@ interface PresentationControlsProps {
     fullscreen: boolean;
     setFullscreen: (value: boolean) => void;
     recordScreen: boolean;
-    setRecordScreen: (value: boolean) => void;
     stopScreenRecording: () => void;
     handleReplay: () => void;
     hasPhrasesLoaded: boolean;
@@ -28,7 +27,6 @@ export function PresentationControls({
     fullscreen,
     setFullscreen,
     recordScreen,
-    setRecordScreen,
     stopScreenRecording,
     handleReplay,
     hasPhrasesLoaded,

@@ -13,8 +13,8 @@ const DELAY_AFTER_OUTPUT_PHRASES_MULTIPLIER = 1.5;
 export const BLEED_START_DELAY = 3000;
 export const TITLE_DELAY = 3000;
 const LAG_COMPENSATION = 350;
-const API_BASE_URL = 'http://localhost:8080';
-// const API_BASE_URL = 'https://content-generator-451016.ew.r.appspot.com';
+// const API_BASE_URL = 'http://localhost:8080';
+const API_BASE_URL = 'https://content-generator-451016.ew.r.appspot.com';
 
 export default function Home() {
   // User input and language selection
@@ -36,7 +36,7 @@ export default function Home() {
   const [currentPhase, setCurrentPhase] = useState<'input' | 'output'>('input');
   const [, setFinished] = useState<boolean>(false);
   const [fullscreen, setFullscreen] = useState<boolean>(false);
-  const [recordScreen, setRecordScreen] = useState(false);
+  const [recordScreen] = useState(false);
   const [paused, setPaused] = useState(false);
   const [showTitle, setShowTitle] = useState(false);
 
@@ -124,7 +124,7 @@ export default function Home() {
       audioRef.current.src = src;
       audioRef.current.play().catch((err) => console.error('Auto-play error:', err));
     }
-  }, [currentPhraseIndex, currentPhase, phrases]);
+  }, [currentPhraseIndex, currentPhase, phrases, paused]);
 
   // When a saved config is selected, load its state.
   const handleLoadConfig = async (config: Config) => {
@@ -491,7 +491,6 @@ export default function Home() {
             fullscreen={fullscreen}
             setFullscreen={setFullscreen}
             recordScreen={recordScreen}
-            setRecordScreen={setRecordScreen}
             stopScreenRecording={stopScreenRecording}
             handleReplay={handleReplay}
             hasPhrasesLoaded={phrases.length > 0}
@@ -507,14 +506,22 @@ export default function Home() {
             onPlay={handlePlay}
           />
           <PresentationView
-            title={showTitle ? configName : undefined}
-            currentPhrase={phrases[currentPhraseIndex]?.input}
-            currentTranslated={phrases[currentPhraseIndex]?.translated}
-            romanizedOutput={phrases[currentPhraseIndex]?.romanized}
+            currentPhrase={phrases[currentPhraseIndex]?.input || ''}
+            currentTranslated={phrases[currentPhraseIndex]?.translated || ''}
             currentPhase={currentPhase}
             fullScreen={fullscreen}
-            onClose={() => setFullscreen(false)}
-            {...presentationConfig}
+            bgImage={presentationConfig.bgImage}
+            containerBg={presentationConfig.containerBg}
+            textBg={presentationConfig.textBg}
+            enableSnow={presentationConfig.enableSnow}
+            enableCherryBlossom={presentationConfig.enableCherryBlossom}
+            enableLeaves={presentationConfig.enableLeaves}
+            enableAutumnLeaves={presentationConfig.enableAutumnLeaves}
+            enableOrtonEffect={presentationConfig.enableOrtonEffect}
+            enableParticles={presentationConfig.enableParticles}
+            enableSteam={presentationConfig.enableSteam}
+            romanizedOutput={phrases[currentPhraseIndex]?.romanized}
+            title={showTitle ? configName : undefined}
           />
         </>
       )}

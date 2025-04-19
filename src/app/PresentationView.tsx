@@ -5,7 +5,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { AutumnLeaves } from "./Effects/AutumnLeaves";
 import CherryBlossom from "./Effects/CherryBlossom";
 import { BLEED_START_DELAY, TITLE_DELAY } from "./page";
-import ParticleEffect from "./Effects/Particles";
 import ParticleAnimation from "./Effects/ParticleGlow";
 
 interface PresentationViewProps {
@@ -13,7 +12,6 @@ interface PresentationViewProps {
   currentTranslated: string;
   currentPhase: "input" | "output";
   fullScreen: boolean; // if true, use fullscreen styles; if false, use inline styles
-  onClose: () => void;
   bgImage?: string | null;
   enableSnow?: boolean;
   enableLeaves?: boolean;
@@ -35,7 +33,6 @@ export function PresentationView({
   currentTranslated,
   currentPhase,
   fullScreen,
-  onClose,
   bgImage,
   enableSnow,
   enableLeaves,
