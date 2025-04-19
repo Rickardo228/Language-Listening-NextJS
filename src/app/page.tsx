@@ -2,19 +2,19 @@
 
 import { useState, useRef, useEffect, ChangeEvent } from 'react';
 import { PresentationView, TITLE_ANIMATION_DURATION } from './PresentationView';
-import { Maximize2, Settings, X } from 'lucide-react';
 import bgColorOptions from './utils/bgColorOptions';
 import { Config, languageOptions, Phrase } from './types';
 import { usePresentationConfig } from './hooks/usePresentationConfig';
 import { presentationConfigDefinition } from './configDefinitions';
-import ConfigFields from './ConfigFields';
 import { EditablePhrases } from './EditablePhrases';
 import { PresentationControls } from './PresentationControls';
 
 const DELAY_AFTER_OUTPUT_PHRASES_MULTIPLIER = 1.5;
 export const BLEED_START_DELAY = 3000;
 export const TITLE_DELAY = 3000;
-const LAG_COMPENSATION = 300;
+const LAG_COMPENSATION = 350;
+const API_BASE_URL = 'http://localhost:8080';
+// const API_BASE_URL = 'https://content-generator-451016.ew.r.appspot.com';
 
 export default function Home() {
   // User input and language selection
@@ -34,7 +34,7 @@ export default function Home() {
   // Playback and sequence control states
   const [currentPhraseIndex, setCurrentPhraseIndex] = useState<number>(-1);
   const [currentPhase, setCurrentPhase] = useState<'input' | 'output'>('input');
-  const [finished, setFinished] = useState<boolean>(false);
+  const [, setFinished] = useState<boolean>(false);
   const [fullscreen, setFullscreen] = useState<boolean>(false);
   const [recordScreen, setRecordScreen] = useState(false);
   const [paused, setPaused] = useState(false);
@@ -68,7 +68,7 @@ export default function Home() {
     setLoading(true);
 
     try {
-      const response = await fetch('http://localhost:3000/process', {
+      const response = await fetch(`${API_BASE_URL}/process`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -121,7 +121,6 @@ export default function Home() {
       src = currentPhraseObj.outputAudio.audioUrl;
     }
     if (audioRef.current && src) {
-      audioRef.current.playbackRate = 0.4;
       audioRef.current.src = src;
       audioRef.current.play().catch((err) => console.error('Auto-play error:', err));
     }
@@ -141,7 +140,7 @@ export default function Home() {
       });
 
       // Then fetch fresh audio for all phrases
-      const response = await fetch('http://localhost:3000/load', {
+      const response = await fetch(`${API_BASE_URL}/load`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -213,7 +212,8 @@ export default function Home() {
     try {
       const stream = await navigator.mediaDevices.getDisplayMedia({
         video: true,
-        preferCurrentTab: true, // This is fine
+        // @ts-expect-error preferCurrentTab is a valid option but not in TypeScript types
+        preferCurrentTab: true,
       });
 
       mediaRecorderRef.current = new MediaRecorder(stream);
@@ -272,7 +272,7 @@ export default function Home() {
             formData.append('bleedStartDelay', BLEED_START_DELAY.toString());
 
             // Send the formData to your backend endpoint.
-            const response = await fetch('http://localhost:3000/merge', {
+            const response = await fetch(`${API_BASE_URL}/merge`, {
               method: 'POST',
               body: formData,
             });
@@ -285,6 +285,8 @@ export default function Home() {
             console.error('Error sending data to server:', err);
           }
         })();
+
+
       };
 
       mediaRecorderRef.current.start();
@@ -305,6 +307,7 @@ export default function Home() {
     if (audioRef.current) {
       audioRef.current.pause();
     }
+    stopScreenRecording()
     setPaused(true);
   };
 
@@ -335,6 +338,7 @@ export default function Home() {
         } else {
           setFinished(true);
           if (recordScreen) stopScreenRecording();
+          setPaused(true)
         }
       }, (outputDuration * DELAY_AFTER_OUTPUT_PHRASES_MULTIPLIER) + presentationConfig.delayBetweenPhrases);
       timeoutIds.current.push(timeoutId);

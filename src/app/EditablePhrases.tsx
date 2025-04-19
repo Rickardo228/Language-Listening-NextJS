@@ -1,6 +1,6 @@
 import { Phrase } from './types';
 import { useState } from 'react';
-import { SpeakerWaveIcon, ArrowPathRoundedSquareIcon, MicrophoneIcon } from '@heroicons/react/24/solid';
+import { SpeakerWaveIcon, MicrophoneIcon } from '@heroicons/react/24/solid';
 // import { ClipboardIcon, ClipboardDocumentCheckIcon } from '@heroicons/react/24/outline';
 
 interface EditablePhrasesProps {
@@ -10,8 +10,10 @@ interface EditablePhrasesProps {
     outputLanguage: string;
 }
 
+const API_BASE_URL = 'https://content-generator-451016.ew.r.appspot.com';
+
 async function generateAudio(text: string, language: string): Promise<{ audioUrl: string, duration: number }> {
-    const response = await fetch('http://localhost:3000/tts', {
+    const response = await fetch(`${API_BASE_URL}/tts`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text, language }),
@@ -158,7 +160,7 @@ export function EditablePhrases({ phrases, setPhrases, inputLanguage, outputLang
 
             try {
                 pastedPhrases = JSON.parse(text);
-            } catch (err) {
+            } catch {
                 throw new Error('Invalid JSON format');
             }
 
@@ -167,7 +169,7 @@ export function EditablePhrases({ phrases, setPhrases, inputLanguage, outputLang
                 throw new Error('Pasted content must be an array');
             }
 
-            const isValidPhrase = (p: any): p is Phrase => {
+            const isValidPhrase = (p: Phrase): p is Phrase => {
                 return typeof p === 'object' && p !== null
                     && typeof p.input === 'string'
                     && typeof p.translated === 'string'
@@ -180,7 +182,7 @@ export function EditablePhrases({ phrases, setPhrases, inputLanguage, outputLang
 
             setLoading(true);
             // Call the load endpoint to regenerate audio
-            const response = await fetch('http://localhost:3000/load', {
+            const response = await fetch(`${API_BASE_URL}/load`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

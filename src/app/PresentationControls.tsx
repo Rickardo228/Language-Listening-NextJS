@@ -1,6 +1,6 @@
 import { Maximize2, Settings, Pause, Play, Repeat } from 'lucide-react';
 import { SettingsModal } from './SettingsModal';
-import { Config, PresentationConfig } from './types';
+import { PresentationConfig } from './types';
 import { useState } from 'react';
 import { ConfigFieldDefinition } from './configDefinitions';
 
@@ -74,14 +74,14 @@ export function PresentationControls({
                         <Repeat className="h-8 w-8 text-gray-700" />
                     </button>
                 )}
-                <label className="flex items-center gap-1">
+                {/* <label className="flex items-center gap-1">
                     <input
                         type="checkbox"
                         checked={recordScreen}
                         onChange={(e) => setRecordScreen(e.target.checked)}
                     />
                     Record Screen
-                </label>
+                </label> */}
                 {recordScreen &&
                     <button onClick={stopScreenRecording}>
                         Stop Recording

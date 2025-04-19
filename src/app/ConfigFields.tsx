@@ -17,7 +17,7 @@ const ConfigFields: React.FC<ConfigFieldsProps> = ({
     setConfig,
     handleImageUpload,
 }) => {
-    const handleChange = (key: keyof PresentationConfig, value: any) => {
+    const handleChange = (key: keyof PresentationConfig, value: boolean | string | number) => {
         setConfig({ [key]: value });
     };
 
@@ -89,7 +89,7 @@ const ConfigFields: React.FC<ConfigFieldsProps> = ({
                             list="bgColorOptions"
                             type="text"
                             id={String(key)}
-                            value={value}
+                            value={value as string}
                             onChange={(e) => handleChange(key, e.target.value)}
                             className="w-full p-2 border border-gray-300 rounded"
                         />

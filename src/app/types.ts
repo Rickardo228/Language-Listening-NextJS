@@ -34,6 +34,8 @@ export const languageOptions = [
   { code: "it-IT", label: "Italian (Italy)" },
   { code: "ja-JP", label: "Japanese (Japan)" },
   { code: "zh-CN", label: "Chinese (Simplified)" },
+  { code: "pt-BR", label: "Portuguese (Brazil)" },
+  { code: "pt-PT", label: "Portuguese (Portugal)" },
 ];
 
 export type AudioSegment = {
