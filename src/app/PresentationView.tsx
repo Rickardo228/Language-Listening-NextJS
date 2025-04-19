@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { AutumnLeaves } from "./Effects/AutumnLeaves";
 import CherryBlossom from "./Effects/CherryBlossom";
-import { BLEED_START_DELAY, TITLE_DELAY } from "./page";
+import { BLEED_START_DELAY, TITLE_DELAY } from './consts';
 import ParticleAnimation from "./Effects/ParticleGlow";
 
 interface PresentationViewProps {

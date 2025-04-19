@@ -8,13 +8,7 @@ import { usePresentationConfig } from './hooks/usePresentationConfig';
 import { presentationConfigDefinition } from './configDefinitions';
 import { EditablePhrases } from './EditablePhrases';
 import { PresentationControls } from './PresentationControls';
-
-const DELAY_AFTER_OUTPUT_PHRASES_MULTIPLIER = 1.5;
-export const BLEED_START_DELAY = 3000;
-export const TITLE_DELAY = 3000;
-const LAG_COMPENSATION = 350;
-// const API_BASE_URL = 'http://localhost:8080';
-const API_BASE_URL = 'https://content-generator-451016.ew.r.appspot.com';
+import { API_BASE_URL, BLEED_START_DELAY, DELAY_AFTER_OUTPUT_PHRASES_MULTIPLIER, LAG_COMPENSATION } from './consts';
 
 export default function Home() {
   // User input and language selection
