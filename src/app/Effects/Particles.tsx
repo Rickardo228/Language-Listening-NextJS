@@ -1,26 +1,26 @@
 import { useEffect, useState } from 'react';
 
 const ParticleEffect = () => {
-    const [dynamicStyles, setDynamicStyles] = useState('');
+  const [dynamicStyles, setDynamicStyles] = useState('');
 
-    useEffect(() => {
-        const particleNum = 100;
-        const particleWidth = 50; // maximum particle width in pixels (adjust as needed)
-        let styles = '';
-        const random = (max) => Math.floor(Math.random() * max);
+  useEffect(() => {
+    const particleNum = 100;
+    const particleWidth = 50; // maximum particle width in pixels (adjust as needed)
+    let styles = '';
+    const random = (max: number) => Math.floor(Math.random() * max);
 
-        for (let i = 1; i <= particleNum; i++) {
-            const circleSize = random(particleWidth) + 10; // add a minimum size so it isn’t 0
-            const startPositionY = random(10) + 100;
-            const moveDuration = 7000 + random(4000);
-            const animationDelay = random(11000);
-            const circleAnimationDelay = random(4000);
-            const vwVal = random(100);
-            const fromY = startPositionY;
-            const toY = -startPositionY - random(30);
-            const framesName = `move-frames-${i}`;
+    for (let i = 1; i <= particleNum; i++) {
+      const circleSize = random(particleWidth) + 10; // add a minimum size so it isn’t 0
+      const startPositionY = random(10) + 100;
+      const moveDuration = 7000 + random(4000);
+      const animationDelay = random(11000);
+      const circleAnimationDelay = random(4000);
+      const vwVal = random(100);
+      const fromY = startPositionY;
+      const toY = -startPositionY - random(30);
+      const framesName = `move-frames-${i}`;
 
-            styles += `
+      styles += `
         .circle-container:nth-child(${i}) {
           width: ${circleSize}px;
           height: ${circleSize}px;
@@ -40,20 +40,20 @@ const ParticleEffect = () => {
           animation-delay: ${circleAnimationDelay}ms;
         }
       `;
-        }
-        setDynamicStyles(styles);
-    }, []);
+    }
+    setDynamicStyles(styles);
+  }, []);
 
-    return (
-        <>
-            <div style={{ width: '100%', height: '100%', position: 'absolute', top: 0 }}>
-                {[...Array(100)].map((_, i) => (
-                    <div key={i} className="circle-container">
-                        <div className="circle" />
-                    </div>
-                ))}
-            </div>
-            <style jsx>{`
+  return (
+    <>
+      <div style={{ width: '100%', height: '100%', position: 'absolute', top: 0 }}>
+        {[...Array(100)].map((_, i) => (
+          <div key={i} className="circle-container">
+            <div className="circle" />
+          </div>
+        ))}
+      </div>
+      <style jsx>{`
         .circle-container {
           top: 0;
           position: absolute;
@@ -83,10 +83,10 @@ const ParticleEffect = () => {
           100% { transform: scale3d(0.4, 0.4, 1); }
         }
       `}</style>
-            {/* Inject our dynamically generated styles */}
-            <style jsx>{dynamicStyles}</style>
-        </>
-    );
+      {/* Inject our dynamically generated styles */}
+      <style jsx>{dynamicStyles}</style>
+    </>
+  );
 };
 
 export default ParticleEffect;
