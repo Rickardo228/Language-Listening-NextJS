@@ -55,11 +55,11 @@ export function ImportPhrases({
 
             {/* Textarea for initial phrases */}
             <textarea
-                placeholder="Enter phrases, one per line"
+                placeholder="Enter phrases to translate, one per line"
                 value={phrasesInput}
                 onChange={(e) => setPhrasesInput(e.target.value)}
                 rows={6}
-                className="w-96 p-2 text-lg border border-gray-300 rounded mb-4"
+                className="w-full p-2 text-lg border border-gray-300 rounded mb-4"
             />
 
             {/* Process Button */}

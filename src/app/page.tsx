@@ -235,6 +235,7 @@ export default function Home() {
     const updatedCollections = [...savedCollections, newCollection];
     setSavedCollections(updatedCollections);
     localStorage.setItem('savedCollections', JSON.stringify(updatedCollections));
+    setSelectedCollection(newCollection.id)
     // setConfigName('');
   };
 
@@ -363,6 +364,17 @@ export default function Home() {
     setPaused(true);
   };
 
+  const handleStop = () => {
+    clearAllTimeouts();
+    if (audioRef.current) {
+      audioRef.current.pause();
+    }
+    stopScreenRecording()
+    setPaused(true);
+    setFinished(true);
+    setCurrentPhraseIndex(-1);
+  };
+
   const handlePlay = () => {
     setPaused(false);
     if (currentPhraseIndex < 0) {
@@ -462,7 +474,7 @@ export default function Home() {
         {/* Saved Configs List */}
         <div className={`flex flex-col gap-10 bg-gray-50 p-5 ${selectedCollection ? 'hidden md:flex' : 'flex'}`}>
           <div>
-            <h3 className="text-xl font-semibold">Saved Phrase Lists</h3>
+            <h3 className="text-xl font-semibold mb-4">Saved Phrase Lists</h3>
             {savedCollections.length === 0 ? (
               <p>No Phrase Lists Saved.</p>
             ) : (
@@ -487,7 +499,7 @@ export default function Home() {
             )}
           </div>
           <div>
-            <h3 className="text-xl font-semibold">Import Phrases</h3>
+            <h3 className="text-xl font-semibold mb-4">Import Phrases</h3>
             {/* Language Selection and Phrase Import */}
             <ImportPhrases
               inputLang={inputLang}
@@ -506,7 +518,7 @@ export default function Home() {
         <div className={`flex flex-col xl:flex-row flex-1 gap-4 p-5 ${selectedCollection ? 'flex' : 'hidden md:flex'}`}>
           {selectedCollection && (
             <button
-              onClick={() => setSelectedCollection('')}
+              onClick={() => { setSelectedCollection(''); handleStop(); setPhrasesBase([]) }}
               className="md:hidden top-4 left-4 bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded-lg"
             >
               ← Back
