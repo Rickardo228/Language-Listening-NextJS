@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, ChangeEvent } from 'react';
 import { PresentationView, TITLE_ANIMATION_DURATION } from './PresentationView';
 import bgColorOptions from './utils/bgColorOptions';
-import { Config, languageOptions, Phrase } from './types';
+import { Config, languageOptions, Phrase, PresentationConfig } from './types';
 import { usePresentationConfig } from './hooks/usePresentationConfig';
 import { presentationConfigDefinition } from './configDefinitions';
 import { EditablePhrases } from './EditablePhrases';
@@ -17,8 +17,29 @@ export default function Home() {
   const [inputLang, setInputLang] = useState<string>(languageOptions[0]?.code);
   const [targetLang, setTargetLang] = useState<string>('it-IT');
 
+  const [selectedCollection, setSelectedCollection] = useState<string>('')
+  const [savedCollections, setSavedCollections] = useState<Config[]>([])
+
   // Instead of multiple arrays, we now store all per-phrase data in one state variable.
-  const [phrases, setPhrases] = useState<Phrase[]>([]);
+  const [phrases, setPhrasesBase] = useState<Phrase[]>([]);
+  const setPhrases = (phrases: Phrase[]) => {
+    setPhrasesBase(phrases);
+    // Update the saved collection in localStorage if we have a selected collection
+    if (selectedCollection) {
+      const savedCollectionsStr = localStorage.getItem('savedCollections');
+      if (savedCollectionsStr) {
+        const collections = JSON.parse(savedCollectionsStr);
+        const updatedCollections = collections.map((collection: Config) => {
+          if (collection.id === selectedCollection) {
+            return { ...collection, phrases };
+          }
+          return collection;
+        });
+        localStorage.setItem('savedCollections', JSON.stringify(updatedCollections));
+        setSavedCollections(updatedCollections);
+      }
+    }
+  }
 
   // Presentation configuration (bg, effects, delays, etc.) via our custom hook.
   const { presentationConfig, setPresentationConfig } = usePresentationConfig();
@@ -36,7 +57,7 @@ export default function Home() {
   const [showTitle, setShowTitle] = useState(false);
 
   // Config saving states
-  const [savedConfigs, setSavedConfigs] = useState<Config[]>([]);
+  const [savedConfigs, setSavedConfigs] = useState<PresentationConfig[]>([]);
   const [configName, setConfigName] = useState<string>('');
 
   // Ref for the audio element
@@ -44,11 +65,15 @@ export default function Home() {
 
   const timeoutIds = useRef<number[]>([]);
 
-  // Load saved configs from localStorage on mount.
+  // Load saved collections and configs from localStorage on mount.
   useEffect(() => {
     const storedConfigs = localStorage.getItem('savedConfigs');
     if (storedConfigs) {
       setSavedConfigs(JSON.parse(storedConfigs));
+    }
+    const storedCollections = localStorage.getItem('savedCollections');
+    if (storedCollections) {
+      setSavedCollections(JSON.parse(storedCollections));
     }
   }, []);
 
@@ -81,15 +106,13 @@ export default function Home() {
         outputAudio: data.outputAudioSegments ? data.outputAudioSegments[index] || null : null,
         romanized: data.romanizedOutput ? data.romanizedOutput[index] || '' : '',
         inputLang,
-        outputLang: targetLang
+        targetLang
       }));
       setPhrases(processedPhrases);
+      handleCreateCollection(processedPhrases);
       setCurrentPhraseIndex(-1);
       setCurrentPhase('input');
       setFinished(false);
-
-
-
     } catch (err) {
       console.error('Processing error:', err);
       alert(err)
@@ -124,17 +147,32 @@ export default function Home() {
   }, [currentPhraseIndex, currentPhase, phrases, paused]);
 
   // When a saved config is selected, load its state.
-  const handleLoadConfig = async (config: Config) => {
+  const handleLoadConfig = async (config: PresentationConfig) => {
     setLoading(true);
     try {
-      // First update the UI state with the saved config
-      setPhrasesInput(config.phrases ? config.phrases.map(p => p.input).join('\n') : config.phrasesInput || '');
-      setInputLang(config.inputLang);
-      setTargetLang(config.targetLang);
+      // Update the UI state with the saved config
       setConfigName(config.name);
       setPresentationConfig({
         ...config
       });
+
+    } catch (err) {
+      console.error('Loading error:', err);
+      alert('Error loading configuration: ' + err);
+    } finally {
+      setLoading(false);
+      setPaused(true);
+    }
+  };
+
+  // When a saved collection is selected, load its state.
+  const handleLoadCollection = async (config: Config) => {
+    setLoading(true);
+    try {
+      // First update the UI state with the saved config
+
+      setSelectedCollection(config.id);
+
 
       // Then fetch fresh audio for all phrases
       const response = await fetch(`${API_BASE_URL}/load`, {
@@ -142,8 +180,6 @@ export default function Home() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           phrases: config.phrases,
-          inputLang: config.inputLang,
-          targetLang: config.targetLang,
         }),
       });
 
@@ -176,18 +212,37 @@ export default function Home() {
       (presentationConfig.enableAutumnLeaves ? " 🍁" : "");
 
     const finalName = configName.trim() ? configName.trim() : generatedName;
-    const newConfig: Config = {
+    const newConfig: PresentationConfig = {
       ...presentationConfig,
       name: finalName,
-      phrases,
-      phrasesInput,
-      inputLang,
-      targetLang,
     };
     const updatedConfigs = [...savedConfigs, newConfig];
     setSavedConfigs(updatedConfigs);
     localStorage.setItem('savedConfigs', JSON.stringify(updatedConfigs));
     // setConfigName('');
+  };
+
+  const handleCreateCollection = (phrases: Phrase[]) => {
+    const generatedName =
+      `${inputLang}→${targetLang}`;
+
+    const finalName = generatedName;
+    const newCollection: Config = {
+      id: Math.random().toString(), // TODO - improve UUID
+      name: finalName,
+      phrases
+    };
+    const updatedCollections = [...savedCollections, newCollection];
+    setSavedCollections(updatedCollections);
+    localStorage.setItem('savedCollections', JSON.stringify(updatedCollections));
+    // setConfigName('');
+  };
+
+  // Delete a config from the saved list.
+  const handleDeleteCollection = (index: number) => {
+    const updatedCollections = savedCollections.filter((_, idx) => idx !== index);
+    setSavedCollections(updatedCollections);
+    localStorage.setItem('savedCollections', JSON.stringify(updatedCollections));
   };
 
   // Delete a config from the saved list.
@@ -256,7 +311,7 @@ export default function Home() {
               }
               if (phrase.outputAudio && phrase.outputAudio.audioUrl) {
                 const outputBlob = await fetch(phrase.outputAudio.audioUrl).then(res => res.blob());
-                formData.append(`outputAudio_${index}`, outputBlob, `output_${index}.webm`);
+                formData.append(`outputAudio_${index} `, outputBlob, `output_${index}.webm`);
               }
             });
             await Promise.all(audioPromises);
@@ -403,38 +458,26 @@ export default function Home() {
       {/* Audio Element */}
       <audio ref={audioRef} onEnded={handleAudioEnded} className="w-96 mb-4" controls hidden />
 
-      <div className="p-5 max-h-[90vh] flex flex-row gap-4">
+      <div className="max-h-[92vh] flex flex-row gap-4">
 
         {/* Saved Configs List */}
-        <div className="flex flex-col gap-4 mb-4">
-          {/* Language Selection and Phrase Import */}
-          <ImportPhrases
-            inputLang={inputLang}
-            setInputLang={setInputLang}
-            targetLang={targetLang}
-            setTargetLang={setTargetLang}
-            phrasesInput={phrasesInput}
-            setPhrasesInput={setPhrasesInput}
-            loading={loading}
-            onProcess={handleProcess}
-          />
-
-          <h3 className="text-xl font-semibold">Saved Phrase Lists</h3>
+        <div className="flex flex-col gap-10 bg-gray-50 p-5">
           <div>
-            {savedConfigs.length === 0 ? (
+            <h3 className="text-xl font-semibold">Saved Phrase Lists</h3>
+            {savedCollections.length === 0 ? (
               <p>No Phrase Lists Saved.</p>
             ) : (
               <ul className="list-disc pl-5">
-                {savedConfigs.map((config, idx) => (
+                {savedCollections.map((config, idx) => (
                   <li key={idx} className="flex justify-between items-center">
                     <span
-                      onClick={() => handleLoadConfig(config)}
+                      onClick={() => handleLoadCollection(config)}
                       className="cursor-pointer hover:underline"
                     >
                       {config.name}
                     </span>
                     <button
-                      onClick={() => handleDeleteConfig(idx)}
+                      onClick={() => handleDeleteCollection(idx)}
                       className="text-red-500 hover:underline"
                     >
                       Delete
@@ -444,10 +487,25 @@ export default function Home() {
               </ul>
             )}
           </div>
+          <div>
+            <h3 className="text-xl font-semibold">Import Phrases</h3>
+            {/* Language Selection and Phrase Import */}
+            <ImportPhrases
+              inputLang={inputLang}
+              setInputLang={setInputLang}
+              targetLang={targetLang}
+              setTargetLang={setTargetLang}
+              phrasesInput={phrasesInput}
+              setPhrasesInput={setPhrasesInput}
+              loading={loading}
+              onProcess={handleProcess}
+            />
+          </div>
+
 
         </div>
 
-        <div className="flex flex-col flex-grow-1 gap-4">
+        <div className="flex flex-col flex-grow-1 gap-4 p-5">
           <div className="overflow-auto flex-grow-2">
             {/* Editable Inputs for Each Phrase */}
             {phrases.length > 0 && !fullscreen && (

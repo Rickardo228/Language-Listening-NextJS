@@ -1,5 +1,6 @@
 // types.ts
 export type PresentationConfig = {
+  name: string;
   bgImage: string | null;
   containerBg: string;
   textBg: string;
@@ -15,12 +16,10 @@ export type PresentationConfig = {
 };
 
 export type Config = {
+  id: string;
   name: string;
-  phrasesInput: string;
   phrases: Phrase[];
-  inputLang: string;
-  targetLang: string;
-} & PresentationConfig;
+};
 
 export type RomanizedOutput = string[];
 

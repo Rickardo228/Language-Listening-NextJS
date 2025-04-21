@@ -209,15 +209,13 @@ export function EditablePhrases({ phrases, setPhrases }: EditablePhrasesProps) {
 
     return (
         <div className="mb-4">
-            <div className="flex justify-between items-center mb-4">
-                <h3 className="text-xl font-bold">Edit Phrases</h3>
+            {/* <div className="flex justify-between items-center mb-4">
                 <div className="flex gap-2">
                     <button
                         onClick={handleCopyPhrases}
                         className="flex items-center gap-1 px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded"
                         title="Copy phrases as JSON"
                     >
-                        {/*  <ClipboardIcon className="w-4 h-4" /> */}
                         Copy
                     </button>
                     <button
@@ -226,11 +224,10 @@ export function EditablePhrases({ phrases, setPhrases }: EditablePhrasesProps) {
                         className={`flex items-center gap-1 px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
                         title="Paste phrases from JSON"
                     >
-                        {/*  <ClipboardDocumentCheckIcon className="w-4 h-4" /> */}
                         {loading ? 'Loading...' : 'Paste'}
                     </button>
                 </div>
-            </div>
+            </div> */}
             {phrases.map((phrase, index) => (
                 <div key={index} className="mb-4 border p-2 rounded">
                     <div className="mb-2 flex items-center gap-2">
