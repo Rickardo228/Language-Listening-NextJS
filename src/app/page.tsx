@@ -85,6 +85,8 @@ export default function Home() {
       .filter(Boolean);
     if (!splitPhrases.length) return;
 
+    handleStop();
+    setPhrasesBase([]);
     setLoading(true);
 
     try {
@@ -141,7 +143,7 @@ export default function Home() {
     } else if (currentPhase === 'output' && currentPhraseObj?.outputAudio) {
       src = currentPhraseObj.outputAudio.audioUrl;
     }
-    if (audioRef.current && src && audioRef.current.paused) {
+    if (audioRef.current && src && audioRef.current.paused && audioRef.current.src !== src) {
       audioRef.current.src = src;
       audioRef.current.play().catch((err) => console.error('Auto-play error:', err));
     }
@@ -521,7 +523,7 @@ export default function Home() {
             )}
           </div>
           <div>
-            <h3 className="text-xl font-semibold mb-4">Import Phrases</h3>
+            <h3 className="text-xl font-semibold mb-4">Import Phrase List</h3>
             {/* Language Selection and Phrase Import */}
             <ImportPhrases
               inputLang={inputLang}
