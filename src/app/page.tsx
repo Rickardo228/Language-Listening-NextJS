@@ -505,7 +505,7 @@ export default function Home() {
 
         </div>
 
-        <div className="flex flex-col flex-grow-1 gap-4 p-5">
+        <div className="flex flex-col xl:flex-row flex-grow-1 gap-4 p-5">
           <div className="overflow-auto flex-grow-2">
             {/* Editable Inputs for Each Phrase */}
             {phrases.length > 0 && !fullscreen && (
