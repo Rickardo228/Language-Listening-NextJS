@@ -246,6 +246,19 @@ export default function Home() {
     localStorage.setItem('savedCollections', JSON.stringify(updatedCollections));
   };
 
+  const handleRenameCollection = (index: number) => {
+    const newName = window.prompt('Enter new name for collection:', savedCollections[index].name);
+    if (newName && newName.trim()) {
+      const updatedCollections = [...savedCollections];
+      updatedCollections[index] = {
+        ...updatedCollections[index],
+        name: newName.trim()
+      };
+      setSavedCollections(updatedCollections);
+      localStorage.setItem('savedCollections', JSON.stringify(updatedCollections));
+    }
+  };
+
   // Delete a config from the saved list.
   const handleDeleteConfig = (index: number) => {
     const updatedConfigs = savedConfigs.filter((_, idx) => idx !== index);
@@ -487,12 +500,20 @@ export default function Home() {
                     >
                       {config.name}
                     </span>
-                    <button
-                      onClick={() => handleDeleteCollection(idx)}
-                      className="text-red-500 hover:underline"
-                    >
-                      Delete
-                    </button>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleRenameCollection(idx)}
+                        className="text-blue-500 hover:underline"
+                      >
+                        Rename
+                      </button>
+                      <button
+                        onClick={() => handleDeleteCollection(idx)}
+                        className="text-red-500 hover:underline"
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </li>
                 ))}
               </ul>
