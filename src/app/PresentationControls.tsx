@@ -1,4 +1,4 @@
-import { Maximize2, Settings, Pause, Play, Repeat } from 'lucide-react';
+import { Maximize2, Pause, Play, Repeat } from 'lucide-react';
 import { SettingsModal } from './SettingsModal';
 import { PresentationConfig } from './types';
 import { useState } from 'react';

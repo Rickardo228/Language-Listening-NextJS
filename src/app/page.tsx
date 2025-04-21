@@ -150,23 +150,23 @@ export default function Home() {
   }, [currentPhraseIndex, currentPhase, phrases, paused]);
 
   // When a saved config is selected, load its state.
-  const handleLoadConfig = async (config: PresentationConfig) => {
-    setLoading(true);
-    try {
-      // Update the UI state with the saved config
-      setConfigName(config.name);
-      setPresentationConfig({
-        ...config
-      });
+  // const handleLoadConfig = async (config: PresentationConfig) => {
+  //   setLoading(true);
+  //   try {
+  //     // Update the UI state with the saved config
+  //     setConfigName(config.name);
+  //     setPresentationConfig({
+  //       ...config
+  //     });
 
-    } catch (err) {
-      console.error('Loading error:', err);
-      alert('Error loading configuration: ' + err);
-    } finally {
-      setLoading(false);
-      setPaused(true);
-    }
-  };
+  //   } catch (err) {
+  //     console.error('Loading error:', err);
+  //     alert('Error loading configuration: ' + err);
+  //   } finally {
+  //     setLoading(false);
+  //     setPaused(true);
+  //   }
+  // };
 
   // When a saved collection is selected, load its state.
   const handleLoadCollection = async (config: Config) => {
@@ -263,11 +263,11 @@ export default function Home() {
   };
 
   // Delete a config from the saved list.
-  const handleDeleteConfig = (index: number) => {
-    const updatedConfigs = savedConfigs.filter((_, idx) => idx !== index);
-    setSavedConfigs(updatedConfigs);
-    localStorage.setItem('savedConfigs', JSON.stringify(updatedConfigs));
-  };
+  // const handleDeleteConfig = (index: number) => {
+  //   const updatedConfigs = savedConfigs.filter((_, idx) => idx !== index);
+  //   setSavedConfigs(updatedConfigs);
+  //   localStorage.setItem('savedConfigs', JSON.stringify(updatedConfigs));
+  // };
 
   const clearAllTimeouts = () => {
     timeoutIds.current.forEach((id) => clearTimeout(id));

@@ -30,7 +30,6 @@ export function EditablePhrases({ phrases, setPhrases }: EditablePhrasesProps) {
     const [inputLoading, setInputLoading] = useState<{ [key: number]: boolean }>({});
     const [outputLoading, setOutputLoading] = useState<{ [key: number]: boolean }>({});
     const [romanizedLoading, setRomanizedLoading] = useState<{ [key: number]: boolean }>({});
-    const [loading, setLoading] = useState(false);
 
     const handlePhraseChange = (index: number, field: keyof Phrase, value: string) => {
         const newPhrases = [...phrases];

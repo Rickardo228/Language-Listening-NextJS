@@ -12,6 +12,7 @@ interface PresentationViewProps {
   currentTranslated: string;
   currentPhase: "input" | "output";
   fullScreen: boolean; // if true, use fullscreen styles; if false, use inline styles
+  setFullscreen: (val: boolean) => void;
   bgImage?: string | null;
   enableSnow?: boolean;
   enableLeaves?: boolean;
