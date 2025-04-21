@@ -22,7 +22,7 @@ export default function Home() {
 
   // Instead of multiple arrays, we now store all per-phrase data in one state variable.
   const [phrases, setPhrasesBase] = useState<Phrase[]>([]);
-  const setPhrases = (phrases: Phrase[]) => {
+  const setPhrases = (phrases: Phrase[], collectionId?: string) => {
     setPhrasesBase(phrases);
     // Update the saved collection in localStorage if we have a selected collection
     if (selectedCollection) {
@@ -30,7 +30,7 @@ export default function Home() {
       if (savedCollectionsStr) {
         const collections = JSON.parse(savedCollectionsStr);
         const updatedCollections = collections.map((collection: Config) => {
-          if (collection.id === selectedCollection) {
+          if (collection.id === (collectionId || selectedCollection)) {
             return { ...collection, phrases };
           }
           return collection;
@@ -189,7 +189,7 @@ export default function Home() {
       }
 
       const data = await response.json();
-      setPhrases(data.phrases);
+      setPhrases(data.phrases, config.id);
     } catch (err) {
       console.error('Loading error:', err);
       alert('Error loading configuration: ' + err);
