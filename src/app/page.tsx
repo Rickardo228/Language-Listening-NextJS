@@ -475,7 +475,7 @@ export default function Home() {
     <div className="font-sans">
       {/* Nav */}
 
-      <div className="flex items-center justify-between w-[100vw] shadow-md p-3">
+      <div className="flex items-center justify-between w-[100vw] shadow-md mb-1 p-3">
         <h1 className="text-2xl font-bold">Language Shadowing</h1>
       </div>
       {/* Main content */}
@@ -483,7 +483,7 @@ export default function Home() {
       {/* Audio Element */}
       <audio ref={audioRef} onEnded={handleAudioEnded} className="w-96 mb-4" controls hidden />
 
-      <div className="max-h-[92vh] flex flex-row gap-4 w-full">
+      <div className="max-h-[92vh] min-h-[92vh] flex flex-row gap-4 w-full">
         {/* Saved Configs List */}
         <div className={`flex flex-col gap-10 bg-gray-50 p-5 ${selectedCollection ? 'hidden md:flex' : 'flex'}`}>
           <div>
@@ -545,8 +545,8 @@ export default function Home() {
               ← Back
             </button>
           )}
-          {loading && 'Loading...'}
           <div className="overflow-auto flex-1">
+            {loading && 'Loading...'}
             {/* Editable Inputs for Each Phrase */}
             {phrases.length > 0 && !fullscreen && (
               <EditablePhrases
