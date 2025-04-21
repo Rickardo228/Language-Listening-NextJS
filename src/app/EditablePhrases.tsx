@@ -146,65 +146,65 @@ export function EditablePhrases({ phrases, setPhrases }: EditablePhrasesProps) {
         )
     }
 
-    const handleCopyPhrases = async () => {
-        try {
-            await navigator.clipboard.writeText(JSON.stringify(phrases, null, 2));
-        } catch (err) {
-            console.error('Failed to copy phrases:', err);
-            alert('Failed to copy phrases to clipboard');
-        }
-    };
+    // const handleCopyPhrases = async () => {
+    //     try {
+    //         await navigator.clipboard.writeText(JSON.stringify(phrases, null, 2));
+    //     } catch (err) {
+    //         console.error('Failed to copy phrases:', err);
+    //         alert('Failed to copy phrases to clipboard');
+    //     }
+    // };
 
-    const handlePastePhrases = async () => {
-        try {
-            const text = await navigator.clipboard.readText();
-            let pastedPhrases: Phrase[];
+    // const handlePastePhrases = async () => {
+    //     try {
+    //         const text = await navigator.clipboard.readText();
+    //         let pastedPhrases: Phrase[];
 
-            try {
-                pastedPhrases = JSON.parse(text);
-            } catch {
-                throw new Error('Invalid JSON format');
-            }
+    //         try {
+    //             pastedPhrases = JSON.parse(text);
+    //         } catch {
+    //             throw new Error('Invalid JSON format');
+    //         }
 
-            // Validate the structure of the pasted phrases
-            if (!Array.isArray(pastedPhrases)) {
-                throw new Error('Pasted content must be an array');
-            }
+    //         // Validate the structure of the pasted phrases
+    //         if (!Array.isArray(pastedPhrases)) {
+    //             throw new Error('Pasted content must be an array');
+    //         }
 
-            const isValidPhrase = (p: Phrase): p is Phrase => {
-                return typeof p === 'object' && p !== null
-                    && typeof p.input === 'string'
-                    && typeof p.translated === 'string'
-                    && typeof p.romanized === 'string';
-            };
+    //         const isValidPhrase = (p: Phrase): p is Phrase => {
+    //             return typeof p === 'object' && p !== null
+    //                 && typeof p.input === 'string'
+    //                 && typeof p.translated === 'string'
+    //                 && typeof p.romanized === 'string';
+    //         };
 
-            if (!pastedPhrases.every(isValidPhrase)) {
-                throw new Error('Invalid phrase structure');
-            }
+    //         if (!pastedPhrases.every(isValidPhrase)) {
+    //             throw new Error('Invalid phrase structure');
+    //         }
 
-            setLoading(true);
-            // Call the load endpoint to regenerate audio
-            const response = await fetch(`${API_BASE_URL}/load`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    phrases: pastedPhrases,
-                }),
-            });
+    //         setLoading(true);
+    //         // Call the load endpoint to regenerate audio
+    //         const response = await fetch(`${API_BASE_URL}/load`, {
+    //             method: 'POST',
+    //             headers: { 'Content-Type': 'application/json' },
+    //             body: JSON.stringify({
+    //                 phrases: pastedPhrases,
+    //             }),
+    //         });
 
-            if (!response.ok) {
-                throw new Error('Failed to load phrases');
-            }
+    //         if (!response.ok) {
+    //             throw new Error('Failed to load phrases');
+    //         }
 
-            const data = await response.json();
-            setPhrases(data.phrases);
-        } catch (err) {
-            console.error('Failed to paste phrases:', err);
-            alert(`Failed to paste phrases: ${err instanceof Error ? err.message : 'Unknown error'}`);
-        } finally {
-            setLoading(false);
-        }
-    };
+    //         const data = await response.json();
+    //         setPhrases(data.phrases);
+    //     } catch (err) {
+    //         console.error('Failed to paste phrases:', err);
+    //         alert(`Failed to paste phrases: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    //     } finally {
+    //         setLoading(false);
+    //     }
+    // };
 
 
     return (
@@ -237,7 +237,7 @@ export function EditablePhrases({ phrases, setPhrases }: EditablePhrasesProps) {
                             value={phrase.input}
                             onChange={(e) => handlePhraseChange(index, 'input', e.target.value)}
                             onBlur={() => handleBlur(index, 'input')}
-                            className={`w-96 p-2 border border-gray-300 rounded ${inputLoading[index] ? 'opacity-50' : ''}`}
+                            className={`w-full p-2 border border-gray-300 rounded ${inputLoading[index] ? 'opacity-50' : ''}`}
                             disabled={inputLoading[index]}
                         />
                         {phrase.inputAudio && (
@@ -258,7 +258,7 @@ export function EditablePhrases({ phrases, setPhrases }: EditablePhrasesProps) {
                             value={phrase.translated}
                             onChange={(e) => handlePhraseChange(index, 'translated', e.target.value)}
                             onBlur={() => handleBlur(index, 'translated')}
-                            className={`w-96 p-2 border border-gray-300 rounded ${outputLoading[index] ? 'opacity-50' : ''}`}
+                            className={`w-full p-2 border border-gray-300 rounded ${outputLoading[index] ? 'opacity-50' : ''}`}
                             disabled={outputLoading[index]}
                         />
                         {!phrase.useRomanizedForAudio && PlayOutputAudioButton(phrase)}
@@ -281,7 +281,7 @@ export function EditablePhrases({ phrases, setPhrases }: EditablePhrasesProps) {
                             value={phrase.romanized}
                             onChange={(e) => handlePhraseChange(index, 'romanized', e.target.value)}
                             onBlur={() => handleBlur(index, 'romanized')}
-                            className="w-96 p-2 border border-gray-300 rounded"
+                            className="w-full p-2 border border-gray-300 rounded"
                         />
                         {phrase.useRomanizedForAudio && PlayOutputAudioButton(phrase)}
                         {!phrase.useRomanizedForAudio && <button

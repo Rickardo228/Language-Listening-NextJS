@@ -458,10 +458,9 @@ export default function Home() {
       {/* Audio Element */}
       <audio ref={audioRef} onEnded={handleAudioEnded} className="w-96 mb-4" controls hidden />
 
-      <div className="max-h-[92vh] flex flex-row gap-4">
-
+      <div className="max-h-[92vh] flex flex-row gap-4 w-full">
         {/* Saved Configs List */}
-        <div className="flex flex-col gap-10 bg-gray-50 p-5">
+        <div className={`flex flex-col gap-10 bg-gray-50 p-5 ${selectedCollection ? 'hidden md:flex' : 'flex'}`}>
           <div>
             <h3 className="text-xl font-semibold">Saved Phrase Lists</h3>
             {savedCollections.length === 0 ? (
@@ -501,12 +500,20 @@ export default function Home() {
               onProcess={handleProcess}
             />
           </div>
-
-
         </div>
 
-        <div className="flex flex-col xl:flex-row flex-grow-1 gap-4 p-5">
-          <div className="overflow-auto flex-grow-2">
+        {/* Phrases and Playback */}
+        <div className={`flex flex-col xl:flex-row flex-1 gap-4 p-5 ${selectedCollection ? 'flex' : 'hidden md:flex'}`}>
+          {selectedCollection && (
+            <button
+              onClick={() => setSelectedCollection('')}
+              className="md:hidden top-4 left-4 bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded-lg"
+            >
+              ← Back
+            </button>
+          )}
+          {loading && 'Loading...'}
+          <div className="overflow-auto flex-1">
             {/* Editable Inputs for Each Phrase */}
             {phrases.length > 0 && !fullscreen && (
               <EditablePhrases
@@ -520,7 +527,7 @@ export default function Home() {
 
           {/* Presentation View and Controls */}
           {Boolean(typeof currentPhraseIndex === "number" && phrases?.length) && (
-            <div className='flex-grow-1'>
+            <div className='xl:flex-1'>
               <PresentationControls
                 fullscreen={fullscreen}
                 setFullscreen={setFullscreen}

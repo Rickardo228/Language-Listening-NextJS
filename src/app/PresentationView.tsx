@@ -75,7 +75,7 @@ export function PresentationView({
   // Set container classes based on the fullScreen prop.
   const containerClass =
     `inset-0 flex flex-col items-center justify-center ` +
-    (fullScreen ? "fixed z-50" : "relative p-4 rounded shadow w-96 h-24");
+    (fullScreen ? "fixed z-50" : "relative p-4 rounded shadow w-full h-48");
 
   // Classes for the regular phrase/translation.
   const titleClass = fullScreen
