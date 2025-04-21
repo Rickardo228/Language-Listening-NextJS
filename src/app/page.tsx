@@ -140,7 +140,7 @@ export default function Home() {
     } else if (currentPhase === 'output' && currentPhraseObj?.outputAudio) {
       src = currentPhraseObj.outputAudio.audioUrl;
     }
-    if (audioRef.current && src) {
+    if (audioRef.current && src && audioRef.current.paused) {
       audioRef.current.src = src;
       audioRef.current.play().catch((err) => console.error('Auto-play error:', err));
     }
