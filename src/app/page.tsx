@@ -393,34 +393,34 @@ export default function Home() {
     <div className="font-sans">
       {/* Nav */}
 
-      <div className="flex items-center justify-between mb-4 w-[100vw] shadow-md p-3">
+      <div className="flex items-center justify-between w-[100vw] shadow-md p-3">
         <h1 className="text-2xl font-bold">Language Shadowing</h1>
       </div>
       {/* Main content */}
-      <div className='p-5'>
-        {/* Language Selection and Phrase Import */}
-        <ImportPhrases
-          inputLang={inputLang}
-          setInputLang={setInputLang}
-          targetLang={targetLang}
-          setTargetLang={setTargetLang}
-          phrasesInput={phrasesInput}
-          setPhrasesInput={setPhrasesInput}
-          loading={loading}
-          onProcess={handleProcess}
-        />
 
-        {/* Audio Element */}
-        <audio ref={audioRef} onEnded={handleAudioEnded} className="w-96 mb-4" controls hidden />
+      {/* Audio Element */}
+      <audio ref={audioRef} onEnded={handleAudioEnded} className="w-96 mb-4" controls hidden />
 
-        <div className="h-8" />
+      <div className="p-5 max-h-[90vh] flex flex-row gap-4">
 
         {/* Saved Configs List */}
         <div className="flex flex-col gap-4 mb-4">
-          <h3 className="text-xl font-semibold">Saved Configs</h3>
+          {/* Language Selection and Phrase Import */}
+          <ImportPhrases
+            inputLang={inputLang}
+            setInputLang={setInputLang}
+            targetLang={targetLang}
+            setTargetLang={setTargetLang}
+            phrasesInput={phrasesInput}
+            setPhrasesInput={setPhrasesInput}
+            loading={loading}
+            onProcess={handleProcess}
+          />
+
+          <h3 className="text-xl font-semibold">Saved Phrase Lists</h3>
           <div>
             {savedConfigs.length === 0 ? (
-              <p>No configs saved.</p>
+              <p>No Phrase Lists Saved.</p>
             ) : (
               <ul className="list-disc pl-5">
                 {savedConfigs.map((config, idx) => (
@@ -442,61 +442,68 @@ export default function Home() {
               </ul>
             )}
           </div>
+
         </div>
 
-        {/* Presentation View and Controls */}
-        {Boolean(typeof currentPhraseIndex === "number" && phrases?.length) && (
-          <>
-            <PresentationControls
-              fullscreen={fullscreen}
-              setFullscreen={setFullscreen}
-              recordScreen={recordScreen}
-              stopScreenRecording={stopScreenRecording}
-              handleReplay={handleReplay}
-              hasPhrasesLoaded={phrases.length > 0}
-              configName={configName}
-              setConfigName={setConfigName}
-              onSaveConfig={handleSaveConfig}
-              presentationConfig={presentationConfig}
-              setPresentationConfig={setPresentationConfig}
-              presentationConfigDefinition={presentationConfigDefinition}
-              handleImageUpload={handleImageUpload}
-              paused={paused}
-              onPause={handlePause}
-              onPlay={handlePlay}
-            />
-            <PresentationView
-              currentPhrase={phrases[currentPhraseIndex]?.input || ''}
-              currentTranslated={phrases[currentPhraseIndex]?.translated || ''}
-              currentPhase={currentPhase}
-              fullScreen={fullscreen}
-              bgImage={presentationConfig.bgImage}
-              containerBg={presentationConfig.containerBg}
-              textBg={presentationConfig.textBg}
-              enableSnow={presentationConfig.enableSnow}
-              enableCherryBlossom={presentationConfig.enableCherryBlossom}
-              enableLeaves={presentationConfig.enableLeaves}
-              enableAutumnLeaves={presentationConfig.enableAutumnLeaves}
-              enableOrtonEffect={presentationConfig.enableOrtonEffect}
-              enableParticles={presentationConfig.enableParticles}
-              enableSteam={presentationConfig.enableSteam}
-              romanizedOutput={phrases[currentPhraseIndex]?.romanized}
-              title={showTitle ? configName : undefined}
-            />
-          </>
-        )}
+        <div className="flex flex-col flex-grow-1 gap-4">
+          <div className="overflow-auto flex-grow-2">
+            {/* Editable Inputs for Each Phrase */}
+            {phrases.length > 0 && !fullscreen && (
+              <EditablePhrases
+                phrases={phrases}
+                setPhrases={setPhrases}
+                inputLanguage={inputLang}
+                outputLanguage={targetLang}
+              />
+            )}
+          </div>
 
-        {/* Editable Inputs for Each Phrase */}
-        {phrases.length > 0 && !fullscreen && (
-          <EditablePhrases
-            phrases={phrases}
-            setPhrases={setPhrases}
-            inputLanguage={inputLang}
-            outputLanguage={targetLang}
-          />
-        )}
+          {/* Presentation View and Controls */}
+          {Boolean(typeof currentPhraseIndex === "number" && phrases?.length) && (
+            <div className='flex-grow-1'>
+              <PresentationControls
+                fullscreen={fullscreen}
+                setFullscreen={setFullscreen}
+                recordScreen={recordScreen}
+                stopScreenRecording={stopScreenRecording}
+                handleReplay={handleReplay}
+                hasPhrasesLoaded={phrases.length > 0}
+                configName={configName}
+                setConfigName={setConfigName}
+                onSaveConfig={handleSaveConfig}
+                presentationConfig={presentationConfig}
+                setPresentationConfig={setPresentationConfig}
+                presentationConfigDefinition={presentationConfigDefinition}
+                handleImageUpload={handleImageUpload}
+                paused={paused}
+                onPause={handlePause}
+                onPlay={handlePlay}
+              />
+              <PresentationView
+                currentPhrase={phrases[currentPhraseIndex]?.input || ''}
+                currentTranslated={phrases[currentPhraseIndex]?.translated || ''}
+                currentPhase={currentPhase}
+                fullScreen={fullscreen}
+                bgImage={presentationConfig.bgImage}
+                containerBg={presentationConfig.containerBg}
+                textBg={presentationConfig.textBg}
+                enableSnow={presentationConfig.enableSnow}
+                enableCherryBlossom={presentationConfig.enableCherryBlossom}
+                enableLeaves={presentationConfig.enableLeaves}
+                enableAutumnLeaves={presentationConfig.enableAutumnLeaves}
+                enableOrtonEffect={presentationConfig.enableOrtonEffect}
+                enableParticles={presentationConfig.enableParticles}
+                enableSteam={presentationConfig.enableSteam}
+                romanizedOutput={phrases[currentPhraseIndex]?.romanized}
+                title={showTitle ? configName : undefined}
+              />
+            </div>
+          )}
+        </div>
 
       </div>
+
+
     </div>
   );
 }

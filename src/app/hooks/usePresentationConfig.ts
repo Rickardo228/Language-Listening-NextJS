@@ -15,7 +15,8 @@ export function usePresentationConfig(initial?: Partial<PresentationConfig>) {
       enableOrtonEffect: false,
       enableParticles: false,
       enableSteam: false,
-      postProcessDelay: 5000,
+      postProcessDelay: 0,
+      // postProcessDelay: 5000,
       delayBetweenPhrases: 1000,
       ...initial,
     });
