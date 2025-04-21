@@ -33,6 +33,7 @@ export function PresentationView({
   currentTranslated,
   currentPhase,
   fullScreen,
+  setFullscreen,
   bgImage,
   enableSnow,
   enableLeaves,
@@ -106,7 +107,7 @@ export function PresentationView({
 
   return (
     // Append the 'cursor-none' class when idle.
-    <div className={`${containerClass} ${isIdle ? "cursor-none" : ""}`} style={containerStyle}>
+    <div className={`${containerClass} ${isIdle ? "cursor-none" : ""}`} style={containerStyle} onClick={() => setFullscreen(false)}>
       {enableOrtonEffect && (
         <div
           style={{

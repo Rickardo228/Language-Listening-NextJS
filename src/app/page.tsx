@@ -584,6 +584,7 @@ export default function Home() {
                 currentTranslated={phrases[currentPhraseIndex]?.translated || ''}
                 currentPhase={currentPhase}
                 fullScreen={fullscreen}
+                setFullscreen={setFullscreen}
                 bgImage={presentationConfig.bgImage}
                 containerBg={presentationConfig.containerBg}
                 textBg={presentationConfig.textBg}
