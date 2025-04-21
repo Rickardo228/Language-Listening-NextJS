@@ -2,7 +2,6 @@ import { X } from 'lucide-react';
 import { PresentationConfig } from './types';
 import ConfigFields from './ConfigFields';
 import { ConfigFieldDefinition } from './configDefinitions';
-import SavedConfigs from './SavedConfigs';
 
 interface SettingsModalProps {
     isOpen: boolean;

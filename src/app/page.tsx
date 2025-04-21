@@ -80,6 +80,8 @@ export default function Home() {
         inputAudio: data.inputAudioSegments ? data.inputAudioSegments[index] || null : null,
         outputAudio: data.outputAudioSegments ? data.outputAudioSegments[index] || null : null,
         romanized: data.romanizedOutput ? data.romanizedOutput[index] || '' : '',
+        inputLang,
+        outputLang: targetLang
       }));
       setPhrases(processedPhrases);
       setCurrentPhraseIndex(-1);

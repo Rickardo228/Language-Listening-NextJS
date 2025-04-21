@@ -26,7 +26,7 @@ async function generateAudio(text: string, language: string): Promise<{ audioUrl
     return response.json();
 }
 
-export function EditablePhrases({ phrases, setPhrases, inputLanguage, outputLanguage }: EditablePhrasesProps) {
+export function EditablePhrases({ phrases, setPhrases }: EditablePhrasesProps) {
     const [inputLoading, setInputLoading] = useState<{ [key: number]: boolean }>({});
     const [outputLoading, setOutputLoading] = useState<{ [key: number]: boolean }>({});
     const [romanizedLoading, setRomanizedLoading] = useState<{ [key: number]: boolean }>({});
@@ -40,15 +40,15 @@ export function EditablePhrases({ phrases, setPhrases, inputLanguage, outputLang
 
     const handleBlur = async (index: number, field: keyof Phrase) => {
         if (field !== 'input' && field !== 'translated' && field !== 'romanized') return;
-
-        const text = phrases[index][field];
+        const phrase = phrases[index]
+        const text = phrase[field];
         if (!text) return;
 
         // Determine if we should proceed with generating audio
         const shouldGenerateAudio =
             (field === 'input') ||
-            (field === 'translated' && !phrases[index].useRomanizedForAudio) ||
-            (field === 'romanized' && phrases[index].useRomanizedForAudio);
+            (field === 'translated' && !phrase.useRomanizedForAudio) ||
+            (field === 'romanized' && phrase.useRomanizedForAudio);
 
         if (!shouldGenerateAudio) return;
 
@@ -58,11 +58,11 @@ export function EditablePhrases({ phrases, setPhrases, inputLanguage, outputLang
         try {
             const { audioUrl, duration } = await generateAudio(
                 text,
-                field === 'input' ? inputLanguage : outputLanguage
+                field === 'input' ? phrase.inputLang : phrase.targetLang
             );
 
             const newPhrases = [...phrases];
-            if (field === 'romanized' && phrases[index].useRomanizedForAudio) {
+            if (field === 'romanized' && phrase.useRomanizedForAudio) {
                 newPhrases[index] = {
                     ...newPhrases[index],
                     outputAudio: { audioUrl, duration },
@@ -85,13 +85,14 @@ export function EditablePhrases({ phrases, setPhrases, inputLanguage, outputLang
 
 
     const handleGenerateRomanizedAudio = async (index: number) => {
-        const text = phrases[index].romanized;
+        const phrase = phrases[index]
+        const text = phrase.romanized;
         if (!text) return;
 
         setRomanizedLoading(prev => ({ ...prev, [index]: true }));
 
         try {
-            const { audioUrl, duration } = await generateAudio(text, outputLanguage);
+            const { audioUrl, duration } = await generateAudio(text, phrase.targetLang);
 
             const newPhrases = [...phrases];
             newPhrases[index] = {
@@ -108,13 +109,14 @@ export function EditablePhrases({ phrases, setPhrases, inputLanguage, outputLang
     };
 
     const handleGenerateOutputAudio = async (index: number) => {
-        const text = phrases[index].translated;
+        const phrase = phrases[index]
+        const text = phrase.translated;
         if (!text) return;
 
         setOutputLoading(prev => ({ ...prev, [index]: true }));
 
         try {
-            const { audioUrl, duration } = await generateAudio(text, outputLanguage);
+            const { audioUrl, duration } = await generateAudio(text, phrase.targetLang);
 
             const newPhrases = [...phrases];
             newPhrases[index] = {
@@ -187,8 +189,6 @@ export function EditablePhrases({ phrases, setPhrases, inputLanguage, outputLang
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     phrases: pastedPhrases,
-                    inputLang: inputLanguage,
-                    targetLang: outputLanguage,
                 }),
             });
 

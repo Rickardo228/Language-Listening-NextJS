@@ -47,7 +47,9 @@ export type Phrase = {
   input: string;
   translated: string;
   inputAudio: AudioSegment | null;
+  inputLang: string;
   outputAudio: AudioSegment | null;
+  targetLang: string;
   romanized: string;
   useRomanizedForAudio?: boolean;
 };
