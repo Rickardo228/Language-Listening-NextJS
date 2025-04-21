@@ -1,6 +1,7 @@
 import { Phrase } from './types';
 import { useState } from 'react';
 import { SpeakerWaveIcon, MicrophoneIcon } from '@heroicons/react/24/solid';
+import { API_BASE_URL } from './consts';
 // import { ClipboardIcon, ClipboardDocumentCheckIcon } from '@heroicons/react/24/outline';
 
 interface EditablePhrasesProps {
@@ -10,7 +11,6 @@ interface EditablePhrasesProps {
     outputLanguage: string;
 }
 
-const API_BASE_URL = 'https://content-generator-451016.ew.r.appspot.com';
 
 async function generateAudio(text: string, language: string): Promise<{ audioUrl: string, duration: number }> {
     const response = await fetch(`${API_BASE_URL}/tts`, {
