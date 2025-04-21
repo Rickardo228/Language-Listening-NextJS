@@ -404,7 +404,7 @@ export default function Home() {
     if (currentPhase === 'input') {
       const timeoutId = window.setTimeout(() => {
         setCurrentPhase('output');
-      }, presentationConfig.delayBetweenPhrases);
+      }, 1000);
       timeoutIds.current.push(timeoutId);
     } else {
       const outputDuration = (audioRef.current?.duration || 1) * 1000;
