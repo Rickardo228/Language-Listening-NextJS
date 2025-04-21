@@ -247,7 +247,7 @@ export default function Home() {
   };
 
   const handleRenameCollection = (index: number) => {
-    const newName = window.prompt('Enter new name for collection:', savedCollections[index].name);
+    const newName = window.prompt('Enter a new name for this phrase list:', savedCollections[index].name);
     if (newName && newName.trim()) {
       const updatedCollections = [...savedCollections];
       updatedCollections[index] = {
