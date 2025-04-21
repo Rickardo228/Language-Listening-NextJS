@@ -9,6 +9,7 @@ import { presentationConfigDefinition } from './configDefinitions';
 import { EditablePhrases } from './EditablePhrases';
 import { PresentationControls } from './PresentationControls';
 import { API_BASE_URL, BLEED_START_DELAY, DELAY_AFTER_OUTPUT_PHRASES_MULTIPLIER, LAG_COMPENSATION } from './consts';
+import { ImportPhrases } from './ImportPhrases';
 
 export default function Home() {
   // User input and language selection
@@ -389,146 +390,113 @@ export default function Home() {
 
 
   return (
-    <div className="p-5 font-sans">
-      <div className="flex items-center justify-between mb-4">
-        <h1 className="text-3xl font-bold">Language Shadowing</h1>
+    <div className="font-sans">
+      {/* Nav */}
+
+      <div className="flex items-center justify-between mb-4 w-[100vw] shadow-md p-3">
+        <h1 className="text-2xl font-bold">Language Shadowing</h1>
       </div>
-
-      {/* Language Selection */}
-      <div className="flex flex-wrap gap-4 mb-4">
-        <div>
-          <label htmlFor="inputLang" className="block font-medium mb-1">Input Language</label>
-          <select
-            id="inputLang"
-            value={inputLang}
-            onChange={(e) => setInputLang(e.target.value)}
-            className="p-2 border border-gray-300 rounded"
-          >
-            {languageOptions.map((option) => (
-              <option key={option.code} value={option.code}>{option.label}</option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label htmlFor="targetLang" className="block font-medium mb-1">Output Language</label>
-          <select
-            id="targetLang"
-            value={targetLang}
-            onChange={(e) => setTargetLang(e.target.value)}
-            className="p-2 border border-gray-300 rounded"
-          >
-            {languageOptions.map((option) => (
-              <option key={option.code} value={option.code}>{option.label}</option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      {/* Textarea for initial phrases */}
-      <textarea
-        placeholder="Enter phrases, one per line"
-        value={phrasesInput}
-        onChange={(e) => setPhrasesInput(e.target.value)}
-        rows={6}
-        className="w-96 p-2 text-lg border border-gray-300 rounded mb-4"
-      />
-
-      {/* Process Button */}
-      <button
-        onClick={handleProcess}
-        disabled={loading}
-        className="px-4 py-2 text-lg bg-blue-500 text-white rounded hover:bg-blue-600 mb-4 flex items-center justify-center"
-      >
-        {loading ? (
-          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-        ) : "Process"}
-      </button>
-
-      {/* Audio Element */}
-      <audio ref={audioRef} onEnded={handleAudioEnded} className="w-96 mb-4" controls hidden />
-
-      <div className="h-8" />
-
-      {/* Saved Configs List */}
-      <div className="flex flex-col gap-4 mb-4">
-        <h3 className="text-xl font-semibold">Saved Configs</h3>
-        <div>
-          {savedConfigs.length === 0 ? (
-            <p>No configs saved.</p>
-          ) : (
-            <ul className="list-disc pl-5">
-              {savedConfigs.map((config, idx) => (
-                <li key={idx} className="flex justify-between items-center">
-                  <span
-                    onClick={() => handleLoadConfig(config)}
-                    className="cursor-pointer hover:underline"
-                  >
-                    {config.name}
-                  </span>
-                  <button
-                    onClick={() => handleDeleteConfig(idx)}
-                    className="text-red-500 hover:underline"
-                  >
-                    Delete
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      </div>
-
-      {/* Presentation View and Controls */}
-      {Boolean(typeof currentPhraseIndex === "number" && phrases?.length) && (
-        <>
-          <PresentationControls
-            fullscreen={fullscreen}
-            setFullscreen={setFullscreen}
-            recordScreen={recordScreen}
-            stopScreenRecording={stopScreenRecording}
-            handleReplay={handleReplay}
-            hasPhrasesLoaded={phrases.length > 0}
-            configName={configName}
-            setConfigName={setConfigName}
-            onSaveConfig={handleSaveConfig}
-            presentationConfig={presentationConfig}
-            setPresentationConfig={setPresentationConfig}
-            presentationConfigDefinition={presentationConfigDefinition}
-            handleImageUpload={handleImageUpload}
-            paused={paused}
-            onPause={handlePause}
-            onPlay={handlePlay}
-          />
-          <PresentationView
-            currentPhrase={phrases[currentPhraseIndex]?.input || ''}
-            currentTranslated={phrases[currentPhraseIndex]?.translated || ''}
-            currentPhase={currentPhase}
-            fullScreen={fullscreen}
-            bgImage={presentationConfig.bgImage}
-            containerBg={presentationConfig.containerBg}
-            textBg={presentationConfig.textBg}
-            enableSnow={presentationConfig.enableSnow}
-            enableCherryBlossom={presentationConfig.enableCherryBlossom}
-            enableLeaves={presentationConfig.enableLeaves}
-            enableAutumnLeaves={presentationConfig.enableAutumnLeaves}
-            enableOrtonEffect={presentationConfig.enableOrtonEffect}
-            enableParticles={presentationConfig.enableParticles}
-            enableSteam={presentationConfig.enableSteam}
-            romanizedOutput={phrases[currentPhraseIndex]?.romanized}
-            title={showTitle ? configName : undefined}
-          />
-        </>
-      )}
-
-      {/* Editable Inputs for Each Phrase */}
-      {phrases.length > 0 && !fullscreen && (
-        <EditablePhrases
-          phrases={phrases}
-          setPhrases={setPhrases}
-          inputLanguage={inputLang}
-          outputLanguage={targetLang}
+      {/* Main content */}
+      <div className='p-5'>
+        {/* Language Selection and Phrase Import */}
+        <ImportPhrases
+          inputLang={inputLang}
+          setInputLang={setInputLang}
+          targetLang={targetLang}
+          setTargetLang={setTargetLang}
+          phrasesInput={phrasesInput}
+          setPhrasesInput={setPhrasesInput}
+          loading={loading}
+          onProcess={handleProcess}
         />
-      )}
+
+        {/* Audio Element */}
+        <audio ref={audioRef} onEnded={handleAudioEnded} className="w-96 mb-4" controls hidden />
+
+        <div className="h-8" />
+
+        {/* Saved Configs List */}
+        <div className="flex flex-col gap-4 mb-4">
+          <h3 className="text-xl font-semibold">Saved Configs</h3>
+          <div>
+            {savedConfigs.length === 0 ? (
+              <p>No configs saved.</p>
+            ) : (
+              <ul className="list-disc pl-5">
+                {savedConfigs.map((config, idx) => (
+                  <li key={idx} className="flex justify-between items-center">
+                    <span
+                      onClick={() => handleLoadConfig(config)}
+                      className="cursor-pointer hover:underline"
+                    >
+                      {config.name}
+                    </span>
+                    <button
+                      onClick={() => handleDeleteConfig(idx)}
+                      className="text-red-500 hover:underline"
+                    >
+                      Delete
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+
+        {/* Presentation View and Controls */}
+        {Boolean(typeof currentPhraseIndex === "number" && phrases?.length) && (
+          <>
+            <PresentationControls
+              fullscreen={fullscreen}
+              setFullscreen={setFullscreen}
+              recordScreen={recordScreen}
+              stopScreenRecording={stopScreenRecording}
+              handleReplay={handleReplay}
+              hasPhrasesLoaded={phrases.length > 0}
+              configName={configName}
+              setConfigName={setConfigName}
+              onSaveConfig={handleSaveConfig}
+              presentationConfig={presentationConfig}
+              setPresentationConfig={setPresentationConfig}
+              presentationConfigDefinition={presentationConfigDefinition}
+              handleImageUpload={handleImageUpload}
+              paused={paused}
+              onPause={handlePause}
+              onPlay={handlePlay}
+            />
+            <PresentationView
+              currentPhrase={phrases[currentPhraseIndex]?.input || ''}
+              currentTranslated={phrases[currentPhraseIndex]?.translated || ''}
+              currentPhase={currentPhase}
+              fullScreen={fullscreen}
+              bgImage={presentationConfig.bgImage}
+              containerBg={presentationConfig.containerBg}
+              textBg={presentationConfig.textBg}
+              enableSnow={presentationConfig.enableSnow}
+              enableCherryBlossom={presentationConfig.enableCherryBlossom}
+              enableLeaves={presentationConfig.enableLeaves}
+              enableAutumnLeaves={presentationConfig.enableAutumnLeaves}
+              enableOrtonEffect={presentationConfig.enableOrtonEffect}
+              enableParticles={presentationConfig.enableParticles}
+              enableSteam={presentationConfig.enableSteam}
+              romanizedOutput={phrases[currentPhraseIndex]?.romanized}
+              title={showTitle ? configName : undefined}
+            />
+          </>
+        )}
+
+        {/* Editable Inputs for Each Phrase */}
+        {phrases.length > 0 && !fullscreen && (
+          <EditablePhrases
+            phrases={phrases}
+            setPhrases={setPhrases}
+            inputLanguage={inputLang}
+            outputLanguage={targetLang}
+          />
+        )}
+
+      </div>
     </div>
   );
 }
