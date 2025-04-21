@@ -109,6 +109,7 @@ export default function Home() {
         targetLang
       }));
       setPhrases(processedPhrases);
+      setPhrasesInput('');
       handleCreateCollection(processedPhrases);
       setCurrentPhraseIndex(-1);
       setCurrentPhase('input');
@@ -537,14 +538,14 @@ export default function Home() {
 
         {/* Phrases and Playback */}
         <div className={`flex flex-col xl:flex-row flex-1 gap-4 p-5 ${selectedCollection ? 'flex' : 'hidden md:flex'}`}>
-          {selectedCollection && (
+          {selectedCollection ? (
             <button
               onClick={() => { setSelectedCollection(''); handleStop(); setPhrasesBase([]) }}
               className="md:hidden top-4 left-4 bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded-lg"
             >
               ← Back
             </button>
-          )}
+          ) : <h3 className="hidden md:block">Select a Phrase List or Import Phrases</h3>}
           <div className="overflow-auto flex-1">
             {loading && 'Loading...'}
             {/* Editable Inputs for Each Phrase */}
@@ -605,6 +606,6 @@ export default function Home() {
       </div>
 
 
-    </div>
+    </div >
   );
 }

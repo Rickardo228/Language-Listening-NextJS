@@ -18,7 +18,7 @@ export function usePresentationConfig(initial?: Partial<PresentationConfig>) {
       enableSteam: false,
       postProcessDelay: 0,
       // postProcessDelay: 5000,
-      delayBetweenPhrases: 1250,
+      delayBetweenPhrases: 1000,
       ...initial,
     });
 

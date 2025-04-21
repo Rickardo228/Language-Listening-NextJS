@@ -85,13 +85,13 @@ export function PresentationControls({
                         Stop Recording
                     </button>
                 }
-                <button
+                {/* <button
                     onClick={() => setSettingsOpen(true)}
                     className="p-2 bg-gray-200 rounded hover:bg-gray-300"
                     title="Settings"
                 >
                     <Settings className="h-8 w-8 text-gray-700" />
-                </button>
+                </button> */}
 
             </div>
 
