@@ -181,11 +181,12 @@ export default function Home() {
     const currentPhraseObj = phrases[currentPhraseIndex];
     let src = '';
     if (currentPhase === 'input' && currentPhraseObj?.inputAudio) {
+      console.log("hey")
       src = currentPhraseObj.inputAudio.audioUrl;
     } else if (currentPhase === 'output' && currentPhraseObj?.outputAudio) {
       src = currentPhraseObj.outputAudio.audioUrl;
     }
-    if (audioRef.current && src && audioRef.current.paused && audioRef.current.src !== src) {
+    if (audioRef.current && src && audioRef.current.paused) {
       audioRef.current.src = src;
       audioRef.current.play().catch((err) => console.error('Auto-play error:', err));
     }
@@ -469,6 +470,8 @@ export default function Home() {
 
   // In handleReplay:
   const handleReplay = async () => {
+    clearAllTimeouts();
+
     // Start recording if enabled.
     if (recordScreen) {
       handlePause();
@@ -477,6 +480,7 @@ export default function Home() {
     }
     setCurrentPhraseIndex(prev => prev < 0 ? prev - 1 : -1);
     setCurrentPhase('input');
+    if (audioRef.current && phrases[0]?.inputAudio?.audioUrl) audioRef.current.src = phrases[0].inputAudio?.audioUrl;
     setShowTitle(true);
     setFinished(false);
     setPaused(false);
@@ -485,7 +489,6 @@ export default function Home() {
       setShowTitle(false);
     }, presentationConfig.postProcessDelay + BLEED_START_DELAY - TITLE_ANIMATION_DURATION - 1000);
     timeoutIds.current.push(timeoutId1);
-
     const timeoutId = window.setTimeout(() => {
       setCurrentPhraseIndex(0);
     }, presentationConfig.postProcessDelay + BLEED_START_DELAY);
