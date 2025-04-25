@@ -643,6 +643,24 @@ export default function Home() {
                 paused={paused}
                 onPause={handlePause}
                 onPlay={handlePlay}
+                onPrevious={() => {
+                  if (currentPhase === 'output') {
+                    setCurrentPhase('input');
+                  } else if (currentPhraseIndex > 0) {
+                    setCurrentPhraseIndex(prev => prev - 1);
+                    setCurrentPhase('output');
+                  }
+                }}
+                onNext={() => {
+                  if (currentPhase === 'input') {
+                    setCurrentPhase('output');
+                  } else if (currentPhraseIndex < phrases.length - 1) {
+                    setCurrentPhraseIndex(prev => prev + 1);
+                    setCurrentPhase('input');
+                  }
+                }}
+                canGoBack={currentPhase === 'output' || currentPhraseIndex > 0}
+                canGoForward={currentPhase === 'input' || currentPhraseIndex < phrases.length - 1}
               />
               <PresentationView
                 currentPhrase={phrases[currentPhraseIndex]?.input || ''}

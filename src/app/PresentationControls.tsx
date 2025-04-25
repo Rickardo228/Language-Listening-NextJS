@@ -1,4 +1,4 @@
-import { Maximize2, Pause, Play, Repeat } from 'lucide-react';
+import { Maximize2, Pause, Play, Repeat, ArrowLeft, ArrowRight } from 'lucide-react';
 import { SettingsModal } from './SettingsModal';
 import { PresentationConfig } from './types';
 import { useState } from 'react';
@@ -21,6 +21,10 @@ interface PresentationControlsProps {
     paused: boolean;
     onPause: () => void;
     onPlay: () => void;
+    onPrevious: () => void;
+    onNext: () => void;
+    canGoBack: boolean;
+    canGoForward: boolean;
 }
 
 export function PresentationControls({
@@ -39,7 +43,11 @@ export function PresentationControls({
     handleImageUpload,
     paused,
     onPause,
-    onPlay
+    onPlay,
+    onPrevious,
+    onNext,
+    canGoBack,
+    canGoForward
 }: PresentationControlsProps) {
     const [settingsOpen, setSettingsOpen] = useState(false);
 
@@ -92,7 +100,22 @@ export function PresentationControls({
                 >
                     <Settings className="h-8 w-8 text-gray-700" />
                 </button> */}
-
+                <button
+                    onClick={onPrevious}
+                    disabled={!canGoBack}
+                    className="p-2 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="Previous Phrase"
+                >
+                    <ArrowLeft className="h-8 w-8 text-gray-700" />
+                </button>
+                <button
+                    onClick={onNext}
+                    disabled={!canGoForward}
+                    className="p-2 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="Next Phrase"
+                >
+                    <ArrowRight className="h-8 w-8 text-gray-700" />
+                </button>
             </div>
 
             <SettingsModal

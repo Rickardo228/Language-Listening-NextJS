@@ -29,6 +29,18 @@ interface PresentationViewProps {
 
 export const TITLE_ANIMATION_DURATION = 1000
 
+function calculateFontSize(text: string, isFullScreen: boolean): string {
+  if (!text) return isFullScreen ? '4rem' : '1.5rem'; // default sizes
+
+  const baseSize = isFullScreen ? 70 : 24; // base font size in pixels
+  const maxChars = isFullScreen ? 30 : 20; // threshold for max characters
+
+  const scale = Math.min(1, maxChars / text.length);
+  const fontSize = Math.max(baseSize * scale, isFullScreen ? 30 : 14); // minimum font size
+
+  return `${fontSize}px`;
+}
+
 export function PresentationView({
   currentPhrase,
   currentTranslated,
@@ -214,16 +226,32 @@ export function PresentationView({
                   ? (textBg.slice(0, -1) + " 0.9)").replaceAll(" ", ",")
                   : textBg,
                 borderRadius: '1rem'
-
               }}
             >
-              <h2 className={titleClass} style={{ margin: 0, padding: 0 }}>
+              <h2
+                className="font-bold text-white"
+                style={{
+                  margin: 0,
+                  padding: 0,
+                  fontSize: calculateFontSize(
+                    currentPhase === "input" ? currentPhrase : currentTranslated,
+                    fullScreen
+                  )
+                }}
+              >
                 {currentPhase === "input"
                   ? currentPhrase?.trim()
                   : currentTranslated?.trim()}
               </h2>
               {currentPhase === "output" && romanizedOutput && (
-                <h2 className={subtitleClass}>{romanizedOutput}</h2>
+                <h2
+                  className="font-bold text-gray-100 mt-3"
+                  style={{
+                    fontSize: calculateFontSize(romanizedOutput, fullScreen)
+                  }}
+                >
+                  {romanizedOutput}
+                </h2>
               )}
             </motion.div>
           )
