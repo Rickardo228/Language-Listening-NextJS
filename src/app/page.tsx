@@ -10,6 +10,7 @@ import { EditablePhrases } from './EditablePhrases';
 import { PresentationControls } from './PresentationControls';
 import { API_BASE_URL, BLEED_START_DELAY, DELAY_AFTER_OUTPUT_PHRASES_MULTIPLIER, LAG_COMPENSATION } from './consts';
 import { ImportPhrases } from './ImportPhrases';
+import { ImportPhrasesDialog } from './ImportPhrasesDialog';
 
 export default function Home() {
   // User input and language selection
@@ -532,7 +533,6 @@ export default function Home() {
         <div className={`flex flex-col gap-10 bg-gray-50 p-5 ${selectedCollection ? 'hidden md:flex' : 'flex'}`}>
 
           <div>
-            <h3 className="text-xl font-semibold mb-4">Add Phrases</h3>
             {/* Language Selection and Phrase Import */}
             <ImportPhrases
               inputLang={inputLang}
@@ -543,8 +543,9 @@ export default function Home() {
               setPhrasesInput={setPhrasesInput}
               loading={loading}
               onProcess={handleProcess}
-              onAddToCollection={handleAddToCollection}
+              // onAddToCollection={handleAddToCollection}
               hasSelectedCollection={!!selectedCollection}
+
             />
           </div>
           <div>
@@ -591,9 +592,22 @@ export default function Home() {
             >
               ← Back
             </button>
-          ) : <h3 className="hidden md:block">Select a Collection or Import Phrases</h3>}
+          ) : !loading && <h3 className="hidden md:block">Select a Collection or Import Phrases</h3>}
           <div className="overflow-auto flex-1">
             {loading && 'Loading...'}
+            {/* Add ImportPhrasesDialog here */}
+            {!loading && <ImportPhrasesDialog
+              inputLang={inputLang}
+              setInputLang={setInputLang}
+              targetLang={targetLang}
+              setTargetLang={setTargetLang}
+              phrasesInput={phrasesInput}
+              setPhrasesInput={setPhrasesInput}
+              loading={loading}
+              // onProcess={handleProcess}
+              onAddToCollection={handleAddToCollection}
+              hasSelectedCollection={!!selectedCollection}
+            />}
             {/* Editable Inputs for Each Phrase */}
             {phrases.length > 0 && !fullscreen && (
               <EditablePhrases

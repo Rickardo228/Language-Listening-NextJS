@@ -1,6 +1,7 @@
 import { languageOptions } from './types';
+import { useImportPhrasesVisibility } from './hooks/useImportPhrasesVisibility';
 
-interface ImportPhrasesProps {
+export interface ImportPhrasesProps {
     inputLang: string;
     setInputLang: (lang: string) => void;
     targetLang: string;
@@ -8,10 +9,16 @@ interface ImportPhrasesProps {
     phrasesInput: string;
     setPhrasesInput: (input: string) => void;
     loading: boolean;
-    onProcess: () => void;
-    onAddToCollection: () => void;
+    onProcess?: () => void;
+    onAddToCollection?: () => void;
     hasSelectedCollection: boolean;
 }
+
+type ButtonConfig = {
+    onClick: () => void;
+    text: string;
+    className: string;
+};
 
 export function ImportPhrases({
     inputLang,
@@ -25,6 +32,34 @@ export function ImportPhrases({
     onAddToCollection,
     hasSelectedCollection
 }: ImportPhrasesProps) {
+    const { shouldRender, hasAddToCollection: hasAddToCollectionVisibility, hasCreateNew } = useImportPhrasesVisibility({
+        inputLang,
+        setInputLang,
+        targetLang,
+        setTargetLang,
+        phrasesInput,
+        setPhrasesInput,
+        loading,
+        onProcess,
+        onAddToCollection,
+        hasSelectedCollection
+    });
+
+    if (!shouldRender) return null;
+
+    const buttons: ButtonConfig[] = [
+        hasAddToCollectionVisibility && {
+            onClick: onAddToCollection!,
+            text: "Add Phrases To Current Collection",
+            className: "px-4 py-2 text-lg bg-blue-400 text-white rounded hover:bg-blue-500 flex items-center justify-center"
+        },
+        hasCreateNew && {
+            onClick: onProcess!,
+            text: "Create New Collection",
+            className: "px-4 py-2 text-lg bg-blue-500 text-white rounded hover:bg-blue-600 flex items-center justify-center"
+        }
+    ].filter((button): button is ButtonConfig => Boolean(button));
+
     return (
         <>
             {/* Language Selection */}
@@ -59,7 +94,7 @@ export function ImportPhrases({
 
             {/* Textarea for initial phrases */}
             <textarea
-                placeholder="Enter phrases to translate, one per line"
+                placeholder="Enter words or phrases. One per line:"
                 value={phrasesInput}
                 onChange={(e) => setPhrasesInput(e.target.value)}
                 rows={6}
@@ -68,27 +103,18 @@ export function ImportPhrases({
 
             {/* Buttons */}
             <div className="flex flex-col gap-2">
-                {hasSelectedCollection && (
+                {buttons.map((button, index) => (
                     <button
-                        onClick={onAddToCollection}
+                        key={index}
+                        onClick={button.onClick}
                         disabled={loading}
-                        className="px-4 py-2 text-lg bg-blue-400 text-white rounded hover:bg-blue-500 flex items-center justify-center"
+                        className={button.className}
                     >
                         {loading ? (
                             <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                        ) : "Add Phrases To Current Collection"}
+                        ) : button.text}
                     </button>
-                )}
-                <button
-                    onClick={onProcess}
-                    disabled={loading}
-                    className="px-4 py-2 text-lg bg-blue-500 text-white rounded hover:bg-blue-600 flex items-center justify-center"
-                >
-                    {loading ? (
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    ) : "Create New Collection"}
-                </button>
-
+                ))}
             </div>
         </>
     );
