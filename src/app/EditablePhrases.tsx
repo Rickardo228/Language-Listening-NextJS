@@ -273,7 +273,7 @@ export function EditablePhrases({ phrases, setPhrases }: EditablePhrasesProps) {
                         )}
                         {outputLoading[index] && <span className="text-gray-500 text-sm">Processing...</span>}
                     </div>
-                    <div className="mb-2 flex items-center gap-2">
+                    {phrase.romanized && <div className="mb-2 flex items-center gap-2">
                         <label className="block font-medium mb-1">Romanized:</label>
                         <input
                             type="text"
@@ -294,7 +294,7 @@ export function EditablePhrases({ phrases, setPhrases }: EditablePhrasesProps) {
                         </button>}
                         {romanizedLoading[index] && <span className="text-gray-500 text-sm">Processing...</span>}
 
-                    </div>
+                    </div>}
                 </div>
             ))}
         </div>
