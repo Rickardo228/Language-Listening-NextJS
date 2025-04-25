@@ -523,6 +523,10 @@ export default function Home() {
         <h1 className="text-2xl font-bold">Language Shadowing</h1>
       </div>
 
+      {/* Audio Element */}
+      <audio ref={audioRef} onEnded={handleAudioEnded} className="w-96 mb-4" controls hidden />
+
+
       {/* Main content */}
       <div className={`${selectedCollection ? 'max-h-[100vh] min-h-[100vh] md:max-h-[92vh] md:min-h-[92vh]' : 'max-h-[92vh] min-h-[92vh]'} flex flex-row gap-4 w-full`}>
         {/* Saved Configs List */}
