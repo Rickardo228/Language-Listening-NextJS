@@ -133,6 +133,47 @@ export default function Home() {
     timeoutIds.current.push(timeoutId2)
   };
 
+  const handleAddToCollection = async () => {
+    const splitPhrases = phrasesInput
+      .split('\n')
+      .map((line) => line.trim())
+      .filter(Boolean);
+    if (!splitPhrases.length) return;
+
+    setLoading(true);
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/process`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          phrases: splitPhrases,
+          inputLang,
+          targetLang,
+        }),
+      });
+      const data = await response.json();
+      const processedPhrases: Phrase[] = splitPhrases.map((p, index) => ({
+        input: p,
+        translated: data.translated ? data.translated[index] || '' : '',
+        inputAudio: data.inputAudioSegments ? data.inputAudioSegments[index] || null : null,
+        outputAudio: data.outputAudioSegments ? data.outputAudioSegments[index] || null : null,
+        romanized: data.romanizedOutput ? data.romanizedOutput[index] || '' : '',
+        inputLang,
+        targetLang
+      }));
+
+      // Add new phrases to existing collection
+      const updatedPhrases = [...phrases, ...processedPhrases];
+      setPhrases(updatedPhrases);
+      setPhrasesInput('');
+    } catch (err) {
+      console.error('Processing error:', err);
+      alert(err)
+    }
+    setLoading(false);
+  };
+
   // Update audio source when phrase or phase changes.
   useEffect(() => {
     if (currentPhraseIndex < 0 || paused) return;
@@ -250,7 +291,7 @@ export default function Home() {
   };
 
   const handleRenameCollection = (index: number) => {
-    const newName = window.prompt('Enter a new name for this phrase list:', savedCollections[index].name);
+    const newName = window.prompt('Enter a new name for this collection:', savedCollections[index].name);
     if (newName && newName.trim()) {
       const updatedCollections = [...savedCollections];
       updatedCollections[index] = {
@@ -489,10 +530,27 @@ export default function Home() {
       <div className="max-h-[92vh] min-h-[92vh] flex flex-row gap-4 w-full">
         {/* Saved Configs List */}
         <div className={`flex flex-col gap-10 bg-gray-50 p-5 ${selectedCollection ? 'hidden md:flex' : 'flex'}`}>
+
           <div>
-            <h3 className="text-xl font-semibold mb-4">Saved Phrase Lists</h3>
+            <h3 className="text-xl font-semibold mb-4">Add Phrases</h3>
+            {/* Language Selection and Phrase Import */}
+            <ImportPhrases
+              inputLang={inputLang}
+              setInputLang={setInputLang}
+              targetLang={targetLang}
+              setTargetLang={setTargetLang}
+              phrasesInput={phrasesInput}
+              setPhrasesInput={setPhrasesInput}
+              loading={loading}
+              onProcess={handleProcess}
+              onAddToCollection={handleAddToCollection}
+              hasSelectedCollection={!!selectedCollection}
+            />
+          </div>
+          <div>
+            <h3 className="text-xl font-semibold mb-4">Collections</h3>
             {savedCollections.length === 0 ? (
-              <p>No Phrase Lists Saved.</p>
+              <p>No Collections Saved.</p>
             ) : (
               <ul className="list-disc pl-5">
                 {savedCollections.map((config, idx) => (
@@ -522,20 +580,6 @@ export default function Home() {
               </ul>
             )}
           </div>
-          <div>
-            <h3 className="text-xl font-semibold mb-4">Import Phrase List</h3>
-            {/* Language Selection and Phrase Import */}
-            <ImportPhrases
-              inputLang={inputLang}
-              setInputLang={setInputLang}
-              targetLang={targetLang}
-              setTargetLang={setTargetLang}
-              phrasesInput={phrasesInput}
-              setPhrasesInput={setPhrasesInput}
-              loading={loading}
-              onProcess={handleProcess}
-            />
-          </div>
         </div>
 
         {/* Phrases and Playback */}
@@ -547,7 +591,7 @@ export default function Home() {
             >
               ← Back
             </button>
-          ) : <h3 className="hidden md:block">Select a Phrase List or Import Phrases</h3>}
+          ) : <h3 className="hidden md:block">Select a Collection or Import Phrases</h3>}
           <div className="overflow-auto flex-1">
             {loading && 'Loading...'}
             {/* Editable Inputs for Each Phrase */}

@@ -9,6 +9,8 @@ interface ImportPhrasesProps {
     setPhrasesInput: (input: string) => void;
     loading: boolean;
     onProcess: () => void;
+    onAddToCollection: () => void;
+    hasSelectedCollection: boolean;
 }
 
 export function ImportPhrases({
@@ -19,7 +21,9 @@ export function ImportPhrases({
     phrasesInput,
     setPhrasesInput,
     loading,
-    onProcess
+    onProcess,
+    onAddToCollection,
+    hasSelectedCollection
 }: ImportPhrasesProps) {
     return (
         <>
@@ -62,16 +66,30 @@ export function ImportPhrases({
                 className="w-full p-2 text-lg border border-gray-300 rounded mb-4"
             />
 
-            {/* Process Button */}
-            <button
-                onClick={onProcess}
-                disabled={loading}
-                className="px-4 py-2 text-lg bg-blue-500 text-white rounded hover:bg-blue-600 mb-4 flex items-center justify-center"
-            >
-                {loading ? (
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                ) : "Import Phrase List"}
-            </button>
+            {/* Buttons */}
+            <div className="flex flex-col gap-2">
+                {hasSelectedCollection && (
+                    <button
+                        onClick={onAddToCollection}
+                        disabled={loading}
+                        className="px-4 py-2 text-lg bg-blue-400 text-white rounded hover:bg-blue-500 flex items-center justify-center"
+                    >
+                        {loading ? (
+                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        ) : "Add Phrases To Current Collection"}
+                    </button>
+                )}
+                <button
+                    onClick={onProcess}
+                    disabled={loading}
+                    className="px-4 py-2 text-lg bg-blue-500 text-white rounded hover:bg-blue-600 flex items-center justify-center"
+                >
+                    {loading ? (
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    ) : "Create New Collection"}
+                </button>
+
+            </div>
         </>
     );
 } 
