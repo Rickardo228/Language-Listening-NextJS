@@ -618,6 +618,7 @@ export default function Home() {
                 setPhrases={setPhrases}
                 inputLanguage={inputLang}
                 outputLanguage={targetLang}
+                currentPhraseIndex={currentPhraseIndex}
               />
             )}
           </div>

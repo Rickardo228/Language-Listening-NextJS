@@ -9,6 +9,7 @@ interface EditablePhrasesProps {
     setPhrases: (phrases: Phrase[]) => void;
     inputLanguage: string;
     outputLanguage: string;
+    currentPhraseIndex: number | null;
 }
 
 
@@ -26,7 +27,7 @@ async function generateAudio(text: string, language: string): Promise<{ audioUrl
     return response.json();
 }
 
-export function EditablePhrases({ phrases, setPhrases }: EditablePhrasesProps) {
+export function EditablePhrases({ phrases, setPhrases, currentPhraseIndex }: EditablePhrasesProps) {
     const [inputLoading, setInputLoading] = useState<{ [key: number]: boolean }>({});
     const [outputLoading, setOutputLoading] = useState<{ [key: number]: boolean }>({});
     const [romanizedLoading, setRomanizedLoading] = useState<{ [key: number]: boolean }>({});
@@ -228,7 +229,11 @@ export function EditablePhrases({ phrases, setPhrases }: EditablePhrasesProps) {
                 </div>
             </div> */}
             {phrases.map((phrase, index) => (
-                <div key={index} className="mb-4 border p-2 rounded">
+                <div
+                    key={index}
+                    className={`mb-4 border p-2 rounded ${currentPhraseIndex === index ? 'border-blue-500 bg-blue-50' : ''
+                        }`}
+                >
                     <div className="mb-2 flex items-center gap-2">
                         <label className="block font-medium mb-1">Input:</label>
                         <input
@@ -250,7 +255,7 @@ export function EditablePhrases({ phrases, setPhrases }: EditablePhrasesProps) {
                         )}
                         {inputLoading[index] && <span className="text-gray-500 text-sm">Processing...</span>}
                     </div>
-                    <div className="mb-2 flex items-center gap-2">
+                    <div className="flex items-center gap-2">
                         <label className="block font-medium mb-1">Translated:</label>
                         <input
                             type="text"
@@ -273,7 +278,7 @@ export function EditablePhrases({ phrases, setPhrases }: EditablePhrasesProps) {
                         )}
                         {outputLoading[index] && <span className="text-gray-500 text-sm">Processing...</span>}
                     </div>
-                    {phrase.romanized && <div className="mb-2 flex items-center gap-2">
+                    {phrase.romanized && <div className="mt-2 mb-2 flex items-center gap-2">
                         <label className="block font-medium mb-1">Romanized:</label>
                         <input
                             type="text"
