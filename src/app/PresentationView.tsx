@@ -12,7 +12,7 @@ interface PresentationViewProps {
   currentTranslated: string;
   currentPhase: "input" | "output";
   fullScreen: boolean; // if true, use fullscreen styles; if false, use inline styles
-  setFullscreen: (val: boolean) => void;
+  setFullscreen: React.Dispatch<React.SetStateAction<boolean>>;
   bgImage?: string | null;
   enableSnow?: boolean;
   enableLeaves?: boolean;
@@ -108,7 +108,7 @@ export function PresentationView({
 
   return (
     // Append the 'cursor-none' class when idle.
-    <div className={`${containerClass} ${isIdle ? "cursor-none" : ""}`} style={containerStyle} onClick={() => setFullscreen(false)}>
+    <div className={`${containerClass} ${isIdle ? "cursor-none" : ""}`} style={containerStyle} onClick={() => setFullscreen(prev => !prev)}>
       {enableOrtonEffect && (
         <div
           style={{
