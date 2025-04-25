@@ -644,19 +644,29 @@ export default function Home() {
                 onPause={handlePause}
                 onPlay={handlePlay}
                 onPrevious={() => {
-                  if (currentPhase === 'output') {
-                    setCurrentPhase('input');
-                  } else if (currentPhraseIndex > 0) {
-                    setCurrentPhraseIndex(prev => prev - 1);
-                    setCurrentPhase('output');
+                  if (audioRef.current) {
+                    audioRef.current.pause();
+                    if (currentPhase === 'output') {
+                      audioRef.current.src = phrases[currentPhraseIndex].inputAudio?.audioUrl || '';
+                      setCurrentPhase('input');
+                    } else if (currentPhraseIndex > 0) {
+                      audioRef.current.src = phrases[currentPhraseIndex - 1].outputAudio?.audioUrl || '';
+                      setCurrentPhraseIndex(prev => prev - 1);
+                      setCurrentPhase('output');
+                    }
                   }
                 }}
                 onNext={() => {
-                  if (currentPhase === 'input') {
-                    setCurrentPhase('output');
-                  } else if (currentPhraseIndex < phrases.length - 1) {
-                    setCurrentPhraseIndex(prev => prev + 1);
-                    setCurrentPhase('input');
+                  if (audioRef.current) {
+                    audioRef.current.pause();
+                    if (currentPhase === 'input') {
+                      audioRef.current.src = phrases[currentPhraseIndex].outputAudio?.audioUrl || '';
+                      setCurrentPhase('output');
+                    } else if (currentPhraseIndex < phrases.length - 1) {
+                      audioRef.current.src = phrases[currentPhraseIndex + 1].inputAudio?.audioUrl || '';
+                      setCurrentPhraseIndex(prev => prev + 1);
+                      setCurrentPhase('input');
+                    }
                   }
                 }}
                 canGoBack={currentPhase === 'output' || currentPhraseIndex > 0}
