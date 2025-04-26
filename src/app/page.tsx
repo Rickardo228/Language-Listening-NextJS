@@ -11,6 +11,23 @@ import { PresentationControls } from './PresentationControls';
 import { API_BASE_URL, BLEED_START_DELAY, DELAY_AFTER_OUTPUT_PHRASES_MULTIPLIER, LAG_COMPENSATION } from './consts';
 import { ImportPhrases } from './ImportPhrases';
 import { ImportPhrasesDialog } from './ImportPhrasesDialog';
+import { initializeApp } from 'firebase/app';
+import { getAuth, onAuthStateChanged, signInWithPopup, GoogleAuthProvider, User } from 'firebase/auth';
+import { getFirestore, collection, addDoc, getDocs, doc, setDoc, deleteDoc, updateDoc } from 'firebase/firestore';
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBDe17ZSzrBpaae56p4YDpJ-2oXAV_89eg",
+  authDomain: "languageshadowing-69768.firebaseapp.com",
+  projectId: "languageshadowing-69768",
+  storageBucket: "languageshadowing-69768.firebasestorage.app",
+  messagingSenderId: "1061735850333",
+  appId: "1:1061735850333:web:5baa7830b046375b0e48b4"
+};
+
+const app = initializeApp(firebaseConfig);
+
+export const auth = getAuth(app);
+export const firestore = getFirestore(app);
 
 export default function Home() {
   // User input and language selection
@@ -23,22 +40,16 @@ export default function Home() {
 
   // Instead of multiple arrays, we now store all per-phrase data in one state variable.
   const [phrases, setPhrasesBase] = useState<Phrase[]>([]);
-  const setPhrases = (phrases: Phrase[], collectionId?: string) => {
+  const setPhrases = async (phrases: Phrase[], collectionId?: string) => {
     setPhrasesBase(phrases);
-    // Update the saved collection in localStorage if we have a selected collection
-    if (selectedCollection) {
-      const savedCollectionsStr = localStorage.getItem('savedCollections');
-      if (savedCollectionsStr) {
-        const collections = JSON.parse(savedCollectionsStr);
-        const updatedCollections = collections.map((collection: Config) => {
-          if (collection.id === (collectionId || selectedCollection)) {
-            return { ...collection, phrases };
-          }
-          return collection;
-        });
-        localStorage.setItem('savedCollections', JSON.stringify(updatedCollections));
-        setSavedCollections(updatedCollections);
-      }
+    if (selectedCollection && user) {
+      const docRef = doc(firestore, 'users', user.uid, 'collections', collectionId || selectedCollection);
+      await updateDoc(docRef, { phrases });
+      setSavedCollections(prev =>
+        prev.map(col =>
+          col.id === (collectionId || selectedCollection) ? { ...col, phrases } : col
+        )
+      );
     }
   }
 
@@ -66,16 +77,61 @@ export default function Home() {
 
   const timeoutIds = useRef<number[]>([]);
 
+  const [user, setUser] = useState<User | null>(null);
+
+  // Listen for auth state changes and sign in if not already
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      if (firebaseUser) {
+        setUser(firebaseUser);
+      } else {
+        // Prompt sign-in (Google as example)
+        const provider = new GoogleAuthProvider();
+        signInWithPopup(auth, provider).catch(console.error);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Load saved collections from Firestore on mount or when user changes
+  useEffect(() => {
+    if (!user) return;
+    const fetchCollections = async () => {
+      const colRef = collection(firestore, 'users', user.uid, 'collections');
+      const snapshot = await getDocs(colRef);
+      const loaded: Config[] = [];
+      snapshot.forEach(docSnap => {
+        loaded.push({ id: docSnap.id, ...docSnap.data() } as Config);
+      });
+      setSavedCollections(loaded);
+    };
+    fetchCollections();
+  }, [user]);
+
+  // Save a new collection to Firestore
+  const handleCreateCollection = async (phrases: Phrase[]) => {
+    if (!user) return;
+    const generatedName = `${inputLang}→${targetLang}`;
+    const newCollection = {
+      name: generatedName,
+      phrases
+    };
+    const colRef = collection(firestore, 'users', user.uid, 'collections');
+    const docRef = await addDoc(colRef, newCollection);
+    setSavedCollections(prev => [...prev, { ...newCollection, id: docRef.id }]);
+    setSelectedCollection(docRef.id);
+  };
+
   // Load saved collections and configs from localStorage on mount.
   useEffect(() => {
     const storedConfigs = localStorage.getItem('savedConfigs');
     if (storedConfigs) {
       setSavedConfigs(JSON.parse(storedConfigs));
     }
-    const storedCollections = localStorage.getItem('savedCollections');
-    if (storedCollections) {
-      setSavedCollections(JSON.parse(storedCollections));
-    }
+    // const storedCollections = localStorage.getItem('savedCollections');
+    // if (storedCollections) {
+    //   setSavedCollections(JSON.parse(storedCollections));
+    // }
   }, []);
 
   const handleProcess = async () => {
@@ -268,43 +324,6 @@ export default function Home() {
     setSavedConfigs(updatedConfigs);
     localStorage.setItem('savedConfigs', JSON.stringify(updatedConfigs));
     // setConfigName('');
-  };
-
-  const handleCreateCollection = (phrases: Phrase[]) => {
-    const generatedName =
-      `${inputLang}→${targetLang}`;
-
-    const finalName = generatedName;
-    const newCollection: Config = {
-      id: Math.random().toString(), // TODO - improve UUID
-      name: finalName,
-      phrases
-    };
-    const updatedCollections = [...savedCollections, newCollection];
-    setSavedCollections(updatedCollections);
-    localStorage.setItem('savedCollections', JSON.stringify(updatedCollections));
-    setSelectedCollection(newCollection.id)
-    // setConfigName('');
-  };
-
-  // Delete a config from the saved list.
-  const handleDeleteCollection = (index: number) => {
-    const updatedCollections = savedCollections.filter((_, idx) => idx !== index);
-    setSavedCollections(updatedCollections);
-    localStorage.setItem('savedCollections', JSON.stringify(updatedCollections));
-  };
-
-  const handleRenameCollection = (index: number) => {
-    const newName = window.prompt('Enter a new name for this collection:', savedCollections[index].name);
-    if (newName && newName.trim()) {
-      const updatedCollections = [...savedCollections];
-      updatedCollections[index] = {
-        ...updatedCollections[index],
-        name: newName.trim()
-      };
-      setSavedCollections(updatedCollections);
-      localStorage.setItem('savedCollections', JSON.stringify(updatedCollections));
-    }
   };
 
   // Delete a config from the saved list.
