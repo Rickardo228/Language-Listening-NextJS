@@ -16,11 +16,12 @@ export function usePresentationConfig(initial?: Partial<PresentationConfig>) {
       enableOrtonEffect: false,
       enableParticles: false,
       enableSteam: false,
+      enableLoop: false,
       postProcessDelay: 0,
       // postProcessDelay: 5000,
       delayBetweenPhrases: 1000,
       ...initial,
-    });
+    } as PresentationConfig);
 
   const setPresentationConfig = (newConfig: Partial<PresentationConfig>) => {
     setPresentationConfigState((prev) => ({ ...prev, ...newConfig }));
