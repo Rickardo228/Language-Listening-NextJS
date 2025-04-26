@@ -13,7 +13,7 @@ import { ImportPhrases } from './ImportPhrases';
 import { ImportPhrasesDialog } from './ImportPhrasesDialog';
 import { initializeApp } from 'firebase/app';
 import { getAuth, onAuthStateChanged, signInWithPopup, GoogleAuthProvider, User, signOut } from 'firebase/auth';
-import { getFirestore, collection, addDoc, getDocs, doc, updateDoc } from 'firebase/firestore';
+import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 
 const firebaseConfig = {
   apiKey: "AIzaSyBDe17ZSzrBpaae56p4YDpJ-2oXAV_89eg",
@@ -547,6 +547,42 @@ export default function Home() {
     };
   }, []);
 
+  // Rename a collection
+  const handleRenameCollection = async (idx: number) => {
+    if (!user) return;
+    const collection = savedCollections[idx];
+    const newName = prompt("Enter new collection name:", collection.name);
+    if (!newName || newName.trim() === collection.name) return;
+    try {
+      const docRef = doc(firestore, 'users', user.uid, 'collections', collection.id);
+      await updateDoc(docRef, { name: newName.trim() });
+      setSavedCollections(prev =>
+        prev.map((col, i) =>
+          i === idx ? { ...col, name: newName.trim() } : col
+        )
+      );
+    } catch (err) {
+      alert("Failed to rename collection: " + err);
+    }
+  };
+
+  // Delete a collection
+  const handleDeleteCollection = async (idx: number) => {
+    if (!user) return;
+    const collection = savedCollections[idx];
+    if (!window.confirm(`Delete collection "${collection.name}"? This cannot be undone.`)) return;
+    try {
+      const docRef = doc(firestore, 'users', user.uid, 'collections', collection.id);
+      await deleteDoc(docRef);
+      setSavedCollections(prev => prev.filter((_, i) => i !== idx));
+      if (selectedCollection === collection.id) {
+        setSelectedCollection('');
+        setPhrasesBase([]);
+      }
+    } catch (err) {
+      alert("Failed to delete collection: " + err);
+    }
+  };
 
   return (
     <div className="font-sans">
