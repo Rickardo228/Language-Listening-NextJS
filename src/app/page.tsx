@@ -29,6 +29,24 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const firestore = getFirestore(app);
 
+function SignInPage() {
+  return (
+    <div className="flex flex-col items-center justify-center min-h-screen">
+      <h1 className="text-3xl font-bold mb-4">Language Shadowing</h1>
+      <p className="mb-6">Sign in to continue</p>
+      <button
+        className="bg-blue-500 text-white px-6 py-3 rounded hover:bg-blue-600"
+        onClick={() => {
+          const provider = new GoogleAuthProvider();
+          signInWithPopup(auth, provider).catch(console.error);
+        }}
+      >
+        Sign In with Google
+      </button>
+    </div>
+  );
+}
+
 export default function Home() {
   // User input and language selection
   const [phrasesInput, setPhrasesInput] = useState<string>('');
@@ -86,9 +104,7 @@ export default function Home() {
       if (firebaseUser) {
         setUser(firebaseUser);
       } else {
-        // Prompt sign-in (Google as example)
-        const provider = new GoogleAuthProvider();
-        signInWithPopup(auth, provider).catch(console.error);
+        setUser(null)
       }
     });
     return () => unsubscribe();
@@ -583,6 +599,10 @@ export default function Home() {
       alert("Failed to delete collection: " + err);
     }
   };
+
+  if (!user) {
+    return <SignInPage />;
+  }
 
   return (
     <div className="font-sans">
