@@ -13,7 +13,7 @@ import { ImportPhrases } from './ImportPhrases';
 import { ImportPhrasesDialog } from './ImportPhrasesDialog';
 import { initializeApp } from 'firebase/app';
 import { getAuth, onAuthStateChanged, signInWithPopup, GoogleAuthProvider, User, signOut } from 'firebase/auth';
-import { getFirestore, collection, addDoc, getDocs, doc, setDoc, deleteDoc, updateDoc } from 'firebase/firestore';
+import { getFirestore, collection, addDoc, getDocs, doc, updateDoc } from 'firebase/firestore';
 
 const firebaseConfig = {
   apiKey: "AIzaSyBDe17ZSzrBpaae56p4YDpJ-2oXAV_89eg",
