@@ -13,6 +13,7 @@ export type PresentationConfig = {
   enableSteam?: boolean;
   postProcessDelay: number;
   delayBetweenPhrases: number;
+  enableLoop: boolean;
 };
 
 export type Config = {

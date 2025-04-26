@@ -92,12 +92,12 @@ export function PresentationView({
     (fullScreen ? "fixed z-50" : "relative p-4 rounded shadow w-full h-48");
 
   // Classes for the regular phrase/translation.
-  const titleClass = fullScreen
-    ? "text-7xl font-bold text-white mb-4"
-    : "text-xl font-bold text-white mb-2";
-  const subtitleClass = fullScreen
-    ? "text-5xl font-bold text-gray-100 mt-5"
-    : "text-md font-bold text-gray-100 mt-3";
+  // const titleClass = fullScreen
+  //   ? "text-7xl font-bold text-white mb-4"
+  //   : "text-xl font-bold text-white mb-2";
+  // const subtitleClass = fullScreen
+  //   ? "text-5xl font-bold text-gray-100 mt-5"
+  //   : "text-md font-bold text-gray-100 mt-3";
 
   // Class for the title prop (slightly larger).
   const titlePropClass = fullScreen

@@ -5,6 +5,7 @@ export type ConfigFieldDefinition = {
   key: keyof PresentationConfig;
   label: string;
   inputType: "text" | "number" | "checkbox" | "file" | "color";
+  defaultValue?: boolean;
 };
 
 export const presentationConfigDefinition: ConfigFieldDefinition[] = [
@@ -51,5 +52,11 @@ export const presentationConfigDefinition: ConfigFieldDefinition[] = [
     key: "delayBetweenPhrases",
     label: "Delay Between Phrases (ms)",
     inputType: "number",
+  },
+  {
+    key: "enableLoop",
+    label: "Loop",
+    inputType: "checkbox",
+    defaultValue: false,
   },
 ];

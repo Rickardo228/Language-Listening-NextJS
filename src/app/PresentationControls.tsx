@@ -1,4 +1,4 @@
-import { Maximize2, Pause, Play, Repeat, ArrowLeft, ArrowRight } from 'lucide-react';
+import { Maximize2, Pause, Play, Repeat, ArrowLeft, ArrowRight, Settings } from 'lucide-react';
 import { SettingsModal } from './SettingsModal';
 import { PresentationConfig } from './types';
 import { useState } from 'react';
@@ -93,13 +93,13 @@ export function PresentationControls({
                         Stop Recording
                     </button>
                 }
-                {/* <button
+                <button
                     onClick={() => setSettingsOpen(true)}
                     className="p-2 bg-gray-200 rounded hover:bg-gray-300"
                     title="Settings"
                 >
                     <Settings className="h-8 w-8 text-gray-700" />
-                </button> */}
+                </button>
                 <button
                     onClick={onPrevious}
                     disabled={!canGoBack}

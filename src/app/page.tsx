@@ -427,6 +427,7 @@ export default function Home() {
     clearAllTimeouts();
     if (audioRef.current) {
       audioRef.current.pause();
+      audioRef.current.src = '';
     }
     stopScreenRecording()
     setPaused(true);
@@ -443,7 +444,7 @@ export default function Home() {
     }
   };
 
-  // Update handleAudioEnded to respect paused state
+  // Update handleAudioEnded to handle looping
   const handleAudioEnded = () => {
     if (paused) return;
 
@@ -459,9 +460,15 @@ export default function Home() {
           setCurrentPhraseIndex(currentPhraseIndex + 1);
           setCurrentPhase('input');
         } else {
-          setFinished(true);
-          if (recordScreen) stopScreenRecording();
-          setPaused(true)
+          if (presentationConfig.enableLoop) {
+            // If looping is enabled, restart from beginning
+            setCurrentPhraseIndex(0);
+            setCurrentPhase('input');
+          } else {
+            setFinished(true);
+            if (recordScreen) stopScreenRecording();
+            setPaused(true);
+          }
         }
       }, (outputDuration * DELAY_AFTER_OUTPUT_PHRASES_MULTIPLIER) + presentationConfig.delayBetweenPhrases);
       timeoutIds.current.push(timeoutId);
