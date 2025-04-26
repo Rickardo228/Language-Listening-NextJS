@@ -10,6 +10,7 @@ interface EditablePhrasesProps {
     inputLanguage: string;
     outputLanguage: string;
     currentPhraseIndex: number | null;
+    onPhraseClick?: (index: number) => void;
 }
 
 
@@ -27,7 +28,7 @@ async function generateAudio(text: string, language: string): Promise<{ audioUrl
     return response.json();
 }
 
-export function EditablePhrases({ phrases, setPhrases, currentPhraseIndex }: EditablePhrasesProps) {
+export function EditablePhrases({ phrases, setPhrases, currentPhraseIndex, onPhraseClick }: EditablePhrasesProps) {
     const [inputLoading, setInputLoading] = useState<{ [key: number]: boolean }>({});
     const [outputLoading, setOutputLoading] = useState<{ [key: number]: boolean }>({});
     const [romanizedLoading, setRomanizedLoading] = useState<{ [key: number]: boolean }>({});
@@ -231,8 +232,9 @@ export function EditablePhrases({ phrases, setPhrases, currentPhraseIndex }: Edi
             {phrases.map((phrase, index) => (
                 <div
                     key={index}
-                    className={`mb-4 border p-2 rounded ${currentPhraseIndex === index ? 'border-blue-500 bg-blue-50' : ''
-                        }`}
+                    className={`mb-4 border p-2 rounded ${currentPhraseIndex === index ? 'border-blue-500 bg-blue-50' : ''} 
+                        ${onPhraseClick ? 'cursor-pointer hover:border-blue-300' : ''}`}
+                    onClick={() => onPhraseClick?.(index)}
                 >
                     <div className="mb-2 flex items-center gap-2">
                         <label className="block font-medium mb-1">Input:</label>
@@ -246,7 +248,10 @@ export function EditablePhrases({ phrases, setPhrases, currentPhraseIndex }: Edi
                         />
                         {phrase.inputAudio && (
                             <button
-                                onClick={() => new Audio(phrase.inputAudio?.audioUrl).play()}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    new Audio(phrase.inputAudio?.audioUrl).play();
+                                }}
                                 className="px-3 py-1 text-sm bg-green-100 hover:bg-green-200 rounded"
                                 title="Play input audio"
                             >
@@ -268,7 +273,10 @@ export function EditablePhrases({ phrases, setPhrases, currentPhraseIndex }: Edi
                         {!phrase.useRomanizedForAudio && PlayOutputAudioButton(phrase)}
                         {phrase.useRomanizedForAudio && (
                             <button
-                                onClick={() => handleGenerateOutputAudio(index)}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleGenerateOutputAudio(index);
+                                }}
                                 disabled={outputLoading[index]}
                                 className={`px-3 py-1 text-sm bg-blue-100 hover:bg-blue-200 rounded ${outputLoading[index] ? 'opacity-50 cursor-not-allowed' : ''}`}
                                 title="Generate audio for output"
@@ -289,7 +297,10 @@ export function EditablePhrases({ phrases, setPhrases, currentPhraseIndex }: Edi
                         />
                         {phrase.useRomanizedForAudio && PlayOutputAudioButton(phrase)}
                         {!phrase.useRomanizedForAudio && <button
-                            onClick={() => handleGenerateRomanizedAudio(index)}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                handleGenerateRomanizedAudio(index);
+                            }}
                             disabled={romanizedLoading[index]}
                             className={`px-3 py-1 text-sm bg-blue-100 hover:bg-blue-200 rounded ${romanizedLoading[index] ? 'opacity-50 cursor-not-allowed' : ''
                                 } flex flex-row items-center`}

@@ -626,6 +626,15 @@ export default function Home() {
                 inputLanguage={inputLang}
                 outputLanguage={targetLang}
                 currentPhraseIndex={currentPhraseIndex}
+                onPhraseClick={(index) => {
+                  setCurrentPhraseIndex(index);
+                  setCurrentPhase('input');
+                  clearAllTimeouts();
+                  if (audioRef.current && phrases[index]?.inputAudio?.audioUrl) {
+                    audioRef.current.pause();
+                    audioRef.current.src = phrases[index].inputAudio.audioUrl;
+                  }
+                }}
               />
             )}
           </div>
