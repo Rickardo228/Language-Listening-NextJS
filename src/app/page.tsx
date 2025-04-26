@@ -216,7 +216,9 @@ export default function Home() {
     setLoading(true);
     try {
       // First update the UI state with the saved config
-
+      clearAllTimeouts();
+      setCurrentPhraseIndex(0);
+      setCurrentPhase('input');
       setSelectedCollection(config.id);
 
 

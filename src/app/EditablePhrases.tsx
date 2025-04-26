@@ -241,6 +241,7 @@ export function EditablePhrases({ phrases, setPhrases, currentPhraseIndex, onPhr
                         <input
                             type="text"
                             value={phrase.input}
+                            onClick={(e) => e.stopPropagation()}
                             onChange={(e) => handlePhraseChange(index, 'input', e.target.value)}
                             onBlur={() => handleBlur(index, 'input')}
                             className={`w-full p-2 border border-gray-300 rounded ${inputLoading[index] ? 'opacity-50' : ''}`}
@@ -265,6 +266,7 @@ export function EditablePhrases({ phrases, setPhrases, currentPhraseIndex, onPhr
                         <input
                             type="text"
                             value={phrase.translated}
+                            onClick={(e) => e.stopPropagation()}
                             onChange={(e) => handlePhraseChange(index, 'translated', e.target.value)}
                             onBlur={() => handleBlur(index, 'translated')}
                             className={`w-full p-2 border border-gray-300 rounded ${outputLoading[index] ? 'opacity-50' : ''}`}
@@ -291,6 +293,7 @@ export function EditablePhrases({ phrases, setPhrases, currentPhraseIndex, onPhr
                         <input
                             type="text"
                             value={phrase.romanized}
+                            onClick={(e) => e.stopPropagation()}
                             onChange={(e) => handlePhraseChange(index, 'romanized', e.target.value)}
                             onBlur={() => handleBlur(index, 'romanized')}
                             className="w-full p-2 border border-gray-300 rounded"
