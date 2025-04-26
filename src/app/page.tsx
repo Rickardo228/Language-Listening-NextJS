@@ -12,7 +12,7 @@ import { API_BASE_URL, BLEED_START_DELAY, DELAY_AFTER_OUTPUT_PHRASES_MULTIPLIER,
 import { ImportPhrases } from './ImportPhrases';
 import { ImportPhrasesDialog } from './ImportPhrasesDialog';
 import { initializeApp } from 'firebase/app';
-import { getAuth, onAuthStateChanged, signInWithPopup, GoogleAuthProvider, User } from 'firebase/auth';
+import { getAuth, onAuthStateChanged, signInWithPopup, GoogleAuthProvider, User, signOut } from 'firebase/auth';
 import { getFirestore, collection, addDoc, getDocs, doc, setDoc, deleteDoc, updateDoc } from 'firebase/firestore';
 
 const firebaseConfig = {
@@ -78,6 +78,7 @@ export default function Home() {
   const timeoutIds = useRef<number[]>([]);
 
   const [user, setUser] = useState<User | null>(null);
+  const [avatarDialogOpen, setAvatarDialogOpen] = useState(false);
 
   // Listen for auth state changes and sign in if not already
   useEffect(() => {
@@ -552,6 +553,55 @@ export default function Home() {
       {/* Nav */}
       <div className={`flex items-center justify-between w-[100vw] shadow-md mb-1 p-3 ${selectedCollection ? 'hidden md:flex' : 'flex'}`}>
         <h1 className="text-2xl font-bold">Language Shadowing</h1>
+        {/* User Avatar / Auth Button */}
+        <div className="relative">
+          {user ? (
+            <button
+              className="flex items-center gap-2 focus:outline-none"
+              onClick={() => setAvatarDialogOpen(true)}
+              title={user.displayName || user.email || "Account"}
+            >
+              {user.photoURL ? (
+                <img src={user.photoURL} alt="avatar" className="w-8 h-8 rounded-full border" />
+              ) : (
+                <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center font-bold text-lg">
+                  {user.displayName?.[0]?.toUpperCase() || "U"}
+                </div>
+              )}
+            </button>
+          ) : (
+            <button
+              className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+              onClick={() => {
+                const provider = new GoogleAuthProvider();
+                signInWithPopup(auth, provider).catch(console.error);
+              }}
+            >
+              Sign In / Create Account
+            </button>
+          )}
+
+          {/* Dialog */}
+          {avatarDialogOpen && user && (
+            <div
+              className="absolute right-0 mt-2 w-48 bg-white border rounded shadow-lg z-50"
+              onClick={() => setAvatarDialogOpen(false)}
+            >
+              <div className="p-4 border-b">
+                <div className="font-semibold">{user.displayName || user.email}</div>
+              </div>
+              <button
+                className="w-full text-left px-4 py-2 hover:bg-gray-100"
+                onClick={() => {
+                  signOut(auth);
+                  setAvatarDialogOpen(false);
+                }}
+              >
+                Sign Out
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Audio Element */}
