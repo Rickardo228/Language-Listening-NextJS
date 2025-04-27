@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect, ChangeEvent } from 'react';
+import { useState, useRef, useEffect, ChangeEvent, useMemo } from 'react';
 import { PresentationView, TITLE_ANIMATION_DURATION } from './PresentationView';
 import bgColorOptions from './utils/bgColorOptions';
 import { Config, languageOptions, Phrase, PresentationConfig } from './types';
@@ -248,21 +248,31 @@ export default function Home() {
   };
 
   // Update audio source when phrase or phase changes.
+  const currentInputAudioUrl = useMemo(() => {
+    if (currentPhraseIndex < 0) return '';
+    return phrases[currentPhraseIndex]?.inputAudio?.audioUrl || '';
+  }, [currentPhraseIndex, phrases]);
+
+  const currentOutputAudioUrl = useMemo(() => {
+    if (currentPhraseIndex < 0) return '';
+    return phrases[currentPhraseIndex]?.outputAudio?.audioUrl || '';
+  }, [currentPhraseIndex, phrases]);
+
   useEffect(() => {
     if (currentPhraseIndex < 0 || paused) return;
-    const currentPhraseObj = phrases[currentPhraseIndex];
+
     let src = '';
-    if (currentPhase === 'input' && currentPhraseObj?.inputAudio) {
-      console.log("hey")
-      src = currentPhraseObj.inputAudio.audioUrl;
-    } else if (currentPhase === 'output' && currentPhraseObj?.outputAudio) {
-      src = currentPhraseObj.outputAudio.audioUrl;
+    if (currentPhase === 'input') {
+      src = currentInputAudioUrl;
+    } else if (currentPhase === 'output') {
+      src = currentOutputAudioUrl;
     }
+
     if (audioRef.current && src && audioRef.current.paused) {
       audioRef.current.src = src;
       audioRef.current.play().catch((err) => console.error('Auto-play error:', err));
     }
-  }, [currentPhraseIndex, currentPhase, phrases, paused]);
+  }, [currentPhraseIndex, currentPhase, paused, currentInputAudioUrl, currentOutputAudioUrl]);
 
   // When a saved config is selected, load its state.
   // const handleLoadConfig = async (config: PresentationConfig) => {
@@ -293,22 +303,7 @@ export default function Home() {
       setCurrentPhase('input');
       setSelectedCollection(config.id);
 
-
-      // Then fetch fresh audio for all phrases
-      const response = await fetch(`${API_BASE_URL}/load`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          phrases: config.phrases,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to load audio');
-      }
-
-      const data = await response.json();
-      setPhrases(data.phrases, config.id);
+      setPhrases(config.phrases, config.id);
     } catch (err) {
       console.error('Loading error:', err);
       alert('Error loading configuration: ' + err);

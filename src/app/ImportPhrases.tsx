@@ -1,5 +1,7 @@
 import { languageOptions } from './types';
 import { useImportPhrasesVisibility } from './hooks/useImportPhrasesVisibility';
+import { useState } from 'react';
+import { API_BASE_URL } from './consts';
 
 export interface ImportPhrasesProps {
     inputLang: string;
@@ -32,6 +34,37 @@ export function ImportPhrases({
     onAddToCollection,
     hasSelectedCollection
 }: ImportPhrasesProps) {
+    const [prompt, setPrompt] = useState('');
+    const [generatingPhrases, setGeneratingPhrases] = useState(false);
+
+    const handleGeneratePhrases = async () => {
+        if (!prompt.trim()) return;
+
+        setGeneratingPhrases(true);
+        try {
+            const response = await fetch(`${API_BASE_URL}/generate-phrases`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    prompt,
+                    inputLang,
+                    targetLang
+                }),
+            });
+
+            const data = await response.json();
+            if (data.phrases) {
+                setPhrasesInput(data.phrases);
+            }
+        } catch (error) {
+            console.error('Error generating phrases:', error);
+        } finally {
+            setGeneratingPhrases(false);
+        }
+    };
+
     const { shouldRender, hasAddToCollection: hasAddToCollectionVisibility, hasCreateNew } = useImportPhrasesVisibility({
         inputLang,
         setInputLang,
@@ -89,6 +122,30 @@ export function ImportPhrases({
                             <option key={option.code} value={option.code}>{option.label}</option>
                         ))}
                     </select>
+                </div>
+            </div>
+
+            {/* AI Prompt Input */}
+            <div className="mb-4">
+                <label htmlFor="prompt" className="block font-medium mb-1">AI Prompt</label>
+                <div className="flex gap-2">
+                    <input
+                        type="text"
+                        id="prompt"
+                        value={prompt}
+                        onChange={(e) => setPrompt(e.target.value)}
+                        placeholder="Enter a prompt to generate phrases..."
+                        className="flex-1 p-2 border border-gray-300 rounded"
+                    />
+                    <button
+                        onClick={handleGeneratePhrases}
+                        disabled={generatingPhrases || !prompt.trim()}
+                        className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 disabled:bg-gray-400"
+                    >
+                        {generatingPhrases ? (
+                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        ) : "Generate"}
+                    </button>
                 </div>
             </div>
 
