@@ -14,6 +14,7 @@ import { ImportPhrasesDialog } from './ImportPhrasesDialog';
 import { initializeApp } from 'firebase/app';
 import { getAuth, onAuthStateChanged, signInWithPopup, GoogleAuthProvider, User, signOut } from 'firebase/auth';
 import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { CollectionList } from './CollectionList';
 
 const firebaseConfig = {
   apiKey: "AIzaSyBDe17ZSzrBpaae56p4YDpJ-2oXAV_89eg",
@@ -125,9 +126,9 @@ export default function Home() {
   }, [user]);
 
   // Save a new collection to Firestore
-  const handleCreateCollection = async (phrases: Phrase[]) => {
+  const handleCreateCollection = async (phrases: Phrase[], prompt?: string) => {
     if (!user) return;
-    const generatedName = `${inputLang}→${targetLang}`;
+    const generatedName = `${inputLang}→${targetLang}${prompt ? ` - ${prompt}` : ''}`;
     const newCollection = {
       name: generatedName,
       phrases
@@ -150,7 +151,7 @@ export default function Home() {
     // }
   }, []);
 
-  const handleProcess = async () => {
+  const handleProcess = async (prompt?: string) => {
     // Split the textarea input into an array of phrases.
     const splitPhrases = phrasesInput
       .split('\n')
@@ -185,7 +186,7 @@ export default function Home() {
       }));
       setPhrases(processedPhrases);
       setPhrasesInput('');
-      handleCreateCollection(processedPhrases);
+      handleCreateCollection(processedPhrases, prompt);
       setCurrentPhraseIndex(-1);
       setCurrentPhase('input');
       setFinished(false);
@@ -661,7 +662,7 @@ export default function Home() {
       {/* Main content */}
       <div className={`${selectedCollection ? 'max-h-[100vh] min-h-[100vh] md:max-h-[92vh] md:min-h-[92vh]' : 'max-h-[92vh] min-h-[92vh]'} flex flex-row gap-4 w-full`}>
         {/* Saved Configs List */}
-        <div className={`flex flex-col gap-10 bg-gray-50 p-5 ${selectedCollection ? 'hidden md:flex' : 'flex'}`}>
+        <div className={`flex flex-col gap-10 bg-gray-50 p-5 ${selectedCollection ? 'hidden md:flex' : 'flex'} w-[460px] min-w-[300px] overflow-y-auto`}>
 
           <div>
             {/* Language Selection and Phrase Import */}
@@ -679,39 +680,13 @@ export default function Home() {
 
             />
           </div>
-          <div>
-            <h3 className="text-xl font-semibold mb-4">Collections</h3>
-            {savedCollections.length === 0 ? (
-              <p>No Collections Saved.</p>
-            ) : (
-              <ul className="list-disc pl-5">
-                {savedCollections.map((config, idx) => (
-                  <li key={idx} className="flex justify-between items-center">
-                    <span
-                      onClick={() => handleLoadCollection(config)}
-                      className="cursor-pointer hover:underline"
-                    >
-                      {config.name}
-                    </span>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => handleRenameCollection(idx)}
-                        className="text-blue-500 hover:underline"
-                      >
-                        Rename
-                      </button>
-                      <button
-                        onClick={() => handleDeleteCollection(idx)}
-                        className="text-red-500 hover:underline"
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
+          <CollectionList
+            savedCollections={savedCollections}
+            onLoadCollection={handleLoadCollection}
+            onRenameCollection={handleRenameCollection}
+            onDeleteCollection={handleDeleteCollection}
+            selectedCollection={selectedCollection}
+          />
         </div>
 
         {/* Phrases and Playback */}
@@ -723,7 +698,7 @@ export default function Home() {
             >
               ← Back
             </button>
-          ) : !loading && <h3 className="hidden md:block">Select a Collection or Import Phrases</h3>}
+          ) : !loading && !phrases?.length && <h3 className="hidden md:block">Select a Collection or Import Phrases</h3>}
           <div className="overflow-auto flex-1">
             {loading && 'Loading...'}
             {/* Add ImportPhrasesDialog here */}
