@@ -603,9 +603,9 @@ export default function Home() {
   }
 
   return (
-    <div className="font-sans">
+    <div className="font-sans md:h-[100vh] flex flex-col">
       {/* Nav */}
-      <div className={`flex items-center justify-between w-[100vw] shadow-md mb-1 p-3 sticky top-0 bg-white z-50`}>
+      <div className={`flex items-center justify-between shadow-md md:mb-1 p-3 sticky top-0 bg-white z-50`}>
         {/* Back button - hidden when no collection selected */}
         <button
           onClick={() => { setSelectedCollection(''); handleStop(); setPhrasesBase([]) }}
@@ -670,11 +670,11 @@ export default function Home() {
       </div>
 
       {/* Audio Element */}
-      <audio ref={audioRef} onEnded={handleAudioEnded} className="w-96 mb-4" controls hidden />
+      <audio ref={audioRef} onEnded={handleAudioEnded} controls hidden />
 
 
       {/* Main content */}
-      <div className={`max-h-[92vh] min-h-[92vh] flex flex-row gap-4 w-full`}>
+      <div className={`flex md:flex-row flex-col-reverse gap-4 w-full md:h-[92vh]`}>
         {/* Saved Configs List */}
         <div className={`flex flex-col gap-10 bg-gray-50 p-5 ${selectedCollection ? 'hidden md:flex' : 'flex'} w-[460px] min-w-[300px] overflow-visible md:overflow-y-auto`}>
 
@@ -704,128 +704,125 @@ export default function Home() {
         </div>
 
         {/* Phrases and Playback */}
-        <div className={`flex flex-col-reverse xl:flex-row flex-1 gap-4 overflow-visible overflow-y-auto md:p-5 ${selectedCollection ? 'flex' : 'hidden md:flex'}`}>
-          {!loading && !phrases?.length && <h3 className="hidden md:block">Select a Collection or Import Phrases</h3>}
-          <div className="flex-1 md:overflow-y-auto">
-            {loading && 'Loading...'}
-            {/* Add ImportPhrasesDialog here */}
-            {!loading && (
-              <div className="sticky md:px-0 md:pb-3 px-1 py-2 top-[255px] md:top-[0px] md:bg-white bg-gray-50">
-                <ImportPhrasesDialog
-                  inputLang={inputLang}
-                  setInputLang={setInputLang}
-                  targetLang={targetLang}
-                  setTargetLang={setTargetLang}
-                  phrasesInput={phrasesInput}
-                  setPhrasesInput={setPhrasesInput}
-                  loading={loading}
-                  // onProcess={handleProcess}
-                  onAddToCollection={handleAddToCollection}
-                  hasSelectedCollection={!!selectedCollection}
-                />
-              </div>
-            )}
-            {/* Editable Inputs for Each Phrase */}
-            {phrases.length > 0 && !fullscreen && (
-              <div className='md:py-0 p-2'>
-                <EditablePhrases
-                  phrases={phrases}
-                  setPhrases={setPhrases}
-                  inputLanguage={inputLang}
-                  outputLanguage={targetLang}
-                  currentPhraseIndex={currentPhraseIndex}
-                  onPhraseClick={(index) => {
-                    setCurrentPhraseIndex(index);
-                    setCurrentPhase('input');
-                    clearAllTimeouts();
-                    if (audioRef.current && phrases[index]?.inputAudio?.audioUrl) {
-                      audioRef.current.pause();
-                      audioRef.current.src = phrases[index].inputAudio.audioUrl;
-                    }
-                  }}
-                />
-              </div>
-            )}
-          </div>
-
-          {/* Presentation View and Controls */}
-          {Boolean(typeof currentPhraseIndex === "number" && phrases?.length) && (
-            <div className='xl:flex-1 sticky top-[0px] bg-white'>
-              <PresentationView
-                currentPhrase={phrases[currentPhraseIndex]?.input || ''}
-                currentTranslated={phrases[currentPhraseIndex]?.translated || ''}
-                currentPhase={currentPhase}
-                fullScreen={fullscreen}
-                setFullscreen={setFullscreen}
-                bgImage={presentationConfig.bgImage}
-                containerBg={presentationConfig.containerBg}
-                textBg={presentationConfig.textBg}
-                enableSnow={presentationConfig.enableSnow}
-                enableCherryBlossom={presentationConfig.enableCherryBlossom}
-                enableLeaves={presentationConfig.enableLeaves}
-                enableAutumnLeaves={presentationConfig.enableAutumnLeaves}
-                enableOrtonEffect={presentationConfig.enableOrtonEffect}
-                enableParticles={presentationConfig.enableParticles}
-                enableSteam={presentationConfig.enableSteam}
-                romanizedOutput={phrases[currentPhraseIndex]?.romanized}
-                title={showTitle ? configName : undefined}
+        {!loading && !phrases?.length && <h3 className="hidden md:block">Select a Collection or Import Phrases</h3>}
+        <div className="flex-1 md:overflow-y-auto">
+          {loading && 'Loading...'}
+          {/* Add ImportPhrasesDialog here */}
+          {!loading && (
+            <div className="sticky md:px-0 md:pb-3 px-1 py-2 top-[320px] md:top-[0px] md:bg-white bg-gray-50">
+              <ImportPhrasesDialog
+                inputLang={inputLang}
+                setInputLang={setInputLang}
+                targetLang={targetLang}
+                setTargetLang={setTargetLang}
+                phrasesInput={phrasesInput}
+                setPhrasesInput={setPhrasesInput}
+                loading={loading}
+                // onProcess={handleProcess}
+                onAddToCollection={handleAddToCollection}
+                hasSelectedCollection={!!selectedCollection}
               />
-              <div className='py-1 px-1 md:py-2'>
-                <PresentationControls
-                  fullscreen={fullscreen}
-                  setFullscreen={setFullscreen}
-                  recordScreen={recordScreen}
-                  stopScreenRecording={stopScreenRecording}
-                  handleReplay={handleReplay}
-                  hasPhrasesLoaded={phrases.length > 0}
-                  configName={configName}
-                  setConfigName={setConfigName}
-                  onSaveConfig={handleSaveConfig}
-                  presentationConfig={presentationConfig}
-                  setPresentationConfig={setPresentationConfig}
-                  presentationConfigDefinition={presentationConfigDefinition}
-                  handleImageUpload={handleImageUpload}
-                  paused={paused}
-                  onPause={handlePause}
-                  onPlay={handlePlay}
-                  onPrevious={() => {
-                    clearAllTimeouts()
-                    if (audioRef.current) {
-                      audioRef.current.pause();
-                      if (currentPhase === 'output') {
-                        audioRef.current.src = phrases[currentPhraseIndex].inputAudio?.audioUrl || '';
-                        setCurrentPhase('input');
-                      } else if (currentPhraseIndex > 0) {
-                        audioRef.current.src = phrases[currentPhraseIndex - 1].outputAudio?.audioUrl || '';
-                        setCurrentPhraseIndex(prev => prev - 1);
-                        setCurrentPhase('output');
-                      }
-                    }
-                  }}
-                  onNext={() => {
-                    clearAllTimeouts()
-                    if (audioRef.current) {
-                      audioRef.current.pause();
-                      if (currentPhase === 'input') {
-                        audioRef.current.src = phrases[currentPhraseIndex].outputAudio?.audioUrl || '';
-                        setCurrentPhase('output');
-                      } else if (currentPhraseIndex < phrases.length - 1) {
-                        audioRef.current.src = phrases[currentPhraseIndex + 1].inputAudio?.audioUrl || '';
-                        setCurrentPhraseIndex(prev => prev + 1);
-                        setCurrentPhase('input');
-                      }
-                    }
-                  }}
-                  canGoBack={currentPhase === 'output' || currentPhraseIndex > 0}
-                  canGoForward={currentPhase === 'input' || currentPhraseIndex < phrases.length - 1}
-                />
-              </div>
+            </div>
+          )}
+          {/* Editable Inputs for Each Phrase */}
+          {phrases.length > 0 && !fullscreen && (
+            <div className='md:py-0 p-2'>
+              <EditablePhrases
+                phrases={phrases}
+                setPhrases={setPhrases}
+                inputLanguage={inputLang}
+                outputLanguage={targetLang}
+                currentPhraseIndex={currentPhraseIndex}
+                onPhraseClick={(index) => {
+                  setCurrentPhraseIndex(index);
+                  setCurrentPhase('input');
+                  clearAllTimeouts();
+                  if (audioRef.current && phrases[index]?.inputAudio?.audioUrl) {
+                    audioRef.current.pause();
+                    audioRef.current.src = phrases[index].inputAudio.audioUrl;
+                  }
+                }}
+              />
             </div>
           )}
         </div>
 
-      </div>
+        {/* Presentation View and Controls */}
+        {Boolean(typeof currentPhraseIndex === "number" && phrases?.length) && (
+          <div className='xl:flex-1 sticky top-[64px] bg-white md:p-2 '>
+            <PresentationView
+              currentPhrase={phrases[currentPhraseIndex]?.input || ''}
+              currentTranslated={phrases[currentPhraseIndex]?.translated || ''}
+              currentPhase={currentPhase}
+              fullScreen={fullscreen}
+              setFullscreen={setFullscreen}
+              bgImage={presentationConfig.bgImage}
+              containerBg={presentationConfig.containerBg}
+              textBg={presentationConfig.textBg}
+              enableSnow={presentationConfig.enableSnow}
+              enableCherryBlossom={presentationConfig.enableCherryBlossom}
+              enableLeaves={presentationConfig.enableLeaves}
+              enableAutumnLeaves={presentationConfig.enableAutumnLeaves}
+              enableOrtonEffect={presentationConfig.enableOrtonEffect}
+              enableParticles={presentationConfig.enableParticles}
+              enableSteam={presentationConfig.enableSteam}
+              romanizedOutput={phrases[currentPhraseIndex]?.romanized}
+              title={showTitle ? configName : undefined}
+            />
+            <div className='py-1 px-1 md:py-2'>
+              <PresentationControls
+                fullscreen={fullscreen}
+                setFullscreen={setFullscreen}
+                recordScreen={recordScreen}
+                stopScreenRecording={stopScreenRecording}
+                handleReplay={handleReplay}
+                hasPhrasesLoaded={phrases.length > 0}
+                configName={configName}
+                setConfigName={setConfigName}
+                onSaveConfig={handleSaveConfig}
+                presentationConfig={presentationConfig}
+                setPresentationConfig={setPresentationConfig}
+                presentationConfigDefinition={presentationConfigDefinition}
+                handleImageUpload={handleImageUpload}
+                paused={paused}
+                onPause={handlePause}
+                onPlay={handlePlay}
+                onPrevious={() => {
+                  clearAllTimeouts()
+                  if (audioRef.current) {
+                    audioRef.current.pause();
+                    if (currentPhase === 'output') {
+                      audioRef.current.src = phrases[currentPhraseIndex].inputAudio?.audioUrl || '';
+                      setCurrentPhase('input');
+                    } else if (currentPhraseIndex > 0) {
+                      audioRef.current.src = phrases[currentPhraseIndex - 1].outputAudio?.audioUrl || '';
+                      setCurrentPhraseIndex(prev => prev - 1);
+                      setCurrentPhase('output');
+                    }
+                  }
+                }}
+                onNext={() => {
+                  clearAllTimeouts()
+                  if (audioRef.current) {
+                    audioRef.current.pause();
+                    if (currentPhase === 'input') {
+                      audioRef.current.src = phrases[currentPhraseIndex].outputAudio?.audioUrl || '';
+                      setCurrentPhase('output');
+                    } else if (currentPhraseIndex < phrases.length - 1) {
+                      audioRef.current.src = phrases[currentPhraseIndex + 1].inputAudio?.audioUrl || '';
+                      setCurrentPhraseIndex(prev => prev + 1);
+                      setCurrentPhase('input');
+                    }
+                  }
+                }}
+                canGoBack={currentPhase === 'output' || currentPhraseIndex > 0}
+                canGoForward={currentPhase === 'input' || currentPhraseIndex < phrases.length - 1}
+              />
+            </div>
+          </div>
+        )}
 
+      </div>
 
     </div >
   );
