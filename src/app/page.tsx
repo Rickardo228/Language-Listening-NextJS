@@ -693,7 +693,7 @@ export default function Home() {
         </div>
 
         {/* Phrases and Playback */}
-        <div className={`flex flex-col xl:flex-row flex-1 gap-4 p-5 ${selectedCollection ? 'flex' : 'hidden md:flex'}`}>
+        <div className={`flex flex-col-reverse xl:flex-row flex-1 gap-4 p-5 ${selectedCollection ? 'flex' : 'hidden md:flex'}`}>
           {selectedCollection ? (
             <button
               onClick={() => { setSelectedCollection(''); handleStop(); setPhrasesBase([]) }}
