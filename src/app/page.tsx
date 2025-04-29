@@ -605,57 +605,68 @@ export default function Home() {
   return (
     <div className="font-sans">
       {/* Nav */}
-      <div className={`flex items-center justify-between w-[100vw] shadow-md mb-1 p-3 sticky top-0 bg-white z-50 ${selectedCollection ? 'hidden md:flex' : 'flex'}`}>
-        <h1 className="text-2xl font-bold">Language Shadowing</h1>
-        {/* User Avatar / Auth Button */}
-        <div className="relative">
-          {user ? (
-            <button
-              className="flex items-center gap-2 focus:outline-none"
-              onClick={() => setAvatarDialogOpen(true)}
-              title={user.displayName || user.email || "Account"}
-            >
-              {user.photoURL ? (
-                <img src={user.photoURL} alt="avatar" className="w-8 h-8 rounded-full border" />
+      <div className={`flex items-center justify-between w-[100vw] shadow-md mb-1 p-3 sticky top-0 bg-white z-50`}>
+        {selectedCollection ? (
+          <button
+            onClick={() => { setSelectedCollection(''); handleStop(); setPhrasesBase([]) }}
+            className="md:hidden bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded-lg"
+          >
+            ← Back
+          </button>
+        ) : (
+          <>
+            <h1 className="text-2xl font-bold">Language Shadowing</h1>
+            {/* User Avatar / Auth Button */}
+            <div className="relative">
+              {user ? (
+                <button
+                  className="flex items-center gap-2 focus:outline-none"
+                  onClick={() => setAvatarDialogOpen(true)}
+                  title={user.displayName || user.email || "Account"}
+                >
+                  {user.photoURL ? (
+                    <img src={user.photoURL} alt="avatar" className="w-8 h-8 rounded-full border" />
+                  ) : (
+                    <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center font-bold text-lg">
+                      {user.displayName?.[0]?.toUpperCase() || "U"}
+                    </div>
+                  )}
+                </button>
               ) : (
-                <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center font-bold text-lg">
-                  {user.displayName?.[0]?.toUpperCase() || "U"}
+                <button
+                  className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+                  onClick={() => {
+                    const provider = new GoogleAuthProvider();
+                    signInWithPopup(auth, provider).catch(console.error);
+                  }}
+                >
+                  Sign In / Create Account
+                </button>
+              )}
+
+              {/* Dialog */}
+              {avatarDialogOpen && user && (
+                <div
+                  className="absolute right-0 mt-2 w-48 bg-white border rounded shadow-lg z-50"
+                  onClick={() => setAvatarDialogOpen(false)}
+                >
+                  <div className="p-4 border-b">
+                    <div className="font-semibold">{user.displayName || user.email}</div>
+                  </div>
+                  <button
+                    className="w-full text-left px-4 py-2 hover:bg-gray-100"
+                    onClick={() => {
+                      signOut(auth);
+                      setAvatarDialogOpen(false);
+                    }}
+                  >
+                    Sign Out
+                  </button>
                 </div>
               )}
-            </button>
-          ) : (
-            <button
-              className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-              onClick={() => {
-                const provider = new GoogleAuthProvider();
-                signInWithPopup(auth, provider).catch(console.error);
-              }}
-            >
-              Sign In / Create Account
-            </button>
-          )}
-
-          {/* Dialog */}
-          {avatarDialogOpen && user && (
-            <div
-              className="absolute right-0 mt-2 w-48 bg-white border rounded shadow-lg z-50"
-              onClick={() => setAvatarDialogOpen(false)}
-            >
-              <div className="p-4 border-b">
-                <div className="font-semibold">{user.displayName || user.email}</div>
-              </div>
-              <button
-                className="w-full text-left px-4 py-2 hover:bg-gray-100"
-                onClick={() => {
-                  signOut(auth);
-                  setAvatarDialogOpen(false);
-                }}
-              >
-                Sign Out
-              </button>
             </div>
-          )}
-        </div>
+          </>
+        )}
       </div>
 
       {/* Audio Element */}
@@ -694,14 +705,7 @@ export default function Home() {
 
         {/* Phrases and Playback */}
         <div className={`flex flex-col-reverse xl:flex-row flex-1 gap-4 p-5 ${selectedCollection ? 'flex' : 'hidden md:flex'}`}>
-          {selectedCollection ? (
-            <button
-              onClick={() => { setSelectedCollection(''); handleStop(); setPhrasesBase([]) }}
-              className="md:hidden top-4 left-4 bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded-lg"
-            >
-              ← Back
-            </button>
-          ) : !loading && !phrases?.length && <h3 className="hidden md:block">Select a Collection or Import Phrases</h3>}
+          {!loading && !phrases?.length && <h3 className="hidden md:block">Select a Collection or Import Phrases</h3>}
           <div className="overflow-auto flex-1">
             {loading && 'Loading...'}
             {/* Add ImportPhrasesDialog here */}
