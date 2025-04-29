@@ -606,67 +606,67 @@ export default function Home() {
     <div className="font-sans">
       {/* Nav */}
       <div className={`flex items-center justify-between w-[100vw] shadow-md mb-1 p-3 sticky top-0 bg-white z-50`}>
-        {selectedCollection ? (
-          <button
-            onClick={() => { setSelectedCollection(''); handleStop(); setPhrasesBase([]) }}
-            className="md:hidden bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded-lg"
-          >
-            ← Back
-          </button>
-        ) : (
-          <>
-            <h1 className="text-2xl font-bold">Language Shadowing</h1>
-            {/* User Avatar / Auth Button */}
-            <div className="relative">
-              {user ? (
+        {/* Back button - hidden when no collection selected */}
+        <button
+          onClick={() => { setSelectedCollection(''); handleStop(); setPhrasesBase([]) }}
+          className={`md:hidden bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded-lg ${!selectedCollection ? 'hidden' : ''}`}
+        >
+          ← Back
+        </button>
+
+        {/* Title and Avatar - hidden when collection selected */}
+        <div className={`flex items-center justify-between w-full ${selectedCollection ? 'hidden md:flex' : 'flex'}`}>
+          <h1 className="text-2xl font-bold">Language Shadowing</h1>
+          {/* User Avatar / Auth Button */}
+          <div className="relative">
+            {user ? (
+              <button
+                className="flex items-center gap-2 focus:outline-none"
+                onClick={() => setAvatarDialogOpen(true)}
+                title={user.displayName || user.email || "Account"}
+              >
+                {user.photoURL ? (
+                  <img src={user.photoURL} alt="avatar" className="w-8 h-8 rounded-full border" />
+                ) : (
+                  <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center font-bold text-lg">
+                    {user.displayName?.[0]?.toUpperCase() || "U"}
+                  </div>
+                )}
+              </button>
+            ) : (
+              <button
+                className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+                onClick={() => {
+                  const provider = new GoogleAuthProvider();
+                  signInWithPopup(auth, provider).catch(console.error);
+                }}
+              >
+                Sign In / Create Account
+              </button>
+            )}
+
+            {/* Dialog */}
+            {avatarDialogOpen && user && (
+              <div
+                className="absolute right-0 mt-2 w-48 bg-white border rounded shadow-lg z-50"
+                onClick={() => setAvatarDialogOpen(false)}
+              >
+                <div className="p-4 border-b">
+                  <div className="font-semibold">{user.displayName || user.email}</div>
+                </div>
                 <button
-                  className="flex items-center gap-2 focus:outline-none"
-                  onClick={() => setAvatarDialogOpen(true)}
-                  title={user.displayName || user.email || "Account"}
-                >
-                  {user.photoURL ? (
-                    <img src={user.photoURL} alt="avatar" className="w-8 h-8 rounded-full border" />
-                  ) : (
-                    <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center font-bold text-lg">
-                      {user.displayName?.[0]?.toUpperCase() || "U"}
-                    </div>
-                  )}
-                </button>
-              ) : (
-                <button
-                  className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+                  className="w-full text-left px-4 py-2 hover:bg-gray-100"
                   onClick={() => {
-                    const provider = new GoogleAuthProvider();
-                    signInWithPopup(auth, provider).catch(console.error);
+                    signOut(auth);
+                    setAvatarDialogOpen(false);
                   }}
                 >
-                  Sign In / Create Account
+                  Sign Out
                 </button>
-              )}
-
-              {/* Dialog */}
-              {avatarDialogOpen && user && (
-                <div
-                  className="absolute right-0 mt-2 w-48 bg-white border rounded shadow-lg z-50"
-                  onClick={() => setAvatarDialogOpen(false)}
-                >
-                  <div className="p-4 border-b">
-                    <div className="font-semibold">{user.displayName || user.email}</div>
-                  </div>
-                  <button
-                    className="w-full text-left px-4 py-2 hover:bg-gray-100"
-                    onClick={() => {
-                      signOut(auth);
-                      setAvatarDialogOpen(false);
-                    }}
-                  >
-                    Sign Out
-                  </button>
-                </div>
-              )}
-            </div>
-          </>
-        )}
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Audio Element */}
@@ -674,7 +674,7 @@ export default function Home() {
 
 
       {/* Main content */}
-      <div className={`${selectedCollection ? 'max-h-[100vh] min-h-[100vh] md:max-h-[92vh] md:min-h-[92vh]' : 'max-h-[92vh] min-h-[92vh]'} flex flex-row gap-4 w-full`}>
+      <div className={`max-h-[92vh] min-h-[92vh] flex flex-row gap-4 w-full`}>
         {/* Saved Configs List */}
         <div className={`flex flex-col gap-10 bg-gray-50 p-5 ${selectedCollection ? 'hidden md:flex' : 'flex'} w-[460px] min-w-[300px] overflow-visible md:overflow-y-auto`}>
 
@@ -704,95 +704,53 @@ export default function Home() {
         </div>
 
         {/* Phrases and Playback */}
-        <div className={`flex flex-col-reverse xl:flex-row flex-1 gap-4 p-5 ${selectedCollection ? 'flex' : 'hidden md:flex'}`}>
+        <div className={`flex flex-col-reverse xl:flex-row flex-1 gap-4 overflow-visible overflow-y-auto md:p-5 ${selectedCollection ? 'flex' : 'hidden md:flex'}`}>
           {!loading && !phrases?.length && <h3 className="hidden md:block">Select a Collection or Import Phrases</h3>}
-          <div className="overflow-auto flex-1">
+          <div className="flex-1 md:overflow-y-auto">
             {loading && 'Loading...'}
             {/* Add ImportPhrasesDialog here */}
-            {!loading && <ImportPhrasesDialog
-              inputLang={inputLang}
-              setInputLang={setInputLang}
-              targetLang={targetLang}
-              setTargetLang={setTargetLang}
-              phrasesInput={phrasesInput}
-              setPhrasesInput={setPhrasesInput}
-              loading={loading}
-              // onProcess={handleProcess}
-              onAddToCollection={handleAddToCollection}
-              hasSelectedCollection={!!selectedCollection}
-            />}
+            {!loading && (
+              <div className="sticky md:px-0 md:pb-3 px-1 py-2 top-[255px] md:top-[0px] md:bg-white bg-gray-50">
+                <ImportPhrasesDialog
+                  inputLang={inputLang}
+                  setInputLang={setInputLang}
+                  targetLang={targetLang}
+                  setTargetLang={setTargetLang}
+                  phrasesInput={phrasesInput}
+                  setPhrasesInput={setPhrasesInput}
+                  loading={loading}
+                  // onProcess={handleProcess}
+                  onAddToCollection={handleAddToCollection}
+                  hasSelectedCollection={!!selectedCollection}
+                />
+              </div>
+            )}
             {/* Editable Inputs for Each Phrase */}
             {phrases.length > 0 && !fullscreen && (
-              <EditablePhrases
-                phrases={phrases}
-                setPhrases={setPhrases}
-                inputLanguage={inputLang}
-                outputLanguage={targetLang}
-                currentPhraseIndex={currentPhraseIndex}
-                onPhraseClick={(index) => {
-                  setCurrentPhraseIndex(index);
-                  setCurrentPhase('input');
-                  clearAllTimeouts();
-                  if (audioRef.current && phrases[index]?.inputAudio?.audioUrl) {
-                    audioRef.current.pause();
-                    audioRef.current.src = phrases[index].inputAudio.audioUrl;
-                  }
-                }}
-              />
+              <div className='md:py-0 p-2'>
+                <EditablePhrases
+                  phrases={phrases}
+                  setPhrases={setPhrases}
+                  inputLanguage={inputLang}
+                  outputLanguage={targetLang}
+                  currentPhraseIndex={currentPhraseIndex}
+                  onPhraseClick={(index) => {
+                    setCurrentPhraseIndex(index);
+                    setCurrentPhase('input');
+                    clearAllTimeouts();
+                    if (audioRef.current && phrases[index]?.inputAudio?.audioUrl) {
+                      audioRef.current.pause();
+                      audioRef.current.src = phrases[index].inputAudio.audioUrl;
+                    }
+                  }}
+                />
+              </div>
             )}
           </div>
 
           {/* Presentation View and Controls */}
           {Boolean(typeof currentPhraseIndex === "number" && phrases?.length) && (
-            <div className='xl:flex-1'>
-              <PresentationControls
-                fullscreen={fullscreen}
-                setFullscreen={setFullscreen}
-                recordScreen={recordScreen}
-                stopScreenRecording={stopScreenRecording}
-                handleReplay={handleReplay}
-                hasPhrasesLoaded={phrases.length > 0}
-                configName={configName}
-                setConfigName={setConfigName}
-                onSaveConfig={handleSaveConfig}
-                presentationConfig={presentationConfig}
-                setPresentationConfig={setPresentationConfig}
-                presentationConfigDefinition={presentationConfigDefinition}
-                handleImageUpload={handleImageUpload}
-                paused={paused}
-                onPause={handlePause}
-                onPlay={handlePlay}
-                onPrevious={() => {
-                  clearAllTimeouts()
-                  if (audioRef.current) {
-                    audioRef.current.pause();
-                    if (currentPhase === 'output') {
-                      audioRef.current.src = phrases[currentPhraseIndex].inputAudio?.audioUrl || '';
-                      setCurrentPhase('input');
-                    } else if (currentPhraseIndex > 0) {
-                      audioRef.current.src = phrases[currentPhraseIndex - 1].outputAudio?.audioUrl || '';
-                      setCurrentPhraseIndex(prev => prev - 1);
-                      setCurrentPhase('output');
-                    }
-                  }
-                }}
-                onNext={() => {
-                  clearAllTimeouts()
-                  if (audioRef.current) {
-                    audioRef.current.pause();
-                    if (currentPhase === 'input') {
-                      audioRef.current.src = phrases[currentPhraseIndex].outputAudio?.audioUrl || '';
-                      setCurrentPhase('output');
-                    } else if (currentPhraseIndex < phrases.length - 1) {
-                      audioRef.current.src = phrases[currentPhraseIndex + 1].inputAudio?.audioUrl || '';
-                      setCurrentPhraseIndex(prev => prev + 1);
-                      setCurrentPhase('input');
-                    }
-                  }
-                }}
-                canGoBack={currentPhase === 'output' || currentPhraseIndex > 0}
-                canGoForward={currentPhase === 'input' || currentPhraseIndex < phrases.length - 1}
-              />
+            <div className='xl:flex-1 sticky top-[0px] bg-white'>
               <PresentationView
                 currentPhrase={phrases[currentPhraseIndex]?.input || ''}
                 currentTranslated={phrases[currentPhraseIndex]?.translated || ''}
@@ -812,6 +770,56 @@ export default function Home() {
                 romanizedOutput={phrases[currentPhraseIndex]?.romanized}
                 title={showTitle ? configName : undefined}
               />
+              <div className='py-1 px-1 md:py-2'>
+                <PresentationControls
+                  fullscreen={fullscreen}
+                  setFullscreen={setFullscreen}
+                  recordScreen={recordScreen}
+                  stopScreenRecording={stopScreenRecording}
+                  handleReplay={handleReplay}
+                  hasPhrasesLoaded={phrases.length > 0}
+                  configName={configName}
+                  setConfigName={setConfigName}
+                  onSaveConfig={handleSaveConfig}
+                  presentationConfig={presentationConfig}
+                  setPresentationConfig={setPresentationConfig}
+                  presentationConfigDefinition={presentationConfigDefinition}
+                  handleImageUpload={handleImageUpload}
+                  paused={paused}
+                  onPause={handlePause}
+                  onPlay={handlePlay}
+                  onPrevious={() => {
+                    clearAllTimeouts()
+                    if (audioRef.current) {
+                      audioRef.current.pause();
+                      if (currentPhase === 'output') {
+                        audioRef.current.src = phrases[currentPhraseIndex].inputAudio?.audioUrl || '';
+                        setCurrentPhase('input');
+                      } else if (currentPhraseIndex > 0) {
+                        audioRef.current.src = phrases[currentPhraseIndex - 1].outputAudio?.audioUrl || '';
+                        setCurrentPhraseIndex(prev => prev - 1);
+                        setCurrentPhase('output');
+                      }
+                    }
+                  }}
+                  onNext={() => {
+                    clearAllTimeouts()
+                    if (audioRef.current) {
+                      audioRef.current.pause();
+                      if (currentPhase === 'input') {
+                        audioRef.current.src = phrases[currentPhraseIndex].outputAudio?.audioUrl || '';
+                        setCurrentPhase('output');
+                      } else if (currentPhraseIndex < phrases.length - 1) {
+                        audioRef.current.src = phrases[currentPhraseIndex + 1].inputAudio?.audioUrl || '';
+                        setCurrentPhraseIndex(prev => prev + 1);
+                        setCurrentPhase('input');
+                      }
+                    }
+                  }}
+                  canGoBack={currentPhase === 'output' || currentPhraseIndex > 0}
+                  canGoForward={currentPhase === 'input' || currentPhraseIndex < phrases.length - 1}
+                />
+              </div>
             </div>
           )}
         </div>

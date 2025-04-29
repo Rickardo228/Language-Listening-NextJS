@@ -11,10 +11,10 @@ export function ImportPhrasesDialog(props: ImportPhrasesProps) {
     if (!shouldRender) return null
 
     return (
-        <div>
+        <>
             <button
                 onClick={() => setIsOpen(true)}
-                className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg mb-4"
+                className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg"
             >
                 Add Phrases
             </button>
@@ -35,6 +35,6 @@ export function ImportPhrasesDialog(props: ImportPhrasesProps) {
                     </div>
                 </div>
             )}
-        </div>
+        </>
     )
 } 
