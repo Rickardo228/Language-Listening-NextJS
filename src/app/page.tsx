@@ -605,7 +605,7 @@ export default function Home() {
   return (
     <div className="font-sans">
       {/* Nav */}
-      <div className={`flex items-center justify-between w-[100vw] shadow-md mb-1 p-3 ${selectedCollection ? 'hidden md:flex' : 'flex'}`}>
+      <div className={`flex items-center justify-between w-[100vw] shadow-md mb-1 p-3 sticky top-0 bg-white z-50 ${selectedCollection ? 'hidden md:flex' : 'flex'}`}>
         <h1 className="text-2xl font-bold">Language Shadowing</h1>
         {/* User Avatar / Auth Button */}
         <div className="relative">
@@ -665,7 +665,7 @@ export default function Home() {
       {/* Main content */}
       <div className={`${selectedCollection ? 'max-h-[100vh] min-h-[100vh] md:max-h-[92vh] md:min-h-[92vh]' : 'max-h-[92vh] min-h-[92vh]'} flex flex-row gap-4 w-full`}>
         {/* Saved Configs List */}
-        <div className={`flex flex-col gap-10 bg-gray-50 p-5 ${selectedCollection ? 'hidden md:flex' : 'flex'} w-[460px] min-w-[300px] overflow-y-auto`}>
+        <div className={`flex flex-col gap-10 bg-gray-50 p-5 ${selectedCollection ? 'hidden md:flex' : 'flex'} w-[460px] min-w-[300px] overflow-visible md:overflow-y-auto`}>
 
           <div>
             {/* Language Selection and Phrase Import */}
