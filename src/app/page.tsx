@@ -603,19 +603,19 @@ export default function Home() {
   }
 
   return (
-    <div className="font-sans md:h-[100vh] flex flex-col">
+    <div className="font-sans lg:h-[100vh] flex flex-col">
       {/* Nav */}
-      <div className={`flex items-center justify-between shadow-md md:mb-1 p-3 sticky top-0 bg-white ${fullscreen ? 'z-1' : 'z-50'}`}>
+      <div className={`flex items-center justify-between shadow-md lg:mb-1 p-3 sticky top-0 bg-white ${fullscreen ? 'z-1' : 'z-50'}`}>
         {/* Back button - hidden when no collection selected */}
         <button
           onClick={() => { setSelectedCollection(''); handleStop(); setPhrasesBase([]) }}
-          className={`md:hidden bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded-lg ${!selectedCollection ? 'hidden' : ''}`}
+          className={`lg:hidden bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded-lg ${!selectedCollection ? 'hidden' : ''}`}
         >
           ← Back
         </button>
 
         {/* Title and Avatar - hidden when collection selected */}
-        <div className={`flex items-center justify-between w-full ${selectedCollection ? 'hidden md:flex' : 'flex'}`}>
+        <div className={`flex items-center justify-between w-full ${selectedCollection ? 'hidden lg:flex' : 'flex'}`}>
           <h1 className="text-2xl font-bold">Language Shadowing</h1>
           {/* User Avatar / Auth Button */}
           <div className="relative">
@@ -674,9 +674,9 @@ export default function Home() {
 
 
       {/* Main content */}
-      <div className={`flex md:flex-row flex-col-reverse gap-4 w-full md:h-[92vh]`}>
+      <div className={`flex lg:flex-row flex-col-reverse gap-4 w-full lg:h-[92vh]`}>
         {/* Saved Configs List */}
-        <div className={`flex flex-col gap-10 bg-gray-50 p-5 ${selectedCollection ? 'hidden md:flex' : 'flex'} w-[460px] min-w-[300px] max-w-[100vw] overflow-visible md:overflow-y-auto`}>
+        <div className={`flex flex-col gap-10 bg-gray-50 p-5 ${selectedCollection ? 'hidden lg:flex' : 'flex'} lg:w-[460px] min-w-[300px] max-w-[100vw] overflow-visible lg:overflow-y-auto`}>
 
           <div>
             {/* Language Selection and Phrase Import */}
@@ -704,12 +704,12 @@ export default function Home() {
         </div>
 
         {/* Phrases and Playback */}
-        {!loading && !phrases?.length && <h3 className="hidden md:block p-3">Select a Collection or Import Phrases</h3>}
-        <div className="flex-1 md:overflow-y-auto">
+        {!loading && !phrases?.length && <h3 className="hidden lg:block p-3">Select a Collection or Import Phrases</h3>}
+        <div className="flex-1 lg:overflow-y-auto">
           {loading && 'Loading...'}
           {/* Add ImportPhrasesDialog here */}
           {!loading && (
-            <div className={`sticky md:px-0 md:pb-3 px-1 py-2 top-[320px] md:top-[0px] md:bg-white bg-gray-50 z-1 ${!selectedCollection ? 'hidden md:block' : ''}`}>
+            <div className={`sticky lg:px-0 lg:pb-3 px-1 py-2 top-[320px] lg:top-[0px] lg:bg-white bg-gray-50 z-1 ${!selectedCollection ? 'hidden lg:block' : ''}`}>
               <ImportPhrasesDialog
                 inputLang={inputLang}
                 setInputLang={setInputLang}
@@ -726,7 +726,7 @@ export default function Home() {
           )}
           {/* Editable Inputs for Each Phrase */}
           {phrases.length > 0 && !fullscreen && (
-            <div className='md:py-0 p-2'>
+            <div className='lg:py-0 p-2'>
               <EditablePhrases
                 phrases={phrases}
                 setPhrases={setPhrases}
@@ -749,7 +749,7 @@ export default function Home() {
 
         {/* Presentation View and Controls */}
         {Boolean(typeof currentPhraseIndex === "number" && phrases?.length) && (
-          <div className='xl:flex-1 sticky top-[64px] bg-white md:p-2 z-1'>
+          <div className='xl:flex-1 sticky top-[64px] bg-white lg:p-2 z-1'>
             <PresentationView
               currentPhrase={phrases[currentPhraseIndex]?.input || ''}
               currentTranslated={phrases[currentPhraseIndex]?.translated || ''}
@@ -769,7 +769,7 @@ export default function Home() {
               romanizedOutput={phrases[currentPhraseIndex]?.romanized}
               title={showTitle ? configName : undefined}
             />
-            <div className='py-1 px-1 md:py-2'>
+            <div className='py-1 px-1 lg:py-2'>
               <PresentationControls
                 fullscreen={fullscreen}
                 setFullscreen={setFullscreen}
