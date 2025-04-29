@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { ImportPhrases, ImportPhrasesProps } from './ImportPhrases'
 import { useImportPhrasesVisibility } from './hooks/useImportPhrasesVisibility'
+import { createPortal } from 'react-dom'
 
 export function ImportPhrasesDialog(props: ImportPhrasesProps) {
     const [isOpen, setIsOpen] = useState(false)
@@ -19,8 +20,8 @@ export function ImportPhrasesDialog(props: ImportPhrasesProps) {
                 Add Phrases
             </button>
 
-            {isOpen && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            {isOpen && createPortal(
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100] font-sans">
                     <div className="bg-white p-6 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
                         <div className="flex justify-between items-center mb-4">
                             <h2 className="text-xl font-semibold">Import Phrases</h2>
@@ -33,7 +34,8 @@ export function ImportPhrasesDialog(props: ImportPhrasesProps) {
                         </div>
                         <ImportPhrases {...props} />
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
         </>
     )
