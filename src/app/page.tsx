@@ -473,6 +473,9 @@ export default function Home() {
     if (currentPhraseIndex < 0) {
       handleReplay();
     } else if (audioRef.current) {
+      if (!audioRef.current.src) {
+        audioRef.current.src = phrases[currentPhraseIndex]?.[currentPhase === "input" ? 'inputAudio' : 'outputAudio']?.audioUrl ?? ''
+      }
       audioRef.current.play();
     }
   };
@@ -756,6 +759,7 @@ export default function Home() {
                 onPause={handlePause}
                 onPlay={handlePlay}
                 onPrevious={() => {
+                  clearAllTimeouts()
                   if (audioRef.current) {
                     audioRef.current.pause();
                     if (currentPhase === 'output') {
@@ -769,6 +773,7 @@ export default function Home() {
                   }
                 }}
                 onNext={() => {
+                  clearAllTimeouts()
                   if (audioRef.current) {
                     audioRef.current.pause();
                     if (currentPhase === 'input') {
