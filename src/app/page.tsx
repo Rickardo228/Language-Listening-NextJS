@@ -605,7 +605,7 @@ export default function Home() {
   return (
     <div className="font-sans md:h-[100vh] flex flex-col">
       {/* Nav */}
-      <div className={`flex items-center justify-between shadow-md md:mb-1 p-3 sticky top-0 bg-white z-50`}>
+      <div className={`flex items-center justify-between shadow-md md:mb-1 p-3 sticky top-0 bg-white ${fullscreen ? 'z-1' : 'z-50'}`}>
         {/* Back button - hidden when no collection selected */}
         <button
           onClick={() => { setSelectedCollection(''); handleStop(); setPhrasesBase([]) }}
@@ -676,7 +676,7 @@ export default function Home() {
       {/* Main content */}
       <div className={`flex md:flex-row flex-col-reverse gap-4 w-full md:h-[92vh]`}>
         {/* Saved Configs List */}
-        <div className={`flex flex-col gap-10 bg-gray-50 p-5 ${selectedCollection ? 'hidden md:flex' : 'flex'} w-[460px] min-w-[300px] overflow-visible md:overflow-y-auto`}>
+        <div className={`flex flex-col gap-10 bg-gray-50 p-5 ${selectedCollection ? 'hidden md:flex' : 'flex'} w-[460px] min-w-[300px] max-w-[100vw] overflow-visible md:overflow-y-auto`}>
 
           <div>
             {/* Language Selection and Phrase Import */}
@@ -704,12 +704,12 @@ export default function Home() {
         </div>
 
         {/* Phrases and Playback */}
-        {!loading && !phrases?.length && <h3 className="hidden md:block">Select a Collection or Import Phrases</h3>}
+        {!loading && !phrases?.length && <h3 className="hidden md:block p-3">Select a Collection or Import Phrases</h3>}
         <div className="flex-1 md:overflow-y-auto">
           {loading && 'Loading...'}
           {/* Add ImportPhrasesDialog here */}
           {!loading && (
-            <div className="sticky md:px-0 md:pb-3 px-1 py-2 top-[320px] md:top-[0px] md:bg-white bg-gray-50">
+            <div className={`sticky md:px-0 md:pb-3 px-1 py-2 top-[320px] md:top-[0px] md:bg-white bg-gray-50 z-1 ${!selectedCollection ? 'hidden md:block' : ''}`}>
               <ImportPhrasesDialog
                 inputLang={inputLang}
                 setInputLang={setInputLang}
@@ -749,7 +749,7 @@ export default function Home() {
 
         {/* Presentation View and Controls */}
         {Boolean(typeof currentPhraseIndex === "number" && phrases?.length) && (
-          <div className='xl:flex-1 sticky top-[64px] bg-white md:p-2 '>
+          <div className='xl:flex-1 sticky top-[64px] bg-white md:p-2 z-1'>
             <PresentationView
               currentPhrase={phrases[currentPhraseIndex]?.input || ''}
               currentTranslated={phrases[currentPhraseIndex]?.translated || ''}
