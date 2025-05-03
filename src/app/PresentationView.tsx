@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { AutumnLeaves } from "./Effects/AutumnLeaves";
 import CherryBlossom from "./Effects/CherryBlossom";
@@ -62,6 +62,35 @@ export function PresentationView({
 }: PresentationViewProps) {
   // State to track if the mouse is idle.
   const [isIdle, setIsIdle] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Handle fullscreen changes
+  useEffect(() => {
+    if (fullScreen) {
+      containerRef.current?.requestFullscreen().catch(err => {
+        console.error('Error attempting to enable fullscreen:', err);
+        setFullscreen(false);
+      });
+    } else if (document.fullscreenElement) {
+      document.exitFullscreen().catch(err => {
+        console.error('Error attempting to exit fullscreen:', err);
+      });
+    }
+  }, [fullScreen, setFullscreen]);
+
+  // Listen for fullscreen changes
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      if (!document.fullscreenElement && fullScreen) {
+        setFullscreen(false);
+      }
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    };
+  }, [fullScreen, setFullscreen]);
 
   // useEffect to detect mouse movement and mark idle after 1 second.
   useEffect(() => {
@@ -89,15 +118,7 @@ export function PresentationView({
   // Set container classes based on the fullScreen prop.
   const containerClass =
     `inset-0 flex flex-col items-center justify-center ` +
-    (fullScreen ? "fixed z-50" : "relative p-4 lg:rounded shadow w-full h-48");
-
-  // Classes for the regular phrase/translation.
-  // const titleClass = fullScreen
-  //   ? "text-7xl font-bold text-white mb-4"
-  //   : "text-xl font-bold text-white mb-2";
-  // const subtitleClass = fullScreen
-  //   ? "text-5xl font-bold text-gray-100 mt-5"
-  //   : "text-md font-bold text-gray-100 mt-3";
+    (fullScreen ? "fixed" : "relative p-4 lg:rounded shadow w-full h-48");
 
   // Class for the title prop (slightly larger).
   const titlePropClass = fullScreen
@@ -120,7 +141,7 @@ export function PresentationView({
 
   return (
     // Append the 'cursor-none' class when idle.
-    <div className={`${containerClass} ${isIdle ? "cursor-none" : ""}`} style={containerStyle} onClick={() => setFullscreen(prev => !prev)}>
+    <div ref={containerRef} className={`${containerClass} ${isIdle ? "cursor-none" : ""}`} style={containerStyle} onClick={() => setFullscreen(prev => !prev)}>
       {enableOrtonEffect && (
         <div
           style={{

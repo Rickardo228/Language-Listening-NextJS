@@ -9,12 +9,13 @@ import { presentationConfigDefinition } from './configDefinitions';
 import { EditablePhrases } from './EditablePhrases';
 import { PresentationControls } from './PresentationControls';
 import { API_BASE_URL, BLEED_START_DELAY, DELAY_AFTER_OUTPUT_PHRASES_MULTIPLIER, LAG_COMPENSATION } from './consts';
-import { ImportPhrasesDialog } from './ImportPhrasesDialog';
+import { ImportPhrases } from './ImportPhrases';
 import { initializeApp } from 'firebase/app';
 import { getAuth, onAuthStateChanged, signInWithPopup, GoogleAuthProvider, User, signOut } from 'firebase/auth';
 import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { CollectionList } from './CollectionList';
 import { CollectionHeader } from './CollectionHeader';
+import { useTheme } from './ThemeProvider';
 
 const firebaseConfig = {
   apiKey: "AIzaSyBDe17ZSzrBpaae56p4YDpJ-2oXAV_89eg",
@@ -32,10 +33,10 @@ const firestore = getFirestore(app);
 
 function SignInPage() {
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen">
-      <h1 className="text-3xl font-bold mb-4">Language Shadowing</h1>
+    <div className="flex flex-col items-center justify-center min-h-screen bg-background">
+      <h1 className="text-3xl font-bold mb-4 text-foreground">Language Shadowing</h1>
       <button
-        className="bg-blue-500 text-white px-6 py-3 rounded hover:bg-blue-600"
+        className="bg-primary text-primary-foreground px-6 py-3 rounded hover:bg-primary/90"
         onClick={() => {
           const provider = new GoogleAuthProvider();
           signInWithPopup(auth, provider).catch(console.error);
@@ -98,6 +99,8 @@ export default function Home() {
 
   const [user, setUser] = useState<User | null>(null);
   const [avatarDialogOpen, setAvatarDialogOpen] = useState(false);
+
+  const { theme, toggleTheme } = useTheme();
 
   // Listen for auth state changes and sign in if not already
   useEffect(() => {
@@ -621,8 +624,8 @@ export default function Home() {
 
   if (isAuthLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      <div className="flex items-center justify-center min-h-screen bg-background">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
       </div>
     );
   }
@@ -632,13 +635,13 @@ export default function Home() {
   }
 
   return (
-    <div className="font-sans lg:h-[100vh] flex flex-col">
+    <div className="font-sans lg:h-[100vh] flex flex-col bg-background text-foreground">
       {/* Nav */}
-      <div className={`flex items-center justify-between shadow-md lg:mb-1 p-3 sticky top-0 bg-white ${fullscreen ? 'z-1' : 'z-50'}`}>
+      <div className={`flex items-center justify-between shadow-md lg:mb-0 p-3 sticky top-0 bg-background border-b ${fullscreen ? 'z-1' : 'z-50'}`}>
         {/* Back button - hidden when no collection selected */}
         <button
           onClick={() => { setSelectedCollection(''); handleStop(); setPhrasesBase([]) }}
-          className={`lg:hidden bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded-lg ${!selectedCollection ? 'hidden' : ''}`}
+          className={`lg:hidden bg-secondary hover:bg-secondary/80 px-4 py-2 rounded-lg ${!selectedCollection ? 'hidden' : ''}`}
         >
           ← Back
         </button>
@@ -646,54 +649,72 @@ export default function Home() {
         {/* Title and Avatar - hidden when collection selected */}
         <div className={`flex items-center justify-between w-full ${selectedCollection ? 'hidden lg:flex' : 'flex'}`}>
           <h1 className="text-2xl font-bold">Language Shadowing</h1>
-          {/* User Avatar / Auth Button */}
-          <div className="relative">
-            {user ? (
-              <button
-                className="flex items-center gap-2 focus:outline-none"
-                onClick={() => setAvatarDialogOpen(true)}
-                title={user.displayName || user.email || "Account"}
-              >
-                {user.photoURL ? (
-                  <img src={user.photoURL} alt="avatar" className="w-8 h-8 rounded-full border" />
-                ) : (
-                  <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center font-bold text-lg">
-                    {user.displayName?.[0]?.toUpperCase() || "U"}
-                  </div>
-                )}
-              </button>
-            ) : (
-              <button
-                className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-                onClick={() => {
-                  const provider = new GoogleAuthProvider();
-                  signInWithPopup(auth, provider).catch(console.error);
-                }}
-              >
-                Sign In / Create Account
-              </button>
-            )}
-
-            {/* Dialog */}
-            {avatarDialogOpen && user && (
-              <div
-                className="absolute right-0 mt-2 w-48 bg-white border rounded shadow-lg z-50"
-                onClick={() => setAvatarDialogOpen(false)}
-              >
-                <div className="p-4 border-b">
-                  <div className="font-semibold">{user.displayName || user.email}</div>
-                </div>
+          <div className="flex items-center gap-4">
+            {/* Theme Toggle Button */}
+            <button
+              onClick={toggleTheme}
+              className="p-2 rounded-lg bg-secondary hover:bg-secondary/80"
+              title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
+            >
+              {theme === 'light' ? (
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" />
+                </svg>
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" />
+                </svg>
+              )}
+            </button>
+            {/* User Avatar / Auth Button */}
+            <div className="relative">
+              {user ? (
                 <button
-                  className="w-full text-left px-4 py-2 hover:bg-gray-100"
+                  className="flex items-center gap-2 focus:outline-none"
+                  onClick={() => setAvatarDialogOpen(true)}
+                  title={user.displayName || user.email || "Account"}
+                >
+                  {user.photoURL ? (
+                    <img src={user.photoURL} alt="avatar" className="w-8 h-8 rounded-full border" />
+                  ) : (
+                    <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center font-bold text-lg">
+                      {user.displayName?.[0]?.toUpperCase() || "U"}
+                    </div>
+                  )}
+                </button>
+              ) : (
+                <button
+                  className="bg-primary text-primary-foreground px-4 py-2 rounded hover:bg-primary/90"
                   onClick={() => {
-                    signOut(auth);
-                    setAvatarDialogOpen(false);
+                    const provider = new GoogleAuthProvider();
+                    signInWithPopup(auth, provider).catch(console.error);
                   }}
                 >
-                  Sign Out
+                  Sign In / Create Account
                 </button>
-              </div>
-            )}
+              )}
+
+              {/* Dialog */}
+              {avatarDialogOpen && user && (
+                <div
+                  className="absolute right-0 mt-2 w-48 bg-background border rounded shadow-lg z-50"
+                  onClick={() => setAvatarDialogOpen(false)}
+                >
+                  <div className="p-4 border-b">
+                    <div className="font-semibold">{user.displayName || user.email}</div>
+                  </div>
+                  <button
+                    className="w-full text-left px-4 py-2 hover:bg-secondary"
+                    onClick={() => {
+                      signOut(auth);
+                      setAvatarDialogOpen(false);
+                    }}
+                  >
+                    Sign Out
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -717,11 +738,11 @@ export default function Home() {
       {/* Main content */}
       <div className={`flex lg:flex-row flex-col-reverse w-full lg:h-[92vh]`}>
         {/* Saved Configs List */}
-        <div className={`flex flex-col gap-10 bg-gray-50 p-5 ${selectedCollection ? 'hidden lg:flex' : 'flex'} lg:w-[460px] min-w-[300px] max-w-[100vw] overflow-visible lg:overflow-y-auto mb-[80px]`}>
+        <div className={`flex flex-col gap-10 bg-secondary/50 p-5 ${selectedCollection ? 'hidden lg:flex' : 'flex'} lg:w-[460px] min-w-[300px] max-w-[100vw] overflow-visible lg:overflow-y-auto mb-[80px]`}>
 
-          <div className="fixed bottom-0 left-0 z-50 w-full lg:w-[460px] bg-gray-50 p-5">
+          <div className="fixed bottom-0 left-0 z-50 w-full lg:w-[460px] bg-secondary/50 p-5">
             {/* Language Selection and Phrase Import */}
-            <ImportPhrasesDialog
+            <ImportPhrases
               inputLang={inputLang}
               setInputLang={setInputLang}
               targetLang={targetLang}
@@ -730,7 +751,6 @@ export default function Home() {
               setPhrasesInput={setPhrasesInput}
               loading={loading}
               onProcess={handleProcess}
-              hasSelectedCollection={!!selectedCollection}
             />
           </div>
           <CollectionList
@@ -746,9 +766,8 @@ export default function Home() {
         {!loading && !phrases?.length && <h3 className="hidden lg:block p-3">Select a Collection or Import Phrases</h3>}
         <div className="flex-1 lg:overflow-y-auto">
           {loading && 'Loading...'}
-          {/* Add ImportPhrasesDialog here */}
           {!loading && selectedCollection && (
-            <div className={`sticky lg:px-0 lg:pb-3 px-1 py-2 top-[320px] lg:top-[0px] lg:bg-white bg-gray-50 z-1 ${!selectedCollection ? 'hidden lg:block' : ''}`}>
+            <div className={`sticky lg:px-0 lg:pb-3 px-1 py-2 top-[320px] lg:top-[0px] lg:bg-background bg-gray-50 z-1 ${!selectedCollection ? 'hidden lg:block' : ''}`}>
               <div className="w-full flex items-center p-2">
                 <CollectionHeader
                   collectionId={selectedCollection}
@@ -759,7 +778,7 @@ export default function Home() {
                   titleClassName="max-w-[250px]"
                 />
                 <div className="w-fit whitespace-nowrap ml-auto">
-                  <ImportPhrasesDialog
+                  <ImportPhrases
                     inputLang={inputLang}
                     setInputLang={setInputLang}
                     targetLang={targetLang}
@@ -768,7 +787,6 @@ export default function Home() {
                     setPhrasesInput={setPhrasesInput}
                     loading={loading}
                     onAddToCollection={handleAddToCollection}
-                    hasSelectedCollection={!!selectedCollection}
                   />
                 </div>
               </div>
@@ -799,7 +817,7 @@ export default function Home() {
 
         {/* Presentation View and Controls */}
         {Boolean(typeof currentPhraseIndex === "number" && phrases?.length) && (
-          <div className='xl:flex-1 sticky top-[64px] bg-white lg:p-2 z-1'>
+          <div className='xl:flex-1 sticky top-[64px] bg-background lg:p-2 z-1'>
             <PresentationView
               currentPhrase={phrases[currentPhraseIndex]?.input || ''}
               currentTranslated={phrases[currentPhraseIndex]?.translated || ''}

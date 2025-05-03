@@ -138,7 +138,7 @@ export function EditablePhrases({ phrases, setPhrases, currentPhraseIndex, onPhr
             phrase.outputAudio && (
                 <button
                     onClick={() => new Audio(phrase.outputAudio?.audioUrl).play()}
-                    className="px-3 py-1 text-sm bg-green-100 hover:bg-green-200 rounded"
+                    className="px-3 py-1 text-sm bg-indigo-100 hover:bg-indigo-200 dark:bg-indigo-600 dark:hover:bg-indigo-500 rounded text-indigo-700 dark:text-white transition-colors"
                     title="Play translated audio"
                 >
                     <SpeakerWaveIcon className="w-4 h-4" />
@@ -232,19 +232,25 @@ export function EditablePhrases({ phrases, setPhrases, currentPhraseIndex, onPhr
             {phrases.map((phrase, index) => (
                 <div
                     key={index}
-                    className={`mb-4 border p-2 rounded ${currentPhraseIndex === index ? 'border-blue-500 bg-blue-50' : ''} 
-                        ${onPhraseClick ? 'cursor-pointer hover:border-blue-300' : ''}`}
+                    className={`mb-4 border p-2 rounded transition-colors
+                        ${currentPhraseIndex === index
+                            ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-400'
+                            : 'border-gray-200 dark:border-gray-700'} 
+                        ${onPhraseClick ? 'cursor-pointer hover:border-blue-300 dark:hover:border-blue-500' : ''}`}
                     onClick={() => onPhraseClick?.(index)}
                 >
                     <div className="mb-2 flex items-center gap-2">
-                        <label className="block font-medium mb-1">Input:</label>
+                        <label className="block font-medium mb-1 text-gray-700 dark:text-gray-200">Input:</label>
                         <input
                             type="text"
                             value={phrase.input}
                             onClick={(e) => e.stopPropagation()}
                             onChange={(e) => handlePhraseChange(index, 'input', e.target.value)}
                             onBlur={() => handleBlur(index, 'input')}
-                            className={`w-full p-2 border border-gray-300 rounded ${inputLoading[index] ? 'opacity-50' : ''}`}
+                            className={`w-full p-2 border rounded bg-white dark:bg-gray-800 
+                                border-gray-300 dark:border-gray-600 
+                                text-gray-900 dark:text-gray-100
+                                ${inputLoading[index] ? 'opacity-50' : ''}`}
                             disabled={inputLoading[index]}
                         />
                         {phrase.inputAudio && (
@@ -253,23 +259,26 @@ export function EditablePhrases({ phrases, setPhrases, currentPhraseIndex, onPhr
                                     e.stopPropagation();
                                     new Audio(phrase.inputAudio?.audioUrl).play();
                                 }}
-                                className="px-3 py-1 text-sm bg-green-100 hover:bg-green-200 rounded"
+                                className="px-3 py-1 text-sm bg-indigo-100 hover:bg-indigo-200 dark:bg-indigo-600 dark:hover:bg-indigo-500 rounded text-indigo-700 dark:text-white transition-colors"
                                 title="Play input audio"
                             >
                                 <SpeakerWaveIcon className="w-4 h-4" />
                             </button>
                         )}
-                        {inputLoading[index] && <span className="text-gray-500 text-sm">Processing...</span>}
+                        {inputLoading[index] && <span className="text-gray-500 dark:text-gray-400 text-sm">Processing...</span>}
                     </div>
                     <div className="flex items-center gap-2">
-                        <label className="block font-medium mb-1">Translated:</label>
+                        <label className="block font-medium mb-1 text-gray-700 dark:text-gray-200">Translated:</label>
                         <input
                             type="text"
                             value={phrase.translated}
                             onClick={(e) => e.stopPropagation()}
                             onChange={(e) => handlePhraseChange(index, 'translated', e.target.value)}
                             onBlur={() => handleBlur(index, 'translated')}
-                            className={`w-full p-2 border border-gray-300 rounded ${outputLoading[index] ? 'opacity-50' : ''}`}
+                            className={`w-full p-2 border rounded bg-white dark:bg-gray-800 
+                                border-gray-300 dark:border-gray-600 
+                                text-gray-900 dark:text-gray-100
+                                ${outputLoading[index] ? 'opacity-50' : ''}`}
                             disabled={outputLoading[index]}
                         />
                         {!phrase.useRomanizedForAudio && PlayOutputAudioButton(phrase)}
@@ -280,23 +289,25 @@ export function EditablePhrases({ phrases, setPhrases, currentPhraseIndex, onPhr
                                     handleGenerateOutputAudio(index);
                                 }}
                                 disabled={outputLoading[index]}
-                                className={`px-3 py-1 text-sm bg-blue-100 hover:bg-blue-200 rounded ${outputLoading[index] ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                className={`px-3 py-1 text-sm bg-indigo-100 hover:bg-indigo-200 dark:bg-indigo-600 dark:hover:bg-indigo-500 rounded text-indigo-700 dark:text-white transition-colors ${outputLoading[index] ? 'opacity-50 cursor-not-allowed' : ''}`}
                                 title="Generate audio for output"
                             >
                                 <MicrophoneIcon className="w-4 h-4" />
                             </button>
                         )}
-                        {outputLoading[index] && <span className="text-gray-500 text-sm">Processing...</span>}
+                        {outputLoading[index] && <span className="text-gray-500 dark:text-gray-400 text-sm">Processing...</span>}
                     </div>
                     {phrase.romanized && <div className="mt-2 mb-2 flex items-center gap-2">
-                        <label className="block font-medium mb-1">Romanized:</label>
+                        <label className="block font-medium mb-1 text-gray-700 dark:text-gray-200">Romanized:</label>
                         <input
                             type="text"
                             value={phrase.romanized}
                             onClick={(e) => e.stopPropagation()}
                             onChange={(e) => handlePhraseChange(index, 'romanized', e.target.value)}
                             onBlur={() => handleBlur(index, 'romanized')}
-                            className="w-full p-2 border border-gray-300 rounded"
+                            className="w-full p-2 border rounded bg-white dark:bg-gray-800 
+                                border-gray-300 dark:border-gray-600 
+                                text-gray-900 dark:text-gray-100"
                         />
                         {phrase.useRomanizedForAudio && PlayOutputAudioButton(phrase)}
                         {!phrase.useRomanizedForAudio && <button
@@ -305,14 +316,12 @@ export function EditablePhrases({ phrases, setPhrases, currentPhraseIndex, onPhr
                                 handleGenerateRomanizedAudio(index);
                             }}
                             disabled={romanizedLoading[index]}
-                            className={`px-3 py-1 text-sm bg-blue-100 hover:bg-blue-200 rounded ${romanizedLoading[index] ? 'opacity-50 cursor-not-allowed' : ''
-                                } flex flex-row items-center`}
+                            className={`px-3 py-1 text-sm bg-indigo-100 hover:bg-indigo-200 dark:bg-indigo-600 dark:hover:bg-indigo-500 rounded text-indigo-700 dark:text-white transition-colors ${romanizedLoading[index] ? 'opacity-50 cursor-not-allowed' : ''} flex flex-row items-center`}
                             title="Generate audio from romanized text"
                         >
                             <MicrophoneIcon className="w-4 h-4" />
                         </button>}
-                        {romanizedLoading[index] && <span className="text-gray-500 text-sm">Processing...</span>}
-
+                        {romanizedLoading[index] && <span className="text-gray-500 dark:text-gray-400 text-sm">Processing...</span>}
                     </div>}
                 </div>
             ))}
