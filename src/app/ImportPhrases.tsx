@@ -1,7 +1,7 @@
 import { ImportPhrasesDialog } from './ImportPhrasesDialog';
 import { useState } from 'react';
 
-interface ImportPhrasesProps {
+export interface ImportPhrasesProps {
     inputLang: string;
     setInputLang: (lang: string) => void;
     targetLang: string;
