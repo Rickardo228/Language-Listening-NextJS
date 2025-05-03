@@ -142,14 +142,14 @@ export function ImportPhrases({
             {/* AI Prompt Input */}
             <div className="mb-4">
                 <label htmlFor="prompt" className="block font-medium mb-1">{onAddToCollection ? 'Ask for suggestions...' : 'Title'}</label>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                     <input
                         type="text"
                         id="prompt"
                         value={prompt}
                         onChange={(e) => setPrompt(e.target.value)}
                         placeholder={onAddToCollection ? 'Prompt for suggestions...' : "Enter a title for your collection..."}
-                        className="flex-1 p-2 border border-gray-300 rounded text-lg"
+                        className="flex-1 min-w-[200px] p-2 border border-gray-300 rounded text-lg"
                         autoFocus={!onAddToCollection}
                     />
                     {prompt.trim() && <button
