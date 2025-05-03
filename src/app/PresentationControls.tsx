@@ -56,28 +56,28 @@ export function PresentationControls({
             <div className="flex mb-2 items-center gap-2">
                 <button
                     onClick={() => setFullscreen(!fullscreen)}
-                    className="p-2 bg-gray-200 rounded hover:bg-gray-300"
+                    className="p-2 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 dark:hover:bg-gray-600"
                     title={fullscreen ? "Exit Presentation Mode" : "Enter Presentation Mode"}
                 >
-                    <Maximize2 className="h-8 w-8 text-gray-700" />
+                    <Maximize2 className="h-8 w-8 text-gray-700 dark:text-gray-300" />
                 </button>
                 <button
                     onClick={() => paused ? onPlay() : onPause()}
-                    className="p-2 bg-gray-200 rounded hover:bg-gray-300"
+                    className="p-2 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 dark:hover:bg-gray-600"
                     title={paused ? "Resume" : "Pause"}
                 >
                     {paused ?
-                        <Play className="h-8 w-8 text-gray-700" /> :
-                        <Pause className="h-8 w-8 text-gray-700" />
+                        <Play className="h-8 w-8 text-gray-700 dark:text-gray-300" /> :
+                        <Pause className="h-8 w-8 text-gray-700 dark:text-gray-300" />
                     }
                 </button>
                 {hasPhrasesLoaded && (
                     <button
                         onClick={handleReplay}
-                        className="p-2 bg-gray-200 rounded hover:bg-gray-300"
+                        className="p-2 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 dark:hover:bg-gray-600"
                         title="Replay"
                     >
-                        <Repeat className="h-8 w-8 text-gray-700" />
+                        <Repeat className="h-8 w-8 text-gray-700 dark:text-gray-300" />
                     </button>
                 )}
                 {/* <label className="flex items-center gap-1">
@@ -95,26 +95,26 @@ export function PresentationControls({
                 }
                 <button
                     onClick={() => setSettingsOpen(true)}
-                    className="p-2 bg-gray-200 rounded hover:bg-gray-300"
+                    className="p-2 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 dark:hover:bg-gray-600"
                     title="Settings"
                 >
-                    <Settings className="h-8 w-8 text-gray-700" />
+                    <Settings className="h-8 w-8 text-gray-700 dark:text-gray-300" />
                 </button>
                 <button
                     onClick={onPrevious}
                     disabled={!canGoBack}
-                    className="p-2 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="p-2 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
                     title="Previous Phrase"
                 >
-                    <ArrowLeft className="h-8 w-8 text-gray-700" />
+                    <ArrowLeft className="h-8 w-8 text-gray-700 dark:text-gray-300" />
                 </button>
                 <button
                     onClick={onNext}
                     disabled={!canGoForward}
-                    className="p-2 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="p-2 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
                     title="Next Phrase"
                 >
-                    <ArrowRight className="h-8 w-8 text-gray-700" />
+                    <ArrowRight className="h-8 w-8 text-gray-700 dark:text-gray-300" />
                 </button>
             </div>
 
