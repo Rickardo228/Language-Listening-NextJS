@@ -580,17 +580,18 @@ export default function Home() {
   }, []);
 
   // Rename a collection
-  const handleRenameCollection = async (idx: number) => {
+  const handleRenameCollection = async (id: string) => {
     if (!user) return;
-    const collection = savedCollections[idx];
+    const collection = savedCollections.find(col => col.id === id);
+    if (!collection) return;
     const newName = prompt("Enter new collection name:", collection.name);
     if (!newName || newName.trim() === collection.name) return;
     try {
-      const docRef = doc(firestore, 'users', user.uid, 'collections', collection.id);
+      const docRef = doc(firestore, 'users', user.uid, 'collections', id);
       await updateDoc(docRef, { name: newName.trim() });
       setSavedCollections(prev =>
-        prev.map((col, i) =>
-          i === idx ? { ...col, name: newName.trim() } : col
+        prev.map(col =>
+          col.id === id ? { ...col, name: newName.trim() } : col
         )
       );
     } catch (err) {
@@ -599,15 +600,16 @@ export default function Home() {
   };
 
   // Delete a collection
-  const handleDeleteCollection = async (idx: number) => {
+  const handleDeleteCollection = async (id: string) => {
     if (!user) return;
-    const collection = savedCollections[idx];
+    const collection = savedCollections.find(col => col.id === id);
+    if (!collection) return;
     if (!window.confirm(`Delete collection "${collection.name}"? This cannot be undone.`)) return;
     try {
-      const docRef = doc(firestore, 'users', user.uid, 'collections', collection.id);
+      const docRef = doc(firestore, 'users', user.uid, 'collections', id);
       await deleteDoc(docRef);
-      setSavedCollections(prev => prev.filter((_, i) => i !== idx));
-      if (selectedCollection === collection.id) {
+      setSavedCollections(prev => prev.filter(col => col.id !== id));
+      if (selectedCollection === id) {
         setSelectedCollection('');
         setPhrasesBase([]);
       }

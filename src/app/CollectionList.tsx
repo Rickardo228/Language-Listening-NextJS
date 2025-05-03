@@ -3,8 +3,8 @@ import { Config } from './types';
 interface CollectionListProps {
     savedCollections: Config[];
     onLoadCollection: (config: Config) => void;
-    onRenameCollection: (idx: number) => void;
-    onDeleteCollection: (idx: number) => void;
+    onRenameCollection: (id: string) => void;
+    onDeleteCollection: (id: string) => void;
     selectedCollection?: string;
 }
 
@@ -15,11 +15,12 @@ export function CollectionList({
     onDeleteCollection,
     selectedCollection
 }: CollectionListProps) {
-    // Sort collections by created_at, with most recent at the bottom
+    // Sort collections by created_at, with most recent at the top
     const sortedCollections = [...savedCollections].sort((a, b) => {
+        console.log(a.created_at, b.created_at);
         const dateA = a.created_at || '1970-01-01T00:00:00.000Z';
         const dateB = b.created_at || '1970-01-01T00:00:00.000Z';
-        return dateA.localeCompare(dateB);
+        return dateB.localeCompare(dateA); // Most recent at top
     });
 
     return (
@@ -29,8 +30,8 @@ export function CollectionList({
                 <p>No Collections Saved.</p>
             ) : (
                 <ul className="list-disc">
-                    {sortedCollections.map((config, idx) => (
-                        <li key={idx} className={`flex justify-between items-center p-2 rounded transition-colors
+                    {sortedCollections.map((config) => (
+                        <li key={config.id} className={`flex justify-between items-center p-2 rounded transition-colors
                             ${config.id === selectedCollection ? 'bg-blue-100' : 'hover:bg-gray-50'}`}>
                             <span
                                 onClick={() => onLoadCollection(config)}
@@ -40,7 +41,7 @@ export function CollectionList({
                             </span>
                             <div className="flex gap-2">
                                 <button
-                                    onClick={() => onRenameCollection(idx)}
+                                    onClick={() => onRenameCollection(config.id)}
                                     className="p-1 text-gray-600 hover:text-blue-600"
                                     title="Rename"
                                 >
@@ -49,7 +50,7 @@ export function CollectionList({
                                     </svg>
                                 </button>
                                 <button
-                                    onClick={() => onDeleteCollection(idx)}
+                                    onClick={() => onDeleteCollection(config.id)}
                                     className="p-1 text-gray-600 hover:text-red-600"
                                     title="Delete"
                                 >

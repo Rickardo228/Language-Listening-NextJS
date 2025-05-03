@@ -11,6 +11,19 @@ export function ImportPhrasesDialog(props: ImportPhrasesProps) {
 
     if (!shouldRender) return null
 
+    // Wrap the callbacks to close the dialog after successful completion
+    const wrappedProps = {
+        ...props,
+        onProcess: props.onProcess ? async (prompt?: string) => {
+            await props.onProcess!(prompt)
+            setIsOpen(false)
+        } : undefined,
+        onAddToCollection: props.onAddToCollection ? async () => {
+            await props.onAddToCollection!()
+            setIsOpen(false)
+        } : undefined
+    }
+
     return (
         <>
             <button
@@ -31,7 +44,7 @@ export function ImportPhrasesDialog(props: ImportPhrasesProps) {
                                 ✕
                             </button>
                         </div>
-                        <ImportPhrases {...props} />
+                        <ImportPhrases {...wrappedProps} />
                     </div>
                 </div>,
                 document.body
