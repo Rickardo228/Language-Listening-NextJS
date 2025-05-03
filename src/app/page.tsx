@@ -140,7 +140,7 @@ export default function Home() {
   // Save a new collection to Firestore
   const handleCreateCollection = async (phrases: Phrase[], prompt?: string) => {
     if (!user) return;
-    const generatedName = `${inputLang}→${targetLang}${prompt ? ` - ${prompt}` : ''}`;
+    const generatedName = prompt || 'New Collection';
     const now = new Date().toISOString();
     const newCollection = {
       name: generatedName,

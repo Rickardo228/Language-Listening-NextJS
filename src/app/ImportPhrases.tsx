@@ -86,18 +86,24 @@ export function ImportPhrases({
             onClick: onAddToCollection!,
             text: "Add Phrases To Current Collection",
             className: "px-4 py-2 text-lg bg-blue-400 text-white rounded hover:bg-blue-500 flex items-center justify-center",
-            // disabled: !phrasesInput
+            disabled: !phrasesInput.trim()
         },
         hasCreateNew && {
             onClick: async () => {
-                if (phrasesInput.length) { await onProcess!(prompt); setPrompt('') }
-                else {
-                    alert(onAddToCollection ? "Enter phrases to add to this collection" : "Enter phrases to start a collection")
+                if (!prompt.trim()) {
+                    alert("Please enter a title for your collection");
+                    return;
                 }
+                if (!phrasesInput.trim()) {
+                    alert("Please enter at least one phrase");
+                    return;
+                }
+                await onProcess!(prompt);
+                setPrompt('');
             },
             text: "Translate & Create Collection",
             className: "px-4 py-2 text-lg bg-blue-500 text-white rounded hover:bg-blue-600 flex items-center justify-center",
-            // disabled: !phrasesInput
+            disabled: !phrasesInput.trim() || !prompt.trim()
         }
     ].filter((button): button is ButtonConfig => Boolean(button));
 
@@ -144,6 +150,7 @@ export function ImportPhrases({
                         onChange={(e) => setPrompt(e.target.value)}
                         placeholder={onAddToCollection ? 'Prompt for suggestions...' : "Enter a title for your collection..."}
                         className="flex-1 p-2 border border-gray-300 rounded text-lg"
+                        autoFocus={!onAddToCollection}
                     />
                     {prompt.trim() && <button
                         onClick={handleGeneratePhrases}
@@ -171,6 +178,7 @@ export function ImportPhrases({
                 onChange={(e) => setPhrasesInput(e.target.value)}
                 rows={6}
                 className="w-full p-2 text-lg border border-gray-300 rounded mb-4"
+                autoFocus={!!onAddToCollection}
             />
 
             {/* Buttons */}
