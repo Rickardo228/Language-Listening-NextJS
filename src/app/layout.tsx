@@ -11,9 +11,11 @@ const playpenSans = Playpen_Sans({
 });
 
 const mPlusRounded1c = M_PLUS_Rounded_1c({
-  subsets: ['latin'],
   weight: ['400', '700'],
+  subsets: ['latin'],
   display: 'swap',
+  preload: true,
+  fallback: ['system-ui', 'arial'],
 });
 
 export const metadata: Metadata = {
