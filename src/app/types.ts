@@ -20,6 +20,7 @@ export type Config = {
   id: string;
   name: string;
   phrases: Phrase[];
+  created_at?: string;
 };
 
 export type RomanizedOutput = string[];
@@ -52,4 +53,5 @@ export type Phrase = {
   targetLang: string;
   romanized: string;
   useRomanizedForAudio?: boolean;
+  created_at?: string;
 };

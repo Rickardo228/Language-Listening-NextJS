@@ -120,7 +120,17 @@ export default function Home() {
       const snapshot = await getDocs(colRef);
       const loaded: Config[] = [];
       snapshot.forEach(docSnap => {
-        loaded.push({ id: docSnap.id, ...docSnap.data() } as Config);
+        const data = docSnap.data();
+        // Ensure each phrase has a created_at field
+        const phrases = data.phrases.map((phrase: Phrase) => ({
+          ...phrase,
+          created_at: phrase.created_at || data.created_at // fallback to collection's created_at if phrase doesn't have one
+        }));
+        loaded.push({
+          id: docSnap.id,
+          ...data,
+          phrases
+        } as Config);
       });
       setSavedCollections(loaded);
     };
@@ -131,9 +141,14 @@ export default function Home() {
   const handleCreateCollection = async (phrases: Phrase[], prompt?: string) => {
     if (!user) return;
     const generatedName = `${inputLang}→${targetLang}${prompt ? ` - ${prompt}` : ''}`;
+    const now = new Date().toISOString();
     const newCollection = {
       name: generatedName,
-      phrases
+      phrases: phrases.map(phrase => ({
+        ...phrase,
+        created_at: now
+      })),
+      created_at: now
     };
     const colRef = collection(firestore, 'users', user.uid, 'collections');
     const docRef = await addDoc(colRef, newCollection);
@@ -229,6 +244,7 @@ export default function Home() {
         }),
       });
       const data = await response.json();
+      const now = new Date().toISOString();
       const processedPhrases: Phrase[] = splitPhrases.map((p, index) => ({
         input: p,
         translated: data.translated ? data.translated[index] || '' : '',
@@ -236,7 +252,8 @@ export default function Home() {
         outputAudio: data.outputAudioSegments ? data.outputAudioSegments[index] || null : null,
         romanized: data.romanizedOutput ? data.romanizedOutput[index] || '' : '',
         inputLang,
-        targetLang
+        targetLang,
+        created_at: now
       }));
 
       // Add new phrases to existing collection

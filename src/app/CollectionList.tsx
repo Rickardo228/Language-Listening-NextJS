@@ -15,14 +15,21 @@ export function CollectionList({
     onDeleteCollection,
     selectedCollection
 }: CollectionListProps) {
+    // Sort collections by created_at, with most recent at the bottom
+    const sortedCollections = [...savedCollections].sort((a, b) => {
+        const dateA = a.created_at || '1970-01-01T00:00:00.000Z';
+        const dateB = b.created_at || '1970-01-01T00:00:00.000Z';
+        return dateA.localeCompare(dateB);
+    });
+
     return (
         <div>
             <h3 className="text-xl font-semibold mb-4">Collections</h3>
-            {savedCollections.length === 0 ? (
+            {sortedCollections.length === 0 ? (
                 <p>No Collections Saved.</p>
             ) : (
                 <ul className="list-disc">
-                    {savedCollections.map((config, idx) => (
+                    {sortedCollections.map((config, idx) => (
                         <li key={idx} className={`flex justify-between items-center p-2 rounded transition-colors
                             ${config.id === selectedCollection ? 'bg-blue-100' : 'hover:bg-gray-50'}`}>
                             <span
