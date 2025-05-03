@@ -12,6 +12,7 @@ export interface ImportPhrasesProps {
     onProcess?: () => void;
     onAddToCollection?: () => void;
     className?: string;
+    hasSelectedCollection?: boolean;
 }
 
 export function ImportPhrases({
@@ -24,7 +25,8 @@ export function ImportPhrases({
     loading,
     onProcess,
     onAddToCollection,
-    className = ''
+    className = '',
+    hasSelectedCollection
 }: ImportPhrasesProps) {
     const [isOpen, setIsOpen] = useState(false);
     const buttonText = onProcess ? 'Create New Collection' : 'Add Phrases';

@@ -787,6 +787,7 @@ export default function Home() {
                     setPhrasesInput={setPhrasesInput}
                     loading={loading}
                     onAddToCollection={handleAddToCollection}
+                    hasSelectedCollection={Boolean(selectedCollection)}
                   />
                 </div>
               </div>
