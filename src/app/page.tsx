@@ -52,6 +52,7 @@ export default function Home() {
   const [phrasesInput, setPhrasesInput] = useState<string>('');
   const [inputLang, setInputLang] = useState<string>(languageOptions[0]?.code);
   const [targetLang, setTargetLang] = useState<string>('it-IT');
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
 
   const [selectedCollection, setSelectedCollection] = useState<string>('')
   const [savedCollections, setSavedCollections] = useState<Config[]>([])
@@ -106,6 +107,7 @@ export default function Home() {
       } else {
         setUser(null)
       }
+      setIsAuthLoading(false);
     });
     return () => unsubscribe();
   }, []);
@@ -597,6 +599,14 @@ export default function Home() {
       alert("Failed to delete collection: " + err);
     }
   };
+
+  if (isAuthLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
 
   if (!user) {
     return <SignInPage />;
