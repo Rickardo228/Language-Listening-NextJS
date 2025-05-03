@@ -767,7 +767,7 @@ export default function Home() {
         <div className="flex-1 lg:overflow-y-auto">
           {loading && 'Loading...'}
           {!loading && selectedCollection && (
-            <div className={`sticky lg:px-0 lg:pb-3 px-1 py-2 top-[320px] lg:top-[0px] lg:bg-background bg-gray-50 z-1 ${!selectedCollection ? 'hidden lg:block' : ''}`}>
+            <div className={`sticky lg:px-0 lg:pb-3 px-1 py-2 top-[320px] lg:top-[0px] lg:bg-background bg-gray-50 dark:bg-gray-900 z-1 ${!selectedCollection ? 'hidden lg:block' : ''}`}>
               <div className="w-full flex items-center p-2">
                 <CollectionHeader
                   collectionId={selectedCollection}
