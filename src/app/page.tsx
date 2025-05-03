@@ -9,7 +9,6 @@ import { presentationConfigDefinition } from './configDefinitions';
 import { EditablePhrases } from './EditablePhrases';
 import { PresentationControls } from './PresentationControls';
 import { API_BASE_URL, BLEED_START_DELAY, DELAY_AFTER_OUTPUT_PHRASES_MULTIPLIER, LAG_COMPENSATION } from './consts';
-import { ImportPhrases } from './ImportPhrases';
 import { ImportPhrasesDialog } from './ImportPhrasesDialog';
 import { initializeApp } from 'firebase/app';
 import { getAuth, onAuthStateChanged, signInWithPopup, GoogleAuthProvider, User, signOut } from 'firebase/auth';
@@ -703,11 +702,11 @@ export default function Home() {
       {/* Main content */}
       <div className={`flex lg:flex-row flex-col-reverse gap-4 w-full lg:h-[92vh]`}>
         {/* Saved Configs List */}
-        <div className={`flex flex-col gap-10 bg-gray-50 p-5 ${selectedCollection ? 'hidden lg:flex' : 'flex'} lg:w-[460px] min-w-[300px] max-w-[100vw] overflow-visible lg:overflow-y-auto`}>
+        <div className={`flex flex-col gap-10 bg-gray-50 p-5 ${selectedCollection ? 'hidden lg:flex' : 'flex'} lg:w-[460px] min-w-[300px] max-w-[100vw] overflow-visible lg:overflow-y-auto mb-[80px]`}>
 
-          <div>
+          <div className="fixed bottom-0 left-0 z-50 w-full lg:w-[460px] bg-gray-50 p-5">
             {/* Language Selection and Phrase Import */}
-            <ImportPhrases
+            <ImportPhrasesDialog
               inputLang={inputLang}
               setInputLang={setInputLang}
               targetLang={targetLang}
@@ -716,9 +715,7 @@ export default function Home() {
               setPhrasesInput={setPhrasesInput}
               loading={loading}
               onProcess={handleProcess}
-              // onAddToCollection={handleAddToCollection}
               hasSelectedCollection={!!selectedCollection}
-
             />
           </div>
           <CollectionList

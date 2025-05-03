@@ -17,8 +17,7 @@ export function ImportPhrasesDialog(props: ImportPhrasesProps) {
                 onClick={() => setIsOpen(true)}
                 className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg"
             >
-                Add Phrases
-            </button>
+                {props.onAddToCollection ? 'Add Phrases' : 'New Collection'}            </button>
 
             {isOpen && createPortal(
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100] font-sans">
