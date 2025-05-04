@@ -1,5 +1,5 @@
 import { Phrase } from './types';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { SpeakerWaveIcon, MicrophoneIcon } from '@heroicons/react/24/solid';
 import { API_BASE_URL } from './consts';
 // import { ClipboardIcon, ClipboardDocumentCheckIcon } from '@heroicons/react/24/outline';
@@ -11,6 +11,8 @@ interface EditablePhrasesProps {
     outputLanguage: string;
     currentPhraseIndex: number | null;
     onPhraseClick?: (index: number) => void;
+    scrollContainerRef?: React.RefObject<HTMLDivElement | null>;
+    isMobile?: boolean;
 }
 
 
@@ -28,10 +30,47 @@ async function generateAudio(text: string, language: string): Promise<{ audioUrl
     return response.json();
 }
 
-export function EditablePhrases({ phrases, setPhrases, currentPhraseIndex, onPhraseClick }: EditablePhrasesProps) {
+export function EditablePhrases({ phrases, setPhrases, currentPhraseIndex, onPhraseClick, scrollContainerRef, isMobile = false }: EditablePhrasesProps) {
     const [inputLoading, setInputLoading] = useState<{ [key: number]: boolean }>({});
     const [outputLoading, setOutputLoading] = useState<{ [key: number]: boolean }>({});
     const [romanizedLoading, setRomanizedLoading] = useState<{ [key: number]: boolean }>({});
+    const [autoScroll, setAutoScroll] = useState(true);
+    const phraseRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+    // Initialize refs array when phrases change
+    useEffect(() => {
+        phraseRefs.current = phrases.map(() => null);
+    }, [phrases]);
+
+    // Handle scrolling when currentPhraseIndex changes
+    useEffect(() => {
+        if (!autoScroll || currentPhraseIndex === null || currentPhraseIndex < 0) return;
+
+        const currentPhrase = phraseRefs.current[currentPhraseIndex];
+        if (!currentPhrase) return;
+
+        const container = scrollContainerRef?.current;
+        if (!container) return;
+
+        const scrollMargin = isMobile ? 320 : 0; // Adjust based on mobile/desktop
+
+        // Get the container's scroll position
+        const containerScrollTop = container.scrollTop;
+
+        // Get the phrase's position relative to the container
+        const phraseTop = currentPhrase.offsetTop;
+
+        // Calculate the target scroll position
+        const targetScrollTop = phraseTop - scrollMargin;
+
+        // Only scroll if the phrase is not already visible
+        if (targetScrollTop < containerScrollTop || targetScrollTop > containerScrollTop + container.clientHeight) {
+            container.scrollTo({
+                top: targetScrollTop,
+                behavior: 'smooth'
+            });
+        }
+    }, [currentPhraseIndex, autoScroll, scrollContainerRef, isMobile]);
 
     const handlePhraseChange = (index: number, field: keyof Phrase, value: string) => {
         const newPhrases = [...phrases];
@@ -210,28 +249,23 @@ export function EditablePhrases({ phrases, setPhrases, currentPhraseIndex, onPhr
 
     return (
         <div className="mb-4">
-            {/* <div className="flex justify-between items-center mb-4">
-                <div className="flex gap-2">
-                    <button
-                        onClick={handleCopyPhrases}
-                        className="flex items-center gap-1 px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded"
-                        title="Copy phrases as JSON"
-                    >
-                        Copy
-                    </button>
-                    <button
-                        onClick={handlePastePhrases}
-                        disabled={loading}
-                        className={`flex items-center gap-1 px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
-                        title="Paste phrases from JSON"
-                    >
-                        {loading ? 'Loading...' : 'Paste'}
-                    </button>
-                </div>
-            </div> */}
+            <div className="flex items-center gap-2 mb-4">
+                <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                    <input
+                        type="checkbox"
+                        checked={autoScroll}
+                        onChange={(e) => setAutoScroll(e.target.checked)}
+                        className="rounded border-gray-300 dark:border-gray-600"
+                    />
+                    Auto-scroll to active phrase
+                </label>
+            </div>
             {phrases.map((phrase, index) => (
                 <div
                     key={index}
+                    ref={(el) => {
+                        phraseRefs.current[index] = el;
+                    }}
                     className={`mb-4 border p-2 rounded transition-colors
                         ${currentPhraseIndex === index
                             ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-400'

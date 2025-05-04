@@ -89,6 +89,24 @@ export default function Home() {
 
   const { theme, toggleTheme } = useTheme();
 
+  const mainContentRef = useRef<HTMLDivElement>(null);
+  const phrasesContainerRef = useRef<HTMLDivElement>(null);
+
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
+  const [scrollContainerRef, setScrollContainerRef] = useState<React.RefObject<HTMLDivElement | null>>(isMobile ? mainContentRef : phrasesContainerRef);
+
+  // Handle window resize
+  useEffect(() => {
+    const handleResize = () => {
+      const mobile = window.innerWidth < 1024;
+      setIsMobile(mobile);
+      setScrollContainerRef(mobile ? mainContentRef : phrasesContainerRef);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   // Listen for auth state changes and sign in if not already
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
@@ -696,7 +714,7 @@ export default function Home() {
   }
 
   return (
-    <div className="font-sans lg:h-[100vh] flex flex-col bg-background text-foreground">
+    <div className="font-sans lg:h-[100vh] flex flex-col bg-background text-foreground" ref={mainContentRef}>
       {/* Nav */}
       <div className={`flex items-center justify-between shadow-md lg:mb-0 p-3 sticky top-0 bg-background border-b ${fullscreen ? 'z-1' : 'z-50'}`}>
         {/* Back button - hidden when no collection selected */}
@@ -785,7 +803,7 @@ export default function Home() {
 
         {/* Phrases and Playback */}
         {!phrases?.length && <h3 className="hidden lg:block p-3">Select a Collection or Import Phrases</h3>}
-        <div className="flex-1 lg:overflow-y-auto">
+        <div className="flex-1 lg:overflow-y-auto" ref={phrasesContainerRef}>
           {selectedCollection && (
             <div className={`sticky lg:px-0 lg:pb-3 px-1 py-2 top-[320px] lg:top-[0px] lg:bg-background bg-gray-50 dark:bg-gray-900 z-1 ${!selectedCollection ? 'hidden lg:block' : ''}`}>
               <div className="w-full flex items-center p-2">
@@ -833,6 +851,8 @@ export default function Home() {
                     audioRef.current.src = phrases[index].inputAudio.audioUrl;
                   }
                 }}
+                scrollContainerRef={scrollContainerRef}
+                isMobile={isMobile}
               />
             </div>
           )}
