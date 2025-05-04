@@ -21,6 +21,8 @@ export type Config = {
   name: string;
   phrases: Phrase[];
   created_at?: string;
+  inputVoice?: string;
+  targetVoice?: string;
 };
 
 export type RomanizedOutput = string[];
@@ -49,8 +51,10 @@ export type Phrase = {
   translated: string;
   inputAudio: AudioSegment | null;
   inputLang: string;
+  inputVoice?: string;
   outputAudio: AudioSegment | null;
   targetLang: string;
+  targetVoice?: string;
   romanized: string;
   useRomanizedForAudio?: boolean;
   created_at?: string;

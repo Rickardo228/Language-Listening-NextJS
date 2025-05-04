@@ -46,10 +46,17 @@ function Menu({ isOpen, onClose, triggerRef, onRename, onDelete, onVoiceChange }
     const triggerRect = triggerRef.current?.getBoundingClientRect();
     if (!triggerRect) return null;
 
+    // Calculate if menu would overflow right edge
+    const menuWidth = 192; // w-48 = 12rem = 192px
+    const rightEdge = triggerRect.right + menuWidth;
+    const viewportWidth = window.innerWidth;
+    const shouldAlignRight = rightEdge > viewportWidth;
+
     const menuStyle = {
         position: 'fixed' as const,
         top: triggerRect.bottom,
-        left: triggerRect.right, // 192px is the width of the menu
+        left: shouldAlignRight ? 'auto' : triggerRect.right,
+        right: shouldAlignRight ? viewportWidth - triggerRect.right : 'auto',
     };
 
     return createPortal(
@@ -118,8 +125,8 @@ export function CollectionHeader({
     const collection = savedCollections.find(col => col.id === collectionId);
     if (!collection) return null;
 
-    const handleVoiceSave = (inputVoice: string, targetVoice: string) => {
-        onVoiceChange(inputVoice, targetVoice);
+    const handleVoiceSave = async (inputVoice: string, targetVoice: string) => {
+        await onVoiceChange(inputVoice, targetVoice);
         setIsVoiceModalOpen(false);
     };
 
@@ -147,13 +154,13 @@ export function CollectionHeader({
                     onDelete={() => onDelete(collectionId)}
                     onVoiceChange={() => setIsVoiceModalOpen(true)}
                 />
-                <VoiceSelectionModal
-                    isOpen={isVoiceModalOpen}
+                {isVoiceModalOpen && <VoiceSelectionModal
                     onClose={() => setIsVoiceModalOpen(false)}
                     inputLang={inputLang}
                     targetLang={targetLang}
                     onSave={handleVoiceSave}
-                />
+                    phrases={collection.phrases}
+                />}
             </div>
         </div>
     );

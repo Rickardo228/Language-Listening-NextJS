@@ -173,6 +173,7 @@ export default function Home() {
       })),
       created_at: now
     };
+    console.log('newCollection', newCollection);
     const colRef = collection(firestore, 'users', user.uid, 'collections');
     const docRef = await addDoc(colRef, newCollection);
     setSavedCollections(prev => [...prev, { ...newCollection, id: docRef.id }]);
@@ -219,7 +220,9 @@ export default function Home() {
         outputAudio: data.outputAudioSegments ? data.outputAudioSegments[index] || null : null,
         romanized: data.romanizedOutput ? data.romanizedOutput[index] || '' : '',
         inputLang: inputLang || newCollectionInputLang,
-        targetLang: targetLang || newCollectionTargetLang
+        targetLang: targetLang || newCollectionTargetLang,
+        inputVoice: data.inputVoice || 'standard-d',
+        targetVoice: data.targetVoice || 'standard-d'
       }));
 
       const collectionId = await handleCreateCollection(processedPhrases, prompt);
@@ -274,6 +277,8 @@ export default function Home() {
         romanized: data.romanizedOutput ? data.romanizedOutput[index] || '' : '',
         inputLang: inputLang || addToCollectionInputLang,
         targetLang: targetLang || addToCollectionTargetLang,
+        inputVoice: data.inputVoice || 'standard-d',
+        targetVoice: data.targetVoice || 'standard-d',
         created_at: now
       }));
 
@@ -651,6 +656,7 @@ export default function Home() {
   const handleVoiceChange = async (inputVoice: string, targetVoice: string) => {
     if (!user || !selectedCollection) return;
     const collection = savedCollections.find(col => col.id === selectedCollection);
+    console.log(collection);
     if (!collection) return;
 
     try {
@@ -668,7 +674,11 @@ export default function Home() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          phrases: collection.phrases,
+          phrases: collection.phrases.map(phrase => ({
+            ...phrase,
+            inputVoice,
+            targetVoice
+          })),
           inputVoice,
           targetVoice
         }),
@@ -679,20 +689,9 @@ export default function Home() {
       }
 
       const { phrases: updatedPhrases } = await response.json();
-      console.log(updatedPhrases)
-      // Update the local state with the new phrases
-      setSavedCollections(prev =>
-        prev.map(col =>
-          col.id === selectedCollection
-            ? { ...col, phrases: updatedPhrases }
-            : col
-        )
-      );
 
-      // Update the current phrases if this collection is selected
-      if (selectedCollection === collection.id) {
-        setPhrasesBase(updatedPhrases);
-      }
+      // Update both local states with the new phrases
+      await setPhrases(updatedPhrases, selectedCollection);
     } catch (err) {
       console.error('Error updating voices:', err);
       alert('Failed to update voices: ' + err);

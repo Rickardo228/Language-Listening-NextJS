@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { API_BASE_URL } from './consts';
+import { Phrase } from './types';
 
 interface Voice {
     name: string;
@@ -9,25 +10,45 @@ interface Voice {
 }
 
 interface VoiceSelectionModalProps {
-    isOpen: boolean;
     onClose: () => void;
     inputLang: string;
     targetLang: string;
     onSave: (inputVoice: string, targetVoice: string) => void;
+    phrases?: Phrase[];
 }
 
-export function VoiceSelectionModal({ isOpen, onClose, inputLang, targetLang, onSave }: VoiceSelectionModalProps) {
+export function VoiceSelectionModal({ onClose, inputLang, targetLang, onSave, phrases }: VoiceSelectionModalProps) {
     const [inputVoices, setInputVoices] = useState<Voice[]>([]);
     const [targetVoices, setTargetVoices] = useState<Voice[]>([]);
     const [selectedInputVoice, setSelectedInputVoice] = useState<string>('');
     const [selectedTargetVoice, setSelectedTargetVoice] = useState<string>('');
     const [isLoading, setIsLoading] = useState(true);
+    const [isSaving, setIsSaving] = useState(false);
 
     useEffect(() => {
-        if (isOpen) {
-            fetchVoices();
+        fetchVoices();
+    }, [inputLang, targetLang]);
+
+    const getDefaultVoice = (languageCode: string) => `${languageCode}-Standard-D`;
+
+    const isValidVoiceForLanguage = (voice: Voice, languageCode: string) => {
+        return voice.languageCode === languageCode;
+    };
+
+    const findValidVoice = (voices: Voice[], languageCode: string, preferredVoice?: string) => {
+        // First try to find the preferred voice if it exists and is valid
+        if (preferredVoice) {
+            const preferred = voices.find(v => v.name === preferredVoice && isValidVoiceForLanguage(v, languageCode));
+            if (preferred) return preferred.name;
         }
-    }, [isOpen, inputLang, targetLang]);
+
+        // Then try to find any valid voice for the language
+        const validVoice = voices.find(v => isValidVoiceForLanguage(v, languageCode));
+        if (validVoice) return validVoice.name;
+
+        // Fallback to default voice name
+        return getDefaultVoice(languageCode);
+    };
 
     const fetchVoices = async () => {
         setIsLoading(true);
@@ -46,12 +67,19 @@ export function VoiceSelectionModal({ isOpen, onClose, inputLang, targetLang, on
             setInputVoices(data.inputVoices);
             setTargetVoices(data.targetVoices);
 
-            // Set default voices if available
+            // Get existing voices from the first phrase if available
+            const firstPhrase = phrases?.[0];
+            const existingInputVoice = firstPhrase?.inputVoice;
+            const existingTargetVoice = firstPhrase?.targetVoice;
+
+            // Set default voices with validation
             if (data.inputVoices.length > 0) {
-                setSelectedInputVoice(data.inputVoices[0].name);
+                const validInputVoice = findValidVoice(data.inputVoices, inputLang, existingInputVoice);
+                setSelectedInputVoice(validInputVoice);
             }
             if (data.targetVoices.length > 0) {
-                setSelectedTargetVoice(data.targetVoices[0].name);
+                const validTargetVoice = findValidVoice(data.targetVoices, targetLang, existingTargetVoice);
+                setSelectedTargetVoice(validTargetVoice);
             }
         } catch (error) {
             console.error('Error fetching voices:', error);
@@ -59,7 +87,6 @@ export function VoiceSelectionModal({ isOpen, onClose, inputLang, targetLang, on
         setIsLoading(false);
     };
 
-    if (!isOpen) return null;
 
     return createPortal(
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 font-sans">
@@ -109,15 +136,31 @@ export function VoiceSelectionModal({ isOpen, onClose, inputLang, targetLang, on
                         <div className="flex justify-end gap-2">
                             <button
                                 onClick={onClose}
-                                className="px-4 py-2 text-sm rounded hover:bg-secondary"
+                                disabled={isSaving}
+                                className="px-4 py-2 text-sm rounded hover:bg-secondary disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 Cancel
                             </button>
                             <button
-                                onClick={() => onSave(selectedInputVoice, selectedTargetVoice)}
-                                className="px-4 py-2 text-sm bg-primary text-primary-foreground rounded hover:bg-primary/90"
+                                onClick={async () => {
+                                    setIsSaving(true);
+                                    try {
+                                        await onSave(selectedInputVoice, selectedTargetVoice);
+                                    } finally {
+                                        setIsSaving(false);
+                                    }
+                                }}
+                                disabled={isSaving}
+                                className="px-4 py-2 text-sm bg-primary text-primary-foreground rounded hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                             >
-                                Save Changes
+                                {isSaving ? (
+                                    <>
+                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-foreground"></div>
+                                        Saving...
+                                    </>
+                                ) : (
+                                    'Save Changes'
+                                )}
                             </button>
                         </div>
                     </>
