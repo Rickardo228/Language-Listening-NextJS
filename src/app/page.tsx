@@ -51,8 +51,10 @@ function SignInPage() {
 export default function Home() {
   // User input and language selection
   const [phrasesInput, setPhrasesInput] = useState<string>('');
-  const [inputLang, setInputLang] = useState<string>(languageOptions[0]?.code);
-  const [targetLang, setTargetLang] = useState<string>('it-IT');
+  const [newCollectionInputLang, setNewCollectionInputLang] = useState<string>(languageOptions[0]?.code);
+  const [newCollectionTargetLang, setNewCollectionTargetLang] = useState<string>('it-IT');
+  const [addToCollectionInputLang, setAddToCollectionInputLang] = useState<string>(languageOptions[0]?.code);
+  const [addToCollectionTargetLang, setAddToCollectionTargetLang] = useState<string>('it-IT');
   const [isAuthLoading, setIsAuthLoading] = useState(true);
 
   const [selectedCollection, setSelectedCollection] = useState<string>('')
@@ -150,8 +152,8 @@ export default function Home() {
         // Get the most recent phrase
         const mostRecentPhrase = sortedPhrases[0];
         if (mostRecentPhrase) {
-          setInputLang(mostRecentPhrase.inputLang);
-          setTargetLang(mostRecentPhrase.targetLang);
+          setNewCollectionInputLang(mostRecentPhrase.inputLang);
+          setNewCollectionTargetLang(mostRecentPhrase.targetLang);
         }
       }
     };
@@ -190,7 +192,7 @@ export default function Home() {
     // }
   }, []);
 
-  const handleProcess = async (prompt?: string) => {
+  const handleProcess = async (prompt?: string, inputLang?: string, targetLang?: string) => {
     // Split the textarea input into an array of phrases.
     const splitPhrases = phrasesInput
       .split('\n')
@@ -204,8 +206,8 @@ export default function Home() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           phrases: splitPhrases,
-          inputLang,
-          targetLang,
+          inputLang: inputLang || newCollectionInputLang,
+          targetLang: targetLang || newCollectionTargetLang,
         }),
       });
       const data = await response.json();
@@ -216,8 +218,8 @@ export default function Home() {
         inputAudio: data.inputAudioSegments ? data.inputAudioSegments[index] || null : null,
         outputAudio: data.outputAudioSegments ? data.outputAudioSegments[index] || null : null,
         romanized: data.romanizedOutput ? data.romanizedOutput[index] || '' : '',
-        inputLang,
-        targetLang
+        inputLang: inputLang || newCollectionInputLang,
+        targetLang: targetLang || newCollectionTargetLang
       }));
 
       const collectionId = await handleCreateCollection(processedPhrases, prompt);
@@ -243,7 +245,7 @@ export default function Home() {
     timeoutIds.current.push(timeoutId2)
   };
 
-  const handleAddToCollection = async () => {
+  const handleAddToCollection = async (inputLang?: string, targetLang?: string) => {
     const splitPhrases = phrasesInput
       .split('\n')
       .map((line) => line.trim())
@@ -258,8 +260,8 @@ export default function Home() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           phrases: splitPhrases,
-          inputLang,
-          targetLang,
+          inputLang: inputLang,
+          targetLang: targetLang,
         }),
       });
       const data = await response.json();
@@ -270,8 +272,8 @@ export default function Home() {
         inputAudio: data.inputAudioSegments ? data.inputAudioSegments[index] || null : null,
         outputAudio: data.outputAudioSegments ? data.outputAudioSegments[index] || null : null,
         romanized: data.romanizedOutput ? data.romanizedOutput[index] || '' : '',
-        inputLang,
-        targetLang,
+        inputLang: inputLang || addToCollectionInputLang,
+        targetLang: targetLang || addToCollectionTargetLang,
         created_at: now
       }));
 
@@ -342,6 +344,13 @@ export default function Home() {
       setCurrentPhase('input');
       setSelectedCollection(config.id);
 
+      // Set the addToCollection language states based on the first phrase
+      if (config.phrases.length > 0) {
+        const firstPhrase = config.phrases[0];
+        setAddToCollectionInputLang(firstPhrase.inputLang);
+        setAddToCollectionTargetLang(firstPhrase.targetLang);
+      }
+
       setPhrases(config.phrases, config.id);
     } catch (err) {
       console.error('Loading error:', err);
@@ -359,7 +368,7 @@ export default function Home() {
     const textColorName =
       bgColorOptions.find((opt) => opt.value === presentationConfig.textBg)?.name || "Custom";
     const generatedName =
-      `${inputLang}→${targetLang} [C:${containerColorName}, T:${textColorName}]` +
+      `${newCollectionInputLang}→${newCollectionTargetLang} [C:${containerColorName}, T:${textColorName}]` +
       (presentationConfig.enableSnow ? " ❄️" : "") +
       (presentationConfig.enableCherryBlossom ? " 🌸" : "") +
       (presentationConfig.enableLeaves ? " 🍂" : "") +
@@ -638,6 +647,58 @@ export default function Home() {
     }
   };
 
+  // Add the handleVoiceChange function near the other handlers
+  const handleVoiceChange = async (inputVoice: string, targetVoice: string) => {
+    if (!user || !selectedCollection) return;
+    const collection = savedCollections.find(col => col.id === selectedCollection);
+    if (!collection) return;
+
+    try {
+      // Update the collection in Firestore with the new voices
+      const docRef = doc(firestore, 'users', user.uid, 'collections', selectedCollection);
+      await updateDoc(docRef, {
+        inputVoice,
+        targetVoice
+      });
+
+      // Reload the collection with the new voices
+      const response = await fetch(`${API_BASE_URL}/load`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          phrases: collection.phrases,
+          inputVoice,
+          targetVoice
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to reload collection with new voices');
+      }
+
+      const { phrases: updatedPhrases } = await response.json();
+      console.log(updatedPhrases)
+      // Update the local state with the new phrases
+      setSavedCollections(prev =>
+        prev.map(col =>
+          col.id === selectedCollection
+            ? { ...col, phrases: updatedPhrases }
+            : col
+        )
+      );
+
+      // Update the current phrases if this collection is selected
+      if (selectedCollection === collection.id) {
+        setPhrasesBase(updatedPhrases);
+      }
+    } catch (err) {
+      console.error('Error updating voices:', err);
+      alert('Failed to update voices: ' + err);
+    }
+  };
+
   if (isAuthLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
@@ -741,6 +802,9 @@ export default function Home() {
             savedCollections={savedCollections}
             onRename={handleRenameCollection}
             onDelete={handleDeleteCollection}
+            onVoiceChange={handleVoiceChange}
+            inputLang={addToCollectionInputLang}
+            targetLang={addToCollectionTargetLang}
             className="lg:hidden"
             titleClassName="max-w-[150px]"
           />
@@ -759,10 +823,10 @@ export default function Home() {
           <div className="fixed bottom-0 left-0 z-10 w-full lg:w-[460px] bg-secondary/50 p-5">
             {/* Language Selection and Phrase Import */}
             <ImportPhrases
-              inputLang={inputLang}
-              setInputLang={setInputLang}
-              targetLang={targetLang}
-              setTargetLang={setTargetLang}
+              inputLang={newCollectionInputLang}
+              setInputLang={setNewCollectionInputLang}
+              targetLang={newCollectionTargetLang}
+              setTargetLang={setNewCollectionTargetLang}
               phrasesInput={phrasesInput}
               setPhrasesInput={setPhrasesInput}
               loading={loading}
@@ -789,15 +853,18 @@ export default function Home() {
                   savedCollections={savedCollections}
                   onRename={handleRenameCollection}
                   onDelete={handleDeleteCollection}
+                  onVoiceChange={handleVoiceChange}
+                  inputLang={addToCollectionInputLang}
+                  targetLang={addToCollectionTargetLang}
                   className="hidden lg:flex"
                   titleClassName="max-w-[250px]"
                 />
                 <div className="w-fit whitespace-nowrap ml-auto">
                   <ImportPhrases
-                    inputLang={inputLang}
-                    setInputLang={setInputLang}
-                    targetLang={targetLang}
-                    setTargetLang={setTargetLang}
+                    inputLang={addToCollectionInputLang}
+                    setInputLang={setAddToCollectionInputLang}
+                    targetLang={addToCollectionTargetLang}
+                    setTargetLang={setAddToCollectionTargetLang}
                     phrasesInput={phrasesInput}
                     setPhrasesInput={setPhrasesInput}
                     loading={loading}
@@ -813,8 +880,8 @@ export default function Home() {
               <EditablePhrases
                 phrases={phrases}
                 setPhrases={setPhrases}
-                inputLanguage={inputLang}
-                outputLanguage={targetLang}
+                inputLanguage={newCollectionInputLang}
+                outputLanguage={newCollectionTargetLang}
                 currentPhraseIndex={currentPhraseIndex}
                 onPhraseClick={(index) => {
                   setCurrentPhraseIndex(index);

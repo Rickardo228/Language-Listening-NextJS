@@ -15,8 +15,8 @@ interface ImportPhrasesDialogProps {
     phrasesInput: string
     setPhrasesInput: (input: string) => void
     loading: boolean
-    onProcess?: (prompt?: string) => void
-    onAddToCollection?: () => void
+    onProcess?: (prompt?: string, inputLang?: string, targetLang?: string) => void
+    onAddToCollection?: (inputLang?: string, targetLang?: string) => void
 }
 
 export function ImportPhrasesDialog({
@@ -223,7 +223,7 @@ export function ImportPhrasesDialog({
                             {onAddToCollection ? (
                                 <button
                                     onClick={() => {
-                                        onAddToCollection?.()
+                                        onAddToCollection?.(inputLang, targetLang)
                                         onClose()
                                     }}
                                     disabled={loading || !phrasesInput.trim()}
@@ -234,7 +234,7 @@ export function ImportPhrasesDialog({
                             ) : (
                                 <button
                                     onClick={async () => {
-                                        await onProcess?.(prompt)
+                                        await onProcess?.(prompt, inputLang, targetLang)
                                         onClose()
                                     }}
                                     disabled={loading || !phrasesInput.trim()}
