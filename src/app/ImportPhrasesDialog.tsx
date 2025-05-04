@@ -139,15 +139,35 @@ export function ImportPhrasesDialog({
                         {!onAddToCollection && (
                             <div>
                                 <label className="block text-sm font-medium mb-1">Collection Name (optional)</label>
-                                <input
-                                    type="text"
-                                    value={prompt}
-                                    onChange={(e) => setPrompt(e.target.value)}
-                                    className="w-full p-2 rounded-md border bg-background"
-                                    placeholder="Enter a name for this collection..."
-                                    disabled={loading}
-                                    autoFocus={Boolean(onProcess)}
-                                />
+                                <div className="flex gap-2">
+                                    <input
+                                        type="text"
+                                        value={prompt}
+                                        onChange={(e) => setPrompt(e.target.value)}
+                                        className="w-full p-2 rounded-md border bg-background"
+                                        placeholder="Enter a name for this collection..."
+                                        disabled={loading}
+                                        autoFocus={Boolean(onProcess)}
+                                    />
+                                    {prompt.trim() && (
+                                        <button
+                                            onClick={handleGeneratePhrases}
+                                            disabled={generatingPhrases || !prompt.trim()}
+                                            className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 disabled:bg-gray-400"
+                                        >
+                                            {generatingPhrases ? (
+                                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                            ) : (
+                                                <div className="flex items-center gap-1">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 18v-5.25m0 0a6.01 6.01 0 0 0 1.5-.189m-1.5.189a6.01 6.01 0 0 1-1.5-.189m3.75 7.478a12.06 12.06 0 0 1-4.5 0m3.75 2.383a14.406 14.406 0 0 1-3 0M14.25 18v-.192c0-.983.658-1.823 1.508-2.316a7.5 7.5 0 1 0-7.517 0c.85.493 1.509 1.333 1.509 2.316V18" />
+                                                    </svg>
+                                                    Suggestions
+                                                </div>
+                                            )}
+                                        </button>
+                                    )}
+                                </div>
                             </div>
                         )}
 

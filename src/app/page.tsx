@@ -740,7 +740,7 @@ export default function Home() {
         {/* Saved Configs List */}
         <div className={`flex flex-col gap-10 bg-secondary/50 p-5 ${selectedCollection ? 'hidden lg:flex' : 'flex'} lg:w-[460px] min-w-[300px] max-w-[100vw] overflow-visible lg:overflow-y-auto mb-[80px]`}>
 
-          <div className="fixed bottom-0 left-0 w-full lg:w-[460px] bg-secondary/50 p-5">
+          <div className="fixed bottom-0 left-0 z-10 w-full lg:w-[460px] bg-secondary/50 p-5">
             {/* Language Selection and Phrase Import */}
             <ImportPhrases
               inputLang={inputLang}

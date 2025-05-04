@@ -104,7 +104,7 @@ export function PresentationView({
 
   const containerClass =
     `inset-0 flex flex-col items-center justify-center ` +
-    (fullScreen ? "fixed" : "relative p-4 lg:rounded shadow w-full h-48");
+    (fullScreen ? "fixed z-50" : "relative p-4 lg:rounded shadow w-full h-48");
 
   const titlePropClass = fullScreen
     ? "text-8xl font-bold text-white mb-4"
