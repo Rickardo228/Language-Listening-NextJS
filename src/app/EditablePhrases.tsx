@@ -240,7 +240,7 @@ export function EditablePhrases({ phrases, setPhrases, currentPhraseIndex, onPhr
                     onClick={() => onPhraseClick?.(index)}
                 >
                     <div className="mb-2 flex items-center gap-2">
-                        <label className="block font-medium mb-1 text-gray-700 dark:text-gray-200">Input:</label>
+                        {/* <label className="block font-medium mb-1 text-gray-700 dark:text-gray-200">Input:</label> */}
                         <input
                             type="text"
                             value={phrase.input}
@@ -268,7 +268,7 @@ export function EditablePhrases({ phrases, setPhrases, currentPhraseIndex, onPhr
                         {inputLoading[index] && <span className="text-gray-500 dark:text-gray-400 text-sm">Processing...</span>}
                     </div>
                     <div className="flex items-center gap-2">
-                        <label className="block font-medium mb-1 text-gray-700 dark:text-gray-200">Translated:</label>
+                        {/* <label className="block font-medium mb-1 text-gray-700 dark:text-gray-200">Translated:</label> */}
                         <input
                             type="text"
                             value={phrase.translated}
