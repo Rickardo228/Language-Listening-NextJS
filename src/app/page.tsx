@@ -136,6 +136,24 @@ export default function Home() {
         } as Config);
       });
       setSavedCollections(loaded);
+
+      // Set input and target languages based on most recent phrases
+      if (loaded.length > 0) {
+        // Get all phrases from all collections
+        const allPhrases = loaded.flatMap(col => col.phrases);
+        // Sort by created_at in descending order
+        const sortedPhrases = allPhrases.sort((a, b) => {
+          const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
+          const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
+          return dateB - dateA;
+        });
+        // Get the most recent phrase
+        const mostRecentPhrase = sortedPhrases[0];
+        if (mostRecentPhrase) {
+          setInputLang(mostRecentPhrase.inputLang);
+          setTargetLang(mostRecentPhrase.targetLang);
+        }
+      }
     };
     fetchCollections();
   }, [user]);
