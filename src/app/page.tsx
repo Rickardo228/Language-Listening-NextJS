@@ -10,40 +10,25 @@ import { EditablePhrases } from './EditablePhrases';
 import { PresentationControls } from './PresentationControls';
 import { API_BASE_URL, BLEED_START_DELAY, DELAY_AFTER_OUTPUT_PHRASES_MULTIPLIER, LAG_COMPENSATION } from './consts';
 import { ImportPhrases } from './ImportPhrases';
-import { initializeApp } from 'firebase/app';
-import { getAuth, onAuthStateChanged, signInWithPopup, GoogleAuthProvider, User, signOut } from 'firebase/auth';
+import { onAuthStateChanged, User } from 'firebase/auth';
 import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { CollectionList } from './CollectionList';
 import { CollectionHeader } from './CollectionHeader';
 import { useTheme } from './ThemeProvider';
+import { UserAvatar } from './components/UserAvatar';
+import { auth } from './firebase';
 
-const firebaseConfig = {
-  apiKey: "AIzaSyBDe17ZSzrBpaae56p4YDpJ-2oXAV_89eg",
-  authDomain: "languageshadowing-69768.firebaseapp.com",
-  projectId: "languageshadowing-69768",
-  storageBucket: "languageshadowing-69768.firebasestorage.app",
-  messagingSenderId: "1061735850333",
-  appId: "1:1061735850333:web:5baa7830b046375b0e48b4"
-};
-
-const app = initializeApp(firebaseConfig);
-
-const auth = getAuth(app);
-const firestore = getFirestore(app);
+const firestore = getFirestore();
 
 function SignInPage() {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-background">
       <h1 className="text-3xl font-bold mb-4 text-foreground">Language Shadowing</h1>
-      <button
-        className="bg-primary text-primary-foreground px-6 py-3 rounded hover:bg-primary/90"
-        onClick={() => {
-          const provider = new GoogleAuthProvider();
-          signInWithPopup(auth, provider).catch(console.error);
-        }}
-      >
-        Sign In with Google
-      </button>
+      <UserAvatar
+        user={null}
+        avatarDialogOpen={false}
+        setAvatarDialogOpen={() => { }}
+      />
     </div>
   );
 }
@@ -743,54 +728,11 @@ export default function Home() {
               )}
             </button>
             {/* User Avatar / Auth Button */}
-            <div className="relative">
-              {user ? (
-                <button
-                  className="flex items-center gap-2 focus:outline-none"
-                  onClick={() => setAvatarDialogOpen(true)}
-                  title={user.displayName || user.email || "Account"}
-                >
-                  {user.photoURL ? (
-                    <img src={user.photoURL} alt="avatar" className="w-8 h-8 rounded-full border" />
-                  ) : (
-                    <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center font-bold text-lg">
-                      {user.displayName?.[0]?.toUpperCase() || "U"}
-                    </div>
-                  )}
-                </button>
-              ) : (
-                <button
-                  className="bg-primary text-primary-foreground px-4 py-2 rounded hover:bg-primary/90"
-                  onClick={() => {
-                    const provider = new GoogleAuthProvider();
-                    signInWithPopup(auth, provider).catch(console.error);
-                  }}
-                >
-                  Sign In / Create Account
-                </button>
-              )}
-
-              {/* Dialog */}
-              {avatarDialogOpen && user && (
-                <div
-                  className="absolute right-0 mt-2 w-48 bg-background border rounded shadow-lg z-50"
-                  onClick={() => setAvatarDialogOpen(false)}
-                >
-                  <div className="p-4 border-b">
-                    <div className="font-semibold">{user.displayName || user.email}</div>
-                  </div>
-                  <button
-                    className="w-full text-left px-4 py-2 hover:bg-secondary"
-                    onClick={() => {
-                      signOut(auth);
-                      setAvatarDialogOpen(false);
-                    }}
-                  >
-                    Sign Out
-                  </button>
-                </div>
-              )}
-            </div>
+            <UserAvatar
+              user={user}
+              avatarDialogOpen={avatarDialogOpen}
+              setAvatarDialogOpen={setAvatarDialogOpen}
+            />
           </div>
         </div>
 
