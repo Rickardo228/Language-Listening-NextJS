@@ -7,7 +7,6 @@ import { API_BASE_URL } from './consts'
 import { createPortal } from 'react-dom'
 
 interface ImportPhrasesDialogProps {
-    isOpen: boolean
     onClose: () => void
     inputLang: string
     setInputLang: (lang: string) => void
@@ -21,7 +20,6 @@ interface ImportPhrasesDialogProps {
 }
 
 export function ImportPhrasesDialog({
-    isOpen,
     onClose,
     inputLang,
     setInputLang,
@@ -85,7 +83,7 @@ export function ImportPhrasesDialog({
         }
     };
 
-    if (!isOpen || !portalContainer) return null
+    if (!portalContainer) return null
 
     return createPortal(
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">

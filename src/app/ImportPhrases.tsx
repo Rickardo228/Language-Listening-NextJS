@@ -40,8 +40,7 @@ export function ImportPhrases({
             >
                 {buttonText}
             </button>
-            <ImportPhrasesDialog
-                isOpen={isOpen}
+            {isOpen && <ImportPhrasesDialog
                 onClose={() => setIsOpen(false)}
                 inputLang={inputLang}
                 setInputLang={setInputLang}
@@ -52,7 +51,7 @@ export function ImportPhrases({
                 loading={loading}
                 onProcess={onProcess}
                 onAddToCollection={onAddToCollection}
-            />
+            />}
         </>
     );
 } 
