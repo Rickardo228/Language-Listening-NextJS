@@ -15,11 +15,18 @@ export function CollectionList({
     onDeleteCollection,
     selectedCollection,
 }: CollectionListProps) {
+    // Sort collections by created_at in descending order (most recent first)
+    const sortedCollections = [...savedCollections].sort((a, b) => {
+        const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
+        const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
+        return dateB - dateA;
+    });
+
     return (
         <div className="space-y-4">
             <h2 className="text-xl font-semibold">Your Collections</h2>
             <div className="space-y-2">
-                {savedCollections.map((collection) => (
+                {sortedCollections.map((collection) => (
                     <div
                         key={collection.id}
                         className={`p-4 rounded-lg border cursor-pointer transition-colors ${selectedCollection === collection.id
