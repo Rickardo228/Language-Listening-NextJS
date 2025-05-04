@@ -696,6 +696,7 @@ export default function Home() {
   }
 
   return (
+    // MAIN CONTENT
     <div className="font-sans lg:h-[100vh] flex flex-col bg-background text-foreground">
       {/* Nav */}
       <div className={`flex items-center justify-between shadow-md lg:mb-0 p-3 sticky top-0 bg-background border-b ${fullscreen ? 'z-1' : 'z-50'}`}>
