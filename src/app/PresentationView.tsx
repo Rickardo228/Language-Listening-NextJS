@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { createPortal } from "react-dom";
 import { AutumnLeaves } from "./Effects/AutumnLeaves";
 import CherryBlossom from "./Effects/CherryBlossom";
 import { BLEED_START_DELAY, TITLE_DELAY } from './consts';
@@ -55,42 +56,28 @@ export function PresentationView({
   enableOrtonEffect,
   enableParticles,
   enableSteam,
-  containerBg = "bg-teal-500", // default value if not provided
-  textBg = "bg-rose-400",       // default value if not provided
+  containerBg = "bg-teal-500",
+  textBg = "bg-rose-400",
   romanizedOutput,
   title,
 }: PresentationViewProps) {
-  // State to track if the mouse is idle.
   const [isIdle, setIsIdle] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const [portalContainer, setPortalContainer] = useState<HTMLElement | null>(null);
 
-  // Handle fullscreen changes
+  // Create portal container on mount
   useEffect(() => {
-    if (fullScreen) {
-      containerRef.current?.requestFullscreen().catch(err => {
-        console.error('Error attempting to enable fullscreen:', err);
-        setFullscreen(false);
-      });
-    } else if (document.fullscreenElement) {
-      document.exitFullscreen().catch(err => {
-        console.error('Error attempting to exit fullscreen:', err);
-      });
+    if (typeof document !== 'undefined') {
+      const container = document.createElement('div');
+      container.id = 'presentation-portal';
+      document.body.appendChild(container);
+      setPortalContainer(container);
+
+      return () => {
+        document.body.removeChild(container);
+      };
     }
-  }, [fullScreen, setFullscreen]);
-
-  // Listen for fullscreen changes
-  useEffect(() => {
-    const handleFullscreenChange = () => {
-      if (!document.fullscreenElement && fullScreen) {
-        setFullscreen(false);
-      }
-    };
-
-    document.addEventListener('fullscreenchange', handleFullscreenChange);
-    return () => {
-      document.removeEventListener('fullscreenchange', handleFullscreenChange);
-    };
-  }, [fullScreen, setFullscreen]);
+  }, []);
 
   // useEffect to detect mouse movement and mark idle after 1 second.
   useEffect(() => {
@@ -115,17 +102,14 @@ export function PresentationView({
     };
   }, []);
 
-  // Set container classes based on the fullScreen prop.
   const containerClass =
     `inset-0 flex flex-col items-center justify-center ` +
     (fullScreen ? "fixed" : "relative p-4 lg:rounded shadow w-full h-48");
 
-  // Class for the title prop (slightly larger).
   const titlePropClass = fullScreen
     ? "text-8xl font-bold text-white mb-4"
     : "text-2xl font-bold text-white mb-2";
 
-  // Build container style: if bgImage is provided, add background styling.
   const containerStyle = bgImage
     ? {
       backgroundColor: containerBg,
@@ -139,8 +123,7 @@ export function PresentationView({
       overflow: "hidden",
     };
 
-  return (
-    // Append the 'cursor-none' class when idle.
+  const content = (
     <div ref={containerRef} className={`${containerClass} ${isIdle ? "cursor-none" : ""}`} style={containerStyle} onClick={() => setFullscreen(prev => !prev)}>
       {enableOrtonEffect && (
         <div
@@ -280,4 +263,11 @@ export function PresentationView({
       </AnimatePresence>
     </div>
   );
+
+  // Use portal for fullscreen mode, regular render for inline mode
+  if (fullScreen && portalContainer) {
+    return createPortal(content, portalContainer);
+  }
+
+  return content;
 }
