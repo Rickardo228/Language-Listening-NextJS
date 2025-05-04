@@ -175,6 +175,7 @@ export default function Home() {
     const docRef = await addDoc(colRef, newCollection);
     setSavedCollections(prev => [...prev, { ...newCollection, id: docRef.id }]);
     setSelectedCollection(docRef.id);
+    return docRef.id;
   };
 
   // Load saved collections and configs from localStorage on mount.
@@ -196,11 +197,7 @@ export default function Home() {
       .map((line) => line.trim())
       .filter(Boolean);
     if (!splitPhrases.length) return;
-
-    handleStop();
-    setPhrasesBase([]);
     setLoading(true);
-
     try {
       const response = await fetch(`${API_BASE_URL}/process`, {
         method: 'POST',
@@ -222,9 +219,10 @@ export default function Home() {
         inputLang,
         targetLang
       }));
-      setPhrases(processedPhrases);
+
+      const collectionId = await handleCreateCollection(processedPhrases, prompt);
+      setPhrases(processedPhrases, collectionId);
       setPhrasesInput('');
-      handleCreateCollection(processedPhrases, prompt);
       setCurrentPhraseIndex(-1);
       setCurrentPhase('input');
       setFinished(false);
@@ -781,10 +779,9 @@ export default function Home() {
         </div>
 
         {/* Phrases and Playback */}
-        {!loading && !phrases?.length && <h3 className="hidden lg:block p-3">Select a Collection or Import Phrases</h3>}
+        {!phrases?.length && <h3 className="hidden lg:block p-3">Select a Collection or Import Phrases</h3>}
         <div className="flex-1 lg:overflow-y-auto">
-          {loading && 'Loading...'}
-          {!loading && selectedCollection && (
+          {selectedCollection && (
             <div className={`sticky lg:px-0 lg:pb-3 px-1 py-2 top-[320px] lg:top-[0px] lg:bg-background bg-gray-50 dark:bg-gray-900 z-1 ${!selectedCollection ? 'hidden lg:block' : ''}`}>
               <div className="w-full flex items-center p-2">
                 <CollectionHeader

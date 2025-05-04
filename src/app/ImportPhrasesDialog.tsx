@@ -231,8 +231,8 @@ export function ImportPhrasesDialog({
                                 </button>
                             ) : (
                                 <button
-                                    onClick={() => {
-                                        onProcess?.(prompt)
+                                    onClick={async () => {
+                                        await onProcess?.(prompt)
                                         onClose()
                                     }}
                                     disabled={loading || !phrasesInput.trim()}
