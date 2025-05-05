@@ -243,6 +243,11 @@ export default function Home() {
     setLoading(true);
 
     try {
+      // Get the first phrase's voices from the existing collection
+      const firstPhrase = phrases[0];
+      const inputVoice = firstPhrase?.inputVoice || 'standard-d';
+      const targetVoice = firstPhrase?.targetVoice || 'standard-d';
+
       const response = await fetch(`${API_BASE_URL}/process`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -250,6 +255,8 @@ export default function Home() {
           phrases: splitPhrases,
           inputLang: inputLang,
           targetLang: targetLang,
+          inputVoice,
+          targetVoice
         }),
       });
       const data = await response.json();
@@ -262,8 +269,8 @@ export default function Home() {
         romanized: data.romanizedOutput ? data.romanizedOutput[index] || '' : '',
         inputLang: inputLang || addToCollectionInputLang,
         targetLang: targetLang || addToCollectionTargetLang,
-        inputVoice: data.inputVoice || 'standard-d',
-        targetVoice: data.targetVoice || 'standard-d',
+        inputVoice,
+        targetVoice,
         created_at: now
       }));
 
