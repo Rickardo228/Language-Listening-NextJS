@@ -336,6 +336,10 @@ export default function Home() {
     setLoading(true);
     try {
       // First update the UI state with the saved config
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.src = '';
+      }
       clearAllTimeouts();
       setCurrentPhraseIndex(0);
       setCurrentPhase('input');
