@@ -161,8 +161,12 @@ export default function Home() {
     console.log('newCollection', newCollection);
     const colRef = collection(firestore, 'users', user.uid, 'collections');
     const docRef = await addDoc(colRef, newCollection);
-    setSavedCollections(prev => [...prev, { ...newCollection, id: docRef.id }]);
-    setSelectedCollection(docRef.id);
+    const newCollectionConfig = {
+      ...newCollection,
+      id: docRef.id
+    };
+    setSavedCollections(prev => [...prev, newCollectionConfig]);
+    handleLoadCollection(newCollectionConfig);
     return docRef.id;
   };
 
@@ -348,6 +352,7 @@ export default function Home() {
       // Set the addToCollection language states based on the first phrase
       if (config.phrases.length > 0) {
         const firstPhrase = config.phrases[0];
+        console.log('firstPhrase', firstPhrase);
         setAddToCollectionInputLang(firstPhrase.inputLang);
         setAddToCollectionTargetLang(firstPhrase.targetLang);
       }
