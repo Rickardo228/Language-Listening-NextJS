@@ -1,7 +1,8 @@
 import { Phrase } from './types';
-import { useState } from 'react';
-import { SpeakerWaveIcon, MicrophoneIcon } from '@heroicons/react/24/solid';
+import { useState, useRef } from 'react';
+import { SpeakerWaveIcon, MicrophoneIcon, EllipsisVerticalIcon } from '@heroicons/react/24/solid';
 import { API_BASE_URL } from './consts';
+import { Menu } from './Menu';
 // import { ClipboardIcon, ClipboardDocumentCheckIcon } from '@heroicons/react/24/outline';
 
 interface EditablePhrasesProps {
@@ -13,6 +14,15 @@ interface EditablePhrasesProps {
     onPhraseClick?: (index: number) => void;
 }
 
+type PhraseValue = string | { audioUrl: string; duration: number } | boolean;
+
+interface PhraseComponentProps {
+    phrase: Phrase;
+    isSelected: boolean;
+    onPhraseClick?: () => void;
+    onPhraseChange: (field: keyof Phrase, value: PhraseValue) => void;
+    onDelete: () => void;
+}
 
 async function generateAudio(text: string, language: string): Promise<{ audioUrl: string, duration: number }> {
     const response = await fetch(`${API_BASE_URL}/tts`, {
@@ -28,20 +38,15 @@ async function generateAudio(text: string, language: string): Promise<{ audioUrl
     return response.json();
 }
 
-export function EditablePhrases({ phrases, setPhrases, currentPhraseIndex, onPhraseClick }: EditablePhrasesProps) {
-    const [inputLoading, setInputLoading] = useState<{ [key: number]: boolean }>({});
-    const [outputLoading, setOutputLoading] = useState<{ [key: number]: boolean }>({});
-    const [romanizedLoading, setRomanizedLoading] = useState<{ [key: number]: boolean }>({});
+function PhraseComponent({ phrase, isSelected, onPhraseClick, onPhraseChange, onDelete }: PhraseComponentProps) {
+    const [inputLoading, setInputLoading] = useState(false);
+    const [outputLoading, setOutputLoading] = useState(false);
+    const [romanizedLoading, setRomanizedLoading] = useState(false);
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const menuTriggerRef = useRef<HTMLButtonElement>(null);
 
-    const handlePhraseChange = (index: number, field: keyof Phrase, value: string) => {
-        const newPhrases = [...phrases];
-        newPhrases[index] = { ...newPhrases[index], [field]: value };
-        setPhrases(newPhrases);
-    };
-
-    const handleBlur = async (index: number, field: keyof Phrase) => {
+    const handleBlur = async (field: keyof Phrase) => {
         if (field !== 'input' && field !== 'translated' && field !== 'romanized') return;
-        const phrase = phrases[index]
         const text = phrase[field];
         if (!text) return;
 
@@ -54,7 +59,7 @@ export function EditablePhrases({ phrases, setPhrases, currentPhraseIndex, onPhr
         if (!shouldGenerateAudio) return;
 
         const setLoadingState = field === 'input' ? setInputLoading : field === 'translated' ? setOutputLoading : setRomanizedLoading;
-        setLoadingState(prev => ({ ...prev, [index]: true }));
+        setLoadingState(true);
 
         try {
             const { audioUrl, duration } = await generateAudio(
@@ -62,78 +67,55 @@ export function EditablePhrases({ phrases, setPhrases, currentPhraseIndex, onPhr
                 field === 'input' ? phrase.inputLang : phrase.targetLang
             );
 
-            const newPhrases = [...phrases];
             if (field === 'romanized' && phrase.useRomanizedForAudio) {
-                newPhrases[index] = {
-                    ...newPhrases[index],
-                    outputAudio: { audioUrl, duration },
-                    useRomanizedForAudio: true
-                };
+                onPhraseChange('outputAudio', { audioUrl, duration });
+                onPhraseChange('useRomanizedForAudio', true);
             } else {
-                newPhrases[index] = {
-                    ...newPhrases[index],
-                    [field === 'input' ? 'inputAudio' : 'outputAudio']: { audioUrl, duration },
-                    useRomanizedForAudio: false
-                };
+                onPhraseChange(field === 'input' ? 'inputAudio' : 'outputAudio', { audioUrl, duration });
+                onPhraseChange('useRomanizedForAudio', false);
             }
-            setPhrases(newPhrases);
         } catch (error) {
             console.error('Error generating TTS:', error);
         } finally {
-            setLoadingState(prev => ({ ...prev, [index]: false }));
+            setLoadingState(false);
         }
     };
 
-
-    const handleGenerateRomanizedAudio = async (index: number) => {
-        const phrase = phrases[index]
+    const handleGenerateRomanizedAudio = async () => {
         const text = phrase.romanized;
         if (!text) return;
 
-        setRomanizedLoading(prev => ({ ...prev, [index]: true }));
+        setRomanizedLoading(true);
 
         try {
             const { audioUrl, duration } = await generateAudio(text, phrase.targetLang);
-
-            const newPhrases = [...phrases];
-            newPhrases[index] = {
-                ...newPhrases[index],
-                outputAudio: { audioUrl, duration },
-                useRomanizedForAudio: true
-            };
-            setPhrases(newPhrases);
+            onPhraseChange('outputAudio', { audioUrl, duration });
+            onPhraseChange('useRomanizedForAudio', true);
         } catch (error) {
             console.error('Error generating TTS:', error);
         } finally {
-            setRomanizedLoading(prev => ({ ...prev, [index]: false }));
+            setRomanizedLoading(false);
         }
     };
 
-    const handleGenerateOutputAudio = async (index: number) => {
-        const phrase = phrases[index]
+    const handleGenerateOutputAudio = async () => {
         const text = phrase.translated;
         if (!text) return;
 
-        setOutputLoading(prev => ({ ...prev, [index]: true }));
+        setOutputLoading(true);
 
         try {
             const { audioUrl, duration } = await generateAudio(text, phrase.targetLang);
-
-            const newPhrases = [...phrases];
-            newPhrases[index] = {
-                ...newPhrases[index],
-                outputAudio: { audioUrl, duration },
-                useRomanizedForAudio: false
-            };
-            setPhrases(newPhrases);
+            onPhraseChange('outputAudio', { audioUrl, duration });
+            onPhraseChange('useRomanizedForAudio', false);
         } catch (error) {
             console.error('Error generating TTS:', error);
         } finally {
-            setOutputLoading(prev => ({ ...prev, [index]: false }));
+            setOutputLoading(false);
         }
     };
 
-    const PlayOutputAudioButton = (phrase: Phrase) => {
+    const PlayOutputAudioButton = () => {
         return (
             phrase.outputAudio && (
                 <button
@@ -147,183 +129,148 @@ export function EditablePhrases({ phrases, setPhrases, currentPhraseIndex, onPhr
         )
     }
 
-    // const handleCopyPhrases = async () => {
-    //     try {
-    //         await navigator.clipboard.writeText(JSON.stringify(phrases, null, 2));
-    //     } catch (err) {
-    //         console.error('Failed to copy phrases:', err);
-    //         alert('Failed to copy phrases to clipboard');
-    //     }
-    // };
+    return (
+        <div
+            className={`mb-4 border p-2 rounded transition-colors 
+                ${isSelected
+                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-400'
+                    : 'border-gray-200 dark:border-gray-700'} 
+                ${onPhraseClick ? 'cursor-pointer hover:border-blue-300 dark:hover:border-blue-500' : ''}`}
+            onClick={onPhraseClick}
+        >
+            <div className="mb-2 flex items-center gap-2">
+                <input
+                    type="text"
+                    value={phrase.input}
+                    onClick={(e) => e.stopPropagation()}
+                    onChange={(e) => onPhraseChange('input', e.target.value)}
+                    onBlur={() => handleBlur('input')}
+                    className={`w-full p-2 border rounded bg-white dark:bg-gray-800 
+                        border-gray-300 dark:border-gray-600 
+                        text-gray-900 dark:text-gray-100
+                        ${inputLoading ? 'opacity-50' : ''}`}
+                    disabled={inputLoading}
+                />
+                {phrase.inputAudio && (
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            new Audio(phrase.inputAudio?.audioUrl).play();
+                        }}
+                        className="px-3 py-1 text-sm bg-indigo-100 hover:bg-indigo-200 dark:bg-indigo-600 dark:hover:bg-indigo-500 rounded text-indigo-700 dark:text-white transition-colors"
+                        title="Play input audio"
+                    >
+                        <SpeakerWaveIcon className="w-4 h-4" />
+                    </button>
+                )}
+                <button
+                    ref={menuTriggerRef}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        setIsMenuOpen(!isMenuOpen);
+                    }}
+                    className="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 dark:bg-gray-600 dark:hover:bg-gray-500 rounded text-gray-700 dark:text-white transition-colors"
+                    title="More options"
+                >
+                    <EllipsisVerticalIcon className="w-4 h-4" />
+                </button>
+                {inputLoading && <span className="text-gray-500 dark:text-gray-400 text-sm">Processing...</span>}
+            </div>
+            <Menu
+                isOpen={isMenuOpen}
+                onClose={() => setIsMenuOpen(false)}
+                triggerRef={menuTriggerRef}
+                items={[
+                    {
+                        label: 'Delete phrase',
+                        onClick: onDelete,
+                        className: 'text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20'
+                    }
+                ]}
+            />
+            <div className="flex items-center gap-2">
+                <input
+                    type="text"
+                    value={phrase.translated}
+                    onClick={(e) => e.stopPropagation()}
+                    onChange={(e) => onPhraseChange('translated', e.target.value)}
+                    onBlur={() => handleBlur('translated')}
+                    className={`w-full p-2 border rounded bg-white dark:bg-gray-800 
+                        border-gray-300 dark:border-gray-600 
+                        text-gray-900 dark:text-gray-100
+                        ${outputLoading ? 'opacity-50' : ''}`}
+                    disabled={outputLoading}
+                />
+                {!phrase.useRomanizedForAudio && <PlayOutputAudioButton />}
+                {phrase.useRomanizedForAudio && (
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            handleGenerateOutputAudio();
+                        }}
+                        disabled={outputLoading}
+                        className={`px-3 py-1 text-sm bg-indigo-100 hover:bg-indigo-200 dark:bg-indigo-600 dark:hover:bg-indigo-500 rounded text-indigo-700 dark:text-white transition-colors ${outputLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        title="Generate audio for output"
+                    >
+                        <MicrophoneIcon className="w-4 h-4" />
+                    </button>
+                )}
+                {outputLoading && <span className="text-gray-500 dark:text-gray-400 text-sm">Processing...</span>}
+            </div>
+            {phrase.romanized && <div className="mt-2 mb-2 flex items-center gap-2">
+                <label className="block font-medium mb-1 text-gray-700 dark:text-gray-200">Romanized:</label>
+                <input
+                    type="text"
+                    value={phrase.romanized}
+                    onClick={(e) => e.stopPropagation()}
+                    onChange={(e) => onPhraseChange('romanized', e.target.value)}
+                    onBlur={() => handleBlur('romanized')}
+                    className="w-full p-2 border rounded bg-white dark:bg-gray-800 
+                        border-gray-300 dark:border-gray-600 
+                        text-gray-900 dark:text-gray-100"
+                />
+                {phrase.useRomanizedForAudio && <PlayOutputAudioButton />}
+                {!phrase.useRomanizedForAudio && <button
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        handleGenerateRomanizedAudio();
+                    }}
+                    disabled={romanizedLoading}
+                    className={`px-3 py-1 text-sm bg-indigo-100 hover:bg-indigo-200 dark:bg-indigo-600 dark:hover:bg-indigo-500 rounded text-indigo-700 dark:text-white transition-colors ${romanizedLoading ? 'opacity-50 cursor-not-allowed' : ''} flex flex-row items-center`}
+                    title="Generate audio from romanized text"
+                >
+                    <MicrophoneIcon className="w-4 h-4" />
+                </button>}
+                {romanizedLoading && <span className="text-gray-500 dark:text-gray-400 text-sm">Processing...</span>}
+            </div>}
+        </div>
+    );
+}
 
-    // const handlePastePhrases = async () => {
-    //     try {
-    //         const text = await navigator.clipboard.readText();
-    //         let pastedPhrases: Phrase[];
+export function EditablePhrases({ phrases, setPhrases, currentPhraseIndex, onPhraseClick }: EditablePhrasesProps) {
+    const handlePhraseChange = (index: number, field: keyof Phrase, value: PhraseValue) => {
+        const newPhrases = [...phrases];
+        newPhrases[index] = { ...newPhrases[index], [field]: value };
+        setPhrases(newPhrases);
+    };
 
-    //         try {
-    //             pastedPhrases = JSON.parse(text);
-    //         } catch {
-    //             throw new Error('Invalid JSON format');
-    //         }
-
-    //         // Validate the structure of the pasted phrases
-    //         if (!Array.isArray(pastedPhrases)) {
-    //             throw new Error('Pasted content must be an array');
-    //         }
-
-    //         const isValidPhrase = (p: Phrase): p is Phrase => {
-    //             return typeof p === 'object' && p !== null
-    //                 && typeof p.input === 'string'
-    //                 && typeof p.translated === 'string'
-    //                 && typeof p.romanized === 'string';
-    //         };
-
-    //         if (!pastedPhrases.every(isValidPhrase)) {
-    //             throw new Error('Invalid phrase structure');
-    //         }
-
-    //         setLoading(true);
-    //         // Call the load endpoint to regenerate audio
-    //         const response = await fetch(`${API_BASE_URL}/load`, {
-    //             method: 'POST',
-    //             headers: { 'Content-Type': 'application/json' },
-    //             body: JSON.stringify({
-    //                 phrases: pastedPhrases,
-    //             }),
-    //         });
-
-    //         if (!response.ok) {
-    //             throw new Error('Failed to load phrases');
-    //         }
-
-    //         const data = await response.json();
-    //         setPhrases(data.phrases);
-    //     } catch (err) {
-    //         console.error('Failed to paste phrases:', err);
-    //         alert(`Failed to paste phrases: ${err instanceof Error ? err.message : 'Unknown error'}`);
-    //     } finally {
-    //         setLoading(false);
-    //     }
-    // };
-
+    const handleDeletePhrase = (index: number) => {
+        const newPhrases = [...phrases];
+        newPhrases.splice(index, 1);
+        setPhrases(newPhrases);
+    };
 
     return (
         <div className="mb-4">
-            {/* <div className="flex justify-between items-center mb-4">
-                <div className="flex gap-2">
-                    <button
-                        onClick={handleCopyPhrases}
-                        className="flex items-center gap-1 px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded"
-                        title="Copy phrases as JSON"
-                    >
-                        Copy
-                    </button>
-                    <button
-                        onClick={handlePastePhrases}
-                        disabled={loading}
-                        className={`flex items-center gap-1 px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
-                        title="Paste phrases from JSON"
-                    >
-                        {loading ? 'Loading...' : 'Paste'}
-                    </button>
-                </div>
-            </div> */}
             {phrases.map((phrase, index) => (
-                <div
+                <PhraseComponent
                     key={index}
-                    className={`mb-4 border p-2 rounded transition-colors
-                        ${currentPhraseIndex === index
-                            ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-400'
-                            : 'border-gray-200 dark:border-gray-700'} 
-                        ${onPhraseClick ? 'cursor-pointer hover:border-blue-300 dark:hover:border-blue-500' : ''}`}
-                    onClick={() => onPhraseClick?.(index)}
-                >
-                    <div className="mb-2 flex items-center gap-2">
-                        {/* <label className="block font-medium mb-1 text-gray-700 dark:text-gray-200">Input:</label> */}
-                        <input
-                            type="text"
-                            value={phrase.input}
-                            onClick={(e) => e.stopPropagation()}
-                            onChange={(e) => handlePhraseChange(index, 'input', e.target.value)}
-                            onBlur={() => handleBlur(index, 'input')}
-                            className={`w-full p-2 border rounded bg-white dark:bg-gray-800 
-                                border-gray-300 dark:border-gray-600 
-                                text-gray-900 dark:text-gray-100
-                                ${inputLoading[index] ? 'opacity-50' : ''}`}
-                            disabled={inputLoading[index]}
-                        />
-                        {phrase.inputAudio && (
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    new Audio(phrase.inputAudio?.audioUrl).play();
-                                }}
-                                className="px-3 py-1 text-sm bg-indigo-100 hover:bg-indigo-200 dark:bg-indigo-600 dark:hover:bg-indigo-500 rounded text-indigo-700 dark:text-white transition-colors"
-                                title="Play input audio"
-                            >
-                                <SpeakerWaveIcon className="w-4 h-4" />
-                            </button>
-                        )}
-                        {inputLoading[index] && <span className="text-gray-500 dark:text-gray-400 text-sm">Processing...</span>}
-                    </div>
-                    <div className="flex items-center gap-2">
-                        {/* <label className="block font-medium mb-1 text-gray-700 dark:text-gray-200">Translated:</label> */}
-                        <input
-                            type="text"
-                            value={phrase.translated}
-                            onClick={(e) => e.stopPropagation()}
-                            onChange={(e) => handlePhraseChange(index, 'translated', e.target.value)}
-                            onBlur={() => handleBlur(index, 'translated')}
-                            className={`w-full p-2 border rounded bg-white dark:bg-gray-800 
-                                border-gray-300 dark:border-gray-600 
-                                text-gray-900 dark:text-gray-100
-                                ${outputLoading[index] ? 'opacity-50' : ''}`}
-                            disabled={outputLoading[index]}
-                        />
-                        {!phrase.useRomanizedForAudio && PlayOutputAudioButton(phrase)}
-                        {phrase.useRomanizedForAudio && (
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleGenerateOutputAudio(index);
-                                }}
-                                disabled={outputLoading[index]}
-                                className={`px-3 py-1 text-sm bg-indigo-100 hover:bg-indigo-200 dark:bg-indigo-600 dark:hover:bg-indigo-500 rounded text-indigo-700 dark:text-white transition-colors ${outputLoading[index] ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                title="Generate audio for output"
-                            >
-                                <MicrophoneIcon className="w-4 h-4" />
-                            </button>
-                        )}
-                        {outputLoading[index] && <span className="text-gray-500 dark:text-gray-400 text-sm">Processing...</span>}
-                    </div>
-                    {phrase.romanized && <div className="mt-2 mb-2 flex items-center gap-2">
-                        <label className="block font-medium mb-1 text-gray-700 dark:text-gray-200">Romanized:</label>
-                        <input
-                            type="text"
-                            value={phrase.romanized}
-                            onClick={(e) => e.stopPropagation()}
-                            onChange={(e) => handlePhraseChange(index, 'romanized', e.target.value)}
-                            onBlur={() => handleBlur(index, 'romanized')}
-                            className="w-full p-2 border rounded bg-white dark:bg-gray-800 
-                                border-gray-300 dark:border-gray-600 
-                                text-gray-900 dark:text-gray-100"
-                        />
-                        {phrase.useRomanizedForAudio && PlayOutputAudioButton(phrase)}
-                        {!phrase.useRomanizedForAudio && <button
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                handleGenerateRomanizedAudio(index);
-                            }}
-                            disabled={romanizedLoading[index]}
-                            className={`px-3 py-1 text-sm bg-indigo-100 hover:bg-indigo-200 dark:bg-indigo-600 dark:hover:bg-indigo-500 rounded text-indigo-700 dark:text-white transition-colors ${romanizedLoading[index] ? 'opacity-50 cursor-not-allowed' : ''} flex flex-row items-center`}
-                            title="Generate audio from romanized text"
-                        >
-                            <MicrophoneIcon className="w-4 h-4" />
-                        </button>}
-                        {romanizedLoading[index] && <span className="text-gray-500 dark:text-gray-400 text-sm">Processing...</span>}
-                    </div>}
-                </div>
+                    phrase={phrase}
+                    isSelected={currentPhraseIndex === index}
+                    onPhraseClick={() => onPhraseClick?.(index)}
+                    onPhraseChange={(field, value) => handlePhraseChange(index, field, value)}
+                    onDelete={() => handleDeletePhrase(index)}
+                />
             ))}
         </div>
     );

@@ -801,7 +801,7 @@ export default function Home() {
         </div>
 
         {/* Phrases and Playback */}
-        {!phrases?.length && <h3 className="hidden lg:block p-3">Select a Collection or Import Phrases</h3>}
+        {!phrases?.length && !selectedCollection && <h3 className="hidden lg:block p-3">Select a Collection or Import Phrases</h3>}
         <div className="flex-1 lg:overflow-y-auto">
           {selectedCollection && (
             <div className={`sticky lg:px-0 lg:pb-3 px-1 py-2 top-[320px] lg:top-[0px] lg:bg-background bg-gray-50 dark:bg-gray-900 z-1 ${!selectedCollection ? 'hidden lg:block' : ''}`}>
