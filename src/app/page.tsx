@@ -210,8 +210,8 @@ export default function Home() {
         romanized: data.romanizedOutput ? data.romanizedOutput[index] || '' : '',
         inputLang: inputLang || newCollectionInputLang,
         targetLang: targetLang || newCollectionTargetLang,
-        inputVoice: data.inputVoice || 'standard-d',
-        targetVoice: data.targetVoice || 'standard-d'
+        inputVoice: data.inputVoice || `${inputLang || newCollectionInputLang}-Standard-D`,
+        targetVoice: data.targetVoice || `${targetLang || newCollectionTargetLang}-Standard-D`
       }));
 
       const collectionId = await handleCreateCollection(processedPhrases, prompt);
@@ -249,8 +249,8 @@ export default function Home() {
     try {
       // Get the first phrase's voices from the existing collection
       const firstPhrase = phrases[0];
-      const inputVoice = firstPhrase?.inputVoice || 'standard-d';
-      const targetVoice = firstPhrase?.targetVoice || 'standard-d';
+      const inputVoice = firstPhrase?.inputVoice || `${inputLang || addToCollectionInputLang}-Standard-D`;
+      const targetVoice = firstPhrase?.targetVoice || `${targetLang || addToCollectionTargetLang}-Standard-D`;
 
       const response = await fetch(`${API_BASE_URL}/process`, {
         method: 'POST',
