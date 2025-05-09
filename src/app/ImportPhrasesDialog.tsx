@@ -6,7 +6,7 @@ import { X } from 'lucide-react'
 import { API_BASE_URL } from './consts'
 import { createPortal } from 'react-dom'
 
-interface ImportPhrasesDialogProps {
+export interface ImportPhrasesDialogProps {
     onClose: () => void
     inputLang: string
     setInputLang: (lang: string) => void
@@ -15,8 +15,8 @@ interface ImportPhrasesDialogProps {
     phrasesInput: string
     setPhrasesInput: (input: string) => void
     loading: boolean
-    onProcess?: (prompt?: string, inputLang?: string, targetLang?: string) => void
-    onAddToCollection?: (inputLang?: string, targetLang?: string) => void
+    onProcess?: (prompt?: string, inputLang?: string, targetLang?: string) => Promise<void>
+    onAddToCollection?: (inputLang?: string, targetLang?: string) => Promise<void>
 }
 
 export function ImportPhrasesDialog({
@@ -222,8 +222,8 @@ export function ImportPhrasesDialog({
                         <div className="flex gap-2">
                             {onAddToCollection ? (
                                 <button
-                                    onClick={() => {
-                                        onAddToCollection?.(inputLang, targetLang)
+                                    onClick={async () => {
+                                        await onAddToCollection?.(inputLang, targetLang)
                                         onClose()
                                     }}
                                     disabled={loading || !phrasesInput.trim()}

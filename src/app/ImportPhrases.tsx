@@ -1,18 +1,9 @@
-import { ImportPhrasesDialog } from './ImportPhrasesDialog';
+import { ImportPhrasesDialog, ImportPhrasesDialogProps } from './ImportPhrasesDialog';
 import { useState } from 'react';
 
-export interface ImportPhrasesProps {
-    inputLang: string;
-    setInputLang: (lang: string) => void;
-    targetLang: string;
-    setTargetLang: (lang: string) => void;
-    phrasesInput: string;
-    setPhrasesInput: (input: string) => void;
-    loading: boolean;
-    onProcess?: () => void;
-    onAddToCollection?: () => void;
+export type ImportPhrasesProps = Omit<ImportPhrasesDialogProps, 'onClose'> & {
     className?: string;
-}
+};
 
 export function ImportPhrases({
     inputLang,

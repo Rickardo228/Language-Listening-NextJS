@@ -699,6 +699,26 @@ export default function Home() {
     }
   };
 
+  const handlePlayPhrase = (index: number, phase: 'input' | 'output') => {
+    clearAllTimeouts();
+    if (audioRef.current) {
+      const isPaused = paused;
+      audioRef.current.pause();
+      audioRef.current.src = phrases[index][phase === 'input' ? 'inputAudio' : 'outputAudio']?.audioUrl || '';
+      setCurrentPhraseIndex(index);
+      setCurrentPhase(phase);
+      if (isPaused) {
+        // If paused, play in isolation without changing state
+        const tempAudio = new Audio(phrases[index][phase === 'input' ? 'inputAudio' : 'outputAudio']?.audioUrl);
+        tempAudio.play().catch(err => console.error('Playback error:', err));
+      } else {
+        // If not paused, update state and play through main audio element
+        setPaused(false);
+        audioRef.current.play().catch(err => console.error('Playback error:', err));
+      }
+    }
+  };
+
   if (isAuthLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
@@ -850,6 +870,7 @@ export default function Home() {
                     audioRef.current.src = phrases[index].inputAudio.audioUrl;
                   }
                 }}
+                onPlayPhrase={handlePlayPhrase}
               />
             </div>
           )}

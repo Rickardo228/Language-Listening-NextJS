@@ -12,16 +12,19 @@ interface EditablePhrasesProps {
     outputLanguage: string;
     currentPhraseIndex: number | null;
     onPhraseClick?: (index: number) => void;
+    onPlayPhrase?: (index: number, phase: 'input' | 'output') => void;
 }
 
 type PhraseValue = string | { audioUrl: string; duration: number } | boolean;
 
 interface PhraseComponentProps {
     phrase: Phrase;
+    phrases: Phrase[];
     isSelected: boolean;
     onPhraseClick?: () => void;
     onPhraseChange: (field: keyof Phrase, value: PhraseValue) => void;
     onDelete: () => void;
+    onPlayPhrase?: (index: number, phase: 'input' | 'output') => void;
 }
 
 async function generateAudio(text: string, language: string): Promise<{ audioUrl: string, duration: number }> {
@@ -38,7 +41,7 @@ async function generateAudio(text: string, language: string): Promise<{ audioUrl
     return response.json();
 }
 
-function PhraseComponent({ phrase, isSelected, onPhraseClick, onPhraseChange, onDelete }: PhraseComponentProps) {
+function PhraseComponent({ phrase, phrases, isSelected, onPhraseClick, onPhraseChange, onDelete, onPlayPhrase }: PhraseComponentProps) {
     const [inputLoading, setInputLoading] = useState(false);
     const [outputLoading, setOutputLoading] = useState(false);
     const [romanizedLoading, setRomanizedLoading] = useState(false);
@@ -119,7 +122,10 @@ function PhraseComponent({ phrase, isSelected, onPhraseClick, onPhraseChange, on
         return (
             phrase.outputAudio && (
                 <button
-                    onClick={() => new Audio(phrase.outputAudio?.audioUrl).play()}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onPlayPhrase?.(phrases.indexOf(phrase), phrase.useRomanizedForAudio ? 'output' : 'output');
+                    }}
                     className="px-3 py-1 text-sm bg-indigo-100 hover:bg-indigo-200 dark:bg-indigo-600 dark:hover:bg-indigo-500 rounded text-indigo-700 dark:text-white transition-colors"
                     title="Play translated audio"
                 >
@@ -155,7 +161,7 @@ function PhraseComponent({ phrase, isSelected, onPhraseClick, onPhraseChange, on
                     <button
                         onClick={(e) => {
                             e.stopPropagation();
-                            new Audio(phrase.inputAudio?.audioUrl).play();
+                            onPlayPhrase?.(phrases.indexOf(phrase), 'input');
                         }}
                         className="px-3 py-1 text-sm bg-indigo-100 hover:bg-indigo-200 dark:bg-indigo-600 dark:hover:bg-indigo-500 rounded text-indigo-700 dark:text-white transition-colors"
                         title="Play input audio"
@@ -247,7 +253,7 @@ function PhraseComponent({ phrase, isSelected, onPhraseClick, onPhraseChange, on
     );
 }
 
-export function EditablePhrases({ phrases, setPhrases, currentPhraseIndex, onPhraseClick }: EditablePhrasesProps) {
+export function EditablePhrases({ phrases, setPhrases, currentPhraseIndex, onPhraseClick, onPlayPhrase }: EditablePhrasesProps) {
     const handlePhraseChange = (index: number, field: keyof Phrase, value: PhraseValue) => {
         const newPhrases = [...phrases];
         newPhrases[index] = { ...newPhrases[index], [field]: value };
@@ -266,10 +272,12 @@ export function EditablePhrases({ phrases, setPhrases, currentPhraseIndex, onPhr
                 <PhraseComponent
                     key={index}
                     phrase={phrase}
+                    phrases={phrases}
                     isSelected={currentPhraseIndex === index}
                     onPhraseClick={() => onPhraseClick?.(index)}
                     onPhraseChange={(field, value) => handlePhraseChange(index, field, value)}
                     onDelete={() => handleDeletePhrase(index)}
+                    onPlayPhrase={onPlayPhrase}
                 />
             ))}
         </div>
