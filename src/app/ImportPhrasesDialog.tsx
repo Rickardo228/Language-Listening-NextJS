@@ -35,6 +35,8 @@ export function ImportPhrasesDialog({
     const [generatingPhrases, setGeneratingPhrases] = useState(false)
     const [portalContainer, setPortalContainer] = useState<HTMLElement | null>(null)
 
+    const inputLangLabel = (languageOptions.find(lang => lang.code === inputLang)?.label || inputLang).split(' (')[0];
+
     useEffect(() => {
         // Create portal container if it doesn't exist
         let container = document.getElementById('portal-container')
@@ -179,7 +181,7 @@ export function ImportPhrasesDialog({
                                 value={phrasesInput}
                                 onChange={(e) => setPhrasesInput(e.target.value)}
                                 className="w-full h-32 p-2 rounded-md border bg-background resize-none"
-                                placeholder="Enter phrases here..."
+                                placeholder={`Enter phrases in ${inputLangLabel} here...`}
                                 disabled={loading}
                                 autoFocus={Boolean(onAddToCollection)}
                             />
