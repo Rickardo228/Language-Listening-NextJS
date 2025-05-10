@@ -1,5 +1,5 @@
 import { Phrase } from './types';
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { SpeakerWaveIcon, MicrophoneIcon, EllipsisVerticalIcon } from '@heroicons/react/24/solid';
 import { API_BASE_URL } from './consts';
 import { Menu } from './Menu';
@@ -27,6 +27,7 @@ interface PhraseComponentProps {
     onPhraseChange: (field: keyof Phrase, value: PhraseValue) => void;
     onDelete: () => void;
     onPlayPhrase?: (index: number, phase: 'input' | 'output') => void;
+    ref?: React.RefObject<HTMLDivElement>;
 }
 
 async function generateAudio(text: string, language: string): Promise<{ audioUrl: string, duration: number }> {
@@ -43,7 +44,7 @@ async function generateAudio(text: string, language: string): Promise<{ audioUrl
     return response.json();
 }
 
-function PhraseComponent({ phrase, phrases, isSelected, currentPhase, onPhraseClick, onPhraseChange, onDelete, onPlayPhrase }: PhraseComponentProps) {
+function PhraseComponent({ phrase, phrases, isSelected, currentPhase, onPhraseClick, onPhraseChange, onDelete, onPlayPhrase, ref }: PhraseComponentProps) {
     const [inputLoading, setInputLoading] = useState(false);
     const [outputLoading, setOutputLoading] = useState(false);
     const [romanizedLoading, setRomanizedLoading] = useState(false);
@@ -142,9 +143,10 @@ function PhraseComponent({ phrase, phrases, isSelected, currentPhase, onPhraseCl
             className={`mb-4 border p-2 rounded transition-colors 
                 ${isSelected
                     ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-400'
-                    : 'border-gray-200 dark:border-gray-700'} 
-                ${onPhraseClick ? 'cursor-pointer hover:border-blue-300 dark:hover:border-blue-500' : ''}`}
+                    : 'border-gray-200 dark:border-gray-700 bg-background hover:bg-secondary dark:hover:bg-blue-900/20'} 
+                ${onPhraseClick ? 'cursor-pointer' : ''}`}
             onClick={onPhraseClick}
+            ref={ref}
         >
             <div className="mb-2 flex items-center gap-2">
                 <input
@@ -261,6 +263,35 @@ function PhraseComponent({ phrase, phrases, isSelected, currentPhase, onPhraseCl
 }
 
 export function EditablePhrases({ phrases, setPhrases, currentPhraseIndex, currentPhase, onPhraseClick, onPlayPhrase }: EditablePhrasesProps) {
+    const selectedPhraseRef = useRef<HTMLDivElement>(null!);
+    const [isArrowVisible, setIsArrowVisible] = useState(false);
+    const [scrollDirection, setScrollDirection] = useState<'up' | 'down' | null>(null);
+
+    useEffect(() => {
+        if (!selectedPhraseRef.current) return;
+        const element = selectedPhraseRef.current;
+        const observer = new IntersectionObserver(
+            ([entry]) => {
+                setIsArrowVisible(!entry.isIntersecting);
+                console.log(entry.boundingClientRect.top);
+                setScrollDirection(entry.boundingClientRect.top > 0 ? 'down' : 'up');
+            },
+            { root: null, threshold: 0.1 }
+        );
+
+        observer.observe(element);
+
+        return () => {
+            if (element) {
+                observer.unobserve(element);
+            }
+        };
+    }, [currentPhraseIndex]);
+
+    const scrollToSelectedPhrase = () => {
+        selectedPhraseRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    };
+
     const handlePhraseChange = (index: number, field: keyof Phrase, value: PhraseValue) => {
         const newPhrases = [...phrases];
         newPhrases[index] = { ...newPhrases[index], [field]: value };
@@ -275,19 +306,33 @@ export function EditablePhrases({ phrases, setPhrases, currentPhraseIndex, curre
 
     return (
         <div className="mb-4">
-            {phrases.map((phrase, index) => (
-                <PhraseComponent
-                    key={index}
-                    phrase={phrase}
-                    phrases={phrases}
-                    isSelected={currentPhraseIndex === index}
-                    currentPhase={currentPhase}
-                    onPhraseClick={() => onPhraseClick?.(index)}
-                    onPhraseChange={(field, value) => handlePhraseChange(index, field, value)}
-                    onDelete={() => handleDeletePhrase(index)}
-                    onPlayPhrase={onPlayPhrase}
-                />
-            ))}
+            {isArrowVisible && scrollDirection && (
+                <button
+                    onClick={scrollToSelectedPhrase}
+                    className={`w-10 z-50 sticky top-[90%] left-[10%] p-2 bg-blue-500 text-white rounded-full shadow-lg hover:bg-blue-600 transition`}
+                    title={`Scroll ${scrollDirection === 'up' ? 'up' : 'down'} to selected phrase`}
+                >
+                    {scrollDirection === 'up' ? '↑' : '↓'}
+                </button>
+            )}
+            {phrases.map((phrase, index) => {
+                const isSelected = currentPhraseIndex === index;
+                return (
+                    <PhraseComponent
+                        key={index}
+                        phrase={phrase}
+                        phrases={phrases}
+                        isSelected={isSelected}
+                        currentPhase={currentPhase}
+                        onPhraseClick={() => onPhraseClick?.(index)}
+                        onPhraseChange={(field, value) => handlePhraseChange(index, field, value)}
+                        onDelete={() => handleDeletePhrase(index)}
+                        onPlayPhrase={onPlayPhrase}
+                        {...(isSelected && { ref: selectedPhraseRef })}
+                    />
+                );
+            })}
+            <div className="h-20"></div>
         </div>
     );
 } 
