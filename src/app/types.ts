@@ -16,6 +16,7 @@ export type PresentationConfig = {
   enableLoop: boolean;
   enableOutputDurationDelay: boolean;
   enableInputDurationDelay: boolean;
+  enableOutputBeforeInput?: boolean;
 };
 
 export type Config = {

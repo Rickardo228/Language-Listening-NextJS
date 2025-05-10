@@ -81,4 +81,11 @@ export const presentationConfigDefinition: ConfigFieldDefinition[] = [
   //   inputType: "number",
   //   description: "Fixed delay between phrases in milliseconds",
   // },
+  {
+    key: "enableOutputBeforeInput",
+    label: "Play Output Before Input",
+    inputType: "checkbox",
+    description:
+      "Play the output audio before the input audio for each phrase.",
+  },
 ];

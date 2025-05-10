@@ -537,27 +537,49 @@ export default function Home() {
   const handleAudioEnded = () => {
     if (paused) return;
 
+    const playOutputBeforeInput = presentationConfig.enableOutputBeforeInput;
+
+
     if (currentPhase === 'input') {
       const inputDuration = presentationConfig.enableInputDurationDelay ? (audioRef.current?.duration || 1) * 1000 : 0;
       const timeoutId = window.setTimeout(() => {
         setCurrentPhase('output');
+
+        if (playOutputBeforeInput) {
+          if (currentPhraseIndex < phrases.length - 1 && !paused) {
+            setCurrentPhraseIndex(currentPhraseIndex + 1);
+          } else {
+            if (presentationConfig.enableLoop) {
+              // If looping is enabled, restart from beginning
+              setCurrentPhraseIndex(0);
+            } else {
+              setFinished(true);
+              if (recordScreen) stopScreenRecording();
+              setPaused(true);
+            }
+          }
+        }
       }, inputDuration + 1000); // Keep the 1 second buffer
       timeoutIds.current.push(timeoutId);
     } else {
       const outputDuration = presentationConfig.enableOutputDurationDelay ? (audioRef.current?.duration || 1) * 1000 * DELAY_AFTER_INPUT_PHRASES_MULTIPLIER : 0;
       const timeoutId = window.setTimeout(() => {
-        if (currentPhraseIndex < phrases.length - 1 && !paused) {
-          setCurrentPhraseIndex(currentPhraseIndex + 1);
+        if (playOutputBeforeInput) {
           setCurrentPhase('input');
         } else {
-          if (presentationConfig.enableLoop) {
-            // If looping is enabled, restart from beginning
-            setCurrentPhraseIndex(0);
+          if (currentPhraseIndex < phrases.length - 1 && !paused) {
+            setCurrentPhraseIndex(currentPhraseIndex + 1);
             setCurrentPhase('input');
           } else {
-            setFinished(true);
-            if (recordScreen) stopScreenRecording();
-            setPaused(true);
+            if (presentationConfig.enableLoop) {
+              // If looping is enabled, restart from beginning
+              setCurrentPhraseIndex(0);
+              setCurrentPhase('input');
+            } else {
+              setFinished(true);
+              if (recordScreen) stopScreenRecording();
+              setPaused(true);
+            }
           }
         }
       }, (outputDuration * DELAY_AFTER_OUTPUT_PHRASES_MULTIPLIER) + presentationConfig.delayBetweenPhrases);
