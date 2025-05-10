@@ -14,6 +14,7 @@ interface EditablePhrasesProps {
     currentPhase: 'input' | 'output';
     onPhraseClick?: (index: number) => void;
     onPlayPhrase?: (index: number, phase: 'input' | 'output') => void;
+    enableOutputBeforeInput?: boolean;
 }
 
 
@@ -42,7 +43,7 @@ async function generateAudio(text: string, language: string, voice: string): Pro
     return response.json();
 }
 
-function PhraseComponent({ phrase, phrases, isSelected, currentPhase, onPhraseClick, onDelete, onPlayPhrase, ref, setPhrases }: PhraseComponentProps & { setPhrases: (phrases: Phrase[]) => void }) {
+function PhraseComponent({ phrase, phrases, isSelected, currentPhase, onPhraseClick, onDelete, onPlayPhrase, ref, setPhrases, enableOutputBeforeInput }: PhraseComponentProps & { setPhrases: (phrases: Phrase[]) => void, enableOutputBeforeInput?: boolean }) {
     const [inputLoading, setInputLoading] = useState(false);
     const [outputLoading, setOutputLoading] = useState(false);
     const [romanizedLoading, setRomanizedLoading] = useState(false);
@@ -158,18 +159,21 @@ function PhraseComponent({ phrase, phrases, isSelected, currentPhase, onPhraseCl
             )
         )
     }
+    const menuButton = (<button
+        ref={menuTriggerRef}
+        onClick={(e) => {
+            e.stopPropagation();
+            setIsMenuOpen(!isMenuOpen);
+        }}
+        className="px-2 py-1 text-sm hover:bg-secondary rounded text-gray-700 dark:text-white transition-colors w-8"
+        title="More options"
+    >
+        <EllipsisVerticalIcon className="w-4 h-4" />
+    </button>)
 
-    return (
-        <div
-            className={`mb-4 border p-2 rounded transition-colors 
-                ${isSelected
-                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-400'
-                    : 'border-gray-200 dark:border-gray-700 bg-background hover:bg-secondary dark:hover:bg-blue-900/20'} 
-                ${onPhraseClick ? 'cursor-pointer' : ''}`}
-            onClick={onPhraseClick}
-            ref={ref}
-        >
-            <div className="mb-2 flex items-center gap-2">
+    const renderInputs = () => {
+        const inputField = (
+            <div className="flex items-center gap-2">
                 <input
                     type="text"
                     value={phrase.input}
@@ -200,31 +204,12 @@ function PhraseComponent({ phrase, phrases, isSelected, currentPhase, onPhraseCl
                         <SpeakerWaveIcon className="w-4 h-4" />
                     </button>
                 )}
-                <button
-                    ref={menuTriggerRef}
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        setIsMenuOpen(!isMenuOpen);
-                    }}
-                    className="px-2 py-1 text-sm hover:bg-secondary rounded text-gray-700 dark:text-white transition-colors w-8"
-                    title="More options"
-                >
-                    <EllipsisVerticalIcon className="w-4 h-4" />
-                </button>
+                {!enableOutputBeforeInput ? menuButton : <div className="w-8 px-4"></div>}
                 {inputLoading && <span className="text-gray-500 dark:text-gray-400 text-sm">Processing...</span>}
             </div>
-            <Menu
-                isOpen={isMenuOpen}
-                onClose={() => setIsMenuOpen(false)}
-                triggerRef={menuTriggerRef}
-                items={[
-                    {
-                        label: 'Delete phrase',
-                        onClick: onDelete,
-                        className: 'text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20'
-                    }
-                ]}
-            />
+        );
+
+        const outputField = (
             <div className="flex items-center gap-2">
                 <input
                     type="text"
@@ -258,9 +243,46 @@ function PhraseComponent({ phrase, phrases, isSelected, currentPhase, onPhraseCl
                         <MicrophoneIcon className="w-4 h-4" />
                     </button>
                 )}
-                <div className="w-8 px-4"></div>
-                {outputLoading && <span className="text-gray-500 dark:text-gray-400 text-sm">Processing...</span>}
+                {enableOutputBeforeInput ? menuButton : <div className="w-8 px-4"></div>}                {outputLoading && <span className="text-gray-500 dark:text-gray-400 text-sm">Processing...</span>}
             </div>
+        );
+
+        return enableOutputBeforeInput ? (
+            <>
+                {outputField}
+                {inputField}
+            </>
+        ) : (
+            <>
+                {inputField}
+                {outputField}
+            </>
+        );
+    };
+
+    return (
+        <div
+            className={`mb-4 border p-2 rounded transition-colors flex flex-col gap-2
+                ${isSelected
+                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-400'
+                    : 'border-gray-200 dark:border-gray-700 bg-background hover:bg-secondary dark:hover:bg-blue-900/20'} 
+                ${onPhraseClick ? 'cursor-pointer' : ''}`}
+            onClick={onPhraseClick}
+            ref={ref}
+        >
+            {renderInputs()}
+            <Menu
+                isOpen={isMenuOpen}
+                onClose={() => setIsMenuOpen(false)}
+                triggerRef={menuTriggerRef}
+                items={[
+                    {
+                        label: 'Delete phrase',
+                        onClick: onDelete,
+                        className: 'text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20'
+                    }
+                ]}
+            />
             {phrase.romanized && <div className="mt-2 mb-2 flex items-center gap-2">
                 <label className="block font-medium mb-1 text-gray-700 dark:text-gray-200">Romanized:</label>
                 <input
@@ -295,7 +317,7 @@ function PhraseComponent({ phrase, phrases, isSelected, currentPhase, onPhraseCl
     );
 }
 
-export function EditablePhrases({ phrases, setPhrases, currentPhraseIndex, currentPhase, onPhraseClick, onPlayPhrase }: EditablePhrasesProps) {
+export function EditablePhrases({ phrases, setPhrases, currentPhraseIndex, currentPhase, onPhraseClick, onPlayPhrase, enableOutputBeforeInput }: EditablePhrasesProps) {
     const selectedPhraseRef = useRef<HTMLDivElement>(null!);
     const [isArrowVisible, setIsArrowVisible] = useState(false);
     const [scrollDirection, setScrollDirection] = useState<'up' | 'down' | null>(null);
@@ -355,6 +377,7 @@ export function EditablePhrases({ phrases, setPhrases, currentPhraseIndex, curre
                         onDelete={() => handleDeletePhrase(index)}
                         onPlayPhrase={onPlayPhrase}
                         setPhrases={setPhrases}
+                        enableOutputBeforeInput={enableOutputBeforeInput}
                         {...(isSelected && { ref: selectedPhraseRef })}
                     />
                 );

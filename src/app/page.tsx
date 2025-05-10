@@ -895,6 +895,7 @@ export default function Home() {
                   }
                 }}
                 onPlayPhrase={handlePlayPhrase}
+                enableOutputBeforeInput={presentationConfig.enableOutputBeforeInput}
               />
             </div>
           )}
