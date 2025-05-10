@@ -26,6 +26,7 @@ export type Config = {
   created_at?: string;
   inputVoice?: string;
   targetVoice?: string;
+  presentationConfig?: PresentationConfig;
 };
 
 export type RomanizedOutput = string[];

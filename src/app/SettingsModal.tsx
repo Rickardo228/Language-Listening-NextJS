@@ -20,9 +20,9 @@ interface SettingsModalProps {
 export function SettingsModal({
     isOpen,
     onClose,
-    configName,
-    setConfigName,
-    onSaveConfig,
+    // configName,
+    // setConfigName,
+    // onSaveConfig,
     presentationConfig,
     setPresentationConfig,
     presentationConfigDefinition,

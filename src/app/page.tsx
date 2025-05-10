@@ -17,6 +17,7 @@ import { CollectionHeader } from './CollectionHeader';
 import { useTheme } from './ThemeProvider';
 import { UserAvatar } from './components/UserAvatar';
 import { auth } from './firebase';
+import { defaultPresentationConfig } from './defaultConfig';
 
 const firestore = getFirestore();
 
@@ -61,7 +62,30 @@ export default function Home() {
   }
 
   // Presentation configuration (bg, effects, delays, etc.) via our custom hook.
-  const { presentationConfig, setPresentationConfig } = usePresentationConfig();
+  const { presentationConfig, setPresentationConfig: setPresentationConfigBase } = usePresentationConfig();
+
+  const setPresentationConfig = async (newConfig: Partial<PresentationConfig>) => {
+    setPresentationConfigBase(newConfig);
+    if (selectedCollection && user) {
+      try {
+        const docRef = doc(firestore, 'users', user.uid, 'collections', selectedCollection);
+        const updatedConfig = { ...presentationConfig, ...newConfig } as PresentationConfig;
+        await updateDoc(docRef, {
+          presentationConfig: updatedConfig
+        });
+        setSavedCollections(prev =>
+          prev.map(col =>
+            col.id === selectedCollection
+              ? { ...col, presentationConfig: updatedConfig }
+              : col
+          )
+        );
+      } catch (err) {
+        console.error('Error updating presentation config:', err);
+        alert('Failed to save settings: ' + err);
+      }
+    }
+  };
 
   // Loading state for processing
   const [loading, setLoading] = useState<boolean>(false);
@@ -156,7 +180,11 @@ export default function Home() {
         ...phrase,
         created_at: now
       })),
-      created_at: now
+      created_at: now,
+      presentationConfig: {
+        ...defaultPresentationConfig,
+        name: generatedName
+      }
     };
     console.log('newCollection', newCollection);
     const colRef = collection(firestore, 'users', user.uid, 'collections');
@@ -346,16 +374,19 @@ export default function Home() {
       }
       clearAllTimeouts();
       setCurrentPhraseIndex(0);
-      setCurrentPhase(presentationConfig.enableOutputBeforeInput ? 'output' : 'input');
+      setCurrentPhase(config?.presentationConfig?.enableOutputBeforeInput ? 'output' : 'input');
       setSelectedCollection(config.id);
 
       // Set the addToCollection language states based on the first phrase
       if (config.phrases.length > 0) {
         const firstPhrase = config.phrases[0];
-        console.log('firstPhrase', firstPhrase);
         setAddToCollectionInputLang(firstPhrase.inputLang);
         setAddToCollectionTargetLang(firstPhrase.targetLang);
       }
+
+      // Set the presentation config from the collection
+      setPresentationConfigBase(config?.presentationConfig || defaultPresentationConfig);
+
 
       setPhrases(config.phrases, config.id);
     } catch (err) {
