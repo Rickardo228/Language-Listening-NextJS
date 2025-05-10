@@ -11,6 +11,7 @@ interface EditablePhrasesProps {
     inputLanguage: string;
     outputLanguage: string;
     currentPhraseIndex: number | null;
+    currentPhase: 'input' | 'output';
     onPhraseClick?: (index: number) => void;
     onPlayPhrase?: (index: number, phase: 'input' | 'output') => void;
 }
@@ -21,6 +22,7 @@ interface PhraseComponentProps {
     phrase: Phrase;
     phrases: Phrase[];
     isSelected: boolean;
+    currentPhase: 'input' | 'output';
     onPhraseClick?: () => void;
     onPhraseChange: (field: keyof Phrase, value: PhraseValue) => void;
     onDelete: () => void;
@@ -41,7 +43,7 @@ async function generateAudio(text: string, language: string): Promise<{ audioUrl
     return response.json();
 }
 
-function PhraseComponent({ phrase, phrases, isSelected, onPhraseClick, onPhraseChange, onDelete, onPlayPhrase }: PhraseComponentProps) {
+function PhraseComponent({ phrase, phrases, isSelected, currentPhase, onPhraseClick, onPhraseChange, onDelete, onPlayPhrase }: PhraseComponentProps) {
     const [inputLoading, setInputLoading] = useState(false);
     const [outputLoading, setOutputLoading] = useState(false);
     const [romanizedLoading, setRomanizedLoading] = useState(false);
@@ -152,7 +154,9 @@ function PhraseComponent({ phrase, phrases, isSelected, onPhraseClick, onPhraseC
                     onChange={(e) => onPhraseChange('input', e.target.value)}
                     onBlur={() => handleBlur('input')}
                     className={`w-full p-2 border rounded bg-white dark:bg-gray-800 
-                        border-gray-300 dark:border-gray-600 
+                        ${isSelected && currentPhase === 'input'
+                            ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-400'
+                            : 'border-gray-300 dark:border-gray-600'}
                         text-gray-900 dark:text-gray-100
                         ${inputLoading ? 'opacity-50' : ''}`}
                     disabled={inputLoading}
@@ -202,7 +206,9 @@ function PhraseComponent({ phrase, phrases, isSelected, onPhraseClick, onPhraseC
                     onChange={(e) => onPhraseChange('translated', e.target.value)}
                     onBlur={() => handleBlur('translated')}
                     className={`w-full p-2 border rounded bg-white dark:bg-gray-800 
-                        border-gray-300 dark:border-gray-600 
+                        ${isSelected && currentPhase === 'output'
+                            ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-400'
+                            : 'border-gray-300 dark:border-gray-600'}
                         text-gray-900 dark:text-gray-100
                         ${outputLoading ? 'opacity-50' : ''}`}
                     disabled={outputLoading}
@@ -253,7 +259,7 @@ function PhraseComponent({ phrase, phrases, isSelected, onPhraseClick, onPhraseC
     );
 }
 
-export function EditablePhrases({ phrases, setPhrases, currentPhraseIndex, onPhraseClick, onPlayPhrase }: EditablePhrasesProps) {
+export function EditablePhrases({ phrases, setPhrases, currentPhraseIndex, currentPhase, onPhraseClick, onPlayPhrase }: EditablePhrasesProps) {
     const handlePhraseChange = (index: number, field: keyof Phrase, value: PhraseValue) => {
         const newPhrases = [...phrases];
         newPhrases[index] = { ...newPhrases[index], [field]: value };
@@ -274,6 +280,7 @@ export function EditablePhrases({ phrases, setPhrases, currentPhraseIndex, onPhr
                     phrase={phrase}
                     phrases={phrases}
                     isSelected={currentPhraseIndex === index}
+                    currentPhase={currentPhase}
                     onPhraseClick={() => onPhraseClick?.(index)}
                     onPhraseChange={(field, value) => handlePhraseChange(index, field, value)}
                     onDelete={() => handleDeletePhrase(index)}

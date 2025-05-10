@@ -709,8 +709,7 @@ export default function Home() {
       setCurrentPhase(phase);
       if (isPaused) {
         // If paused, play in isolation without changing state
-        const tempAudio = new Audio(phrases[index][phase === 'input' ? 'inputAudio' : 'outputAudio']?.audioUrl);
-        tempAudio.play().catch(err => console.error('Playback error:', err));
+        audioRef.current.play().catch(err => console.error('Playback error:', err));
       } else {
         // If not paused, update state and play through main audio element
         setPaused(false);
@@ -861,6 +860,7 @@ export default function Home() {
                 inputLanguage={newCollectionInputLang}
                 outputLanguage={newCollectionTargetLang}
                 currentPhraseIndex={currentPhraseIndex}
+                currentPhase={currentPhase}
                 onPhraseClick={(index) => {
                   setCurrentPhraseIndex(index);
                   setCurrentPhase('input');
