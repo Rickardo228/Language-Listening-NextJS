@@ -16,7 +16,6 @@ interface EditablePhrasesProps {
     onPlayPhrase?: (index: number, phase: 'input' | 'output') => void;
 }
 
-type PhraseValue = string | { audioUrl: string; duration: number } | boolean;
 
 interface PhraseComponentProps {
     phrase: Phrase;
@@ -24,17 +23,16 @@ interface PhraseComponentProps {
     isSelected: boolean;
     currentPhase: 'input' | 'output';
     onPhraseClick?: () => void;
-    onPhraseChange: (field: keyof Phrase, value: PhraseValue) => void;
     onDelete: () => void;
     onPlayPhrase?: (index: number, phase: 'input' | 'output') => void;
     ref?: React.RefObject<HTMLDivElement>;
 }
 
-async function generateAudio(text: string, language: string): Promise<{ audioUrl: string, duration: number }> {
+async function generateAudio(text: string, language: string, voice: string): Promise<{ audioUrl: string, duration: number }> {
     const response = await fetch(`${API_BASE_URL}/tts`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text, language }),
+        body: JSON.stringify({ text, language, voice }),
     });
 
     if (!response.ok) {
@@ -44,19 +42,27 @@ async function generateAudio(text: string, language: string): Promise<{ audioUrl
     return response.json();
 }
 
-function PhraseComponent({ phrase, phrases, isSelected, currentPhase, onPhraseClick, onPhraseChange, onDelete, onPlayPhrase, ref }: PhraseComponentProps) {
+function PhraseComponent({ phrase, phrases, isSelected, currentPhase, onPhraseClick, onDelete, onPlayPhrase, ref, setPhrases }: PhraseComponentProps & { setPhrases: (phrases: Phrase[]) => void }) {
     const [inputLoading, setInputLoading] = useState(false);
     const [outputLoading, setOutputLoading] = useState(false);
     const [romanizedLoading, setRomanizedLoading] = useState(false);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const menuTriggerRef = useRef<HTMLButtonElement>(null);
+    const [prevInput, setPrevInput] = useState(phrase.input);
+    const [prevTranslated, setPrevTranslated] = useState(phrase.translated);
+    const [prevRomanized, setPrevRomanized] = useState(phrase.romanized);
 
     const handleBlur = async (field: keyof Phrase) => {
         if (field !== 'input' && field !== 'translated' && field !== 'romanized') return;
         const text = phrase[field];
         if (!text) return;
 
-        // Determine if we should proceed with generating audio
+        const hasChanged = (field === 'input' && text !== prevInput) ||
+            (field === 'translated' && text !== prevTranslated) ||
+            (field === 'romanized' && text !== prevRomanized);
+
+        if (!hasChanged) return;
+
         const shouldGenerateAudio =
             (field === 'input') ||
             (field === 'translated' && !phrase.useRomanizedForAudio) ||
@@ -70,16 +76,21 @@ function PhraseComponent({ phrase, phrases, isSelected, currentPhase, onPhraseCl
         try {
             const { audioUrl, duration } = await generateAudio(
                 text,
-                field === 'input' ? phrase.inputLang : phrase.targetLang
+                field === 'input' ? phrase.inputLang : phrase.targetLang,
+                field === 'input' ? phrase.inputVoice || '' : phrase.targetVoice || ''
             );
 
-            if (field === 'romanized' && phrase.useRomanizedForAudio) {
-                onPhraseChange('outputAudio', { audioUrl, duration });
-                onPhraseChange('useRomanizedForAudio', true);
-            } else {
-                onPhraseChange(field === 'input' ? 'inputAudio' : 'outputAudio', { audioUrl, duration });
-                onPhraseChange('useRomanizedForAudio', false);
-            }
+            const newPhrases = [...phrases];
+            newPhrases[phrases.indexOf(phrase)] = {
+                ...newPhrases[phrases.indexOf(phrase)],
+                [field === 'input' ? 'inputAudio' : 'outputAudio']: { audioUrl, duration },
+                useRomanizedForAudio: field === 'romanized' && phrase.useRomanizedForAudio
+            };
+            setPhrases(newPhrases);
+
+            if (field === 'input') setPrevInput(text);
+            if (field === 'translated') setPrevTranslated(text);
+            if (field === 'romanized') setPrevRomanized(text);
         } catch (error) {
             console.error('Error generating TTS:', error);
         } finally {
@@ -94,9 +105,14 @@ function PhraseComponent({ phrase, phrases, isSelected, currentPhase, onPhraseCl
         setRomanizedLoading(true);
 
         try {
-            const { audioUrl, duration } = await generateAudio(text, phrase.targetLang);
-            onPhraseChange('outputAudio', { audioUrl, duration });
-            onPhraseChange('useRomanizedForAudio', true);
+            const { audioUrl, duration } = await generateAudio(text, phrase.targetLang, phrase.targetVoice || '');
+            const newPhrases = [...phrases];
+            newPhrases[phrases.indexOf(phrase)] = {
+                ...newPhrases[phrases.indexOf(phrase)],
+                outputAudio: { audioUrl, duration },
+                useRomanizedForAudio: true
+            };
+            setPhrases(newPhrases);
         } catch (error) {
             console.error('Error generating TTS:', error);
         } finally {
@@ -111,9 +127,14 @@ function PhraseComponent({ phrase, phrases, isSelected, currentPhase, onPhraseCl
         setOutputLoading(true);
 
         try {
-            const { audioUrl, duration } = await generateAudio(text, phrase.targetLang);
-            onPhraseChange('outputAudio', { audioUrl, duration });
-            onPhraseChange('useRomanizedForAudio', false);
+            const { audioUrl, duration } = await generateAudio(text, phrase.targetLang, phrase.targetVoice || '');
+            const newPhrases = [...phrases];
+            newPhrases[phrases.indexOf(phrase)] = {
+                ...newPhrases[phrases.indexOf(phrase)],
+                outputAudio: { audioUrl, duration },
+                useRomanizedForAudio: false
+            };
+            setPhrases(newPhrases);
         } catch (error) {
             console.error('Error generating TTS:', error);
         } finally {
@@ -153,7 +174,11 @@ function PhraseComponent({ phrase, phrases, isSelected, currentPhase, onPhraseCl
                     type="text"
                     value={phrase.input}
                     onClick={(e) => e.stopPropagation()}
-                    onChange={(e) => onPhraseChange('input', e.target.value)}
+                    onChange={(e) => {
+                        const newPhrases = [...phrases];
+                        newPhrases[phrases.indexOf(phrase)] = { ...newPhrases[phrases.indexOf(phrase)], input: e.target.value };
+                        setPhrases(newPhrases);
+                    }}
                     onBlur={() => handleBlur('input')}
                     className={`w-full p-2 border rounded bg-white dark:bg-gray-800 
                         ${isSelected && currentPhase === 'input'
@@ -205,7 +230,11 @@ function PhraseComponent({ phrase, phrases, isSelected, currentPhase, onPhraseCl
                     type="text"
                     value={phrase.translated}
                     onClick={(e) => e.stopPropagation()}
-                    onChange={(e) => onPhraseChange('translated', e.target.value)}
+                    onChange={(e) => {
+                        const newPhrases = [...phrases];
+                        newPhrases[phrases.indexOf(phrase)] = { ...newPhrases[phrases.indexOf(phrase)], translated: e.target.value };
+                        setPhrases(newPhrases);
+                    }}
                     onBlur={() => handleBlur('translated')}
                     className={`w-full p-2 border rounded bg-white dark:bg-gray-800 
                         ${isSelected && currentPhase === 'output'
@@ -238,7 +267,11 @@ function PhraseComponent({ phrase, phrases, isSelected, currentPhase, onPhraseCl
                     type="text"
                     value={phrase.romanized}
                     onClick={(e) => e.stopPropagation()}
-                    onChange={(e) => onPhraseChange('romanized', e.target.value)}
+                    onChange={(e) => {
+                        const newPhrases = [...phrases];
+                        newPhrases[phrases.indexOf(phrase)] = { ...newPhrases[phrases.indexOf(phrase)], romanized: e.target.value };
+                        setPhrases(newPhrases);
+                    }}
                     onBlur={() => handleBlur('romanized')}
                     className="w-full p-2 border rounded bg-white dark:bg-gray-800 
                         border-gray-300 dark:border-gray-600 
@@ -292,12 +325,6 @@ export function EditablePhrases({ phrases, setPhrases, currentPhraseIndex, curre
         selectedPhraseRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     };
 
-    const handlePhraseChange = (index: number, field: keyof Phrase, value: PhraseValue) => {
-        const newPhrases = [...phrases];
-        newPhrases[index] = { ...newPhrases[index], [field]: value };
-        setPhrases(newPhrases);
-    };
-
     const handleDeletePhrase = (index: number) => {
         const newPhrases = [...phrases];
         newPhrases.splice(index, 1);
@@ -325,9 +352,9 @@ export function EditablePhrases({ phrases, setPhrases, currentPhraseIndex, curre
                         isSelected={isSelected}
                         currentPhase={currentPhase}
                         onPhraseClick={() => onPhraseClick?.(index)}
-                        onPhraseChange={(field, value) => handlePhraseChange(index, field, value)}
                         onDelete={() => handleDeletePhrase(index)}
                         onPlayPhrase={onPlayPhrase}
+                        setPhrases={setPhrases}
                         {...(isSelected && { ref: selectedPhraseRef })}
                     />
                 );

@@ -538,10 +538,11 @@ export default function Home() {
     if (paused) return;
 
     const playOutputBeforeInput = presentationConfig.enableOutputBeforeInput;
+    const inputDuration = presentationConfig.enableInputDurationDelay ? (audioRef.current?.duration || 1) * 1000 : 0;
+    const outputDuration = presentationConfig.enableOutputDurationDelay ? (audioRef.current?.duration || 1) * 1000 * DELAY_AFTER_INPUT_PHRASES_MULTIPLIER : 0;
 
 
     if (currentPhase === 'input') {
-      const inputDuration = presentationConfig.enableInputDurationDelay ? (audioRef.current?.duration || 1) * 1000 : 0;
       const timeoutId = window.setTimeout(() => {
         setCurrentPhase('output');
 
@@ -559,10 +560,9 @@ export default function Home() {
             }
           }
         }
-      }, inputDuration + 1000); // Keep the 1 second buffer
+      }, playOutputBeforeInput ? outputDuration + 1000 : inputDuration + presentationConfig.delayBetweenPhrases);
       timeoutIds.current.push(timeoutId);
     } else {
-      const outputDuration = presentationConfig.enableOutputDurationDelay ? (audioRef.current?.duration || 1) * 1000 * DELAY_AFTER_INPUT_PHRASES_MULTIPLIER : 0;
       const timeoutId = window.setTimeout(() => {
         if (playOutputBeforeInput) {
           setCurrentPhase('input');
@@ -582,7 +582,7 @@ export default function Home() {
             }
           }
         }
-      }, (outputDuration * DELAY_AFTER_OUTPUT_PHRASES_MULTIPLIER) + presentationConfig.delayBetweenPhrases);
+      }, playOutputBeforeInput ? inputDuration + 1000 : (outputDuration * DELAY_AFTER_OUTPUT_PHRASES_MULTIPLIER) + presentationConfig.delayBetweenPhrases);
       timeoutIds.current.push(timeoutId);
     }
   };
@@ -886,11 +886,12 @@ export default function Home() {
                 currentPhase={currentPhase}
                 onPhraseClick={(index) => {
                   setCurrentPhraseIndex(index);
-                  setCurrentPhase('input');
                   clearAllTimeouts();
-                  if (audioRef.current && phrases[index]?.inputAudio?.audioUrl) {
+                  setCurrentPhase(presentationConfig.enableOutputBeforeInput ? 'output' : 'input');
+                  if (audioRef.current) {
                     audioRef.current.pause();
-                    audioRef.current.src = phrases[index].inputAudio.audioUrl;
+                    const audioUrl = presentationConfig.enableOutputBeforeInput ? phrases[index].outputAudio?.audioUrl : phrases[index].inputAudio?.audioUrl;
+                    audioRef.current.src = audioUrl || '';
                   }
                 }}
                 onPlayPhrase={handlePlayPhrase}
