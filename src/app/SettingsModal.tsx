@@ -58,7 +58,7 @@ export function SettingsModal({
                         handleImageUpload={handleImageUpload}
                     />
                 </div>
-                <div className="mt-4 border-t pt-4">
+                {/* <div className="mt-4 border-t pt-4">
                     <input
                         type="text"
                         id="configName"
@@ -73,7 +73,7 @@ export function SettingsModal({
                     >
                         Save Config
                     </button>
-                </div>
+                </div> */}
                 {/* <SavedConfigs onDeleteConfig={} onLoadConfig={}  /> */}
             </div>
         </div>,

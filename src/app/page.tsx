@@ -346,7 +346,7 @@ export default function Home() {
       }
       clearAllTimeouts();
       setCurrentPhraseIndex(0);
-      setCurrentPhase('input');
+      setCurrentPhase(presentationConfig.enableOutputBeforeInput ? 'output' : 'input');
       setSelectedCollection(config.id);
 
       // Set the addToCollection language states based on the first phrase

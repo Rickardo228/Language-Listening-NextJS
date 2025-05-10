@@ -38,12 +38,12 @@ export const presentationConfigDefinition: ConfigFieldDefinition[] = [
     description:
       "Play the output audio before the input audio for each phrase.",
   },
-  {
-    key: "containerBg",
-    label: "Video Background Color",
-    inputType: "color",
-    description: "The background color of the video container",
-  },
+  // {
+  //   key: "containerBg",
+  //   label: "Video Background Color",
+  //   inputType: "color",
+  //   description: "The background color of the video container",
+  // },
   // {
   //   key: "textBg",
   //   label: "Text Background Color",
