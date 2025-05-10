@@ -15,20 +15,21 @@ export const presentationConfigDefinition: ConfigFieldDefinition[] = [
     label: "Loop",
     inputType: "checkbox",
     description:
-      "Automatically restart from the beginning when reaching the end",
+      "Automatically restart from the beginning when reaching the end of all phrases.",
   },
   {
     key: "enableOutputDurationDelay",
-    label: "Use Output Duration Delay",
+    label: "Shadow",
     inputType: "checkbox",
     description:
-      "Wait for the output audio to finish before moving to the next phrase",
+      "Pause after each phrase to practice your pronunciation by repeating it.",
   },
   {
     key: "enableInputDurationDelay",
-    label: "Use Input Duration Delay",
+    label: "Recall",
     inputType: "checkbox",
-    description: "Wait for the input audio to finish before playing the output",
+    description:
+      "Pause between the input and output of a phrase to test your memory by recalling it.",
   },
   {
     key: "containerBg",

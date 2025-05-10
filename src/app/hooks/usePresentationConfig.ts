@@ -16,11 +16,12 @@ export function usePresentationConfig(initial?: Partial<PresentationConfig>) {
       enableOrtonEffect: false,
       enableParticles: false,
       enableSteam: false,
-      enableLoop: false,
+      enableLoop: true,
       postProcessDelay: 0,
       // postProcessDelay: 5000,
       delayBetweenPhrases: 1000,
       enableOutputDurationDelay: true,
+      enableInputDurationDelay: false,
       ...initial,
     } as PresentationConfig);
 
