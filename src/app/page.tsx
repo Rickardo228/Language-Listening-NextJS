@@ -186,7 +186,6 @@ export default function Home() {
         name: generatedName
       }
     };
-    console.log('newCollection', newCollection);
     const colRef = collection(firestore, 'users', user.uid, 'collections');
     const docRef = await addDoc(colRef, newCollection);
     const newCollectionConfig = {
@@ -447,7 +446,6 @@ export default function Home() {
 
       mediaRecorderRef.current = new MediaRecorder(stream);
       mediaRecorderRef.current.ondataavailable = (event) => {
-        console.log((mediaRecorderRef.current))
         if (event.data.size > 0) {
           recordedChunksRef.current.push(event.data);
         }
@@ -508,8 +506,6 @@ export default function Home() {
             if (!response.ok) {
               throw new Error(`Server error: ${response.statusText}`);
             }
-            const result = await response.json();
-            console.log('Server merge response:', result);
           } catch (err) {
             console.error('Error sending data to server:', err);
           }
@@ -525,7 +521,6 @@ export default function Home() {
   };
 
   const stopScreenRecording = () => {
-    console.log(mediaRecorderRef.current);
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
       mediaRecorderRef.current.stop();
     }
@@ -711,7 +706,6 @@ export default function Home() {
   const handleVoiceChange = async (inputVoice: string, targetVoice: string) => {
     if (!user || !selectedCollection) return;
     const collection = savedCollections.find(col => col.id === selectedCollection);
-    console.log(collection);
     if (!collection) return;
 
     try {

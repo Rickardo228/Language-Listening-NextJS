@@ -328,10 +328,9 @@ export function EditablePhrases({ phrases, setPhrases, currentPhraseIndex, curre
         const observer = new IntersectionObserver(
             ([entry]) => {
                 setIsArrowVisible(!entry.isIntersecting);
-                console.log(entry.boundingClientRect.top);
                 setScrollDirection(entry.boundingClientRect.top > 0 ? 'down' : 'up');
             },
-            { root: null, threshold: 0.1 }
+            { root: null, threshold: 0.6 }
         );
 
         observer.observe(element);
@@ -344,7 +343,7 @@ export function EditablePhrases({ phrases, setPhrases, currentPhraseIndex, curre
     }, [currentPhraseIndex]);
 
     const scrollToSelectedPhrase = () => {
-        selectedPhraseRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        selectedPhraseRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
     };
 
     const handleDeletePhrase = (index: number) => {
