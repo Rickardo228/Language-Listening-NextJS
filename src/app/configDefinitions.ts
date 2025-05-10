@@ -59,4 +59,10 @@ export const presentationConfigDefinition: ConfigFieldDefinition[] = [
     inputType: "checkbox",
     defaultValue: false,
   },
+  {
+    key: "enableOutputDurationDelay",
+    label: "Use Output Duration Delay",
+    inputType: "checkbox",
+    defaultValue: true,
+  },
 ];

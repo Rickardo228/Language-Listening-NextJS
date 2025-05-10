@@ -543,7 +543,7 @@ export default function Home() {
       }, 1000);
       timeoutIds.current.push(timeoutId);
     } else {
-      const outputDuration = (audioRef.current?.duration || 1) * 1000;
+      const outputDuration = presentationConfig.enableOutputDurationDelay ? (audioRef.current?.duration || 1) * 1000 : 0;
       const timeoutId = window.setTimeout(() => {
         if (currentPhraseIndex < phrases.length - 1 && !paused) {
           setCurrentPhraseIndex(currentPhraseIndex + 1);

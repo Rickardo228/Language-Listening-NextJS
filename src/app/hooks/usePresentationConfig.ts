@@ -20,6 +20,7 @@ export function usePresentationConfig(initial?: Partial<PresentationConfig>) {
       postProcessDelay: 0,
       // postProcessDelay: 5000,
       delayBetweenPhrases: 1000,
+      enableOutputDurationDelay: true,
       ...initial,
     } as PresentationConfig);
 
