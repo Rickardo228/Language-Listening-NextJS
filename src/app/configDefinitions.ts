@@ -5,17 +5,43 @@ export type ConfigFieldDefinition = {
   key: keyof PresentationConfig;
   label: string;
   inputType: "text" | "number" | "checkbox" | "file" | "color";
-  defaultValue?: boolean;
+  description?: string;
 };
 
 export const presentationConfigDefinition: ConfigFieldDefinition[] = [
   // { key: "bgImage", label: "Background Image", inputType: "file" },
   {
+    key: "enableLoop",
+    label: "Loop",
+    inputType: "checkbox",
+    description:
+      "Automatically restart from the beginning when reaching the end",
+  },
+  {
+    key: "enableOutputDurationDelay",
+    label: "Use Output Duration Delay",
+    inputType: "checkbox",
+    description:
+      "Wait for the output audio to finish before moving to the next phrase",
+  },
+  {
+    key: "enableInputDurationDelay",
+    label: "Use Input Duration Delay",
+    inputType: "checkbox",
+    description: "Wait for the input audio to finish before playing the output",
+  },
+  {
     key: "containerBg",
     label: "Video Background Color",
     inputType: "color",
+    description: "The background color of the video container",
   },
-  { key: "textBg", label: "Text Background Color", inputType: "color" },
+  // {
+  //   key: "textBg",
+  //   label: "Text Background Color",
+  //   inputType: "color",
+  //   description: "The background color behind the text",
+  // },
   // { key: "enableSnow", label: "Enable Snow Effect", inputType: "checkbox" },
   // {
   //   key: "enableCherryBlossom",
@@ -48,27 +74,10 @@ export const presentationConfigDefinition: ConfigFieldDefinition[] = [
   //   label: "Delay After Processing (ms)",
   //   inputType: "number",
   // },
-  {
-    key: "delayBetweenPhrases",
-    label: "Delay Between Phrases (ms)",
-    inputType: "number",
-  },
-  {
-    key: "enableLoop",
-    label: "Loop",
-    inputType: "checkbox",
-    defaultValue: false,
-  },
-  {
-    key: "enableOutputDurationDelay",
-    label: "Use Output Duration Delay",
-    inputType: "checkbox",
-    defaultValue: true,
-  },
-  {
-    key: "enableInputDurationDelay",
-    label: "Use Input Duration Delay",
-    inputType: "checkbox",
-    defaultValue: true,
-  },
+  // {
+  //   key: "delayBetweenPhrases",
+  //   label: "Delay Between Phrases (ms)",
+  //   inputType: "number",
+  //   description: "Fixed delay between phrases in milliseconds",
+  // },
 ];

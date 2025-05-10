@@ -24,7 +24,7 @@ const ConfigFields: React.FC<ConfigFieldsProps> = ({
     return (
         <div className="space-y-4">
             {definition.map((field) => {
-                const { key, label, inputType } = field;
+                const { key, label, inputType, description } = field;
                 const value = config[key];
 
                 // Render a file input if the field is for a file (e.g. background image).
@@ -40,6 +40,9 @@ const ConfigFields: React.FC<ConfigFieldsProps> = ({
                                 onChange={handleImageUpload}
                                 className="w-full p-2 border border-gray-300 rounded"
                             />
+                            {description && (
+                                <p className="text-sm text-muted-foreground mt-1">{description}</p>
+                            )}
                         </div>
                     );
                 }
@@ -47,17 +50,22 @@ const ConfigFields: React.FC<ConfigFieldsProps> = ({
                 // Render a checkbox input.
                 if (inputType === "checkbox") {
                     return (
-                        <div key={key} className="flex items-center">
-                            <input
-                                type="checkbox"
-                                id={String(key)}
-                                checked={value as boolean}
-                                onChange={(e) => handleChange(key, e.target.checked)}
-                                className="mr-2"
-                            />
-                            <label htmlFor={String(key)} className="font-medium">
-                                {label}
-                            </label>
+                        <div key={key} className="flex flex-col">
+                            <div className="flex items-center">
+                                <input
+                                    type="checkbox"
+                                    id={String(key)}
+                                    checked={value as boolean}
+                                    onChange={(e) => handleChange(key, e.target.checked)}
+                                    className="mr-2"
+                                />
+                                <label htmlFor={String(key)} className="font-medium">
+                                    {label}
+                                </label>
+                            </div>
+                            {description && (
+                                <p className="text-sm text-muted-foreground mt-1 ml-6">{description}</p>
+                            )}
                         </div>
                     );
                 }
@@ -76,6 +84,9 @@ const ConfigFields: React.FC<ConfigFieldsProps> = ({
                                 onChange={(e) => handleChange(key, Number(e.target.value))}
                                 className="w-full p-2 border border-gray-300 rounded"
                             />
+                            {description && (
+                                <p className="text-sm text-muted-foreground mt-1">{description}</p>
+                            )}
                         </div>
                     );
                 }
@@ -100,6 +111,9 @@ const ConfigFields: React.FC<ConfigFieldsProps> = ({
                                 </option>
                             ))}
                         </datalist>
+                        {description && (
+                            <p className="text-sm text-muted-foreground mt-1">{description}</p>
+                        )}
                     </div>
                 }
 
@@ -116,6 +130,9 @@ const ConfigFields: React.FC<ConfigFieldsProps> = ({
                             onChange={(e) => handleChange(key, e.target.value)}
                             className="w-full p-2 border border-gray-300 rounded"
                         />
+                        {description && (
+                            <p className="text-sm text-muted-foreground mt-1">{description}</p>
+                        )}
                     </div>
                 );
             })}

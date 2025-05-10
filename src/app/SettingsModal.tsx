@@ -2,6 +2,8 @@ import { X } from 'lucide-react';
 import { PresentationConfig } from './types';
 import ConfigFields from './ConfigFields';
 import { ConfigFieldDefinition } from './configDefinitions';
+import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 interface SettingsModalProps {
     isOpen: boolean;
@@ -26,11 +28,18 @@ export function SettingsModal({
     presentationConfigDefinition,
     handleImageUpload
 }: SettingsModalProps) {
-    if (!isOpen) return null;
+    const [mounted, setMounted] = useState(false);
 
-    return (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <div className="bg-background text-foreground p-4 rounded-lg shadow-lg w-96 overflow-auto max-h-svh border">
+    useEffect(() => {
+        setMounted(true);
+        return () => setMounted(false);
+    }, []);
+
+    if (!isOpen || !mounted) return null;
+
+    return createPortal(
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 font-sans">
+            <div className="bg-background text-foreground p-4 rounded-lg shadow-lg w-96 max-h-[90vh] flex flex-col">
                 <div className="flex justify-between items-center mb-4">
                     <h2 className="text-xl font-bold">Settings</h2>
                     <button
@@ -41,12 +50,14 @@ export function SettingsModal({
                         <X className="h-6 w-6" />
                     </button>
                 </div>
-                <ConfigFields
-                    definition={presentationConfigDefinition}
-                    config={presentationConfig}
-                    setConfig={(newConfig) => setPresentationConfig({ ...presentationConfig, ...newConfig })}
-                    handleImageUpload={handleImageUpload}
-                />
+                <div className="overflow-y-auto flex-1 pr-2">
+                    <ConfigFields
+                        definition={presentationConfigDefinition}
+                        config={presentationConfig}
+                        setConfig={(newConfig) => setPresentationConfig({ ...presentationConfig, ...newConfig })}
+                        handleImageUpload={handleImageUpload}
+                    />
+                </div>
                 <div className="mt-4 border-t pt-4">
                     <input
                         type="text"
@@ -65,6 +76,7 @@ export function SettingsModal({
                 </div>
                 {/* <SavedConfigs onDeleteConfig={} onLoadConfig={}  /> */}
             </div>
-        </div>
+        </div>,
+        document.body
     );
 } 
