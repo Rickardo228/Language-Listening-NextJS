@@ -179,7 +179,7 @@ function PhraseComponent({ phrase, phrases, isSelected, currentPhase, onPhraseCl
                         e.stopPropagation();
                         setIsMenuOpen(!isMenuOpen);
                     }}
-                    className="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 dark:bg-gray-600 dark:hover:bg-gray-500 rounded text-gray-700 dark:text-white transition-colors"
+                    className="px-2 py-1 text-sm hover:bg-secondary rounded text-gray-700 dark:text-white transition-colors w-8"
                     title="More options"
                 >
                     <EllipsisVerticalIcon className="w-4 h-4" />
@@ -227,6 +227,7 @@ function PhraseComponent({ phrase, phrases, isSelected, currentPhase, onPhraseCl
                         <MicrophoneIcon className="w-4 h-4" />
                     </button>
                 )}
+                <div className="w-8 px-4"></div>
                 {outputLoading && <span className="text-gray-500 dark:text-gray-400 text-sm">Processing...</span>}
             </div>
             {phrase.romanized && <div className="mt-2 mb-2 flex items-center gap-2">
