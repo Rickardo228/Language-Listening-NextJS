@@ -8,7 +8,7 @@ import { usePresentationConfig } from './hooks/usePresentationConfig';
 import { presentationConfigDefinition } from './configDefinitions';
 import { EditablePhrases } from './EditablePhrases';
 import { PresentationControls } from './PresentationControls';
-import { API_BASE_URL, BLEED_START_DELAY, DELAY_AFTER_OUTPUT_PHRASES_MULTIPLIER, LAG_COMPENSATION } from './consts';
+import { API_BASE_URL, BLEED_START_DELAY, DELAY_AFTER_INPUT_PHRASES_MULTIPLIER, DELAY_AFTER_OUTPUT_PHRASES_MULTIPLIER, LAG_COMPENSATION } from './consts';
 import { ImportPhrases } from './ImportPhrases';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc } from 'firebase/firestore';
@@ -538,12 +538,13 @@ export default function Home() {
     if (paused) return;
 
     if (currentPhase === 'input') {
+      const inputDuration = presentationConfig.enableInputDurationDelay ? (audioRef.current?.duration || 1) * 1000 : 0;
       const timeoutId = window.setTimeout(() => {
         setCurrentPhase('output');
-      }, 1000);
+      }, inputDuration + 1000); // Keep the 1 second buffer
       timeoutIds.current.push(timeoutId);
     } else {
-      const outputDuration = presentationConfig.enableOutputDurationDelay ? (audioRef.current?.duration || 1) * 1000 : 0;
+      const outputDuration = presentationConfig.enableOutputDurationDelay ? (audioRef.current?.duration || 1) * 1000 * DELAY_AFTER_INPUT_PHRASES_MULTIPLIER : 0;
       const timeoutId = window.setTimeout(() => {
         if (currentPhraseIndex < phrases.length - 1 && !paused) {
           setCurrentPhraseIndex(currentPhraseIndex + 1);

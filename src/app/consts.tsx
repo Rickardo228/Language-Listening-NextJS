@@ -1,5 +1,6 @@
 'use client';
 export const DELAY_AFTER_OUTPUT_PHRASES_MULTIPLIER = 1.5;
+export const DELAY_AFTER_INPUT_PHRASES_MULTIPLIER = 1.25;
 export const BLEED_START_DELAY = 0;
 export const TITLE_DELAY = 3000;
 export const LAG_COMPENSATION = 350;

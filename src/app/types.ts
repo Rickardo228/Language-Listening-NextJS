@@ -15,6 +15,7 @@ export type PresentationConfig = {
   delayBetweenPhrases: number;
   enableLoop: boolean;
   enableOutputDurationDelay: boolean;
+  enableInputDurationDelay: boolean;
 };
 
 export type Config = {
