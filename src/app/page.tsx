@@ -18,6 +18,7 @@ import { useTheme } from './ThemeProvider';
 import { UserAvatar } from './components/UserAvatar';
 import { auth } from './firebase';
 import { defaultPresentationConfig, defaultPresentationConfigs } from './defaultConfig';
+import { generateAudio } from './utils/audioUtils';
 
 const firestore = getFirestore();
 
@@ -339,6 +340,45 @@ export default function Home() {
     return phrases[currentPhraseIndex]?.outputAudio?.audioUrl || '';
   }, [currentPhraseIndex, phrases]);
 
+  const handleAudioError = async (phase: 'input' | 'output') => {
+    if (!audioRef.current || currentPhraseIndex < 0) return;
+
+    const phrase = phrases[currentPhraseIndex];
+    if (!phrase) return;
+
+    try {
+      const text = phase === 'input' ? phrase.input : phrase.translated;
+      const language = phase === 'input' ? phrase.inputLang : phrase.targetLang;
+      const voice = phase === 'input' ? phrase.inputVoice : phrase.targetVoice;
+
+      if (!text || !language || !voice) return;
+
+      const { audioUrl, duration } = await generateAudio(text, language, voice);
+
+      // Update the phrase with new audio
+      const newPhrases = [...phrases];
+      newPhrases[currentPhraseIndex] = {
+        ...newPhrases[currentPhraseIndex],
+        [phase === 'input' ? 'inputAudio' : 'outputAudio']: { audioUrl, duration }
+      };
+      await setPhrases(newPhrases);
+
+      // Update audio source and play
+      if (audioRef.current) {
+        audioRef.current.src = audioUrl;
+        audioRef.current.play().catch((err) => console.error('Auto-play error:', err));
+      }
+    } catch (err) {
+      console.error('Error regenerating audio:', err);
+      // If regeneration fails, stop playback
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.src = '';
+      }
+      setPaused(true);
+    }
+  };
+
   useEffect(() => {
     if (currentPhraseIndex < 0 || paused) return;
 
@@ -351,28 +391,31 @@ export default function Home() {
 
     if (audioRef.current && src && audioRef.current.paused) {
       audioRef.current.src = src;
-      audioRef.current.play().catch((err) => console.error('Auto-play error:', err));
+      audioRef.current.play().catch((err) => {
+        console.error('Auto-play error:', err);
+        // If playback fails, try to regenerate the audio
+        handleAudioError(currentPhase);
+      });
     }
   }, [currentPhraseIndex, currentPhase, paused, currentInputAudioUrl, currentOutputAudioUrl]);
 
-  // When a saved config is selected, load its state.
-  // const handleLoadConfig = async (config: PresentationConfig) => {
-  //   setLoading(true);
-  //   try {
-  //     // Update the UI state with the saved config
-  //     setConfigName(config.name);
-  //     setPresentationConfig({
-  //       ...config
-  //     });
+  // Add error handler for audio element
+  useEffect(() => {
+    if (!audioRef.current) return;
 
-  //   } catch (err) {
-  //     console.error('Loading error:', err);
-  //     alert('Error loading configuration: ' + err);
-  //   } finally {
-  //     setLoading(false);
-  //     setPaused(true);
-  //   }
-  // };
+    const handleError = (e: Event) => {
+      const target = e.target as HTMLAudioElement;
+      if (target.error) {
+        console.error('Audio error:', target.error);
+        handleAudioError(currentPhase);
+      }
+    };
+
+    audioRef.current.addEventListener('error', handleError);
+    return () => {
+      audioRef.current?.removeEventListener('error', handleError);
+    };
+  }, [currentPhase]);
 
   // When a saved collection is selected, load its state.
   const handleLoadCollection = async (config: Config) => {
@@ -436,13 +479,6 @@ export default function Home() {
     localStorage.setItem('savedConfigs', JSON.stringify(updatedConfigs));
     // setConfigName('');
   };
-
-  // Delete a config from the saved list.
-  // const handleDeleteConfig = (index: number) => {
-  //   const updatedConfigs = savedConfigs.filter((_, idx) => idx !== index);
-  //   setSavedConfigs(updatedConfigs);
-  //   localStorage.setItem('savedConfigs', JSON.stringify(updatedConfigs));
-  // };
 
   const clearAllTimeouts = () => {
     timeoutIds.current.forEach((id) => clearTimeout(id));
@@ -571,7 +607,11 @@ export default function Home() {
       if (!audioRef.current.src) {
         audioRef.current.src = phrases[currentPhraseIndex]?.[currentPhase === "input" ? 'inputAudio' : 'outputAudio']?.audioUrl ?? ''
       }
-      audioRef.current.play();
+      audioRef.current.play().catch((err) => {
+        console.error('Auto-play error:', err);
+        // If playback fails, try to regenerate the audio
+        handleAudioError(currentPhase);
+      });
     }
   };
 
@@ -773,11 +813,19 @@ export default function Home() {
       setCurrentPhase(phase);
       if (isPaused) {
         // If paused, play in isolation without changing state
-        audioRef.current.play().catch(err => console.error('Playback error:', err));
+        audioRef.current.play().catch((err) => {
+          console.error('Auto-play error:', err);
+          // If playback fails, try to regenerate the audio
+          handleAudioError(currentPhase);
+        });
       } else {
         // If not paused, update state and play through main audio element
         setPaused(false);
-        audioRef.current.play().catch(err => console.error('Playback error:', err));
+        audioRef.current.play().catch((err) => {
+          console.error('Auto-play error:', err);
+          // If playback fails, try to regenerate the audio
+          handleAudioError(currentPhase);
+        });
       }
     }
   };

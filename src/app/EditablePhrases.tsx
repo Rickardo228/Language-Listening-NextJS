@@ -1,8 +1,8 @@
 import { Phrase } from './types';
 import { useState, useRef, useEffect } from 'react';
 import { SpeakerWaveIcon, MicrophoneIcon, EllipsisVerticalIcon } from '@heroicons/react/24/solid';
-import { API_BASE_URL } from './consts';
 import { Menu } from './Menu';
+import { generateAudio } from './utils/audioUtils';
 // import { ClipboardIcon, ClipboardDocumentCheckIcon } from '@heroicons/react/24/outline';
 
 interface EditablePhrasesProps {
@@ -27,20 +27,6 @@ interface PhraseComponentProps {
     onDelete: () => void;
     onPlayPhrase?: (index: number, phase: 'input' | 'output') => void;
     ref?: React.RefObject<HTMLDivElement>;
-}
-
-async function generateAudio(text: string, language: string, voice: string): Promise<{ audioUrl: string, duration: number }> {
-    const response = await fetch(`${API_BASE_URL}/tts`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text, language, voice }),
-    });
-
-    if (!response.ok) {
-        throw new Error('TTS request failed');
-    }
-
-    return response.json();
 }
 
 function PhraseComponent({ phrase, phrases, isSelected, currentPhase, onPhraseClick, onDelete, onPlayPhrase, ref, setPhrases, enableOutputBeforeInput }: PhraseComponentProps & { setPhrases: (phrases: Phrase[]) => void, enableOutputBeforeInput?: boolean }) {
