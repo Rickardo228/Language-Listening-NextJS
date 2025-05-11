@@ -1,6 +1,7 @@
 import { PresentationConfig } from "./types";
+import { CollectionType } from "./types";
 
-export const defaultPresentationConfig: PresentationConfig = {
+const basePresentationConfig: PresentationConfig = {
   name: "",
   bgImage: null,
   containerBg: "rgb(20 184 166)",
@@ -19,3 +20,16 @@ export const defaultPresentationConfig: PresentationConfig = {
   enableInputDurationDelay: false,
   enableOutputBeforeInput: false,
 };
+export const defaultPresentationConfigs: Record<
+  CollectionType,
+  PresentationConfig
+> = {
+  phrases: basePresentationConfig,
+  article: {
+    ...basePresentationConfig,
+    enableLoop: false,
+    enableOutputDurationDelay: false,
+  },
+};
+
+export const defaultPresentationConfig = basePresentationConfig;

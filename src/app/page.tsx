@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, ChangeEvent, useMemo } from 'react';
 import { PresentationView, TITLE_ANIMATION_DURATION } from './PresentationView';
 import bgColorOptions from './utils/bgColorOptions';
-import { Config, languageOptions, Phrase, PresentationConfig } from './types';
+import { Config, languageOptions, Phrase, PresentationConfig, CollectionType } from './types';
 import { usePresentationConfig } from './hooks/usePresentationConfig';
 import { presentationConfigDefinition } from './configDefinitions';
 import { EditablePhrases } from './EditablePhrases';
@@ -17,7 +17,7 @@ import { CollectionHeader } from './CollectionHeader';
 import { useTheme } from './ThemeProvider';
 import { UserAvatar } from './components/UserAvatar';
 import { auth } from './firebase';
-import { defaultPresentationConfig } from './defaultConfig';
+import { defaultPresentationConfig, defaultPresentationConfigs } from './defaultConfig';
 
 const firestore = getFirestore();
 
@@ -170,7 +170,7 @@ export default function Home() {
   }, [user]);
 
   // Save a new collection to Firestore
-  const handleCreateCollection = async (phrases: Phrase[], prompt?: string) => {
+  const handleCreateCollection = async (phrases: Phrase[], prompt?: string, collectionType?: CollectionType) => {
     if (!user) return;
     const generatedName = prompt || 'New Collection';
     const now = new Date().toISOString();
@@ -181,8 +181,9 @@ export default function Home() {
         created_at: now
       })),
       created_at: now,
+      collectionType,
       presentationConfig: {
-        ...defaultPresentationConfig,
+        ...(collectionType ? defaultPresentationConfigs[collectionType] : defaultPresentationConfig),
         name: generatedName
       }
     };
@@ -209,12 +210,23 @@ export default function Home() {
     // }
   }, []);
 
-  const handleProcess = async (prompt?: string, inputLang?: string, targetLang?: string) => {
+  const handleProcess = async (prompt?: string, inputLang?: string, targetLang?: string, collectionType?: CollectionType) => {
     // Split the textarea input into an array of phrases.
-    const splitPhrases = phrasesInput
+    let splitPhrases = phrasesInput
       .split('\n')
       .map((line) => line.trim())
       .filter(Boolean);
+
+    // If it's an article, split by sentences
+    if (collectionType === 'article') {
+      // Join all lines and split by sentence-ending punctuation
+      const text = splitPhrases.join(' ');
+      splitPhrases = text
+        .split(/(?<=[.!?])\s+/)
+        .map(sentence => sentence.trim())
+        .filter(Boolean);
+    }
+
     if (!splitPhrases.length) return;
     setLoading(true);
     try {
@@ -241,7 +253,7 @@ export default function Home() {
         targetVoice: data.targetVoice || `${targetLang || newCollectionTargetLang}-Standard-D`
       }));
 
-      const collectionId = await handleCreateCollection(processedPhrases, prompt);
+      const collectionId = await handleCreateCollection(processedPhrases, prompt, collectionType);
       setPhrases(processedPhrases, collectionId);
       setPhrasesInput('');
       setCurrentPhraseIndex(-1);

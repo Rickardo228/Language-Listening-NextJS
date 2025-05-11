@@ -1,4 +1,6 @@
 // types.ts
+export type CollectionType = "phrases" | "article";
+
 export type PresentationConfig = {
   name: string;
   bgImage: string | null;
@@ -27,6 +29,7 @@ export type Config = {
   inputVoice?: string;
   targetVoice?: string;
   presentationConfig?: PresentationConfig;
+  collectionType?: CollectionType;
 };
 
 export type RomanizedOutput = string[];
