@@ -399,27 +399,11 @@ export default function Home() {
     }
   }, [currentPhraseIndex, currentPhase, paused, currentInputAudioUrl, currentOutputAudioUrl]);
 
-  // Add error handler for audio element
-  useEffect(() => {
-    if (!audioRef.current) return;
-
-    const handleError = (e: Event) => {
-      const target = e.target as HTMLAudioElement;
-      if (target.error) {
-        console.error('Audio error:', target.error);
-        handleAudioError(currentPhase);
-      }
-    };
-
-    audioRef.current.addEventListener('error', handleError);
-    return () => {
-      audioRef.current?.removeEventListener('error', handleError);
-    };
-  }, [currentPhase]);
 
   // When a saved collection is selected, load its state.
   const handleLoadCollection = async (config: Config) => {
     setLoading(true);
+    setPaused(true);
     try {
       // First update the UI state with the saved config
       if (audioRef.current) {
@@ -617,6 +601,7 @@ export default function Home() {
 
   // Update user stats when audio ends
   const updateUserStats = async () => {
+    console.log('updateUserStats');
     if (!user) return;
     const now = new Date();
     const today = now.toISOString().split('T')[0]; // Get YYYY-MM-DD format
