@@ -38,7 +38,7 @@ export function CollectionList({
 
     return (
         <div className="space-y-4">
-            <h2 className="text-xl font-semibold">Your Collections</h2>
+            <h2 className="text-xl font-semibold">Your Lists</h2>
             <div className="space-y-2">
                 {sortedCollections.map((collection) => {
                     // Get the first phrase's languages if available

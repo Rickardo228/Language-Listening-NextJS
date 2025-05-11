@@ -93,7 +93,7 @@ export function ImportPhrasesDialog({
             <div className="bg-background text-foreground p-4 rounded-lg shadow-lg w-[500px] max-w-[90vw] overflow-auto max-h-[90vh] border">
                 <div className="flex justify-between items-center mb-4">
                     <h2 className="text-xl font-bold">
-                        {onAddToCollection ? 'Add Phrases' : 'Create New Collection'}
+                        {onAddToCollection ? 'Add Phrases' : 'Create New List'}
                     </h2>
                     <button
                         onClick={onClose}
@@ -108,14 +108,14 @@ export function ImportPhrasesDialog({
                     <div className="flex flex-col gap-4">
                         {!onAddToCollection && (
                             <div>
-                                <label className="block text-sm font-medium mb-1">Collection Name (optional)</label>
+                                <label className="block text-sm font-medium mb-1">List Name</label>
                                 <div className="flex flex-wrap gap-2">
                                     <input
                                         type="text"
                                         value={prompt}
                                         onChange={(e) => setPrompt(e.target.value)}
                                         className="w-full p-2 rounded-md border bg-background"
-                                        placeholder="Enter a name for this collection..."
+                                        placeholder="Enter a name for this list..."
                                         disabled={loading}
                                         autoFocus={Boolean(onProcess)}
                                     />
@@ -125,14 +125,14 @@ export function ImportPhrasesDialog({
                         )}
                         {!onAddToCollection && (
                             <div>
-                                <label className="block text-sm font-medium mb-1">Collection Type</label>
+                                <label className="block text-sm font-medium mb-1">List Type</label>
                                 <select
                                     value={collectionType}
                                     onChange={(e) => setCollectionType(e.target.value as CollectionType)}
                                     className="w-full p-2 rounded-md border bg-background"
                                     disabled={loading}
                                 >
-                                    <option value="phrases">Standard</option>
+                                    <option value="phrases">Phrases</option>
                                     <option value="article">Article</option>
                                 </select>
                             </div>
@@ -256,7 +256,7 @@ export function ImportPhrasesDialog({
                                     disabled={loading || !phrasesInput.trim()}
                                     className="flex-1 bg-primary text-primary-foreground px-4 py-2 rounded hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
-                                    {loading ? 'Processing...' : 'Create Collection'}
+                                    {loading ? 'Processing...' : 'Create List'}
                                 </button>
                             )}
                         </div>

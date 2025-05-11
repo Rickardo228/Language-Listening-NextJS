@@ -172,7 +172,7 @@ export default function Home() {
   // Save a new collection to Firestore
   const handleCreateCollection = async (phrases: Phrase[], prompt?: string, collectionType?: CollectionType) => {
     if (!user) return;
-    const generatedName = prompt || 'New Collection';
+    const generatedName = prompt || 'New List';
     const now = new Date().toISOString();
     const newCollection = {
       name: generatedName,
@@ -684,7 +684,7 @@ export default function Home() {
     if (!user) return;
     const collection = savedCollections.find(col => col.id === id);
     if (!collection) return;
-    const newName = prompt("Enter new collection name:", collection.name);
+    const newName = prompt("Enter new list name:", collection.name);
     if (!newName || newName.trim() === collection.name) return;
     try {
       const docRef = doc(firestore, 'users', user.uid, 'collections', id);
@@ -695,7 +695,7 @@ export default function Home() {
         )
       );
     } catch (err) {
-      alert("Failed to rename collection: " + err);
+      alert("Failed to rename list: " + err);
     }
   };
 
@@ -704,7 +704,7 @@ export default function Home() {
     if (!user) return;
     const collection = savedCollections.find(col => col.id === id);
     if (!collection) return;
-    if (!window.confirm(`Delete collection "${collection.name}"? This cannot be undone.`)) return;
+    if (!window.confirm(`Delete list "${collection.name}"? This cannot be undone.`)) return;
     try {
       const docRef = doc(firestore, 'users', user.uid, 'collections', id);
       await deleteDoc(docRef);
@@ -714,7 +714,7 @@ export default function Home() {
         setPhrasesBase([]);
       }
     } catch (err) {
-      alert("Failed to delete collection: " + err);
+      alert("Failed to delete list: " + err);
     }
   };
 
@@ -750,7 +750,7 @@ export default function Home() {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to reload collection with new voices');
+        throw new Error('Failed to reload list with new voices');
       }
 
       const { phrases: updatedPhrases } = await response.json();
@@ -836,7 +836,7 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Collection Title and Edit Buttons - shown on mobile when collection selected */}
+        {/* List Title and Edit Buttons - shown on mobile when collection selected */}
         {selectedCollection && (
           <CollectionHeader
             collectionId={selectedCollection}
@@ -884,7 +884,7 @@ export default function Home() {
         </div>
 
         {/* Phrases and Playback */}
-        {!phrases?.length && !selectedCollection && <h3 className="hidden lg:block p-3">Select a Collection or Import Phrases</h3>}
+        {!phrases?.length && !selectedCollection && <h3 className="hidden lg:block p-3">Select a List or Import Phrases</h3>}
         <div className="flex-1 lg:overflow-y-auto lg:relative">
           {selectedCollection && (
             <div className={`sticky lg:px-0 lg:pb-3 px-1 py-2 top-[320px] lg:top-[0px] lg:bg-background bg-gray-50 dark:bg-gray-900 z-1 ${!selectedCollection ? 'hidden lg:block' : ''}`}>

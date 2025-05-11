@@ -18,7 +18,7 @@ export function ImportPhrases({
     className = ''
 }: ImportPhrasesProps) {
     const [isOpen, setIsOpen] = useState(false);
-    const buttonText = onProcess ? 'Create New Collection' : 'Add Phrases';
+    const buttonText = onProcess ? 'Create New List' : 'Add Phrases';
     const buttonClassName = onProcess
         ? "w-full bg-primary text-primary-foreground px-4 py-2 rounded hover:bg-primary/90"
         : "bg-primary text-primary-foreground px-4 py-2 rounded hover:bg-primary/90";
