@@ -11,7 +11,7 @@ import { PresentationControls } from './PresentationControls';
 import { API_BASE_URL, BLEED_START_DELAY, DELAY_AFTER_INPUT_PHRASES_MULTIPLIER, DELAY_AFTER_OUTPUT_PHRASES_MULTIPLIER, LAG_COMPENSATION } from './consts';
 import { ImportPhrases } from './ImportPhrases';
 import { onAuthStateChanged, User } from 'firebase/auth';
-import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, increment, setDoc } from 'firebase/firestore';
 import { CollectionList } from './CollectionList';
 import { CollectionHeader } from './CollectionHeader';
 import { useTheme } from './ThemeProvider';
@@ -615,9 +615,103 @@ export default function Home() {
     }
   };
 
+  // Update user stats when audio ends
+  const updateUserStats = async () => {
+    if (!user) return;
+    const now = new Date();
+    const today = now.toISOString().split('T')[0]; // Get YYYY-MM-DD format
+
+    // Get current phrase's languages
+    const currentPhrase = phrases[currentPhraseIndex];
+    if (!currentPhrase) return;
+    const { inputLang, targetLang } = currentPhrase;
+
+    try {
+      // Update the main stats document
+      const statsRef = doc(firestore, 'users', user.uid, 'stats', 'listening');
+      await updateDoc(statsRef, {
+        phrasesListened: increment(1),
+        lastListenedAt: now.toISOString()
+      });
+
+      // Update the daily stats
+      const dailyStatsRef = doc(firestore, 'users', user.uid, 'stats', 'listening', 'daily', today);
+      await updateDoc(dailyStatsRef, {
+        count: increment(1),
+        lastUpdated: now.toISOString()
+      }).catch(async (err: unknown) => {
+        // If the daily document doesn't exist, create it
+        if (err && typeof err === 'object' && 'code' in err && err.code === 'not-found') {
+          await setDoc(dailyStatsRef, {
+            count: 1,
+            lastUpdated: now.toISOString(),
+            date: today
+          });
+        } else {
+          console.error('Error updating daily stats:', err);
+        }
+      });
+
+      // Update language stats
+      const languageStatsRef = doc(firestore, 'users', user.uid, 'stats', 'listening', 'languages', `${inputLang}-${targetLang}`);
+      await updateDoc(languageStatsRef, {
+        count: increment(1),
+        lastUpdated: now.toISOString(),
+        inputLang,
+        targetLang
+      }).catch(async (err: unknown) => {
+        // If the language document doesn't exist, create it
+        if (err && typeof err === 'object' && 'code' in err && err.code === 'not-found') {
+          await setDoc(languageStatsRef, {
+            count: 1,
+            lastUpdated: now.toISOString(),
+            inputLang,
+            targetLang,
+            firstListened: now.toISOString()
+          });
+        } else {
+          console.error('Error updating language stats:', err);
+        }
+      });
+
+    } catch (err: unknown) {
+      // If the main stats document doesn't exist, create it
+      if (err && typeof err === 'object' && 'code' in err && err.code === 'not-found') {
+        const statsRef = doc(firestore, 'users', user.uid, 'stats', 'listening');
+        await setDoc(statsRef, {
+          phrasesListened: 1,
+          lastListenedAt: now.toISOString()
+        });
+
+        // Create the daily stats document
+        const dailyStatsRef = doc(firestore, 'users', user.uid, 'stats', 'listening', 'daily', today);
+        await setDoc(dailyStatsRef, {
+          count: 1,
+          lastUpdated: now.toISOString(),
+          date: today
+        });
+
+        // Create the language stats document
+        const languageStatsRef = doc(firestore, 'users', user.uid, 'stats', 'listening', 'languages', `${inputLang}-${targetLang}`);
+        await setDoc(languageStatsRef, {
+          count: 1,
+          lastUpdated: now.toISOString(),
+          inputLang,
+          targetLang,
+          firstListened: now.toISOString()
+        });
+      } else {
+        console.error('Error updating user stats:', err);
+      }
+    }
+  };
+
   // Update handleAudioEnded to handle looping
   const handleAudioEnded = () => {
     if (paused) return;
+
+    // Update user stats when audio ends
+    updateUserStats();
 
     const playOutputBeforeInput = presentationConfig.enableOutputBeforeInput;
     const inputDuration = presentationConfig.enableInputDurationDelay ? (audioRef.current?.duration || 1) * 1000 : 0;
