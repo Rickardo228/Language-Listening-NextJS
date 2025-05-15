@@ -585,7 +585,7 @@ export default function Home() {
 
   const handlePlay = () => {
     setPaused(false);
-    if (currentPhraseIndex < 0) {
+    if (currentPhraseIndex <= 0) {
       handleReplay();
     } else if (audioRef.current) {
       if (!audioRef.current.src) {
@@ -695,9 +695,6 @@ export default function Home() {
   const handleAudioEnded = () => {
     if (paused) return;
 
-    // Update user stats when audio ends
-    updateUserStats();
-
     const playOutputBeforeInput = presentationConfig.enableOutputBeforeInput;
     const inputDuration = presentationConfig.enableInputDurationDelay ? (audioRef.current?.duration || 1) * 1000 : 0;
     const outputDuration = presentationConfig.enableOutputDurationDelay ? (audioRef.current?.duration || 1) * 1000 * DELAY_AFTER_INPUT_PHRASES_MULTIPLIER : 0;
@@ -708,8 +705,13 @@ export default function Home() {
         setCurrentPhase('output');
 
         if (playOutputBeforeInput) {
+
+          // Update user stats when phrase ends
+          updateUserStats();
+
           if (currentPhraseIndex < phrases.length - 1 && !paused) {
             setCurrentPhraseIndex(currentPhraseIndex + 1);
+
           } else {
             if (presentationConfig.enableLoop) {
               // If looping is enabled, restart from beginning
@@ -728,6 +730,9 @@ export default function Home() {
         if (playOutputBeforeInput) {
           setCurrentPhase('input');
         } else {
+          // Update user stats when phrase ends
+          updateUserStats();
+
           if (currentPhraseIndex < phrases.length - 1 && !paused) {
             setCurrentPhraseIndex(currentPhraseIndex + 1);
             setCurrentPhase('input');
