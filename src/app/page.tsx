@@ -113,7 +113,6 @@ export default function Home() {
 
         // Check for first visit query params
         const urlParams = new URLSearchParams(window.location.search);
-        const isFirstVisit = urlParams.get('firstVisit') === 'true';
         const inputLang = urlParams.get('inputLang');
         const targetLang = urlParams.get('targetLang');
 
@@ -121,6 +120,8 @@ export default function Home() {
           // Set the languages from query params
           setNewCollectionInputLang(inputLang);
           setNewCollectionTargetLang(targetLang);
+          setAddToCollectionInputLang(inputLang);
+          setAddToCollectionTargetLang(targetLang);
           hasSetLanguages.current = true;
 
 

@@ -19,14 +19,18 @@ export default function TermsPage() {
 
                 <section className="mb-8">
                     <h2 className="text-2xl font-semibold mb-4">3. Account Registration and Security</h2>
-                    <h3 className="text-xl font-medium mb-2">Google Sign‑In</h3>
-                    <p>You may create and access your account only through Google Sign‑In, powered by Firebase Authentication.</p>
+                    <h3 className="text-xl font-medium mb-2">Authentication Methods</h3>
+                    <p>You may create and access your account through either:</p>
+                    <ul className="list-disc pl-6 mt-2">
+                        <li>Google Sign‑In, powered by Firebase Authentication</li>
+                        <li>Email and password authentication, also powered by Firebase Authentication</li>
+                    </ul>
 
                     <h3 className="text-xl font-medium mb-2 mt-4">Account Information</h3>
-                    <p>Your Google display name, email address, and profile photo are used to create your Language Shadowing profile. You must ensure this information is accurate and kept up to date.</p>
+                    <p>For Google Sign‑In users, your Google display name, email address, and profile photo are used to create your Language Shadowing profile. For email/password users, your email address is used as your primary identifier. You must ensure this information is accurate and kept up to date.</p>
 
                     <h3 className="text-xl font-medium mb-2 mt-4">Credentials</h3>
-                    <p>You are responsible for maintaining the confidentiality of your Google account credentials and for all activity that occurs under your account. Notify us immediately of any unauthorized use.</p>
+                    <p>You are responsible for maintaining the confidentiality of your account credentials (whether Google account or email/password) and for all activity that occurs under your account. Notify us immediately of any unauthorized use.</p>
 
                     <h3 className="text-xl font-medium mb-2 mt-4">Sign‑Out</h3>
                     <p>You may sign out at any time from the application&apos;s settings menu.</p>
@@ -67,7 +71,8 @@ export default function TermsPage() {
                         <li>Reverse engineer, decompile, or attempt to extract the Service&apos;s source code;</li>
                         <li>Circumvent technical protections or misuse Firebase databases;</li>
                         <li>Interfere with, or disrupt, the Service or servers;</li>
-                        <li>Use automated systems (bots, scrapers) except via our documented APIs.</li>
+                        <li>Use automated systems (bots, scrapers) except via our documented APIs;</li>
+                        <li>Share your account credentials with others or allow others to access your account.</li>
                     </ul>
                     <p className="mt-2">Violation may result in immediate suspension or termination of your account.</p>
                 </section>
@@ -116,42 +121,32 @@ export default function TermsPage() {
 
                 <section className="mb-8">
                     <h2 className="text-2xl font-semibold mb-4">12. Termination</h2>
-                    <p>We may suspend or terminate your access to the Service at any time, with or without notice, if we reasonably believe you have violated these Terms. Upon termination, Sections 5–9, 12–18 survive.</p>
+                    <p>We may suspend or terminate your access to the Service at any time, with or without notice, if we reasonably believe you have violated these Terms. Upon termination, Sections 5–9, 11–17 survive.</p>
                 </section>
 
                 <section className="mb-8">
                     <h2 className="text-2xl font-semibold mb-4">13. Disclaimer of Warranties</h2>
-                    <p>The Service is provided on an &quot;as is&quot; and &quot;as available&quot; basis. To the maximum extent permitted by law, we disclaim all warranties, express or implied, including merchantability, fitness for a particular purpose, and non‑infringement. We do not warrant that the Service will be uninterrupted, error‑free, or secure.</p>
+                    <p>The Service is provided &quot;as is&quot; without warranties of any kind, either express or implied. We do not warrant that the Service will be uninterrupted or error‑free.</p>
                 </section>
 
                 <section className="mb-8">
                     <h2 className="text-2xl font-semibold mb-4">14. Limitation of Liability</h2>
-                    <p>To the fullest extent permitted by law, we will not be liable for any indirect, incidental, special, consequential, or punitive damages, or for any loss of profits or revenues, arising out of or relating to your use of the Service, even if we have been advised of the possibility of such damages. Our aggregate liability to you for all claims shall not exceed £100 or the amount you paid us in the past 12 months (whichever is higher).</p>
+                    <p>To the maximum extent permitted by law, we shall not be liable for any indirect, incidental, special, consequential, or punitive damages resulting from your use of or inability to use the Service.</p>
                 </section>
 
                 <section className="mb-8">
-                    <h2 className="text-2xl font-semibold mb-4">15. Indemnification</h2>
-                    <p>You agree to indemnify and hold us harmless from any claim, demand, or damage (including reasonable attorneys&apos; fees) arising out of your (i) use of the Service; (ii) violation of these Terms; or (iii) infringement of any intellectual‑property or other right of any person or entity.</p>
+                    <h2 className="text-2xl font-semibold mb-4">15. Changes to Terms</h2>
+                    <p>We may modify these Terms at any time. We will notify you of any material changes by posting the new Terms on the Service. Your continued use of the Service after such posting constitutes your acceptance of the new Terms.</p>
                 </section>
 
                 <section className="mb-8">
-                    <h2 className="text-2xl font-semibold mb-4">16. Modifications to the Service and to Terms</h2>
-                    <p>We may update the Service or these Terms from time to time. We will provide reasonable notice of material changes by posting the revised Terms and updating the "Last updated" date. Continued use after changes become effective constitutes acceptance.</p>
+                    <h2 className="text-2xl font-semibold mb-4">16. Governing Law</h2>
+                    <p>These Terms shall be governed by and construed in accordance with the laws of the jurisdiction in which we operate, without regard to its conflict of law provisions.</p>
                 </section>
 
                 <section className="mb-8">
-                    <h2 className="text-2xl font-semibold mb-4">17. Modifications to the Service and to Terms</h2>
-                    <p>We may update the Service or these Terms from time to time. We will provide reasonable notice of material changes by posting the revised Terms and updating the &quot;Last updated&quot; date. Continued use after changes become effective constitutes acceptance.</p>
-                </section>
-
-                <section className="mb-8">
-                    <h2 className="text-2xl font-semibold mb-4">18. Governing Law & Dispute Resolution</h2>
-                    <p>These Terms are governed by the laws of England and Wales, without regard to conflict‑of‑law provisions. You and we agree to submit to the exclusive jurisdiction of the courts of England and Wales. If you are a consumer residing in the European Union, you may also bring proceedings in your home jurisdiction and benefit from mandatory consumer‑protection laws.</p>
-                </section>
-
-                <section className="mb-8">
-                    <h2 className="text-2xl font-semibold mb-4">19. Contact</h2>
-                    <p>If you have any questions about these Terms or the Service, please contact us at [email protected].</p>
+                    <h2 className="text-2xl font-semibold mb-4">17. Contact Information</h2>
+                    <p>If you have any questions about these Terms, please contact us at hello@lingopaper.com.</p>
                 </section>
 
                 <section className="mb-8">

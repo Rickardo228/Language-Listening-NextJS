@@ -1,4 +1,4 @@
-import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
+import { signInWithPopup, GoogleAuthProvider, createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from './firebase';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
@@ -9,18 +9,23 @@ export function SignInPage() {
     const [inputLang, setInputLang] = useState(languageOptions[0]?.code || 'en-US');
     const [targetLang, setTargetLang] = useState('it-IT');
     const [isFirstVisit, setIsFirstVisit] = useState(false);
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [isSignUp, setIsSignUp] = useState(false);
+    const [error, setError] = useState('');
 
     useEffect(() => {
         const hasVisited = localStorage.getItem('hasVisitedBefore');
         if (!hasVisited) {
             setIsFirstVisit(true);
+            setIsSignUp(true); // Default to sign-up mode on first visit
         }
     }, []);
 
     const handleGoogleSignIn = async () => {
         try {
             const provider = new GoogleAuthProvider();
-            const result = await signInWithPopup(auth, provider);
+            await signInWithPopup(auth, provider);
 
             // If this is the first visit, store the selected languages
             if (isFirstVisit) {
@@ -33,18 +38,50 @@ export function SignInPage() {
             }
         } catch (error) {
             console.error('Error signing in with Google:', error);
+            setError('Failed to sign in with Google. Please try again.');
+        }
+    };
+
+    const handleEmailAuth = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setError('');
+
+        try {
+            if (isSignUp) {
+                await createUserWithEmailAndPassword(auth, email, password);
+            } else {
+                await signInWithEmailAndPassword(auth, email, password);
+            }
+
+            // If this is the first visit, store the selected languages
+            if (isFirstVisit) {
+                localStorage.setItem('hasVisitedBefore', 'true');
+                localStorage.setItem('defaultInputLang', inputLang);
+                localStorage.setItem('defaultTargetLang', targetLang);
+
+                // Redirect to home page with query params
+                window.location.href = `/?firstVisit=true&inputLang=${inputLang}&targetLang=${targetLang}`;
+            }
+        } catch (error: unknown) {
+            console.error('Error with email authentication:', error);
+            if (error instanceof Error) {
+                setError(error.message);
+            } else {
+                setError('Failed to authenticate. Please try again.');
+            }
         }
     };
 
     return (
         <div className="flex flex-col items-center justify-center min-h-screen bg-background">
             <div className="w-full max-w-md p-8 space-y-8 bg-card rounded-lg shadow-lg">
+
                 <div className="text-center">
-                    <h1 className="text-4xl font-bold mb-2 text-foreground">Language Shadowing</h1>
-                    <p className="text-muted-foreground mb-8">Master languages through shadowing practice</p>
+                    <h2 className="text-xl font-semibold mb-2">Language Shadowing</h2>
+                    <p className="text-muted-foreground">{`${isSignUp ? 'Choose the languages you want to practice with' : 'Master languages through shadowing practice'}`}</p>
                 </div>
 
-                {isFirstVisit && (
+                {isSignUp && (
                     <OnboardingLanguageSelect
                         inputLang={inputLang}
                         setInputLang={setInputLang}
@@ -78,6 +115,64 @@ export function SignInPage() {
                         </svg>
                         <span className="text-foreground font-medium">Sign in with Google</span>
                     </button>
+
+                    <div className="relative">
+                        <div className="absolute inset-0 flex items-center">
+                            <div className="w-full border-t border-gray-300 dark:border-gray-600"></div>
+                        </div>
+                        <div className="relative flex justify-center text-sm">
+                            <span className="px-2 bg-card text-muted-foreground">Or continue with</span>
+                        </div>
+                    </div>
+
+                    <form onSubmit={handleEmailAuth} className="space-y-4">
+                        <div>
+                            <label htmlFor="email" className="block text-sm font-medium text-foreground mb-1">
+                                Email address
+                            </label>
+                            <input
+                                id="email"
+                                type="email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                required
+                                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-background focus:ring-2 focus:ring-primary focus:border-transparent"
+                                placeholder="you@example.com"
+                            />
+                        </div>
+                        <div>
+                            <label htmlFor="password" className="block text-sm font-medium text-foreground mb-1">
+                                Password
+                            </label>
+                            <input
+                                id="password"
+                                type="password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                required
+                                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-background focus:ring-2 focus:ring-primary focus:border-transparent"
+                                placeholder="••••••••"
+                            />
+                        </div>
+                        {error && (
+                            <div className="text-red-500 text-sm">{error}</div>
+                        )}
+                        <button
+                            type="submit"
+                            className="w-full px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+                        >
+                            {isSignUp ? 'Create Account' : 'Sign In'}
+                        </button>
+                    </form>
+
+                    <div className="text-center">
+                        <button
+                            onClick={() => setIsSignUp(!isSignUp)}
+                            className="text-sm text-primary hover:underline"
+                        >
+                            {isSignUp ? 'Already have an account? Sign in' : "Don't have an account? Sign up"}
+                        </button>
+                    </div>
                 </div>
 
                 <div className="text-center text-sm text-muted-foreground mt-6">

@@ -1,4 +1,3 @@
-
 export default function PrivacyPolicy() {
     return (
         <div className="max-w-4xl mx-auto px-4 py-8">
@@ -6,11 +5,9 @@ export default function PrivacyPolicy() {
             <p className="text-sm text-muted-foreground mb-8">Last updated: {new Date().toLocaleDateString()}</p>
 
             <div className="prose prose-gray dark:prose-invert max-w-none">
-
-
                 <h2>1. Who We Are</h2>
                 <p>
-                    "Language Shadowing" ("we", "our", or "us") is a web application that helps users learn languages through phrase‑shadowing practice. For the purposes of EU/UK data‑protection law, we act as the data controller for the personal data described in this policy.
+                    &quot;Language Shadowing&quot; (&quot;we&quot;, &quot;our&quot;, or &quot;us&quot;) is a web application that helps users learn languages through phrase‑shadowing practice. For the purposes of EU/UK data‑protection law, we act as the data controller for the personal data described in this policy.
                 </p>
                 <p>
                     Contact email: hello@lingopaper.com<br />
@@ -19,8 +16,8 @@ export default function PrivacyPolicy() {
                 <h2>2. Scope of This Policy</h2>
                 <p>This Privacy Policy describes how we collect, use, disclose, and protect your personal data when you:</p>
                 <ul>
-                    <li>Create an account or sign in with Google Sign‑In;</li>
-                    <li>Use the Language Shadowing website, mobile interface, Chrome app, or any related services (collectively, the "Service");</li>
+                    <li>Create an account or sign in with Google Sign‑In or email/password;</li>
+                    <li>Use the Language Shadowing website, mobile interface, Chrome app, or any related services (collectively, the &quot;Service&quot;);</li>
                     <li>Communicate with us or otherwise interact where we post this policy.</li>
                 </ul>
 
@@ -37,8 +34,13 @@ export default function PrivacyPolicy() {
                         <tbody>
                             <tr>
                                 <td>Account Identifiers</td>
-                                <td>Google UID, display name, email address, profile photo</td>
-                                <td>Provided by Google Sign‑In when you create an account</td>
+                                <td>
+                                    <ul>
+                                        <li>For Google Sign-In: Google UID, display name, email address, profile photo</li>
+                                        <li>For Email/Password: Email address</li>
+                                    </ul>
+                                </td>
+                                <td>Provided during account creation</td>
                             </tr>
                             <tr>
                                 <td>Learning Content</td>
@@ -83,7 +85,7 @@ export default function PrivacyPolicy() {
                         </thead>
                         <tbody>
                             <tr>
-                                <td>Create and manage your account; authenticate via Google</td>
+                                <td>Create and manage your account; authenticate via Google or email/password</td>
                                 <td>Performance of a contract (Art. 6 (1)(b))</td>
                             </tr>
                             <tr>
@@ -123,7 +125,7 @@ export default function PrivacyPolicy() {
 
                 <h2>5. AI‑Generated Content & Automated Processing</h2>
                 <p>
-                    The Service may use machine‑learning models to suggest phrases or generate TTS audio ("AI Features"). These features draw on large language and speech datasets to create probabilistic outputs. AI Features do not make legal or significant decisions about you; they simply enhance your language‑learning experience. Nevertheless, you should independently verify important translations or pronunciations.
+                    The Service may use machine‑learning models to suggest phrases or generate TTS audio (&quot;AI Features&quot;). These features draw on large language and speech datasets to create probabilistic outputs. AI Features do not make legal or significant decisions about you; they simply enhance your language‑learning experience. Nevertheless, you should independently verify important translations or pronunciations.
                 </p>
 
                 <h2>6. Sharing & Disclosure</h2>
@@ -148,7 +150,7 @@ export default function PrivacyPolicy() {
 
                 <h2>7. International Data Transfers</h2>
                 <p>
-                    Your data is primarily stored in Google Cloud's EU multiregion data centres. Limited technical personnel outside the EEA/UK may access data for support purposes under Standard Contractual Clauses and strict access controls.
+                    Your data is primarily stored in Google Cloud&apos;s EU multiregion data centres. Limited technical personnel outside the EEA/UK may access data for support purposes under Standard Contractual Clauses and strict access controls.
                 </p>
 
                 <h2>8. Security Measures</h2>
@@ -187,7 +189,7 @@ export default function PrivacyPolicy() {
                 <ul>
                     <li>Access – obtain a copy of your personal data;</li>
                     <li>Rectification – correct inaccurate or incomplete data;</li>
-                    <li>Erasure – request deletion ("right to be forgotten");</li>
+                    <li>Erasure – request deletion (&quot;right to be forgotten&quot;);</li>
                     <li>Restriction – limit processing under certain conditions;</li>
                     <li>Portability – receive data in a structured, machine‑readable format;</li>
                     <li>Objection – object to processing based on legitimate interests;</li>
@@ -205,7 +207,7 @@ export default function PrivacyPolicy() {
 
                 <h2>13. Changes to This Policy</h2>
                 <p>
-                    We may update this Privacy Policy periodically. If changes are material, we will provide reasonable notice (e.g., via the app interface or email) and indicate the "Last updated" date. Your continued use after changes take effect constitutes acceptance.
+                    We may update this Privacy Policy periodically. If changes are material, we will provide reasonable notice (e.g., via the app interface or email) and indicate the &quot;Last updated&quot; date. Your continued use after changes take effect constitutes acceptance.
                 </p>
 
                 <h2>14. Contact Us</h2>

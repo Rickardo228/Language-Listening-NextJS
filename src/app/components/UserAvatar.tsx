@@ -202,7 +202,9 @@ export function UserAvatar({ user, avatarDialogOpen, setAvatarDialogOpen }: User
             {avatarDialogOpen && user && (
                 <div className="absolute right-0 mt-2 w-48 bg-background border rounded shadow-lg z-50">
                     <div className="p-4 border-b">
-                        <div className="font-semibold">{user.displayName || user.email}</div>
+                        <div className="font-semibold truncate" title={user.displayName || user.email || "User"}>
+                            {user.displayName || user.email || "User"}
+                        </div>
                     </div>
                     <button
                         className="w-full text-left px-4 py-2 hover:bg-secondary"
