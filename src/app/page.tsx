@@ -120,6 +120,8 @@ export default function Home() {
           // Set the languages from query params
           setAddToCollectionInputLang(inputLang);
           setAddToCollectionTargetLang(targetLang);
+          setNewCollectionInputLang(inputLang);
+          setNewCollectionTargetLang(targetLang);
           hasSetLanguages.current = true;
 
           // Remove the query params from the URL
