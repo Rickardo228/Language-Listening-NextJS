@@ -2,6 +2,7 @@ import { useRef, useEffect, useState } from 'react';
 import { User, signOut, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import { auth } from '../firebase';
 import { getFirestore, doc, getDoc, collection, getDocs, query, orderBy, limit } from 'firebase/firestore';
+import { getFlagEmoji } from '../utils/languageUtils';
 
 interface UserAvatarProps {
     user: User | null;
@@ -26,20 +27,6 @@ interface LanguageStats {
     inputLang: string;
     targetLang: string;
     firstListened: string;
-}
-
-// Utility function to convert language code to flag emoji
-function getFlagEmoji(languageCode: string): string {
-    // Extract the country code from the language code (e.g., "en-US" -> "US")
-    const countryCode = languageCode.split('-')[1];
-    if (!countryCode) return '🌐';
-
-    // Convert country code to regional indicator symbols
-    const codePoints = countryCode
-        .toUpperCase()
-        .split('')
-        .map(char => 127397 + char.charCodeAt(0));
-    return String.fromCodePoint(...codePoints);
 }
 
 function UserStatsModal({ isOpen, onClose, user }: { isOpen: boolean; onClose: () => void; user: User }) {
