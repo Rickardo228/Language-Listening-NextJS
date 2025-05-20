@@ -20,6 +20,7 @@ import { auth } from './firebase';
 import { defaultPresentationConfig, defaultPresentationConfigs } from './defaultConfig';
 import { generateAudio } from './utils/audioUtils';
 import { SignInPage } from './SignInPage';
+import { ImportPhrasesDialog } from './ImportPhrasesDialog';
 
 const firestore = getFirestore();
 
@@ -31,6 +32,8 @@ export default function Home() {
   const [addToCollectionInputLang, setAddToCollectionInputLang] = useState<string>(languageOptions[0]?.code);
   const [addToCollectionTargetLang, setAddToCollectionTargetLang] = useState<string>('it-IT');
   const [isAuthLoading, setIsAuthLoading] = useState(true);
+  const [showImportDialog, setShowImportDialog] = useState(false);
+  const hasSetLanguages = useRef(false);
 
   const [selectedCollection, setSelectedCollection] = useState<string>('')
   const [savedCollections, setSavedCollections] = useState<Config[]>([])
@@ -107,6 +110,23 @@ export default function Home() {
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
       if (firebaseUser) {
         setUser(firebaseUser);
+
+        // Check for first visit query params
+        const urlParams = new URLSearchParams(window.location.search);
+        const isFirstVisit = urlParams.get('firstVisit') === 'true';
+        const inputLang = urlParams.get('inputLang');
+        const targetLang = urlParams.get('targetLang');
+
+        if (inputLang && targetLang) {
+          // Set the languages from query params
+          setNewCollectionInputLang(inputLang);
+          setNewCollectionTargetLang(targetLang);
+          hasSetLanguages.current = true;
+
+
+          // Remove the query params from the URL
+          window.history.replaceState({}, '', '/');
+        }
       } else {
         setUser(null)
       }
@@ -150,8 +170,10 @@ export default function Home() {
         // Get the most recent phrase
         const mostRecentPhrase = sortedPhrases[0];
         if (mostRecentPhrase) {
-          setNewCollectionInputLang(mostRecentPhrase.inputLang);
-          setNewCollectionTargetLang(mostRecentPhrase.targetLang);
+          if (!hasSetLanguages.current) {
+            setNewCollectionInputLang(mostRecentPhrase.inputLang);
+            setNewCollectionTargetLang(mostRecentPhrase.targetLang);
+          }
         }
       }
     };
@@ -1160,6 +1182,21 @@ export default function Home() {
         )}
 
       </div>
+
+      {/* Import Dialog */}
+      {showImportDialog && (
+        <ImportPhrasesDialog
+          onClose={() => setShowImportDialog(false)}
+          inputLang={newCollectionInputLang}
+          setInputLang={setNewCollectionInputLang}
+          targetLang={newCollectionTargetLang}
+          setTargetLang={setNewCollectionTargetLang}
+          phrasesInput={phrasesInput}
+          setPhrasesInput={setPhrasesInput}
+          loading={loading}
+          onProcess={handleProcess}
+        />
+      )}
 
     </div >
   );

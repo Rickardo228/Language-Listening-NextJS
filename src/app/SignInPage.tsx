@@ -1,12 +1,36 @@
 import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import { auth } from './firebase';
 import Link from 'next/link';
+import { useState, useEffect } from 'react';
+import { OnboardingLanguageSelect } from './components/OnboardingLanguageSelect';
+import { languageOptions } from './types';
 
 export function SignInPage() {
+    const [inputLang, setInputLang] = useState(languageOptions[0]?.code || 'en-US');
+    const [targetLang, setTargetLang] = useState('it-IT');
+    const [isFirstVisit, setIsFirstVisit] = useState(false);
+
+    useEffect(() => {
+        const hasVisited = localStorage.getItem('hasVisitedBefore');
+        if (!hasVisited) {
+            setIsFirstVisit(true);
+        }
+    }, []);
+
     const handleGoogleSignIn = async () => {
         try {
             const provider = new GoogleAuthProvider();
-            await signInWithPopup(auth, provider);
+            const result = await signInWithPopup(auth, provider);
+
+            // If this is the first visit, store the selected languages
+            if (isFirstVisit) {
+                localStorage.setItem('hasVisitedBefore', 'true');
+                localStorage.setItem('defaultInputLang', inputLang);
+                localStorage.setItem('defaultTargetLang', targetLang);
+
+                // Redirect to home page with query params
+                window.location.href = `/?firstVisit=true&inputLang=${inputLang}&targetLang=${targetLang}`;
+            }
         } catch (error) {
             console.error('Error signing in with Google:', error);
         }
@@ -19,6 +43,15 @@ export function SignInPage() {
                     <h1 className="text-4xl font-bold mb-2 text-foreground">Language Shadowing</h1>
                     <p className="text-muted-foreground mb-8">Master languages through shadowing practice</p>
                 </div>
+
+                {isFirstVisit && (
+                    <OnboardingLanguageSelect
+                        inputLang={inputLang}
+                        setInputLang={setInputLang}
+                        targetLang={targetLang}
+                        setTargetLang={setTargetLang}
+                    />
+                )}
 
                 <div className="space-y-4">
                     <button
