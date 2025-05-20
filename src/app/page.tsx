@@ -19,21 +19,9 @@ import { UserAvatar } from './components/UserAvatar';
 import { auth } from './firebase';
 import { defaultPresentationConfig, defaultPresentationConfigs } from './defaultConfig';
 import { generateAudio } from './utils/audioUtils';
+import { SignInPage } from './SignInPage';
 
 const firestore = getFirestore();
-
-function SignInPage() {
-  return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-background">
-      <h1 className="text-3xl font-bold mb-4 text-foreground">Language Shadowing</h1>
-      <UserAvatar
-        user={null}
-        avatarDialogOpen={false}
-        setAvatarDialogOpen={() => { }}
-      />
-    </div>
-  );
-}
 
 export default function Home() {
   // User input and language selection
