@@ -28,10 +28,8 @@ export function SignInPage() {
             await signInWithPopup(auth, provider);
 
             // If this is the first visit, store the selected languages
-            if (isFirstVisit) {
+            if (isFirstVisit || isSignUp) {
                 localStorage.setItem('hasVisitedBefore', 'true');
-                localStorage.setItem('defaultInputLang', inputLang);
-                localStorage.setItem('defaultTargetLang', targetLang);
 
                 // Redirect to home page with query params
                 window.location.href = `/?firstVisit=true&inputLang=${inputLang}&targetLang=${targetLang}`;
@@ -49,19 +47,13 @@ export function SignInPage() {
         try {
             if (isSignUp) {
                 await createUserWithEmailAndPassword(auth, email, password);
+                localStorage.setItem('hasVisitedBefore', 'true');
+                // Redirect to home page with query params
+                window.location.href = `/?firstVisit=true&inputLang=${inputLang}&targetLang=${targetLang}`;
             } else {
                 await signInWithEmailAndPassword(auth, email, password);
             }
 
-            // If this is the first visit, store the selected languages
-            if (isFirstVisit) {
-                localStorage.setItem('hasVisitedBefore', 'true');
-                localStorage.setItem('defaultInputLang', inputLang);
-                localStorage.setItem('defaultTargetLang', targetLang);
-
-                // Redirect to home page with query params
-                window.location.href = `/?firstVisit=true&inputLang=${inputLang}&targetLang=${targetLang}`;
-            }
         } catch (error: unknown) {
             console.error('Error with email authentication:', error);
             if (error instanceof Error) {

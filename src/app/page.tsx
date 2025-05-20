@@ -118,12 +118,9 @@ export default function Home() {
 
         if (inputLang && targetLang) {
           // Set the languages from query params
-          setNewCollectionInputLang(inputLang);
-          setNewCollectionTargetLang(targetLang);
           setAddToCollectionInputLang(inputLang);
           setAddToCollectionTargetLang(targetLang);
           hasSetLanguages.current = true;
-
 
           // Remove the query params from the URL
           window.history.replaceState({}, '', '/');
@@ -157,6 +154,24 @@ export default function Home() {
         } as Config);
       });
       setSavedCollections(loaded);
+
+      // If no collections exist, create a new one with default phrases
+      if (loaded.length === 0) {
+        const defaultPhrases: Phrase[] = [
+          // {
+          //   input: "",
+          //   translated: "",
+          //   inputLang: newCollectionInputLang,
+          //   targetLang: newCollectionTargetLang,
+          //   inputAudio: null,
+          //   outputAudio: null,
+          //   romanized: "",
+          //   created_at: new Date().toISOString()
+          // }
+        ];
+        await handleCreateCollection(defaultPhrases, "My List");
+        setShowImportDialog(true);
+      }
 
       // Set input and target languages based on most recent phrases
       if (loaded.length > 0) {
@@ -193,7 +208,7 @@ export default function Home() {
         created_at: now
       })),
       created_at: now,
-      collectionType,
+      collectionType: collectionType || 'phrases',
       presentationConfig: {
         ...(collectionType ? defaultPresentationConfigs[collectionType] : defaultPresentationConfig),
         name: generatedName
@@ -1188,14 +1203,14 @@ export default function Home() {
       {showImportDialog && (
         <ImportPhrasesDialog
           onClose={() => setShowImportDialog(false)}
-          inputLang={newCollectionInputLang}
-          setInputLang={setNewCollectionInputLang}
-          targetLang={newCollectionTargetLang}
-          setTargetLang={setNewCollectionTargetLang}
+          inputLang={addToCollectionInputLang}
+          setInputLang={setAddToCollectionInputLang}
+          targetLang={addToCollectionTargetLang}
+          setTargetLang={setAddToCollectionTargetLang}
           phrasesInput={phrasesInput}
           setPhrasesInput={setPhrasesInput}
           loading={loading}
-          onProcess={handleProcess}
+          onAddToCollection={handleAddToCollection}
         />
       )}
 

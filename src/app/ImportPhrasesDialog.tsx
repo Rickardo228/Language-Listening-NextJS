@@ -171,7 +171,7 @@ export function ImportPhrasesDialog({
                                 </div>
                             </div>
                         )}
-                        {prompt.trim() && (
+                        {prompt.trim() && onProcess && (
                             <button
                                 onClick={handleGeneratePhrases}
                                 disabled={generatingPhrases || !prompt.trim()}
