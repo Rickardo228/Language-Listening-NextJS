@@ -377,7 +377,7 @@ export default function Home() {
     return phrases[currentPhraseIndex]?.outputAudio?.audioUrl || '';
   }, [currentPhraseIndex, phrases]);
 
-  const handleAudioError = async (phase: 'input' | 'output') => {
+  const handleAudioError = async (phase: 'input' | 'output', autoPlay?: boolean) => {
     if (!audioRef.current || currentPhraseIndex < 0) return;
 
     const phrase = phrases[currentPhraseIndex];
@@ -401,7 +401,7 @@ export default function Home() {
       await setPhrases(newPhrases);
 
       // Update audio source and play
-      if (audioRef.current) {
+      if (audioRef.current && autoPlay) {
         audioRef.current.src = audioUrl;
         audioRef.current.play().catch((err) => console.error('Auto-play error:', err));
       }
@@ -425,14 +425,19 @@ export default function Home() {
     } else if (currentPhase === 'output') {
       src = currentOutputAudioUrl;
     }
-
-    if (audioRef.current && src && audioRef.current.paused) {
-      audioRef.current.src = src;
-      audioRef.current.play().catch((err) => {
-        console.error('Auto-play error:', err);
-        // If playback fails, try to regenerate the audio
+    console.log(src)
+    if (audioRef.current && audioRef.current.paused) {
+      if (!src) {
+        // If no source exists, generate it
         handleAudioError(currentPhase);
-      });
+      } else {
+        audioRef.current.src = src;
+        audioRef.current.play().catch((err) => {
+          console.error('Auto-play error:', err);
+          // If playback fails, try to regenerate the audio
+          handleAudioError(currentPhase, true);
+        });
+      }
     }
   }, [currentPhraseIndex, currentPhase, paused, currentInputAudioUrl, currentOutputAudioUrl]);
 
@@ -631,7 +636,7 @@ export default function Home() {
       audioRef.current.play().catch((err) => {
         console.error('Auto-play error:', err);
         // If playback fails, try to regenerate the audio
-        handleAudioError(currentPhase);
+        handleAudioError(currentPhase, true);
       });
     }
   };
@@ -945,7 +950,7 @@ export default function Home() {
         audioRef.current.play().catch((err) => {
           console.error('Auto-play error:', err);
           // If playback fails, try to regenerate the audio
-          handleAudioError(currentPhase);
+          handleAudioError(currentPhase, true);
         });
       }
     }
