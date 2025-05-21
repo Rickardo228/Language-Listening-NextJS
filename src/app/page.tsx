@@ -21,6 +21,7 @@ import { defaultPresentationConfig, defaultPresentationConfigs } from './default
 import { generateAudio } from './utils/audioUtils';
 import { SignInPage } from './SignInPage';
 import { ImportPhrasesDialog } from './ImportPhrasesDialog';
+import clarity from '@microsoft/clarity';
 
 const firestore = getFirestore();
 
@@ -105,11 +106,19 @@ export default function Home() {
 
   const { theme, toggleTheme } = useTheme();
 
-  // Listen for auth state changes and sign in if not already
+  // Initialize Clarity on mount
+  useEffect(() => {
+    // Initialize Clarity with your project ID
+    clarity.init("rmwvuwqm9k");
+  }, []);
+
+  // Update user identification when auth state changes
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
       if (firebaseUser) {
         setUser(firebaseUser);
+        // Identify user in Clarity
+        clarity.identify(firebaseUser.email || firebaseUser.uid);
 
         // Check for first visit query params
         const urlParams = new URLSearchParams(window.location.search);
