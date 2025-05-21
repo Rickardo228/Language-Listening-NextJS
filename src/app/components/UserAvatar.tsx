@@ -3,6 +3,7 @@ import { User, signOut, signInWithPopup, GoogleAuthProvider } from 'firebase/aut
 import { auth } from '../firebase';
 import { getFirestore, doc, getDoc, collection, getDocs, query, orderBy, limit } from 'firebase/firestore';
 import { getFlagEmoji } from '../utils/languageUtils';
+import { BarChart3, MessageSquare, LogOut } from 'lucide-react';
 
 interface UserAvatarProps {
     user: User | null;
@@ -207,28 +208,31 @@ export function UserAvatar({ user, avatarDialogOpen, setAvatarDialogOpen }: User
                         </div>
                     </div>
                     <button
-                        className="w-full text-left px-4 py-2 hover:bg-secondary"
+                        className="w-full text-left px-4 py-2 hover:bg-secondary flex items-center gap-2"
                         onClick={() => {
                             setStatsModalOpen(true);
                             setAvatarDialogOpen(false);
                         }}
                     >
+                        <BarChart3 className="w-4 h-4" />
                         View Stats
                     </button>
                     <a
                         href="mailto:hello@lingopaper.com?subject=Feedback for LingoPaper"
-                        className="block w-full text-left px-4 py-2 hover:bg-secondary"
+                        className="block w-full text-left px-4 py-2 hover:bg-secondary flex items-center gap-2"
                         onClick={() => setAvatarDialogOpen(false)}
                     >
+                        <MessageSquare className="w-4 h-4" />
                         Send Feedback
                     </a>
                     <button
-                        className="w-full text-left px-4 py-2 hover:bg-secondary"
+                        className="w-full text-left px-4 py-2 hover:bg-secondary flex items-center gap-2"
                         onClick={() => {
                             signOut(auth);
                             setAvatarDialogOpen(false);
                         }}
                     >
+                        <LogOut className="w-4 h-4" />
                         Sign Out
                     </button>
                 </div>
