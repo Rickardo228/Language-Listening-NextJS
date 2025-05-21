@@ -7,16 +7,20 @@ import "./globals.css";
 import { ThemeProvider } from './ThemeProvider'
 
 const playpenSans = Playpen_Sans({
-  variable: "--font-playpen-sans",
   subsets: ["latin"],
+  weight: ["400", "700"],
+  variable: "--font-playpen-sans",
+  display: "swap",
+  preload: true,
+  fallback: ["system-ui", "arial"],
 });
 
 const mPlusRounded1c = M_PLUS_Rounded_1c({
-  weight: ['400', '700'],
-  subsets: ['latin'],
-  display: 'swap',
+  subsets: ["latin"],
+  weight: ["400", "700"],
+  display: "swap",
   preload: true,
-  fallback: ['system-ui', 'arial'],
+  fallback: ["system-ui", "arial"],
 });
 
 export const metadata: Metadata = {

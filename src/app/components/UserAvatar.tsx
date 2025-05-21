@@ -215,6 +215,13 @@ export function UserAvatar({ user, avatarDialogOpen, setAvatarDialogOpen }: User
                     >
                         View Stats
                     </button>
+                    <a
+                        href="mailto:hello@lingopaper.com?subject=Feedback for LingoPaper"
+                        className="block w-full text-left px-4 py-2 hover:bg-secondary"
+                        onClick={() => setAvatarDialogOpen(false)}
+                    >
+                        Send Feedback
+                    </a>
                     <button
                         className="w-full text-left px-4 py-2 hover:bg-secondary"
                         onClick={() => {
