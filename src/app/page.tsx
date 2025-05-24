@@ -287,8 +287,8 @@ export default function Home() {
         romanized: data.romanizedOutput ? data.romanizedOutput[index] || '' : '',
         inputLang: inputLang || newCollectionInputLang,
         targetLang: targetLang || newCollectionTargetLang,
-        inputVoice: data.inputVoice || `${inputLang || newCollectionInputLang}-Standard-D`,
-        targetVoice: data.targetVoice || `${targetLang || newCollectionTargetLang}-Standard-D`
+        inputVoice: data.inputVoice || `${inputLang || newCollectionInputLang}-Standard-A`,
+        targetVoice: data.targetVoice || `${targetLang || newCollectionTargetLang}-Standard-A`
       }));
 
       const collectionId = await handleCreateCollection(processedPhrases, prompt, collectionType);

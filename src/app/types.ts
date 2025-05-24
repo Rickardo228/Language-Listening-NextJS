@@ -35,22 +35,38 @@ export type Config = {
 export type RomanizedOutput = string[];
 
 export const languageOptions = [
-  { code: "en-GB", label: "English (UK)" },
-  { code: "en-US", label: "English (US)" },
-  { code: "en-AU", label: "English (Australia)" },
-  { code: "es-ES", label: "Español (España)" },
-  { code: "fr-FR", label: "Français (France)" },
-  { code: "de-DE", label: "Deutsch (Deutschland)" },
-  { code: "it-IT", label: "Italiano (Italia)" },
-  { code: "ja-JP", label: "日本語 (Japan) - Japanese" },
-  { code: "zh-CN", label: "简体中文 (China) - Chinese" },
-  { code: "pt-BR", label: "Português (Brasil)" },
-  { code: "pt-PT", label: "Português (Portugal)" },
-  { code: "el-GR", label: "Ελληνικά (Greece) - Greek" },
-  { code: "pl-PL", label: "Polski (Polska)" },
-  { code: "sv-SE", label: "Svenska (Sverige)" },
-  { code: "de-CH", label: "Schweizerdeutsch (Schweiz)" },
-  { code: "ru-RU", label: "Русский (Russia) - Russian" },
+  { code: "en-GB", label: "🇬🇧 English (UK)" },
+  { code: "en-US", label: "🇺🇸 English (US)" },
+  { code: "en-AU", label: "🇦🇺 English (Australia)" },
+  { code: "es-ES", label: "🇪🇸 Español (España)" },
+  { code: "fr-FR", label: "🇫🇷 Français (France)" },
+  { code: "de-DE", label: "🇩🇪 Deutsch (Deutschland)" },
+  { code: "it-IT", label: "🇮🇹 Italiano (Italia)" },
+  { code: "ja-JP", label: "🇯🇵 日本語 (Japan)" },
+  { code: "cmn-CN", label: "🇨🇳 简体中文 (China)" },
+  { code: "pt-BR", label: "🇧🇷 Português (Brasil)" },
+  { code: "pt-PT", label: "🇵🇹 Português (Portugal)" },
+  { code: "el-GR", label: "🇬🇷 Ελληνικά (Greece)" },
+  { code: "pl-PL", label: "🇵🇱 Polski (Polska)" },
+  { code: "sv-SE", label: "🇸🇪 Svenska (Sverige)" },
+  { code: "ru-RU", label: "🇷🇺 Русский (Russia)" },
+
+  // 🌍 Widely spoken additions
+  { code: "hi-IN", label: "🇮🇳 हिंदी (India)" },
+  { code: "ar-XA", label: "🇸🇦 العربية (Arabic)" },
+  { code: "bn-IN", label: "🇧🇩 বাংলা (Bengali)" },
+  { code: "id-ID", label: "🇮🇩 Bahasa Indonesia" },
+  { code: "ko-KR", label: "🇰🇷 한국어 (Korea)" },
+  { code: "tr-TR", label: "🇹🇷 Türkçe (Turkey)" },
+  { code: "vi-VN", label: "🇻🇳 Tiếng Việt (Vietnam)" },
+  { code: "th-TH", label: "🇹🇭 ภาษาไทย (Thailand)" },
+  { code: "uk-UA", label: "🇺🇦 Українська (Ukraine)" },
+
+  // Bonus / strategic
+  { code: "fr-CA", label: "🇨🇦 Français (Canada)" },
+  { code: "nl-NL", label: "🇳🇱 Nederlands (Netherlands)" },
+  { code: "yue-HK", label: "🇭🇰 粤语 (Cantonese - Hong Kong)" },
+  { code: "ta-IN", label: "🇮🇳 தமிழ் (Tamil)" },
 ];
 
 export type AudioSegment = {
