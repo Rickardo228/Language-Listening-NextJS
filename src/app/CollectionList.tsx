@@ -1,5 +1,5 @@
 import { Config } from './types';
-import { getFlagEmoji } from './utils/languageUtils';
+import { LanguageFlags } from './components/LanguageFlags';
 
 interface CollectionListProps {
     savedCollections: Config[];
@@ -30,8 +30,6 @@ export function CollectionList({
                 {sortedCollections.map((collection) => {
                     // Get the first phrase's languages if available
                     const firstPhrase = collection.phrases[0];
-                    const inputFlag = firstPhrase ? getFlagEmoji(firstPhrase.inputLang) : '🌐';
-                    const targetFlag = firstPhrase ? getFlagEmoji(firstPhrase.targetLang) : '🌐';
 
                     return (
                         <div
@@ -50,9 +48,10 @@ export function CollectionList({
                                         {firstPhrase && (
                                             <>
                                                 <span className="mx-1">•</span>
-                                                <span className="flex items-center gap-1">
-                                                    {inputFlag} → {targetFlag}
-                                                </span>
+                                                <LanguageFlags
+                                                    inputLang={firstPhrase.inputLang}
+                                                    targetLang={firstPhrase.targetLang}
+                                                />
                                             </>
                                         )}
                                     </p>

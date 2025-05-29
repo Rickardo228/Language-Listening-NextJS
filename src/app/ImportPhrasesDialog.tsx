@@ -5,6 +5,7 @@ import { languageOptions, CollectionType } from './types'
 import { X } from 'lucide-react'
 import { API_BASE_URL } from './consts'
 import { createPortal } from 'react-dom'
+import { LanguageFlags } from './components/LanguageFlags'
 
 export interface ImportPhrasesDialogProps {
     onClose: () => void
@@ -16,7 +17,7 @@ export interface ImportPhrasesDialogProps {
     setPhrasesInput: (input: string) => void
     loading: boolean
     onProcess?: (prompt?: string, inputLang?: string, targetLang?: string, collectionType?: CollectionType) => Promise<void>
-    onAddToCollection?: (inputLang?: string, targetLang?: string) => Promise<void>
+    onAddToCollection?: (inputLang?: string, targetLang?: string, isSwapped?: boolean) => Promise<void>
 }
 
 export function ImportPhrasesDialog({
@@ -35,7 +36,8 @@ export function ImportPhrasesDialog({
     const [generatingPhrases, setGeneratingPhrases] = useState(false)
     const [portalContainer, setPortalContainer] = useState<HTMLElement | null>(null)
     const [collectionType, setCollectionType] = useState<CollectionType>('phrases')
-    const inputLangLabel = (languageOptions.find(lang => lang.code === inputLang)?.label || inputLang).split(' (')[0];
+    const [isSwapped, setIsSwapped] = useState(false)
+    const inputLangLabel = (languageOptions.find(lang => lang.code === (isSwapped ? targetLang : inputLang))?.label || inputLang).split(' (')[0];
 
     useEffect(() => {
         // Create portal container if it doesn't exist
@@ -62,6 +64,14 @@ export function ImportPhrasesDialog({
 
         setGeneratingPhrases(true);
         try {
+            // If languages are swapped, we need to swap them for generation
+            const processInputLang = isSwapped ? targetLang : inputLang;
+            const processTargetLang = isSwapped ? inputLang : targetLang;
+
+            console.log('isSwapped', isSwapped);
+            console.log('processInputLang', processInputLang);
+            console.log('processTargetLang', processTargetLang);
+
             const response = await fetch(`${API_BASE_URL}/generate-phrases`, {
                 method: 'POST',
                 headers: {
@@ -69,8 +79,8 @@ export function ImportPhrasesDialog({
                 },
                 body: JSON.stringify({
                     prompt,
-                    inputLang,
-                    targetLang,
+                    inputLang: isSwapped ? targetLang : inputLang,
+                    targetLang: isSwapped ? inputLang : targetLang,
                     type: collectionType
                 }),
             });
@@ -137,6 +147,26 @@ export function ImportPhrasesDialog({
                                 </select>
                             </div>
                         )}
+                        {onAddToCollection && (
+                            <div className="flex gap-2">
+                                <LanguageFlags
+                                    inputLang={isSwapped ? targetLang : inputLang}
+                                    targetLang={isSwapped ? inputLang : targetLang}
+                                    size="xl"
+                                />
+                                <button
+                                    onClick={() => {
+                                        setIsSwapped(!isSwapped);
+                                    }}
+                                    className="p-2 rounded-md border bg-background hover:bg-secondary"
+                                    title="Swap languages"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 21L3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5" />
+                                    </svg>
+                                </button>
+                            </div>
+                        )}
                         {!onAddToCollection && (
                             <div className="flex gap-4">
                                 <div className="flex-1">
@@ -154,6 +184,7 @@ export function ImportPhrasesDialog({
                                         ))}
                                     </select>
                                 </div>
+
                                 <div className="flex-1">
                                     <label className="block text-sm font-medium mb-1">Target Language</label>
                                     <select
@@ -239,7 +270,7 @@ export function ImportPhrasesDialog({
                             {onAddToCollection ? (
                                 <button
                                     onClick={async () => {
-                                        await onAddToCollection?.(inputLang, targetLang)
+                                        await onAddToCollection?.(inputLang, targetLang, isSwapped)
                                         onClose()
                                     }}
                                     disabled={loading || !phrasesInput.trim()}

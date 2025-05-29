@@ -314,7 +314,7 @@ export default function Home() {
     timeoutIds.current.push(timeoutId2)
   };
 
-  const handleAddToCollection = async (inputLang?: string, targetLang?: string) => {
+  const handleAddToCollection = async (inputLang?: string, targetLang?: string, isSwapped?: boolean) => {
     const splitPhrases = phrasesInput
       .split('\n')
       .map((line) => line.trim())
@@ -329,30 +329,32 @@ export default function Home() {
       const inputVoice = firstPhrase?.inputVoice || `${inputLang || addToCollectionInputLang}-Standard-D`;
       const targetVoice = firstPhrase?.targetVoice || `${targetLang || addToCollectionTargetLang}-Standard-D`;
 
+
       const response = await fetch(`${API_BASE_URL}/process`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           phrases: splitPhrases,
-          inputLang: inputLang,
-          targetLang: targetLang,
-          inputVoice,
-          targetVoice
+          inputLang: isSwapped ? targetLang : inputLang,
+          targetLang: isSwapped ? inputLang : targetLang,
+          inputVoice: isSwapped ? targetVoice : inputVoice,
+          targetVoice: isSwapped ? inputVoice : targetVoice
         }),
       });
       const data = await response.json();
       const now = new Date().toISOString();
       const processedPhrases: Phrase[] = splitPhrases.map((p, index) => ({
-        input: p,
-        translated: data.translated ? data.translated[index] || '' : '',
-        inputAudio: data.inputAudioSegments ? data.inputAudioSegments[index] || null : null,
-        outputAudio: data.outputAudioSegments ? data.outputAudioSegments[index] || null : null,
+        input: isSwapped ? data.translated ? data.translated[index] || '' : '' : p,
+        translated: isSwapped ? p : data.translated ? data.translated[index] || '' : '',
+        inputAudio: isSwapped ? data.outputAudioSegments ? data.outputAudioSegments[index] || null : null : data.inputAudioSegments ? data.inputAudioSegments[index] || null : null,
+        outputAudio: isSwapped ? data.inputAudioSegments ? data.inputAudioSegments[index] || null : null : data.outputAudioSegments ? data.outputAudioSegments[index] || null : null,
         romanized: data.romanizedOutput ? data.romanizedOutput[index] || '' : '',
         inputLang: inputLang || addToCollectionInputLang,
         targetLang: targetLang || addToCollectionTargetLang,
         inputVoice,
         targetVoice,
-        created_at: now
+        created_at: now,
+        isSwapped: isSwapped || false
       }));
 
       // Add new phrases to existing collection
