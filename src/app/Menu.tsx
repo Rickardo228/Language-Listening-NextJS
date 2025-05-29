@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 
 export interface MenuItem {
     label: string;
-    onClick: () => void;
+    onClick: (e: React.MouseEvent<HTMLButtonElement>) => void;
     icon?: React.ReactNode;
     className?: string;
 }
@@ -60,8 +60,8 @@ export function Menu({ isOpen, onClose, triggerRef, items }: MenuProps) {
                 {items.map((item, index) => (
                     <button
                         key={index}
-                        onClick={() => {
-                            item.onClick();
+                        onClick={(e) => {
+                            item.onClick(e);
                             onClose();
                         }}
                         className={`w-full text-left px-4 py-2 text-sm hover:bg-secondary flex items-center gap-2 ${item.className || ''}`}

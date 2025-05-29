@@ -1,6 +1,6 @@
 import { Phrase } from './types';
 import { useState, useRef, useEffect } from 'react';
-import { SpeakerWaveIcon, MicrophoneIcon, EllipsisVerticalIcon } from '@heroicons/react/24/solid';
+import { SpeakerWaveIcon, MicrophoneIcon, EllipsisVerticalIcon, TrashIcon } from '@heroicons/react/24/solid';
 import { Menu } from './Menu';
 import { generateAudio } from './utils/audioUtils';
 // import { ClipboardIcon, ClipboardDocumentCheckIcon } from '@heroicons/react/24/outline';
@@ -29,7 +29,14 @@ interface PhraseComponentProps {
     ref?: React.RefObject<HTMLDivElement>;
 }
 
-function PhraseComponent({ phrase, phrases, isSelected, currentPhase, onPhraseClick, onDelete, onPlayPhrase, ref, setPhrases, enableOutputBeforeInput }: PhraseComponentProps & { setPhrases: (phrases: Phrase[]) => void, enableOutputBeforeInput?: boolean }) {
+function PhraseComponent({ phrase, phrases, isSelected, currentPhase, onPhraseClick, onDelete, onPlayPhrase, ref, setPhrases, enableOutputBeforeInput, isMultiSelectMode, setIsMultiSelectMode, isChecked, onCheckChange }: PhraseComponentProps & {
+    setPhrases: (phrases: Phrase[]) => void,
+    enableOutputBeforeInput?: boolean,
+    isMultiSelectMode: boolean,
+    setIsMultiSelectMode: (isMultiSelectMode: boolean) => void,
+    isChecked: boolean,
+    onCheckChange: (checked: boolean) => void
+}) {
     const [inputLoading, setInputLoading] = useState(false);
     const [outputLoading, setOutputLoading] = useState(false);
     const [romanizedLoading, setRomanizedLoading] = useState(false);
@@ -160,6 +167,15 @@ function PhraseComponent({ phrase, phrases, isSelected, currentPhase, onPhraseCl
     const renderInputs = () => {
         const inputField = (
             <div className="flex items-center gap-2">
+                {isMultiSelectMode && (
+                    <input
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={(e) => onCheckChange(e.target.checked)}
+                        onClick={(e) => e.stopPropagation()}
+                        className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
+                    />
+                )}
                 <input
                     type="text"
                     value={phrase.input}
@@ -253,7 +269,11 @@ function PhraseComponent({ phrase, phrases, isSelected, currentPhase, onPhraseCl
                     ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-400'
                     : 'border-gray-200 dark:border-gray-700 bg-background hover:bg-secondary dark:hover:bg-blue-900/20'} 
                 ${onPhraseClick ? 'cursor-pointer' : ''}`}
-            onClick={onPhraseClick}
+            onClick={(e) => {
+                if (!(e.target as HTMLElement).closest('input[type="checkbox"]')) {
+                    onPhraseClick?.();
+                }
+            }}
             ref={ref}
         >
             {renderInputs()}
@@ -263,10 +283,20 @@ function PhraseComponent({ phrase, phrases, isSelected, currentPhase, onPhraseCl
                 triggerRef={menuTriggerRef}
                 items={[
                     {
+                        label: 'Select',
+                        onClick: (e) => {
+                            e.stopPropagation();
+                            setIsMultiSelectMode(true);
+                            onCheckChange(true);
+                        },
+                        className: 'text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/20'
+                    },
+                    {
                         label: 'Delete phrase',
                         onClick: onDelete,
                         className: 'text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20'
-                    }
+                    },
+
                 ]}
             />
             {phrase.romanized && <div className="mt-2 mb-2 flex items-center gap-2">
@@ -307,6 +337,8 @@ export function EditablePhrases({ phrases, setPhrases, currentPhraseIndex, curre
     const selectedPhraseRef = useRef<HTMLDivElement>(null!);
     const [isArrowVisible, setIsArrowVisible] = useState(false);
     const [scrollDirection, setScrollDirection] = useState<'up' | 'down' | null>(null);
+    const [isMultiSelectMode, setIsMultiSelectMode] = useState(false);
+    const [selectedPhrases, setSelectedPhrases] = useState<Set<number>>(new Set());
 
     useEffect(() => {
         if (!selectedPhraseRef.current) return;
@@ -338,17 +370,89 @@ export function EditablePhrases({ phrases, setPhrases, currentPhraseIndex, curre
         setPhrases(newPhrases);
     };
 
+    const handleDeleteSelected = () => {
+        if (!window.confirm(`Delete ${selectedPhrases.size} selected phrases?`)) return;
+
+        const newPhrases = phrases.filter((_, index) => !selectedPhrases.has(index));
+        setPhrases(newPhrases);
+        setSelectedPhrases(new Set());
+        setIsMultiSelectMode(false);
+    };
+
+    const handlePhraseClick = (index: number) => {
+        if (isMultiSelectMode) {
+            setSelectedPhrases(prev => {
+                const next = new Set(prev);
+                if (next.has(index)) {
+                    next.delete(index);
+                } else {
+                    next.add(index);
+                }
+                return next;
+            });
+        } else {
+            onPhraseClick?.(index);
+        }
+    };
+
+    const handleCheckChange = (index: number, checked: boolean) => {
+        console.log('handleCheckChange', index, checked);
+        setSelectedPhrases(prev => {
+            const next = new Set(prev);
+            if (checked) {
+                next.add(index);
+            } else {
+                next.delete(index);
+            }
+            // If no phrases are selected after this change, turn off multi-select mode
+            if (next.size === 0) {
+                setIsMultiSelectMode(false);
+            }
+            console.log('next', next);
+            return next;
+        });
+    };
+
     return (
         <div className="mb-4">
-            {isArrowVisible && scrollDirection && (
-                <button
-                    onClick={scrollToSelectedPhrase}
-                    className={`w-10 z-50 sticky top-[90%] left-[10%] p-2 bg-blue-500 text-white rounded-full shadow-lg hover:bg-blue-600 transition`}
-                    title={`Scroll ${scrollDirection === 'up' ? 'up' : 'down'} to selected phrase`}
-                >
-                    {scrollDirection === 'up' ? '↑' : '↓'}
-                </button>
-            )}
+            <div className='h-0 sticky top-[90%]'>
+                {isArrowVisible && scrollDirection && !isMultiSelectMode && (
+                    <button
+                        onClick={scrollToSelectedPhrase}
+                        className={`w-10 z-50 ml-[10%] p-2 bg-blue-500 text-white rounded-full shadow-lg hover:bg-blue-600 transition`}
+                        title={`Scroll ${scrollDirection === 'up' ? 'up' : 'down'} to selected phrase`}
+                    >
+                        {scrollDirection === 'up' ? '↑' : '↓'}
+                    </button>
+
+                )}
+                {isMultiSelectMode && selectedPhrases.size > 0 && (
+                    <div className="flex justify-between items-between mb-4 p-3  bg-background w-[100%]">
+
+                        <div className="flex items-center gap-2">
+                            <span className="text-sm text-muted-foreground">
+                                {selectedPhrases.size} selected
+                            </span>
+                            <button
+                                onClick={handleDeleteSelected}
+                                className="px-3 py-1 text-sm bg-red-500 hover:bg-red-600 text-white rounded flex items-center gap-1"
+                            >
+                                <TrashIcon className="w-4 h-4" />
+                                Delete Selected
+                            </button>
+                            <button
+                                onClick={() => {
+                                    setIsMultiSelectMode(false);
+                                    setSelectedPhrases(new Set());
+                                }}
+                                className="px-3 py-1 text-sm bg-gray-500 hover:bg-gray-600 text-white rounded flex items-center gap-1"
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                )}
+            </div>
             {phrases.map((phrase, index) => {
                 const isSelected = currentPhraseIndex === index;
                 return (
@@ -358,11 +462,15 @@ export function EditablePhrases({ phrases, setPhrases, currentPhraseIndex, curre
                         phrases={phrases}
                         isSelected={isSelected}
                         currentPhase={currentPhase}
-                        onPhraseClick={() => onPhraseClick?.(index)}
+                        onPhraseClick={() => handlePhraseClick(index)}
                         onDelete={() => handleDeletePhrase(index)}
                         onPlayPhrase={onPlayPhrase}
                         setPhrases={setPhrases}
                         enableOutputBeforeInput={enableOutputBeforeInput}
+                        isMultiSelectMode={isMultiSelectMode}
+                        setIsMultiSelectMode={setIsMultiSelectMode}
+                        isChecked={selectedPhrases.has(index)}
+                        onCheckChange={(checked) => handleCheckChange(index, checked)}
                         {...(isSelected && { ref: selectedPhraseRef })}
                     />
                 );
