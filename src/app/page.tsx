@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, ChangeEvent, useMemo } from 'react';
 import { PresentationView, TITLE_ANIMATION_DURATION } from './PresentationView';
 import bgColorOptions from './utils/bgColorOptions';
-import { Config, languageOptions, Phrase, PresentationConfig, CollectionType } from './types';
+import { Config, languageOptions, Phrase, PresentationConfig, CollectionType as CollectionTypeEnum } from './types';
 import { usePresentationConfig } from './hooks/usePresentationConfig';
 import { presentationConfigDefinition } from './configDefinitions';
 import { EditablePhrases } from './EditablePhrases';
@@ -208,7 +208,7 @@ export default function Home() {
   }, [user]);
 
   // Save a new collection to Firestore
-  const handleCreateCollection = async (phrases: Phrase[], prompt?: string, collectionType?: CollectionType) => {
+  const handleCreateCollection = async (phrases: Phrase[], prompt?: string, collectionType?: CollectionTypeEnum) => {
     if (!user) return;
     const generatedName = prompt || 'New List';
     const now = new Date().toISOString();
@@ -248,7 +248,7 @@ export default function Home() {
     // }
   }, []);
 
-  const handleProcess = async (prompt?: string, inputLang?: string, targetLang?: string, collectionType?: CollectionType) => {
+  const handleProcess = async (prompt?: string, inputLang?: string, targetLang?: string, collectionType?: CollectionTypeEnum) => {
     // Split the textarea input into an array of phrases.
     let splitPhrases = phrasesInput
       .split('\n')
@@ -958,6 +958,32 @@ export default function Home() {
     }
   };
 
+  // Add handleShare function
+  const handleShare = async (id: string) => {
+    if (!user) return;
+    const phraseList = savedCollections.find(col => col.id === id);
+    if (!phraseList) return;
+
+    try {
+      // Create a copy of the phraseList in the published_collections collection
+      const sharedPhraseList = {
+        ...phraseList,
+        shared_by: user.uid,
+        shared_at: new Date().toISOString()
+      };
+      const sharedRef = collection(firestore, 'published_collections');
+      const docRef = await addDoc(sharedRef, sharedPhraseList);
+
+      // Copy the share link to clipboard
+      const shareUrl = `${window.location.origin}/share/${docRef.id}`;
+      await navigator.clipboard.writeText(shareUrl);
+      alert('Share link copied to clipboard!');
+    } catch (err) {
+      console.error('Error sharing collection:', err);
+      alert('Failed to share collection: ' + err);
+    }
+  };
+
   if (isAuthLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
@@ -1020,6 +1046,7 @@ export default function Home() {
             onRename={handleRenameCollection}
             onDelete={handleDeleteCollection}
             onVoiceChange={handleVoiceChange}
+            onShare={handleShare}
             inputLang={addToCollectionInputLang}
             targetLang={addToCollectionTargetLang}
             className="lg:hidden"
@@ -1071,6 +1098,7 @@ export default function Home() {
                   onRename={handleRenameCollection}
                   onDelete={handleDeleteCollection}
                   onVoiceChange={handleVoiceChange}
+                  onShare={handleShare}
                   inputLang={addToCollectionInputLang}
                   targetLang={addToCollectionTargetLang}
                   className="hidden lg:flex"
