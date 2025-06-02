@@ -22,7 +22,7 @@ import { generateAudio } from './utils/audioUtils';
 import { SignInPage } from './SignInPage';
 import { ImportPhrasesDialog } from './ImportPhrasesDialog';
 import clarity from '@microsoft/clarity';
-import { PhrasePlaybackView } from './components/PhrasePlaybackView';
+import { PhrasePlaybackView, PhrasePlaybackMethods } from './components/PhrasePlaybackView';
 
 const firestore = getFirestore();
 
@@ -84,28 +84,13 @@ export default function Home() {
   // Loading state for processing
   const [loading, setLoading] = useState<boolean>(false);
 
-  // Playback and sequence control states
-  const [currentPhraseIndex, setCurrentPhraseIndex] = useState<number>(-1);
-  const [currentPhase, setCurrentPhase] = useState<'input' | 'output'>('input');
-  const [, setFinished] = useState<boolean>(false);
-  const [fullscreen, setFullscreen] = useState<boolean>(false);
-  const [recordScreen] = useState(false);
-  const [paused, setPaused] = useState(false);
-  const [showTitle, setShowTitle] = useState(false);
-
-  // Config saving states
-  const [savedConfigs, setSavedConfigs] = useState<PresentationConfig[]>([]);
-  const [configName, setConfigName] = useState<string>('');
-
-  // Ref for the audio element
-  const audioRef = useRef<HTMLAudioElement>(null);
-
-  const timeoutIds = useRef<number[]>([]);
-
   const [user, setUser] = useState<User | null>(null);
   const [avatarDialogOpen, setAvatarDialogOpen] = useState(false);
 
   const { theme, toggleTheme } = useTheme();
+
+  // Update the ref type to use PhrasePlaybackMethods
+  const playbackMethodsRef = useRef<PhrasePlaybackMethods | null>(null);
 
   // Initialize Clarity on mount
   useEffect(() => {
@@ -237,17 +222,6 @@ export default function Home() {
     return docRef.id;
   };
 
-  // Load saved collections and configs from localStorage on mount.
-  useEffect(() => {
-    const storedConfigs = localStorage.getItem('savedConfigs');
-    if (storedConfigs) {
-      setSavedConfigs(JSON.parse(storedConfigs));
-    }
-    // const storedCollections = localStorage.getItem('savedCollections');
-    // if (storedCollections) {
-    //   setSavedCollections(JSON.parse(storedCollections));
-    // }
-  }, []);
 
   const handleProcess = async (prompt?: string, inputLang?: string, targetLang?: string, collectionType?: CollectionTypeEnum) => {
     // Split the textarea input into an array of phrases.
@@ -295,24 +269,19 @@ export default function Home() {
       const collectionId = await handleCreateCollection(processedPhrases, prompt, collectionType);
       setPhrases(processedPhrases, collectionId);
       setPhrasesInput('');
-      setCurrentPhraseIndex(-1);
-      setCurrentPhase('input');
-      setFinished(false);
+
+      // Use methodsRef to reset playback state
+      if (playbackMethodsRef.current) {
+        playbackMethodsRef.current.handleStop();
+        playbackMethodsRef.current.setCurrentPhraseIndex(0);
+        playbackMethodsRef.current.setCurrentPhase(presentationConfig.enableOutputBeforeInput ? 'output' : 'input');
+      }
+
     } catch (err) {
       console.error('Processing error:', err);
       alert(err)
     }
     setLoading(false);
-    setShowTitle(true);
-
-    const timeoutId = window.setTimeout(() => {
-      setShowTitle(false);
-    }, presentationConfig.postProcessDelay + BLEED_START_DELAY - TITLE_ANIMATION_DURATION - 1000);
-    timeoutIds.current.push(timeoutId)
-    const timeoutId2 = window.setTimeout(() => {
-      setCurrentPhraseIndex(0);
-    }, presentationConfig.postProcessDelay + BLEED_START_DELAY);
-    timeoutIds.current.push(timeoutId2)
   };
 
   const handleAddToCollection = async (inputLang?: string, targetLang?: string, isSwapped?: boolean) => {
@@ -369,95 +338,15 @@ export default function Home() {
     setLoading(false);
   };
 
-  // Update audio source when phrase or phase changes.
-  const currentInputAudioUrl = useMemo(() => {
-    if (currentPhraseIndex < 0) return '';
-    return phrases[currentPhraseIndex]?.inputAudio?.audioUrl || '';
-  }, [currentPhraseIndex, phrases]);
-
-  const currentOutputAudioUrl = useMemo(() => {
-    if (currentPhraseIndex < 0) return '';
-    return phrases[currentPhraseIndex]?.outputAudio?.audioUrl || '';
-  }, [currentPhraseIndex, phrases]);
-
-  const handleAudioError = async (phase: 'input' | 'output', autoPlay?: boolean) => {
-    if (!audioRef.current || currentPhraseIndex < 0) return;
-
-    const phrase = phrases[currentPhraseIndex];
-    if (!phrase) return;
-
-    try {
-      const text = phase === 'input' ? phrase.input : phrase.translated;
-      const language = phase === 'input' ? phrase.inputLang : phrase.targetLang;
-      const voice = phase === 'input' ? phrase.inputVoice : phrase.targetVoice;
-
-      if (!text || !language || !voice) return;
-
-      const { audioUrl, duration } = await generateAudio(text, language, voice);
-
-      // Update the phrase with new audio
-      const newPhrases = [...phrases];
-      newPhrases[currentPhraseIndex] = {
-        ...newPhrases[currentPhraseIndex],
-        [phase === 'input' ? 'inputAudio' : 'outputAudio']: { audioUrl, duration }
-      };
-      await setPhrases(newPhrases);
-
-      // Update audio source and play
-      if (audioRef.current && autoPlay) {
-        audioRef.current.src = audioUrl;
-        audioRef.current.play().catch((err) => console.error('Auto-play error:', err));
-      }
-    } catch (err) {
-      console.error('Error regenerating audio:', err);
-      // If regeneration fails, stop playback
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.src = '';
-      }
-      setPaused(true);
-    }
-  };
-
-  useEffect(() => {
-    if (currentPhraseIndex < 0 || paused) return;
-
-    let src = '';
-    if (currentPhase === 'input') {
-      src = currentInputAudioUrl;
-    } else if (currentPhase === 'output') {
-      src = currentOutputAudioUrl;
-    }
-    console.log(src)
-    if (audioRef.current && audioRef.current.paused) {
-      if (!src) {
-        // If no source exists, generate it
-        handleAudioError(currentPhase);
-      } else {
-        audioRef.current.src = src;
-        audioRef.current.play().catch((err) => {
-          console.error('Auto-play error:', err);
-          // If playback fails, try to regenerate the audio
-          handleAudioError(currentPhase, true);
-        });
-      }
-    }
-  }, [currentPhraseIndex, currentPhase, paused, currentInputAudioUrl, currentOutputAudioUrl]);
-
-
   // When a saved collection is selected, load its state.
   const handleLoadCollection = async (config: Config) => {
     setLoading(true);
-    setPaused(true);
     try {
-      // First update the UI state with the saved config
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.src = '';
+      if (playbackMethodsRef.current) {
+        playbackMethodsRef.current.handleStop();
+        playbackMethodsRef.current.setCurrentPhraseIndex(0);
+        playbackMethodsRef.current.setCurrentPhase(config?.presentationConfig?.enableOutputBeforeInput ? 'output' : 'input');
       }
-      clearAllTimeouts();
-      setCurrentPhraseIndex(0);
-      setCurrentPhase(config?.presentationConfig?.enableOutputBeforeInput ? 'output' : 'input');
       setSelectedCollection(config.id);
 
       // Set the addToCollection language states based on the first phrase
@@ -481,172 +370,11 @@ export default function Home() {
       alert('Error loading configuration: ' + err);
     } finally {
       setLoading(false);
-      setPaused(true);
-    }
-  };
-
-  // Save the current config into localStorage.
-  const handleSaveConfig = () => {
-    const containerColorName =
-      bgColorOptions.find((opt) => opt.value === presentationConfig.containerBg)?.name || "Custom";
-    const textColorName =
-      bgColorOptions.find((opt) => opt.value === presentationConfig.textBg)?.name || "Custom";
-    const generatedName =
-      `${newCollectionInputLang}→${newCollectionTargetLang} [C:${containerColorName}, T:${textColorName}]` +
-      (presentationConfig.enableSnow ? " ❄️" : "") +
-      (presentationConfig.enableCherryBlossom ? " 🌸" : "") +
-      (presentationConfig.enableLeaves ? " 🍂" : "") +
-      (presentationConfig.enableAutumnLeaves ? " 🍁" : "");
-
-    const finalName = configName.trim() ? configName.trim() : generatedName;
-    const newConfig: PresentationConfig = {
-      ...presentationConfig,
-      name: finalName,
-    };
-    const updatedConfigs = [...savedConfigs, newConfig];
-    setSavedConfigs(updatedConfigs);
-    localStorage.setItem('savedConfigs', JSON.stringify(updatedConfigs));
-    // setConfigName('');
-  };
-
-  const clearAllTimeouts = () => {
-    timeoutIds.current.forEach((id) => clearTimeout(id));
-    timeoutIds.current = [];
-  };
-
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const recordedChunksRef = useRef<Blob[]>([]);
-
-  const startScreenRecording = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getDisplayMedia({
-        video: true,
-        // @ts-expect-error preferCurrentTab is a valid option but not in TypeScript types
-        preferCurrentTab: true,
-      });
-
-      mediaRecorderRef.current = new MediaRecorder(stream);
-      mediaRecorderRef.current.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          recordedChunksRef.current.push(event.data);
-        }
-      };
-
-      mediaRecorderRef.current.onstop = () => {
-        const blob = new Blob(recordedChunksRef.current, { type: 'video/webm' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.style.display = 'none';
-        a.href = url;
-        a.download = 'screen-recording.webm';
-        document.body.appendChild(a);
-        a.click();
-        setTimeout(() => {
-          document.body.removeChild(a);
-          URL.revokeObjectURL(url);
-        }, 100);
-
-        // Stop all tracks to end the capture.
-        stream.getTracks().forEach((track) => track.stop());
-        recordedChunksRef.current = [];
-        mediaRecorderRef.current = null;
-
-        // Prepare and send data to the Node.js server.
-        (async () => {
-          try {
-            const formData = new FormData();
-            // Append the video blob.
-            formData.append('video', blob, 'screen-recording.webm');
-
-            // Append each audio segment as a Blob.
-            // Iterate over each phrase and fetch the blob for input and output audio.
-            const audioPromises = phrases.map(async (phrase, index) => {
-              if (phrase.inputAudio && phrase.inputAudio.audioUrl) {
-                const inputBlob = await fetch(phrase.inputAudio.audioUrl).then(res => res.blob());
-                formData.append(`inputAudio_${index}`, inputBlob, `input_${index}.webm`);
-              }
-              if (phrase.outputAudio && phrase.outputAudio.audioUrl) {
-                const outputBlob = await fetch(phrase.outputAudio.audioUrl).then(res => res.blob());
-                formData.append(`outputAudio_${index} `, outputBlob, `output_${index}.webm`);
-              }
-            });
-            await Promise.all(audioPromises);
-
-            // Append additional metadata.
-            formData.append('phrases', JSON.stringify(phrases));
-            formData.append('delayAfterOutputPhrasesMultiplier', DELAY_AFTER_OUTPUT_PHRASES_MULTIPLIER.toString());
-            formData.append('delayBetweenPhrases', (presentationConfig.delayBetweenPhrases ? presentationConfig.delayBetweenPhrases + LAG_COMPENSATION : 0).toString());
-            formData.append('introDelay', presentationConfig.postProcessDelay.toString());
-            formData.append('bleedStartDelay', BLEED_START_DELAY.toString());
-
-            // Send the formData to your backend endpoint.
-            const response = await fetch(`${API_BASE_URL}/merge`, {
-              method: 'POST',
-              body: formData,
-            });
-            if (!response.ok) {
-              throw new Error(`Server error: ${response.statusText}`);
-            }
-          } catch (err) {
-            console.error('Error sending data to server:', err);
-          }
-        })();
-
-
-      };
-
-      mediaRecorderRef.current.start();
-    } catch (err) {
-      console.error('Error starting screen recording:', err);
-    }
-  };
-
-  const stopScreenRecording = () => {
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-      mediaRecorderRef.current.stop();
-    }
-  };
-
-  const handlePause = () => {
-    clearAllTimeouts();
-    if (audioRef.current) {
-      audioRef.current.pause();
-    }
-    stopScreenRecording()
-    setPaused(true);
-  };
-
-  const handleStop = () => {
-    clearAllTimeouts();
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.src = '';
-    }
-    stopScreenRecording()
-    setPaused(true);
-    setFinished(true);
-    setCurrentPhraseIndex(-1);
-  };
-
-  const handlePlay = () => {
-    setPaused(false);
-    if (currentPhraseIndex <= 0) {
-      handleReplay();
-    } else if (audioRef.current) {
-      if (!audioRef.current.src) {
-        audioRef.current.src = phrases[currentPhraseIndex]?.[currentPhase === "input" ? 'inputAudio' : 'outputAudio']?.audioUrl ?? ''
-      }
-      audioRef.current.play().catch((err) => {
-        console.error('Auto-play error:', err);
-        // If playback fails, try to regenerate the audio
-        handleAudioError(currentPhase, true);
-      });
     }
   };
 
   // Update user stats when audio ends
   const updateUserStats = async () => {
-    console.log('updateUserStats');
     if (!user) return;
     const now = new Date();
     const today = now.toISOString().split('T')[0]; // Get YYYY-MM-DD format
@@ -736,118 +464,6 @@ export default function Home() {
     }
   };
 
-  // Update handleAudioEnded to handle looping
-  const handleAudioEnded = () => {
-    if (paused) return;
-
-    const playOutputBeforeInput = presentationConfig.enableOutputBeforeInput;
-    const inputDuration = presentationConfig.enableInputDurationDelay ? (audioRef.current?.duration || 1) * 1000 : 0;
-    const outputDuration = presentationConfig.enableOutputDurationDelay ? (audioRef.current?.duration || 1) * 1000 * DELAY_AFTER_INPUT_PHRASES_MULTIPLIER : 0;
-
-
-    if (currentPhase === 'input') {
-      const timeoutId = window.setTimeout(() => {
-        setCurrentPhase('output');
-
-        if (playOutputBeforeInput) {
-
-          // Update user stats when phrase ends
-          updateUserStats();
-
-          if (currentPhraseIndex < phrases.length - 1 && !paused) {
-            setCurrentPhraseIndex(currentPhraseIndex + 1);
-
-          } else {
-            if (presentationConfig.enableLoop) {
-              // If looping is enabled, restart from beginning
-              setCurrentPhraseIndex(0);
-            } else {
-              setFinished(true);
-              if (recordScreen) stopScreenRecording();
-              setPaused(true);
-            }
-          }
-        }
-      }, playOutputBeforeInput ? outputDuration + 1000 : inputDuration + presentationConfig.delayBetweenPhrases);
-      timeoutIds.current.push(timeoutId);
-    } else {
-      const timeoutId = window.setTimeout(() => {
-        if (playOutputBeforeInput) {
-          setCurrentPhase('input');
-        } else {
-          // Update user stats when phrase ends
-          updateUserStats();
-
-          if (currentPhraseIndex < phrases.length - 1 && !paused) {
-            setCurrentPhraseIndex(currentPhraseIndex + 1);
-            setCurrentPhase('input');
-          } else {
-            if (presentationConfig.enableLoop) {
-              // If looping is enabled, restart from beginning
-              setCurrentPhraseIndex(0);
-              setCurrentPhase('input');
-            } else {
-              setFinished(true);
-              if (recordScreen) stopScreenRecording();
-              setPaused(true);
-            }
-          }
-        }
-      }, playOutputBeforeInput ? inputDuration + 1000 : (outputDuration * DELAY_AFTER_OUTPUT_PHRASES_MULTIPLIER) + presentationConfig.delayBetweenPhrases);
-      timeoutIds.current.push(timeoutId);
-    }
-  };
-
-  // In handleReplay:
-  const handleReplay = async () => {
-    clearAllTimeouts();
-
-    // Start recording if enabled.
-    if (recordScreen) {
-      handlePause();
-      setFullscreen(true);
-      await startScreenRecording();
-    }
-    setCurrentPhraseIndex(prev => prev < 0 ? prev - 1 : -1);
-    setCurrentPhase('input');
-    if (audioRef.current && phrases[0]?.inputAudio?.audioUrl) audioRef.current.src = phrases[0].inputAudio?.audioUrl;
-    setShowTitle(true);
-    setFinished(false);
-    setPaused(false);
-
-    const timeoutId1 = window.setTimeout(() => {
-      setShowTitle(false);
-    }, presentationConfig.postProcessDelay + BLEED_START_DELAY - TITLE_ANIMATION_DURATION - 1000);
-    timeoutIds.current.push(timeoutId1);
-    const timeoutId = window.setTimeout(() => {
-      setCurrentPhraseIndex(0);
-    }, presentationConfig.postProcessDelay + BLEED_START_DELAY);
-    timeoutIds.current.push(timeoutId);
-
-  };
-
-  // Handle background image upload via our config setter.
-  const handleImageUpload = (e: ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      const url = URL.createObjectURL(file);
-      setPresentationConfig({ bgImage: url });
-    }
-  };
-
-  // Close fullscreen on Esc key press.
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setFullscreen(false);
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, []);
-
   // Rename a collection
   const handleRenameCollection = async (id: string) => {
     if (!user) return;
@@ -932,32 +548,6 @@ export default function Home() {
     }
   };
 
-  const handlePlayPhrase = (index: number, phase: 'input' | 'output') => {
-    clearAllTimeouts();
-    if (audioRef.current) {
-      const isPaused = paused;
-      audioRef.current.pause();
-      audioRef.current.src = phrases[index][phase === 'input' ? 'inputAudio' : 'outputAudio']?.audioUrl || '';
-      setCurrentPhraseIndex(index);
-      setCurrentPhase(phase);
-      if (isPaused) {
-        // If paused, play in isolation without changing state
-        audioRef.current.play().catch((err) => {
-          console.error('Auto-play error:', err);
-          // If playback fails, try to regenerate the audio
-          handleAudioError(currentPhase);
-        });
-      } else {
-        // If not paused, update state and play through main audio element
-        setPaused(false);
-        audioRef.current.play().catch((err) => {
-          console.error('Auto-play error:', err);
-          // If playback fails, try to regenerate the audio
-          handleAudioError(currentPhase, true);
-        });
-      }
-    }
-  };
 
   // Add handleShare function
   const handleShare = async (id: string) => {
@@ -985,6 +575,38 @@ export default function Home() {
     }
   };
 
+  // Create the sticky header content
+  const stickyHeaderContent = (
+    <div className="w-full flex items-center p-2">
+      {selectedCollection && savedCollections && (
+        <CollectionHeader
+          collectionId={selectedCollection}
+          savedCollections={savedCollections}
+          onRename={handleRenameCollection}
+          onDelete={handleDeleteCollection}
+          onVoiceChange={handleVoiceChange}
+          onShare={handleShare}
+          inputLang={addToCollectionInputLang}
+          targetLang={addToCollectionTargetLang}
+          className="hidden lg:flex"
+          titleClassName="max-w-[250px]"
+        />
+      )}
+      <div className="w-fit whitespace-nowrap ml-auto">
+        <ImportPhrases
+          inputLang={addToCollectionInputLang}
+          setInputLang={setAddToCollectionInputLang}
+          targetLang={addToCollectionTargetLang}
+          setTargetLang={setAddToCollectionTargetLang}
+          phrasesInput={phrasesInput}
+          setPhrasesInput={setPhrasesInput}
+          loading={loading}
+          onAddToCollection={handleAddToCollection}
+        />
+      </div>
+    </div>
+  );
+
   if (isAuthLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
@@ -1001,10 +623,14 @@ export default function Home() {
     // Container
     <div className="font-sans lg:h-[100vh] flex flex-col bg-background text-foreground">
       {/* Nav */}
-      <div className={`flex items-center justify-between shadow-md lg:mb-0 p-3 sticky top-0 bg-background border-b ${fullscreen ? 'z-1' : 'z-50'}`}>
+      <div className={`flex items-center justify-between shadow-md lg:mb-0 p-3 sticky top-0 bg-background border-b`}>
         {/* Back button - hidden when no collection selected */}
         <button
-          onClick={() => { setSelectedCollection(''); handleStop(); setPhrasesBase([]) }}
+          onClick={() => {
+            setSelectedCollection('');
+            playbackMethodsRef.current?.handleStop();
+            setPhrasesBase([])
+          }}
           className={`lg:hidden bg-secondary hover:bg-secondary/80 px-4 py-2 rounded-lg ${!selectedCollection ? 'hidden' : ''}`}
         >
           ← Back
@@ -1056,8 +682,7 @@ export default function Home() {
         )}
       </div>
 
-      {/* Audio Element */}
-      <audio ref={audioRef} onEnded={handleAudioEnded} controls hidden />
+
 
 
       {/* Main content */}
@@ -1104,17 +729,10 @@ export default function Home() {
             onVoiceChange={handleVoiceChange}
             onShare={handleShare}
             showImportPhrases={true}
-            inputLang={addToCollectionInputLang}
-            setInputLang={setAddToCollectionInputLang}
-            targetLang={addToCollectionTargetLang}
-            setTargetLang={setAddToCollectionTargetLang}
-            phrasesInput={phrasesInput}
-            setPhrasesInput={setPhrasesInput}
-            loading={loading}
-            onAddToCollection={handleAddToCollection}
-            recordScreen={recordScreen}
-            stopScreenRecording={stopScreenRecording}
+            stickyHeaderContent={stickyHeaderContent}
             updateUserStats={updateUserStats}
+            methodsRef={playbackMethodsRef}
+            readOnly={false}
           />
         )}
 

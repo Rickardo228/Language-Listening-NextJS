@@ -8,6 +8,17 @@ import { Config, Phrase, PresentationConfig } from '../types';
 import { generateAudio } from '../utils/audioUtils';
 import { BLEED_START_DELAY, DELAY_AFTER_INPUT_PHRASES_MULTIPLIER, DELAY_AFTER_OUTPUT_PHRASES_MULTIPLIER, } from '../consts';
 
+// Extract the methods ref type into a reusable type
+export type PhrasePlaybackMethods = {
+    handleStop: () => void;
+    handlePause: () => void;
+    handlePlay: () => void;
+    handleReplay: () => Promise<void>;
+    handlePlayPhrase: (index: number, phase: 'input' | 'output') => void;
+    setCurrentPhraseIndex: (index: number) => void;
+    setCurrentPhase: (phase: 'input' | 'output') => void;
+};
+
 interface PhrasePlaybackViewProps {
     // Core data
     phrases: Phrase[];
@@ -27,20 +38,12 @@ interface PhrasePlaybackViewProps {
 
     // Import phrases props
     showImportPhrases?: boolean;
-    inputLang?: string;
-    setInputLang?: (lang: string) => void;
-    targetLang?: string;
-    setTargetLang?: (lang: string) => void;
-    phrasesInput?: string;
-    setPhrasesInput?: (input: string) => void;
-    loading?: boolean;
-    onAddToCollection?: (inputLang?: string, targetLang?: string, isSwapped?: boolean) => void;
+    stickyHeaderContent?: React.ReactNode;
 
     // Playback control
-    recordScreen?: boolean;
-    stopScreenRecording?: () => void;
     updateUserStats?: () => void;
     readOnly?: boolean;
+    methodsRef?: React.MutableRefObject<PhrasePlaybackMethods | null>;
 }
 
 export function PhrasePlaybackView({
@@ -57,18 +60,10 @@ export function PhrasePlaybackView({
     onVoiceChange,
     onShare,
     showImportPhrases = false,
-    inputLang,
-    setInputLang,
-    targetLang,
-    setTargetLang,
-    phrasesInput,
-    setPhrasesInput,
-    loading,
-    onAddToCollection,
-    recordScreen = false,
-    stopScreenRecording,
+    stickyHeaderContent,
     updateUserStats,
-    readOnly = false
+    readOnly = false,
+    methodsRef,
 }: PhrasePlaybackViewProps) {
     // Playback and sequence control states
     const [currentPhraseIndex, setCurrentPhraseIndex] = useState<number>(-1);
@@ -145,10 +140,18 @@ export function PhrasePlaybackView({
         if (audioRef.current) {
             audioRef.current.pause();
         }
-        if (stopScreenRecording) {
-            stopScreenRecording();
+        setPaused(true);
+    };
+
+    const handleStop = () => {
+        clearAllTimeouts();
+        if (audioRef.current) {
+            audioRef.current.pause();
+            audioRef.current.src = '';
         }
         setPaused(true);
+        setFinished(true);
+        setCurrentPhraseIndex(-1);
     };
 
     const handlePlay = () => {
@@ -169,14 +172,6 @@ export function PhrasePlaybackView({
 
     const handleReplay = async () => {
         clearAllTimeouts();
-
-        // Start recording if enabled
-        if (recordScreen) {
-            handlePause();
-            setFullscreen(true);
-            // Note: startScreenRecording is not included as it's specific to the main page
-        }
-
         setCurrentPhraseIndex(prev => prev < 0 ? prev - 1 : -1);
         setCurrentPhase('input');
         if (audioRef.current && phrases[0]?.inputAudio?.audioUrl) {
@@ -249,9 +244,6 @@ export function PhrasePlaybackView({
                             setCurrentPhraseIndex(0);
                         } else {
                             setFinished(true);
-                            if (stopScreenRecording) {
-                                stopScreenRecording();
-                            }
                             setPaused(true);
                         }
                     }
@@ -278,9 +270,6 @@ export function PhrasePlaybackView({
                             setCurrentPhase('input');
                         } else {
                             setFinished(true);
-                            if (stopScreenRecording) {
-                                stopScreenRecording();
-                            }
                             setPaused(true);
                         }
                     }
@@ -338,6 +327,16 @@ export function PhrasePlaybackView({
         }
     }, [currentPhraseIndex, currentPhase, paused, currentInputAudioUrl, currentOutputAudioUrl]);
 
+    if (methodsRef) methodsRef.current = {
+        handleStop,
+        handlePause,
+        handlePlay,
+        handleReplay,
+        handlePlayPhrase,
+        setCurrentPhraseIndex,
+        setCurrentPhase
+    };
+
     return (
         <div className="flex-1 lg:overflow-y-auto lg:relative">            {/* Audio Element */}
             <audio ref={audioRef} onEnded={handleAudioEnded} controls hidden />
@@ -346,38 +345,9 @@ export function PhrasePlaybackView({
             <div className="flex lg:flex-row flex-col-reverse w-full lg:h-[92vh]">
                 {/* Phrases List */}
                 <div className="flex-1 lg:overflow-y-auto lg:relative">
-                    {showImportPhrases && collectionId && (
+                    {showImportPhrases && collectionId && stickyHeaderContent && (
                         <div className={`sticky lg:px-0 lg:pb-3 px-1 py-2 top-[320px] lg:top-[0px] lg:bg-background bg-gray-50 dark:bg-gray-900 z-1`}>
-                            <div className="w-full flex items-center p-2">
-                                {savedCollections && onRenameCollection && onDeleteCollection && onVoiceChange && onShare && (
-                                    <CollectionHeader
-                                        collectionId={collectionId}
-                                        savedCollections={savedCollections}
-                                        onRename={onRenameCollection}
-                                        onDelete={onDeleteCollection}
-                                        onVoiceChange={onVoiceChange}
-                                        onShare={onShare}
-                                        inputLang={inputLang}
-                                        targetLang={targetLang}
-                                        className="hidden lg:flex"
-                                        titleClassName="max-w-[250px]"
-                                    />
-                                )}
-                                {inputLang && setInputLang && targetLang && setTargetLang && phrasesInput && setPhrasesInput && loading && onAddToCollection && (
-                                    <div className="w-fit whitespace-nowrap ml-auto">
-                                        <ImportPhrases
-                                            inputLang={inputLang}
-                                            setInputLang={setInputLang}
-                                            targetLang={targetLang}
-                                            setTargetLang={setTargetLang}
-                                            phrasesInput={phrasesInput}
-                                            setPhrasesInput={setPhrasesInput}
-                                            loading={loading}
-                                            onAddToCollection={onAddToCollection}
-                                        />
-                                    </div>
-                                )}
-                            </div>
+                            {stickyHeaderContent}
                         </div>
                     )}
 
@@ -437,8 +407,6 @@ export function PhrasePlaybackView({
                             <PresentationControls
                                 fullscreen={fullscreen}
                                 setFullscreen={setFullscreen}
-                                recordScreen={recordScreen}
-                                stopScreenRecording={stopScreenRecording || (() => { })}
                                 handleReplay={handleReplay}
                                 hasPhrasesLoaded={phrases.length > 0}
                                 configName={configName}
