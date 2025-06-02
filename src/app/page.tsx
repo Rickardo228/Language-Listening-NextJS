@@ -622,7 +622,7 @@ export default function Home() {
     // Container
     <div className="font-sans lg:h-[100vh] flex flex-col bg-background text-foreground">
       {/* Nav */}
-      <div className={`flex items-center justify-between shadow-md lg:mb-0 p-3 sticky top-0 bg-background border-b`}>
+      <div className={`flex items-center justify-between shadow-md lg:mb-0 p-3 sticky top-0 bg-background border-b z-50`}>
         {/* Back button - hidden when no collection selected */}
         <button
           onClick={() => {
