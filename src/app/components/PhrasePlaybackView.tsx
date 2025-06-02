@@ -41,7 +41,7 @@ interface PhrasePlaybackViewProps {
     stickyHeaderContent?: React.ReactNode;
 
     // Playback control
-    updateUserStats?: () => void;
+    updateUserStats?: (currentPhraseIndex: number) => void;
     readOnly?: boolean;
     methodsRef?: React.MutableRefObject<PhrasePlaybackMethods | null>;
 }
@@ -66,11 +66,11 @@ export function PhrasePlaybackView({
     methodsRef,
 }: PhrasePlaybackViewProps) {
     // Playback and sequence control states
-    const [currentPhraseIndex, setCurrentPhraseIndex] = useState<number>(-1);
+    const [currentPhraseIndex, setCurrentPhraseIndex] = useState<number>(0);
     const [currentPhase, setCurrentPhase] = useState<'input' | 'output'>('input');
     const [finished, setFinished] = useState<boolean>(false);
     const [fullscreen, setFullscreen] = useState<boolean>(false);
-    const [paused, setPaused] = useState(false);
+    const [paused, setPaused] = useState(true);
     const [showTitle, setShowTitle] = useState(false);
     const [configName, setConfigName] = useState<string>('');
 
@@ -233,7 +233,7 @@ export function PhrasePlaybackView({
                 if (playOutputBeforeInput) {
                     // Update user stats when phrase ends
                     if (updateUserStats) {
-                        updateUserStats();
+                        updateUserStats(currentPhraseIndex);
                     }
 
                     if (currentPhraseIndex < phrases.length - 1 && !paused) {
@@ -257,7 +257,7 @@ export function PhrasePlaybackView({
                 } else {
                     // Update user stats when phrase ends
                     if (updateUserStats) {
-                        updateUserStats();
+                        updateUserStats(currentPhraseIndex);
                     }
 
                     if (currentPhraseIndex < phrases.length - 1 && !paused) {

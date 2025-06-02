@@ -64,7 +64,6 @@ export function PresentationView({
   const [isIdle, setIsIdle] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const [portalContainer, setPortalContainer] = useState<HTMLElement | null>(null);
-
   // Create portal container on mount
   useEffect(() => {
     if (typeof document !== 'undefined') {

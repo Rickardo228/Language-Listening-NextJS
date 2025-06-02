@@ -374,7 +374,7 @@ export default function Home() {
   };
 
   // Update user stats when audio ends
-  const updateUserStats = async () => {
+  const updateUserStats = async (currentPhraseIndex) => {
     if (!user) return;
     const now = new Date();
     const today = now.toISOString().split('T')[0]; // Get YYYY-MM-DD format
