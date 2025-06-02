@@ -7,7 +7,6 @@ import { Config, languageOptions, Phrase, PresentationConfig, CollectionType as 
 import { usePresentationConfig } from './hooks/usePresentationConfig';
 import { presentationConfigDefinition } from './configDefinitions';
 import { EditablePhrases } from './EditablePhrases';
-import { PresentationControls } from './PresentationControls';
 import { API_BASE_URL, BLEED_START_DELAY, DELAY_AFTER_INPUT_PHRASES_MULTIPLIER, DELAY_AFTER_OUTPUT_PHRASES_MULTIPLIER, LAG_COMPENSATION } from './consts';
 import { ImportPhrases } from './ImportPhrases';
 import { onAuthStateChanged, User } from 'firebase/auth';
@@ -720,7 +719,6 @@ export default function Home() {
             setPhrases={setPhrases}
             presentationConfig={presentationConfig}
             setPresentationConfig={setPresentationConfig}
-            presentationConfigDefinition={presentationConfigDefinition}
             collectionId={selectedCollection}
             collectionName={savedCollections.find(col => col.id === selectedCollection)?.name}
             savedCollections={savedCollections}

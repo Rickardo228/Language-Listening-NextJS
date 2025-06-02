@@ -1,7 +1,7 @@
 import { X } from 'lucide-react';
 import { PresentationConfig } from './types';
 import ConfigFields from './ConfigFields';
-import { ConfigFieldDefinition } from './configDefinitions';
+import { ConfigFieldDefinition, presentationConfigDefinition } from './configDefinitions';
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 
@@ -13,7 +13,6 @@ interface SettingsModalProps {
     onSaveConfig: () => void;
     presentationConfig: PresentationConfig;
     setPresentationConfig: (config: PresentationConfig) => void;
-    presentationConfigDefinition: ConfigFieldDefinition[];
     handleImageUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
@@ -25,11 +24,9 @@ export function SettingsModal({
     // onSaveConfig,
     presentationConfig,
     setPresentationConfig,
-    presentationConfigDefinition,
     handleImageUpload
 }: SettingsModalProps) {
     const [mounted, setMounted] = useState(false);
-
     useEffect(() => {
         setMounted(true);
         return () => setMounted(false);

@@ -25,7 +25,6 @@ interface PhrasePlaybackViewProps {
     setPhrases?: (phrases: Phrase[], collectionId?: string) => Promise<void>;
     presentationConfig: PresentationConfig;
     setPresentationConfig?: (config: Partial<PresentationConfig>) => Promise<void>;
-    presentationConfigDefinition?: any;
 
     // Collection info
     collectionId?: string;
@@ -51,7 +50,6 @@ export function PhrasePlaybackView({
     setPhrases,
     presentationConfig,
     setPresentationConfig,
-    presentationConfigDefinition,
     collectionId,
     collectionName,
     savedCollections,
@@ -414,7 +412,6 @@ export function PhrasePlaybackView({
                                 onSaveConfig={() => { }}
                                 presentationConfig={presentationConfig}
                                 setPresentationConfig={setPresentationConfig || (() => { })}
-                                presentationConfigDefinition={presentationConfigDefinition || {}}
                                 handleImageUpload={handleImageUpload}
                                 paused={paused}
                                 onPause={handlePause}

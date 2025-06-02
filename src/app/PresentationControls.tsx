@@ -2,7 +2,6 @@ import { Maximize2, Pause, Play, Repeat, ArrowLeft, ArrowRight, Settings } from 
 import { SettingsModal } from './SettingsModal';
 import { PresentationConfig } from './types';
 import { useState } from 'react';
-import { ConfigFieldDefinition } from './configDefinitions';
 
 interface PresentationControlsProps {
     fullscreen: boolean;
@@ -16,7 +15,6 @@ interface PresentationControlsProps {
     onSaveConfig: () => void;
     presentationConfig: PresentationConfig;
     setPresentationConfig: (config: PresentationConfig) => void;
-    presentationConfigDefinition: ConfigFieldDefinition[];
     handleImageUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
     paused: boolean;
     onPause: () => void;
@@ -39,7 +37,6 @@ export function PresentationControls({
     onSaveConfig,
     presentationConfig,
     setPresentationConfig,
-    presentationConfigDefinition,
     handleImageUpload,
     paused,
     onPause,
@@ -126,7 +123,6 @@ export function PresentationControls({
                 onSaveConfig={onSaveConfig}
                 presentationConfig={presentationConfig}
                 setPresentationConfig={setPresentationConfig}
-                presentationConfigDefinition={presentationConfigDefinition}
                 handleImageUpload={handleImageUpload}
             />
         </>
