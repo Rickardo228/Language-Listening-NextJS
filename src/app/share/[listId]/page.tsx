@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
-import { Config, Phrase } from '../../types';
+import { Config, Phrase, PresentationConfig } from '../../types';
 import { SignInPage } from '../../SignInPage';
 import { auth } from '../../firebase';
 import { getFirestore, doc, getDoc, collection as firestoreCollection, addDoc } from 'firebase/firestore';
@@ -118,6 +118,17 @@ export default function SharedList() {
                         setCollection({
                             ...collection,
                             phrases: phrases
+                        });
+                    }
+                }}
+                setPresentationConfig={async (config: Partial<PresentationConfig>) => {
+                    if (collection) {
+                        setCollection({
+                            ...collection,
+                            presentationConfig: {
+                                ...collection.presentationConfig,
+                                ...config
+                            }
                         });
                     }
                 }}
