@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
-import { Config } from '../../types';
+import { Config, Phrase } from '../../types';
 import { SignInPage } from '../../SignInPage';
 import { auth } from '../../firebase';
 import { getFirestore, doc, getDoc, collection as firestoreCollection, addDoc } from 'firebase/firestore';
@@ -113,6 +113,14 @@ export default function SharedList() {
                 presentationConfig={collection.presentationConfig}
                 collectionName={collection.name}
                 readOnly={true}
+                setPhrases={async (phrases: Phrase[], collectionId?: string | undefined) => {
+                    if (collection) {
+                        setCollection({
+                            ...collection,
+                            phrases: phrases
+                        });
+                    }
+                }}
             />
         </div>
     );
