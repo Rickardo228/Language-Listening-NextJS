@@ -1,22 +1,35 @@
 import { signInWithPopup, GoogleAuthProvider, createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from './firebase';
 import Link from 'next/link';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, ReactElement } from 'react';
 import { OnboardingLanguageSelect } from './components/OnboardingLanguageSelect';
 import { languageOptions } from './types';
 
+interface Advantage {
+    text: string;
+    icon?: string;
+}
+
 interface SignInPageProps {
     title?: string;
-    description?: string;
+    description?: string | ((isSignUp: boolean) => string | ReactElement);
     showLanguageSelect?: boolean;
     onAuthSuccess?: (user: any) => void;
 }
+
+export const defaultAdvantages: Advantage[] = [
+    { text: "Translate 28 languages", icon: "🌍" },
+    { text: "Organise phrases in Lists", icon: "📂" },
+    { text: "Get phrase suggestions", icon: "🤖" },
+    { text: "Change voices", icon: "🎤" },
+    { text: "It's entirely free", icon: "✅" }
+];
 
 export function SignInPage({
     title = "Language Shadowing",
     description = "Master languages through shadowing practice",
     showLanguageSelect,
-    onAuthSuccess
+    onAuthSuccess,
 }: SignInPageProps) {
     const [inputLang, setInputLang] = useState(languageOptions[0]?.code || 'en-US');
     const [targetLang, setTargetLang] = useState('it-IT');
@@ -87,15 +100,23 @@ export function SignInPage({
         }
     };
 
+    const getDescription = () => {
+        if (typeof description === 'function') {
+            return description(isSignUp);
+        }
+        return isSignUp && showLanguageSelect ? 'Choose the languages you want to practice with' : description;
+    };
+
     return (
         <div className="w-full max-w-md p-8 space-y-8 bg-card rounded-lg shadow-lg">
 
             <div className="text-center">
                 <h2 className="text-xl font-semibold mb-2">{title}</h2>
-                <p className="text-muted-foreground">{isSignUp && showLanguageSelect ? 'Choose the languages you want to practice with' : description}</p>
+                <div className="text-muted-foreground">{getDescription()}</div>
+
             </div>
 
-            {isSignUp && (
+            {isSignUp && showLanguageSelect && (
                 <OnboardingLanguageSelect
                     inputLang={inputLang}
                     setInputLang={setInputLang}

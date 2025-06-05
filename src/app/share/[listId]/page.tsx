@@ -3,13 +3,14 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Config, Phrase, PresentationConfig } from '../../types';
-import { SignInPage } from '../../SignInPage';
+import { defaultAdvantages, SignInPage } from '../../SignInPage';
 import { auth, User } from '../../firebase';
 import { getFirestore, doc, getDoc, collection as firestoreCollection, addDoc, query, where, getDocs } from 'firebase/firestore';
 import { PhrasePlaybackView } from '../../components/PhrasePlaybackView';
 import { LanguageFlags } from '../../components/LanguageFlags';
 
 const firestore = getFirestore();
+
 
 export default function SharedList() {
     const { listId } = useParams();
@@ -19,6 +20,7 @@ export default function SharedList() {
     const [user, setUser] = useState(null);
     const [showSignIn, setShowSignIn] = useState(false);
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+    const [previousPhraseCount, setPreviousPhraseCount] = useState<number | null>(null);
 
     useEffect(() => {
         const fetchCollection = async () => {
@@ -44,6 +46,15 @@ export default function SharedList() {
         });
         return () => unsubscribe();
     }, []);
+
+    useEffect(() => {
+        if (collection && previousPhraseCount !== null && collection.phrases.length < previousPhraseCount) {
+            setShowSignIn(true);
+        }
+        if (collection) {
+            setPreviousPhraseCount(collection.phrases.length);
+        }
+    }, [collection?.phrases.length]);
 
     const handleSaveList = async () => {
         if (!user) {
@@ -130,7 +141,30 @@ export default function SharedList() {
                     </button>
                     <SignInPage
                         title="Save This List"
-                        description="Sign in to save this list, translate new phrases and create your own collections"
+                        description={(isSignUp) => isSignUp ? (
+                            <>
+                                Create an account to save this list and start building your collection
+                                <div className="mt-4 text-left">
+                                    {/* <h3 className="text-sm font-medium mb-2">Create an account to:</h3> */}
+                                    <ul className="space-y-2">
+                                        {defaultAdvantages.map((advantage, index) => (
+                                            <li key={index} className="flex items-center gap-2 text-sm text-muted-foreground">
+                                                {advantage.icon ? (
+                                                    <span className="text-primary">{advantage.icon}</span>
+                                                ) : (
+                                                    <svg className="w-4 h-4 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                        <path d="M20 6L9 17l-5-5" />
+                                                    </svg>
+                                                )}
+                                                {advantage.text}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            </>
+                        ) : (
+                            "Sign in to save this list and continue building your collection"
+                        )}
                         onAuthSuccess={saveListToUser}
                     />
                 </div>
@@ -143,14 +177,19 @@ export default function SharedList() {
             {/* Nav */}
             <div className="flex items-center justify-between shadow-md lg:mb-0 p-3 sticky top-0 bg-background border-b z-50">
                 <div className="flex items-center gap-2">
-                    <h1 className='truncate'>{collection.name}</h1>
-                    {collection.phrases[0] && (
-                        <LanguageFlags
-                            inputLang={collection.phrases[0].inputLang}
-                            targetLang={collection.phrases[0].targetLang}
-                            size="lg"
-                        />
-                    )}
+                    <button
+                        onClick={() => setShowSignIn(true)}
+                        className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+                    >
+                        <h1 className='truncate'>{collection.name}</h1>
+                        {collection.phrases[0] && (
+                            <LanguageFlags
+                                inputLang={collection.phrases[0].inputLang}
+                                targetLang={collection.phrases[0].targetLang}
+                                size="lg"
+                            />
+                        )}
+                    </button>
                 </div>
                 <div className="flex items-center gap-4">
                     {hasUnsavedChanges && (
