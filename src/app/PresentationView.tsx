@@ -73,6 +73,8 @@ export function PresentationView({
   const [isIdle, setIsIdle] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const [portalContainer, setPortalContainer] = useState<HTMLElement | null>(null);
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+
   // Create portal container on mount
   useEffect(() => {
     if (typeof document !== 'undefined') {
@@ -111,7 +113,7 @@ export function PresentationView({
   }, []);
 
   const containerClass =
-    `inset-0 flex flex-col items-center justify-center ` +
+    `inset-0 flex flex-col items-center ${(currentPhrase?.length + (romanizedOutput?.length ?? 0)) > 165 && isMobile ? '' : 'justify-center'} ` +
     (fullScreen ? "fixed z-50" : "relative p-4 lg:rounded shadow w-full h-48");
 
   const titlePropClass = fullScreen
@@ -125,10 +127,12 @@ export function PresentationView({
       backgroundSize: "cover",
       backgroundPosition: "center",
       overflow: "hidden",
+      overflowY: "auto"
     }
     : {
       backgroundColor: containerBg,
       overflow: "hidden",
+      overflowY: "auto",
     };
 
   const content = (
@@ -230,7 +234,7 @@ export function PresentationView({
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 10 }}
               transition={{ duration: 0.3, ease: "easeOut" }}
-              className="text-center p-12 absolute flex bg-opacity-90 flex-col"
+              className="text-center px-12 pb-4 absolute flex bg-opacity-90 flex-col"
               style={{
                 alignItems: "center",
                 justifyContent: "center",
