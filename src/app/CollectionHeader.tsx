@@ -34,7 +34,7 @@ export function CollectionHeader({
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [isVoiceModalOpen, setIsVoiceModalOpen] = useState(false);
     const [isPublished, setIsPublished] = useState(false);
-    const [publishedId, setPublishedId] = useState<string | null>(null);
+    const [, setPublishedId] = useState<string | null>(null);
     const triggerRef = useRef<HTMLButtonElement | null>(null);
     const currentCollection = savedCollections.find(col => col.id === collectionId);
 
