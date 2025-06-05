@@ -30,14 +30,23 @@ interface PresentationViewProps {
 
 export const TITLE_ANIMATION_DURATION = 1000
 
-function calculateFontSize(text: string, isFullScreen: boolean): string {
-  if (!text) return isFullScreen ? '4rem' : '1.5rem'; // default sizes
+function calculateFontSize(text: string, isFullScreen: boolean, hasRomanized: boolean = false): string {
+  if (!text) return isFullScreen ? '4rem' : '2rem'; // increased default size for non-fullscreen
 
-  const baseSize = isFullScreen ? 70 : 24; // base font size in pixels
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+
+  // Base sizes adjusted - increased for non-fullscreen
+  const baseSize = isFullScreen ? ((hasRomanized || isMobile) ? 50 : 70) : 32; // reduced romanized size in fullscreen
   const maxChars = isFullScreen ? 30 : 20; // threshold for max characters
 
-  const scale = Math.min(1, maxChars / text.length);
-  const fontSize = Math.max(baseSize * scale, isFullScreen ? 30 : 14); // minimum font size
+  // Special handling for long words on mobile
+  const longestWord = text.split(' ').reduce((max, word) => Math.max(max, word.length), 0);
+
+  // Additional scaling for long words on mobile
+  const longWordScale = isMobile && longestWord > 10 ? 0.8 : 1;
+
+  const scale = Math.min(1, maxChars / text.length) * longWordScale;
+  const fontSize = Math.max(baseSize * scale, isFullScreen ? 30 : 20); // increased minimum size for non-fullscreen
 
   return `${fontSize}px`;
 }
@@ -238,7 +247,8 @@ export function PresentationView({
                   padding: 0,
                   fontSize: calculateFontSize(
                     currentPhase === "input" ? currentPhrase : currentTranslated,
-                    fullScreen
+                    fullScreen,
+                    romanizedOutput ? true : false
                   )
                 }}
               >
@@ -250,7 +260,7 @@ export function PresentationView({
                 <h2
                   className="font-bold text-gray-100 mt-3"
                   style={{
-                    fontSize: calculateFontSize(romanizedOutput, fullScreen)
+                    fontSize: calculateFontSize(romanizedOutput, fullScreen, true)
                   }}
                 >
                   {romanizedOutput}
