@@ -132,6 +132,7 @@ export default function Home() {
   // Load saved collections from Firestore on mount or when user changes
   useEffect(() => {
     if (!user) return;
+
     const fetchCollections = async () => {
       const colRef = collection(firestore, 'users', user.uid, 'collections');
       const snapshot = await getDocs(colRef);
@@ -144,9 +145,9 @@ export default function Home() {
           created_at: phrase.created_at || data.created_at // fallback to collection's created_at if phrase doesn't have one
         }));
         loaded.push({
-          id: docSnap.id,
           ...data,
-          phrases
+          phrases,
+          id: docSnap.id,
         } as Config);
       });
       setSavedCollections(loaded);
@@ -487,6 +488,7 @@ export default function Home() {
   const handleDeleteCollection = async (id: string) => {
     if (!user) return;
     const collection = savedCollections.find(col => col.id === id);
+
     if (!collection) return;
     if (!window.confirm(`Delete list "${collection.name}"? This cannot be undone.`)) return;
     try {
@@ -615,7 +617,11 @@ export default function Home() {
   }
 
   if (!user) {
-    return <SignInPage />;
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-background">
+        <SignInPage showLanguageSelect={true} />
+      </div>
+    );
   }
 
   return (

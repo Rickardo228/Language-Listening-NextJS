@@ -1,20 +1,22 @@
 'use client'
 
 import { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { Config, Phrase, PresentationConfig } from '../../types';
 import { SignInPage } from '../../SignInPage';
-import { auth } from '../../firebase';
-import { getFirestore, doc, getDoc, collection as firestoreCollection, addDoc } from 'firebase/firestore';
+import { auth, User } from '../../firebase';
+import { getFirestore, doc, getDoc, collection as firestoreCollection, addDoc, query, where, getDocs } from 'firebase/firestore';
 import { PhrasePlaybackView } from '../../components/PhrasePlaybackView';
 
 const firestore = getFirestore();
 
 export default function SharedList() {
     const { listId } = useParams();
+    const router = useRouter();
     const [collection, setCollection] = useState<Config | null>(null);
     const [loading, setLoading] = useState(true);
     const [user, setUser] = useState(null);
+    const [showSignIn, setShowSignIn] = useState(false);
 
     useEffect(() => {
         const fetchCollection = async () => {
@@ -42,13 +44,39 @@ export default function SharedList() {
     }, []);
 
     const handleSaveList = async () => {
-        if (!user || !collection) return;
+        if (!user) {
+            setShowSignIn(true);
+            return;
+        }
+        await saveListToUser(user);
+    };
+
+    const saveListToUser = async (user: User) => {
+        if (!collection) return;
 
         try {
+            // Check for existing copies of this list
+            const userCollectionsRef = firestoreCollection(firestore, 'users', user.uid, 'collections');
+            const q = query(userCollectionsRef, where('originalId', '==', listId));
+            const querySnapshot = await getDocs(q);
+
+            if (!querySnapshot.empty) {
+                const overwrite = window.confirm('You already have a copy of this list. Would you like to save it again?');
+                if (!overwrite) {
+                    router.push('/');
+                    return;
+                }
+            }
+
+
+            // Create a new collection object without the id
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            const { id, ...collectionWithoutId } = collection;
             const newCollection = {
-                ...collection,
+                ...collectionWithoutId,
                 name: `${collection.name} (Shared)`,
                 created_at: new Date().toISOString(),
+                originalId: listId,
                 phrases: collection.phrases.map(phrase => ({
                     ...phrase,
                     created_at: new Date().toISOString()
@@ -58,6 +86,7 @@ export default function SharedList() {
             const colRef = firestoreCollection(firestore, 'users', user.uid, 'collections');
             await addDoc(colRef, newCollection);
             alert('List saved successfully!');
+            router.push('/');
         } catch (err) {
             console.error('Error saving list:', err);
             alert('Failed to save list: ' + err);
@@ -83,13 +112,25 @@ export default function SharedList() {
         );
     }
 
-    if (!user) {
+    if (showSignIn) {
         return (
             <div className="min-h-screen bg-background">
-                <div className="max-w-md mx-auto p-6">
-                    <h1 className="text-2xl font-bold mb-4">{collection.name}</h1>
-                    <p className="mb-6">Sign in to save this list and create your own collections.</p>
-                    <SignInPage />
+                <div className="max-w-md mx-auto p-6 relative">
+                    <button
+                        onClick={() => setShowSignIn(false)}
+                        className="absolute top-2 right-2 p-2 text-muted-foreground hover:text-foreground transition-colors"
+                        aria-label="Close"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    </button>
+                    <SignInPage
+                        title="Save This List"
+                        description="Sign in to save this list, translate new phrases and create your own collections"
+                        onAuthSuccess={saveListToUser}
+                    />
                 </div>
             </div>
         );
