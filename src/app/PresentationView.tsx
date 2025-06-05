@@ -114,25 +114,28 @@ export function PresentationView({
 
   const containerClass =
     `inset-0 flex flex-col items-center ${(currentPhrase?.length + (romanizedOutput?.length ?? 0)) > 165 && isMobile ? '' : 'justify-center'} ` +
-    (fullScreen ? "fixed z-50" : "relative p-4 lg:rounded shadow w-full h-48");
+    (fullScreen ? "fixed z-50" : "relative p-4 lg:rounded shadow w-full h-48") +
+    (!containerBg ? " bg-gray-100 dark:bg-gray-900" : "");
 
   const titlePropClass = fullScreen
-    ? "text-8xl font-bold text-white mb-4"
-    : "text-2xl font-bold text-white mb-2";
+    ? "text-8xl font-bold mb-4"
+    : "text-2xl font-bold mb-2";
+
+  const textColorClass = !textBg ? "text-gray-800 dark:text-gray-100" : "text-white";
 
   const containerStyle = bgImage
     ? {
-      backgroundColor: containerBg,
       backgroundImage: `url(${bgImage})`,
       backgroundSize: "cover",
       backgroundPosition: "center",
-      overflow: "hidden",
-      overflowY: "auto"
+      overflow: "hidden" as const,
+      overflowY: "auto" as const,
+      ...(containerBg && { backgroundColor: containerBg })
     }
     : {
-      backgroundColor: containerBg,
-      overflow: "hidden",
-      overflowY: "auto",
+      overflow: "hidden" as const,
+      overflowY: "auto" as const,
+      ...(containerBg && { backgroundColor: containerBg })
     };
 
   const content = (
@@ -204,19 +207,20 @@ export function PresentationView({
               opacity: 0,
               y: 20,
               scale: 0.98,
-              transition: { duration: TITLE_ANIMATION_DURATION / 1000, ease: "easeOut" } // no delay here
+              transition: { duration: TITLE_ANIMATION_DURATION / 1000, ease: "easeOut" }
             }}
-            className="text-center absolute flex flex-col"
+            className={`text-center absolute flex flex-col ${textColorClass}`}
             style={{
               maxWidth: "600px",
               padding: 20,
               alignItems: "center",
               justifyContent: "center",
-              textShadow: `2px 2px 2px ${textBg}`,
-              color: textBg,
-              backgroundColor: textBg.includes("rgb")
-                ? (textBg.slice(0, -1) + " 0.7)").replaceAll(" ", ",")
-                : textBg,
+              textShadow: textBg ? `2px 2px 2px ${textBg}` : "2px 2px 2px rgba(0,0,0,0.2)",
+              backgroundColor: textBg
+                ? (textBg.includes("rgb")
+                  ? (textBg.slice(0, -1) + " 0.7)").replaceAll(" ", ",")
+                  : textBg)
+                : "rgba(255,255,255,0.9) dark:bg-gray-800",
               borderRadius: "1rem"
             }}
           >
@@ -224,9 +228,7 @@ export function PresentationView({
               {title}
             </h1>
           </motion.div>
-
         ) : (
-          // Otherwise, render the currentPhrase/currentTranslated view.
           (currentTranslated || currentPhrase) && (
             <motion.div
               key={currentPhase}
@@ -234,18 +236,20 @@ export function PresentationView({
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 10 }}
               transition={{ duration: 0.3, ease: "easeOut" }}
-              className="text-center px-12 pb-4 absolute flex bg-opacity-90 flex-col"
+              className={`text-center px-12 pb-4 absolute flex bg-opacity-90 flex-col ${textColorClass}`}
               style={{
                 alignItems: "center",
                 justifyContent: "center",
-                backgroundColor: textBg.includes("rgb")
-                  ? (textBg.slice(0, -1) + " 0.9)").replaceAll(" ", ",")
-                  : textBg,
+                backgroundColor: textBg
+                  ? (textBg.includes("rgb")
+                    ? (textBg.slice(0, -1) + " 0.9)").replaceAll(" ", ",")
+                    : textBg)
+                  : "rgba(255,255,255,0.9) dark:bg-gray-800",
                 borderRadius: '1rem'
               }}
             >
               <h2
-                className="font-bold text-white"
+                className="font-bold"
                 style={{
                   margin: 0,
                   padding: 0,
@@ -262,7 +266,7 @@ export function PresentationView({
               </h2>
               {currentPhase === "output" && romanizedOutput && (
                 <h2
-                  className="font-bold text-gray-100 mt-3"
+                  className="font-bold mt-3"
                   style={{
                     fontSize: calculateFontSize(romanizedOutput, fullScreen, true)
                   }}
