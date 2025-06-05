@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useMemo } from 'react';
 import { PresentationView } from '../PresentationView';
 import { PresentationControls } from '../PresentationControls';
 import { EditablePhrases } from '../EditablePhrases';
-import { Config, Phrase, PresentationConfig } from '../types';
+import { Phrase, PresentationConfig } from '../types';
 import { generateAudio } from '../utils/audioUtils';
 import { BLEED_START_DELAY, DELAY_AFTER_INPUT_PHRASES_MULTIPLIER, DELAY_AFTER_OUTPUT_PHRASES_MULTIPLIER, } from '../consts';
 

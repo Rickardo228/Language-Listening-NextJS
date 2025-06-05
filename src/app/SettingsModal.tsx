@@ -1,7 +1,7 @@
 import { X } from 'lucide-react';
 import { PresentationConfig } from './types';
 import ConfigFields from './ConfigFields';
-import { ConfigFieldDefinition, presentationConfigDefinition } from './configDefinitions';
+import { presentationConfigDefinition } from './configDefinitions';
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 

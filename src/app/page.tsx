@@ -1,13 +1,9 @@
 'use client'
 
-import { useState, useRef, useEffect, ChangeEvent, useMemo } from 'react';
-import { PresentationView, TITLE_ANIMATION_DURATION } from './PresentationView';
-import bgColorOptions from './utils/bgColorOptions';
+import { useState, useRef, useEffect } from 'react';
 import { Config, languageOptions, Phrase, PresentationConfig, CollectionType as CollectionTypeEnum } from './types';
 import { usePresentationConfig } from './hooks/usePresentationConfig';
-import { presentationConfigDefinition } from './configDefinitions';
-import { EditablePhrases } from './EditablePhrases';
-import { API_BASE_URL, BLEED_START_DELAY, DELAY_AFTER_INPUT_PHRASES_MULTIPLIER, DELAY_AFTER_OUTPUT_PHRASES_MULTIPLIER, LAG_COMPENSATION } from './consts';
+import { API_BASE_URL } from './consts';
 import { ImportPhrases } from './ImportPhrases';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, increment, setDoc } from 'firebase/firestore';
@@ -17,7 +13,6 @@ import { useTheme } from './ThemeProvider';
 import { UserAvatar } from './components/UserAvatar';
 import { auth } from './firebase';
 import { defaultPresentationConfig, defaultPresentationConfigs } from './defaultConfig';
-import { generateAudio } from './utils/audioUtils';
 import { SignInPage } from './SignInPage';
 import { ImportPhrasesDialog } from './ImportPhrasesDialog';
 import clarity from '@microsoft/clarity';

@@ -14,7 +14,7 @@ interface SignInPageProps {
     title?: string;
     description?: string | ((isSignUp: boolean) => string | ReactElement);
     showLanguageSelect?: boolean;
-    onAuthSuccess?: (user: any) => void;
+    onAuthSuccess?: (user: import('firebase/auth').User) => void;
 }
 
 export const defaultAdvantages: Advantage[] = [
