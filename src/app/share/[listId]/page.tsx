@@ -4,20 +4,20 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Config, Phrase, PresentationConfig } from '../../types';
 import { defaultAdvantages, SignInPage } from '../../SignInPage';
-import { auth, User } from '../../firebase';
+import { auth } from '../../firebase';
+import { User as FirebaseUser } from 'firebase/auth';
 import { getFirestore, doc, getDoc, collection as firestoreCollection, addDoc, query, where, getDocs } from 'firebase/firestore';
 import { PhrasePlaybackView } from '../../components/PhrasePlaybackView';
 import { LanguageFlags } from '../../components/LanguageFlags';
 
 const firestore = getFirestore();
 
-
 export default function SharedList() {
     const { listId } = useParams();
     const router = useRouter();
     const [collection, setCollection] = useState<Config | null>(null);
     const [loading, setLoading] = useState(true);
-    const [user, setUser] = useState(null);
+    const [user, setUser] = useState<FirebaseUser | null>(null);
     const [showSignIn, setShowSignIn] = useState(false);
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
     const [previousPhraseCount, setPreviousPhraseCount] = useState<number | null>(null);
@@ -64,7 +64,7 @@ export default function SharedList() {
         await saveListToUser(user);
     };
 
-    const saveListToUser = async (user: User) => {
+    const saveListToUser = async (user: FirebaseUser) => {
         if (!collection) return;
 
         try {
@@ -205,10 +205,27 @@ export default function SharedList() {
             </div>
             <PhrasePlaybackView
                 phrases={collection.phrases}
-                presentationConfig={collection.presentationConfig}
+                presentationConfig={collection.presentationConfig || {
+                    name: 'Default',
+                    bgImage: null,
+                    containerBg: '#ffffff',
+                    textBg: '#ffffff',
+                    enableSnow: false,
+                    enableCherryBlossom: false,
+                    enableLeaves: false,
+                    enableAutumnLeaves: false,
+                    enableOrtonEffect: false,
+                    enableParticles: false,
+                    enableSteam: false,
+                    enableOutputBeforeInput: false,
+                    postProcessDelay: 0,
+                    delayBetweenPhrases: 0,
+                    enableInputDurationDelay: false,
+                    enableOutputDurationDelay: false,
+                    enableLoop: false
+                }}
                 collectionName={collection.name}
-                readOnly={true}
-                setPhrases={async (phrases: Phrase[], collectionId?: string | undefined) => {
+                setPhrases={async (phrases: Phrase[]) => {
                     if (collection) {
                         setCollection({
                             ...collection,
@@ -223,7 +240,24 @@ export default function SharedList() {
                             ...collection,
                             presentationConfig: {
                                 ...collection.presentationConfig,
-                                ...config
+                                ...config,
+                                name: config.name ?? collection.presentationConfig?.name ?? collection.name ?? 'Default',
+                                bgImage: config.bgImage ?? collection.presentationConfig?.bgImage ?? null,
+                                containerBg: config.containerBg ?? collection.presentationConfig?.containerBg ?? '#ffffff',
+                                textBg: config.textBg ?? collection.presentationConfig?.textBg ?? '#ffffff',
+                                enableSnow: config.enableSnow ?? collection.presentationConfig?.enableSnow ?? false,
+                                enableCherryBlossom: config.enableCherryBlossom ?? collection.presentationConfig?.enableCherryBlossom ?? false,
+                                enableLeaves: config.enableLeaves ?? collection.presentationConfig?.enableLeaves ?? false,
+                                enableAutumnLeaves: config.enableAutumnLeaves ?? collection.presentationConfig?.enableAutumnLeaves ?? false,
+                                enableOrtonEffect: config.enableOrtonEffect ?? collection.presentationConfig?.enableOrtonEffect ?? false,
+                                enableParticles: config.enableParticles ?? collection.presentationConfig?.enableParticles ?? false,
+                                enableSteam: config.enableSteam ?? collection.presentationConfig?.enableSteam ?? false,
+                                enableOutputBeforeInput: config.enableOutputBeforeInput ?? collection.presentationConfig?.enableOutputBeforeInput ?? false,
+                                postProcessDelay: config.postProcessDelay ?? collection.presentationConfig?.postProcessDelay ?? 0,
+                                delayBetweenPhrases: config.delayBetweenPhrases ?? collection.presentationConfig?.delayBetweenPhrases ?? 0,
+                                enableInputDurationDelay: config.enableInputDurationDelay ?? collection.presentationConfig?.enableInputDurationDelay ?? false,
+                                enableOutputDurationDelay: config.enableOutputDurationDelay ?? collection.presentationConfig?.enableOutputDurationDelay ?? false,
+                                enableLoop: config.enableLoop ?? collection.presentationConfig?.enableLoop ?? false
                             }
                         });
                         setHasUnsavedChanges(true);

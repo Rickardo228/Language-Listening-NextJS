@@ -1,9 +1,7 @@
-import { useState, useRef, useEffect, useMemo, ChangeEvent } from 'react';
-import { PresentationView, TITLE_ANIMATION_DURATION } from '../PresentationView';
+import { useState, useRef, useEffect, useMemo } from 'react';
+import { PresentationView } from '../PresentationView';
 import { PresentationControls } from '../PresentationControls';
 import { EditablePhrases } from '../EditablePhrases';
-import { ImportPhrases } from '../ImportPhrases';
-import { CollectionHeader } from '../CollectionHeader';
 import { Config, Phrase, PresentationConfig } from '../types';
 import { generateAudio } from '../utils/audioUtils';
 import { BLEED_START_DELAY, DELAY_AFTER_INPUT_PHRASES_MULTIPLIER, DELAY_AFTER_OUTPUT_PHRASES_MULTIPLIER, } from '../consts';
@@ -20,28 +18,15 @@ export type PhrasePlaybackMethods = {
 };
 
 interface PhrasePlaybackViewProps {
-    // Core data
     phrases: Phrase[];
     setPhrases?: (phrases: Phrase[], collectionId?: string) => Promise<void>;
     presentationConfig: PresentationConfig;
     setPresentationConfig?: (config: Partial<PresentationConfig>) => Promise<void>;
-
-    // Collection info
     collectionId?: string;
     collectionName?: string;
-    savedCollections?: Config[];
-    onRenameCollection?: (id: string) => void;
-    onDeleteCollection?: (id: string) => void;
-    onVoiceChange?: (inputVoice: string, targetVoice: string) => void;
-    onShare?: (id: string) => void;
-
-    // Import phrases props
     showImportPhrases?: boolean;
     stickyHeaderContent?: React.ReactNode;
-
-    // Playback control
     updateUserStats?: (currentPhraseIndex: number) => void;
-    readOnly?: boolean;
     methodsRef?: React.MutableRefObject<PhrasePlaybackMethods | null>;
 }
 
@@ -52,42 +37,27 @@ export function PhrasePlaybackView({
     setPresentationConfig,
     collectionId,
     collectionName,
-    savedCollections,
-    onRenameCollection,
-    onDeleteCollection,
-    onVoiceChange,
-    onShare,
     showImportPhrases = false,
     stickyHeaderContent,
     updateUserStats,
-    readOnly = false,
     methodsRef,
 }: PhrasePlaybackViewProps) {
-    // Playback and sequence control states
     const [currentPhraseIndex, setCurrentPhraseIndex] = useState<number>(0);
     const [currentPhase, setCurrentPhase] = useState<'input' | 'output'>('input');
-    const [finished, setFinished] = useState<boolean>(false);
     const [fullscreen, setFullscreen] = useState<boolean>(false);
     const [paused, setPaused] = useState(true);
     const [showTitle, setShowTitle] = useState(false);
     const [configName, setConfigName] = useState<string>('');
-
-    // Refs
     const audioRef = useRef<HTMLAudioElement>(null);
     const timeoutIds = useRef<number[]>([]);
-
-    // Memoized audio URLs
     const currentInputAudioUrl = useMemo(() => {
         if (currentPhraseIndex < 0) return '';
         return phrases[currentPhraseIndex]?.inputAudio?.audioUrl || '';
     }, [currentPhraseIndex, phrases]);
-
     const currentOutputAudioUrl = useMemo(() => {
         if (currentPhraseIndex < 0) return '';
         return phrases[currentPhraseIndex]?.outputAudio?.audioUrl || '';
     }, [currentPhraseIndex, phrases]);
-
-    // Utility functions
     const clearAllTimeouts = () => {
         timeoutIds.current.forEach((id) => clearTimeout(id));
         timeoutIds.current = [];
@@ -148,8 +118,6 @@ export function PhrasePlaybackView({
             audioRef.current.src = '';
         }
         setPaused(true);
-        setFinished(true);
-        setCurrentPhraseIndex(-1);
     };
 
     const handlePlay = () => {
@@ -176,12 +144,11 @@ export function PhrasePlaybackView({
             audioRef.current.src = phrases[0].inputAudio?.audioUrl;
         }
         setShowTitle(true);
-        setFinished(false);
         setPaused(false);
 
         const timeoutId1 = window.setTimeout(() => {
             setShowTitle(false);
-        }, presentationConfig.postProcessDelay + BLEED_START_DELAY - TITLE_ANIMATION_DURATION - 1000);
+        }, presentationConfig.postProcessDelay + BLEED_START_DELAY - 1000);
         timeoutIds.current.push(timeoutId1);
 
         const timeoutId = window.setTimeout(() => {
@@ -241,7 +208,6 @@ export function PhrasePlaybackView({
                             // If looping is enabled, restart from beginning
                             setCurrentPhraseIndex(0);
                         } else {
-                            setFinished(true);
                             setPaused(true);
                         }
                     }
@@ -267,22 +233,12 @@ export function PhrasePlaybackView({
                             setCurrentPhraseIndex(0);
                             setCurrentPhase('input');
                         } else {
-                            setFinished(true);
                             setPaused(true);
                         }
                     }
                 }
             }, playOutputBeforeInput ? inputDuration + 1000 : (outputDuration * DELAY_AFTER_OUTPUT_PHRASES_MULTIPLIER) + presentationConfig.delayBetweenPhrases);
             timeoutIds.current.push(timeoutId);
-        }
-    };
-
-    // Handle background image upload
-    const handleImageUpload = (e: ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files[0] && setPresentationConfig) {
-            const file = e.target.files[0];
-            const url = URL.createObjectURL(file);
-            setPresentationConfig({ bgImage: url });
         }
     };
 
@@ -373,7 +329,6 @@ export function PhrasePlaybackView({
                                 }}
                                 onPlayPhrase={handlePlayPhrase}
                                 enableOutputBeforeInput={presentationConfig.enableOutputBeforeInput}
-                                readOnly={readOnly}
                             />
                         </div>
                     )}
@@ -405,6 +360,8 @@ export function PhrasePlaybackView({
                             <PresentationControls
                                 fullscreen={fullscreen}
                                 setFullscreen={setFullscreen}
+                                recordScreen={false}
+                                stopScreenRecording={() => { }}
                                 handleReplay={handleReplay}
                                 hasPhrasesLoaded={phrases.length > 0}
                                 configName={configName}
@@ -412,7 +369,7 @@ export function PhrasePlaybackView({
                                 onSaveConfig={() => { }}
                                 presentationConfig={presentationConfig}
                                 setPresentationConfig={setPresentationConfig || (() => { })}
-                                handleImageUpload={handleImageUpload}
+                                handleImageUpload={() => { }}
                                 paused={paused}
                                 onPause={handlePause}
                                 onPlay={handlePlay}
@@ -468,7 +425,6 @@ export function PhrasePlaybackView({
                                 }}
                                 canGoBack={currentPhase === 'output' || currentPhraseIndex > 0}
                                 canGoForward={currentPhase === 'input' || currentPhraseIndex < phrases.length - 1}
-                                readOnly={readOnly}
                             />
                         </div>
                     </div>

@@ -374,7 +374,7 @@ export default function Home() {
   };
 
   // Update user stats when audio ends
-  const updateUserStats = async (currentPhraseIndex) => {
+  const updateUserStats = async (currentPhraseIndex: number) => {
     if (!user) return;
     const now = new Date();
     const today = now.toISOString().split('T')[0]; // Get YYYY-MM-DD format
@@ -727,16 +727,10 @@ export default function Home() {
             setPresentationConfig={setPresentationConfig}
             collectionId={selectedCollection}
             collectionName={savedCollections.find(col => col.id === selectedCollection)?.name}
-            savedCollections={savedCollections}
-            onRenameCollection={handleRenameCollection}
-            onDeleteCollection={handleDeleteCollection}
-            onVoiceChange={handleVoiceChange}
-            onShare={handleShare}
             showImportPhrases={true}
             stickyHeaderContent={stickyHeaderContent}
             updateUserStats={updateUserStats}
             methodsRef={playbackMethodsRef}
-            readOnly={false}
           />
         )}
 
