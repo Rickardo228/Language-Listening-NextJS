@@ -144,7 +144,8 @@ export default function SharedList() {
                 <h1 className="text-2xl font-bold">{collection.name}</h1>
                 <div className="flex items-center gap-4">
                     {hasUnsavedChanges && (
-                        <span className="text-muted-foreground text-sm">Unsaved changes - This isn&apos;t your list, but it can be! <span className="font-bold text-lg ml-2"> 👉</span></span>
+                        <span className="text-primary-foreground text-sm">Unsaved changes</span>
+                        /* <span className="text-primary font-medium text-sm">Unsaved changes - This isn&apos;t your list, but it can be! <span className="font-bold text-lg ml-2"> 👉</span></span> */
                     )}
                     <button
                         onClick={handleSaveList}
