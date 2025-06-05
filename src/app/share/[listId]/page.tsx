@@ -17,6 +17,7 @@ export default function SharedList() {
     const [loading, setLoading] = useState(true);
     const [user, setUser] = useState(null);
     const [showSignIn, setShowSignIn] = useState(false);
+    const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
     useEffect(() => {
         const fetchCollection = async () => {
@@ -141,12 +142,17 @@ export default function SharedList() {
             {/* Nav */}
             <div className="flex items-center justify-between shadow-md lg:mb-0 p-3 sticky top-0 bg-background border-b z-50">
                 <h1 className="text-2xl font-bold">{collection.name}</h1>
-                <button
-                    onClick={handleSaveList}
-                    className="bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-lg"
-                >
-                    Save List
-                </button>
+                <div className="flex items-center gap-4">
+                    {hasUnsavedChanges && (
+                        <span className="text-muted-foreground text-sm">Unsaved changes - This isn&apos;t your list, but it can be! <span className="font-bold text-lg ml-2"> 👉</span></span>
+                    )}
+                    <button
+                        onClick={handleSaveList}
+                        className="bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-lg"
+                    >
+                        Save a Copy
+                    </button>
+                </div>
             </div>
 
             <PhrasePlaybackView
@@ -160,6 +166,7 @@ export default function SharedList() {
                             ...collection,
                             phrases: phrases
                         });
+                        setHasUnsavedChanges(true);
                     }
                 }}
                 setPresentationConfig={async (config: Partial<PresentationConfig>) => {
@@ -171,6 +178,7 @@ export default function SharedList() {
                                 ...config
                             }
                         });
+                        setHasUnsavedChanges(true);
                     }
                 }}
             />
