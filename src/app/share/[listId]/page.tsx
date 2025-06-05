@@ -7,6 +7,7 @@ import { SignInPage } from '../../SignInPage';
 import { auth, User } from '../../firebase';
 import { getFirestore, doc, getDoc, collection as firestoreCollection, addDoc, query, where, getDocs } from 'firebase/firestore';
 import { PhrasePlaybackView } from '../../components/PhrasePlaybackView';
+import { LanguageFlags } from '../../components/LanguageFlags';
 
 const firestore = getFirestore();
 
@@ -141,21 +142,30 @@ export default function SharedList() {
         <div className="font-sans lg:h-[100vh] flex flex-col bg-background text-foreground">
             {/* Nav */}
             <div className="flex items-center justify-between shadow-md lg:mb-0 p-3 sticky top-0 bg-background border-b z-50">
-                <h1 className="text-2xl font-bold">{collection.name}</h1>
+                <div className="flex items-center gap-2">
+                    <h1 className='truncate'>{collection.name}</h1>
+                    {collection.phrases[0] && (
+                        <LanguageFlags
+                            inputLang={collection.phrases[0].inputLang}
+                            targetLang={collection.phrases[0].targetLang}
+                            size="lg"
+                        />
+                    )}
+                </div>
                 <div className="flex items-center gap-4">
                     {hasUnsavedChanges && (
-                        <span className="text-primary-foreground text-sm">Unsaved changes</span>
-                        /* <span className="text-primary font-medium text-sm">Unsaved changes - This isn&apos;t your list, but it can be! <span className="font-bold text-lg ml-2"> 👉</span></span> */
+                        <span className="hidden lg:inline text-primary-foreground text-sm">Unsaved changes</span>
                     )}
-                    <button
-                        onClick={handleSaveList}
-                        className="bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-lg"
-                    >
-                        Save a Copy
-                    </button>
+                    {hasUnsavedChanges && (
+                        <button
+                            onClick={handleSaveList}
+                            className="bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-lg"
+                        >
+                            Save Copy
+                        </button>
+                    )}
                 </div>
             </div>
-
             <PhrasePlaybackView
                 phrases={collection.phrases}
                 presentationConfig={collection.presentationConfig}
