@@ -156,14 +156,12 @@ export default function SharedList() {
                     {hasUnsavedChanges && (
                         <span className="hidden lg:inline text-primary-foreground text-sm">Unsaved changes</span>
                     )}
-                    {hasUnsavedChanges && (
-                        <button
-                            onClick={handleSaveList}
-                            className="bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-lg"
-                        >
-                            Save Copy
-                        </button>
-                    )}
+                    <button
+                        onClick={handleSaveList}
+                        className="bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-lg"
+                    >
+                        Save Copy
+                    </button>
                 </div>
             </div>
             <PhrasePlaybackView
