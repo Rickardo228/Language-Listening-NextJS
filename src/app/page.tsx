@@ -6,7 +6,7 @@ import { usePresentationConfig } from './hooks/usePresentationConfig';
 import { API_BASE_URL } from './consts';
 import { ImportPhrases } from './ImportPhrases';
 import { onAuthStateChanged, User } from 'firebase/auth';
-import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, increment, setDoc } from 'firebase/firestore';
+import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, increment, setDoc, query, where } from 'firebase/firestore';
 import { CollectionList } from './CollectionList';
 import { CollectionHeader } from './CollectionHeader';
 import { useTheme } from './ThemeProvider';
@@ -555,8 +555,10 @@ export default function Home() {
       // Create a copy of the phraseList in the published_collections collection
       const sharedPhraseList = {
         ...phraseList,
+
         shared_by: user.uid,
-        shared_at: new Date().toISOString()
+        shared_at: new Date().toISOString(),
+        shared_from_list: phraseList.id
       };
       const sharedRef = collection(firestore, 'published_collections');
       const docRef = await addDoc(sharedRef, sharedPhraseList);
@@ -571,6 +573,32 @@ export default function Home() {
     }
   };
 
+  // Add handleUnshare function
+  const handleUnshare = async (id: string) => {
+    if (!user) return;
+    const phraseList = savedCollections.find(col => col.id === id);
+    if (!phraseList) return;
+
+    try {
+      // Find the shared collection in published_collections
+      const sharedRef = collection(firestore, 'published_collections');
+      const q = query(sharedRef, where('shared_by', '==', user.uid), where('shared_from_list', '==', id));
+      const querySnapshot = await getDocs(q);
+
+      if (!querySnapshot.empty) {
+        // Delete the shared collection
+        const docRef = querySnapshot.docs[0].ref;
+        await deleteDoc(docRef);
+        alert('List unshared successfully!');
+      } else {
+        alert('No shared list found to unshare.');
+      }
+    } catch (err) {
+      console.error('Error unsharing collection:', err);
+      alert('Failed to unshare collection: ' + err);
+    }
+  };
+
   // Create the sticky header content
   const stickyHeaderContent = (
     <div className="w-full flex items-center p-2">
@@ -582,6 +610,7 @@ export default function Home() {
           onDelete={handleDeleteCollection}
           onVoiceChange={handleVoiceChange}
           onShare={handleShare}
+          onUnshare={handleUnshare}
           inputLang={addToCollectionInputLang}
           targetLang={addToCollectionTargetLang}
           className="hidden lg:flex"
@@ -674,6 +703,7 @@ export default function Home() {
             onDelete={handleDeleteCollection}
             onVoiceChange={handleVoiceChange}
             onShare={handleShare}
+            onUnshare={handleUnshare}
             inputLang={addToCollectionInputLang}
             targetLang={addToCollectionTargetLang}
             className="lg:hidden"

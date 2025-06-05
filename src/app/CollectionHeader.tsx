@@ -1,7 +1,8 @@
 import { Config } from './types';
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { VoiceSelectionModal } from './VoiceSelectionModal';
 import { MenuItem, Menu } from './Menu';
+import { getFirestore, collection, query, where, getDocs } from 'firebase/firestore';
 
 interface CollectionHeaderProps {
     collectionId: string;
@@ -9,7 +10,8 @@ interface CollectionHeaderProps {
     onRename: (id: string) => void;
     onDelete: (id: string) => void;
     onVoiceChange: (inputVoice: string, targetVoice: string) => void;
-    onShare: (id: string) => void;
+    onShare: (id: string) => Promise<void>;
+    onUnshare: (id: string) => void;
     inputLang: string;
     targetLang: string;
     className?: string;
@@ -23,6 +25,7 @@ export function CollectionHeader({
     onDelete,
     onVoiceChange,
     onShare,
+    onUnshare,
     inputLang,
     targetLang,
     className = "",
@@ -30,25 +33,75 @@ export function CollectionHeader({
 }: CollectionHeaderProps) {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [isVoiceModalOpen, setIsVoiceModalOpen] = useState(false);
+    const [isPublished, setIsPublished] = useState(false);
+    const [publishedId, setPublishedId] = useState<string | null>(null);
     const triggerRef = useRef<HTMLButtonElement | null>(null);
-    const collection = savedCollections.find(col => col.id === collectionId);
-    if (!collection) return null;
+    const currentCollection = savedCollections.find(col => col.id === collectionId);
+
+    useEffect(() => {
+        const checkPublishedStatus = async () => {
+            try {
+                const sharedRef = collection(getFirestore(), 'published_collections');
+                const q = query(sharedRef, where('shared_from_list', '==', collectionId));
+                const querySnapshot = await getDocs(q);
+                console.log(querySnapshot.docs);
+                setIsPublished(!querySnapshot.empty);
+                if (!querySnapshot.empty) {
+                    setPublishedId(querySnapshot.docs[0].id);
+                }
+            } catch (err) {
+                console.error('Error checking published status:', err);
+            }
+        };
+        checkPublishedStatus();
+    }, [collectionId]);
+
+
+    if (!currentCollection) return null;
+
+
+    const handleCopyPermalink = async () => {
+        const shareUrl = `${window.location.origin}/share/${collectionId}`;
+        await navigator.clipboard.writeText(shareUrl);
+        alert('Permalink copied to clipboard!');
+    };
 
     const handleVoiceSave = async (inputVoice: string, targetVoice: string) => {
         await onVoiceChange(inputVoice, targetVoice);
         setIsVoiceModalOpen(false);
     };
 
+    const handleShare = async () => {
+        await onShare(collectionId);
+        setIsPublished(true);
+    };
+
+    const handleUnshare = () => {
+        onUnshare(collectionId);
+        setIsPublished(false);
+        setPublishedId(null);
+    };
+
     const menuItems: MenuItem[] = [
         {
-            label: "Share with link",
-            onClick: () => onShare(collectionId),
+            label: isPublished ? "Copy share link" : "Share with link",
+            onClick: isPublished ? handleCopyPermalink : handleShare,
             icon: (
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M7.217 10.907a2.25 2.25 0 1 0 0 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186 9.566-5.314m-9.566 7.5 9.566 5.314m0 0a2.25 2.25 0 1 0 3.935-2.186 2.25 2.25 0 0 0-3.935 2.186Zm0-12.814a2.25 2.25 0 1 0 3.933-2.185 2.25 2.25 0 0 0-3.933 2.185Z" />
                 </svg>
             )
         },
+
+        ...(isPublished ? [{
+            label: "Unshare list",
+            onClick: handleUnshare,
+            icon: (
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
+                </svg>
+            )
+        }] : []),
         {
             label: "Rename list",
             onClick: () => onRename(collectionId),
@@ -82,7 +135,7 @@ export function CollectionHeader({
     return (
         <div className={`flex items-center gap-2 ${className}`}>
             <h2 className={`font-semibold truncate ${titleClassName}`}>
-                {collection.name}
+                {currentCollection.name}
             </h2>
             <div className="relative">
                 <button
@@ -106,7 +159,7 @@ export function CollectionHeader({
                     inputLang={inputLang}
                     targetLang={targetLang}
                     onSave={handleVoiceSave}
-                    phrases={collection.phrases}
+                    phrases={currentCollection.phrases}
                 />}
             </div>
         </div>
