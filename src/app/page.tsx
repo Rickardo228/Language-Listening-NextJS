@@ -350,7 +350,8 @@ export default function Home() {
         setAddToCollectionInputLang(firstPhrase.inputLang);
         setAddToCollectionTargetLang(firstPhrase.targetLang);
       }
-
+      console.log(config?.presentationConfig)
+      console.log(defaultPresentationConfig)
       // Set the presentation config from the collection
       setPresentationConfigBase(config?.presentationConfig || defaultPresentationConfig);
 

@@ -345,7 +345,8 @@ export function PhrasePlaybackView({
                             setFullscreen={setFullscreen}
                             bgImage={presentationConfig.bgImage}
                             containerBg={presentationConfig.containerBg}
-                            textBg={presentationConfig.textBg}
+                            // Can maybe introduce but might replace with text colour
+                            // textBg={presentationConfig.textBg}
                             enableSnow={presentationConfig.enableSnow}
                             enableCherryBlossom={presentationConfig.enableCherryBlossom}
                             enableLeaves={presentationConfig.enableLeaves}

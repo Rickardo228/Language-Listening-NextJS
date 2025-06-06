@@ -65,8 +65,8 @@ export function PresentationView({
   enableOrtonEffect,
   enableParticles,
   enableSteam,
-  containerBg = "bg-teal-500",
-  textBg = "bg-rose-400",
+  containerBg,
+  textBg,
   romanizedOutput,
   title,
 }: PresentationViewProps) {
@@ -112,8 +112,12 @@ export function PresentationView({
     };
   }, []);
 
+  const totalPhraseLength = (currentPhrase?.length + (romanizedOutput?.length ?? 0));
+
+  const alignPhraseTop = totalPhraseLength > 165 && isMobile;
+
   const containerClass =
-    `inset-0 flex flex-col items-center ${(currentPhrase?.length + (romanizedOutput?.length ?? 0)) > 165 && isMobile ? '' : 'justify-center'} ` +
+    `inset-0 flex flex-col items-center ${alignPhraseTop ? '' : 'justify-center'} ` +
     (fullScreen ? "fixed z-50" : "relative p-4 lg:rounded shadow w-full h-48") +
     (!containerBg ? " bg-gray-100 dark:bg-gray-900" : "");
 
@@ -137,6 +141,8 @@ export function PresentationView({
       overflowY: "auto" as const,
       ...(containerBg && { backgroundColor: containerBg })
     };
+
+  console.log(textBg)
 
   const content = (
     <div ref={containerRef} className={`${containerClass} ${isIdle ? "cursor-none" : ""}`} style={containerStyle} onClick={() => setFullscreen(prev => !prev)}>
@@ -236,7 +242,7 @@ export function PresentationView({
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 10 }}
               transition={{ duration: 0.3, ease: "easeOut" }}
-              className={`text-center px-12 pb-4 absolute flex bg-opacity-90 flex-col ${textColorClass}`}
+              className={`text-center px-12 ${alignPhraseTop ? 'pb-4' : ''} absolute flex bg-opacity-90 flex-col ${textColorClass}`}
               style={{
                 alignItems: "center",
                 justifyContent: "center",

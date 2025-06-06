@@ -4,8 +4,8 @@ import { CollectionType } from "./types";
 const basePresentationConfig: PresentationConfig = {
   name: "",
   bgImage: null,
-  containerBg: "rgb(20 184 166)",
-  textBg: "rgb(20 184 166)",
+  containerBg: "",
+  textBg: "",
   enableSnow: false,
   enableCherryBlossom: false,
   enableLeaves: false,
