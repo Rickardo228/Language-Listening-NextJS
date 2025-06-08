@@ -34,7 +34,7 @@ export function CollectionHeader({
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [isVoiceModalOpen, setIsVoiceModalOpen] = useState(false);
     const [isPublished, setIsPublished] = useState(false);
-    const [, setPublishedId] = useState<string | null>(null);
+    const [publishedId, setPublishedId] = useState<string | null>(null);
     const triggerRef = useRef<HTMLButtonElement | null>(null);
     const currentCollection = savedCollections.find(col => col.id === collectionId);
 
@@ -61,9 +61,9 @@ export function CollectionHeader({
 
 
     const handleCopyPermalink = async () => {
-        const shareUrl = `${window.location.origin}/share/${collectionId}`;
+        const shareUrl = `${window.location.origin}/share/${publishedId}`;
         await navigator.clipboard.writeText(shareUrl);
-        alert('Permalink copied to clipboard!');
+        alert('Link copied to clipboard!');
     };
 
     const handleVoiceSave = async (inputVoice: string, targetVoice: string) => {
