@@ -5,6 +5,7 @@ interface OnboardingLanguageSelectProps {
     setInputLang: (lang: string) => void;
     targetLang: string;
     setTargetLang: (lang: string) => void;
+    disabled?: boolean;
 }
 
 export function OnboardingLanguageSelect({
@@ -12,6 +13,7 @@ export function OnboardingLanguageSelect({
     setInputLang,
     targetLang,
     setTargetLang,
+    disabled = false,
 }: OnboardingLanguageSelectProps) {
     return (
         <div className="space-y-4">
@@ -21,7 +23,8 @@ export function OnboardingLanguageSelect({
                     <select
                         value={inputLang}
                         onChange={(e) => setInputLang(e.target.value)}
-                        className="w-full p-2 rounded-md border bg-background"
+                        disabled={disabled}
+                        className="w-full p-2 rounded-md border bg-background disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         {languageOptions.map((lang) => (
                             <option key={lang.code} value={lang.code}>
@@ -35,7 +38,8 @@ export function OnboardingLanguageSelect({
                     <select
                         value={targetLang}
                         onChange={(e) => setTargetLang(e.target.value)}
-                        className="w-full p-2 rounded-md border bg-background"
+                        disabled={disabled}
+                        className="w-full p-2 rounded-md border bg-background disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         {languageOptions.map((lang) => (
                             <option key={lang.code} value={lang.code}>
