@@ -17,10 +17,14 @@ import { SignInPage } from './SignInPage';
 import { ImportPhrasesDialog } from './ImportPhrasesDialog';
 import clarity from '@microsoft/clarity';
 import { PhrasePlaybackView, PhrasePlaybackMethods } from './components/PhrasePlaybackView';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 const firestore = getFirestore();
 
 export default function Home() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
   // User input and language selection
   const [phrasesInput, setPhrasesInput] = useState<string>('');
   const [newCollectionInputLang, setNewCollectionInputLang] = useState<string>(languageOptions[0]?.code);
@@ -30,7 +34,7 @@ export default function Home() {
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [showImportDialog, setShowImportDialog] = useState(false);
   const hasSetLanguages = useRef(false);
-
+  const hasInitialisedForUser = useRef(false);
   const [selectedCollection, setSelectedCollection] = useState<string>('')
   const [savedCollections, setSavedCollections] = useState<Config[]>([])
   const [collectionsLoading, setCollectionsLoading] = useState(false);
@@ -116,7 +120,8 @@ export default function Home() {
         } as Config);
       });
       setSavedCollections(loaded);
-      console.log("loaded", loaded)
+
+      // Default phrase
       // If no collections exist, create a new one with default phrases
       if (loaded.length === 0) {
         // const defaultPhrase =
@@ -135,7 +140,6 @@ export default function Home() {
         ];
         const firstCollectionId = await handleCreateCollection(defaultPhrases, "My List", "phrases", user);
         if (firstCollectionId) setShowImportDialog(true);
-        setCollectionsLoading(false);
       }
 
       // Set input and target languages based on most recent phrases
@@ -157,27 +161,31 @@ export default function Home() {
           }
         }
       }
+
+      setCollectionsLoading(false);
     };
 
     if (!savedCollections.length) {
       setLoading(true);
+      await fetchCollections();
     }
-    await fetchCollections();
   }, [savedCollections.length]);
 
   // Update user identification when auth state changes
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      console.log("onAuthStateChanged", firebaseUser)
-      if (firebaseUser) {
-        setUser(firebaseUser);
+      console.log("onAuthStateChanged", firebaseUser);
+      console.log("hasInitialisedForUser", hasInitialisedForUser?.current);
+      if (firebaseUser && !hasInitialisedForUser.current) {
+        console.log("onAuthStateChanged 2", firebaseUser)
+
+        hasInitialisedForUser.current = true;
         // Identify user in Clarity
         clarity.identify(firebaseUser.email || firebaseUser.uid);
 
         // Check for first visit query params
-        const urlParams = new URLSearchParams(window.location.search);
-        const inputLang = urlParams.get('inputLang');
-        const targetLang = urlParams.get('targetLang');
+        const inputLang = searchParams.get('inputLang');
+        const targetLang = searchParams.get('targetLang');
 
         if (inputLang && targetLang) {
           // Set the languages from query params
@@ -188,20 +196,19 @@ export default function Home() {
           hasSetLanguages.current = true;
 
           // Remove the query params from the URL
-          window.history.replaceState({}, '', '/');
+          router.replace('/');
         }
         setCollectionsLoading(true);
         await initialiseCollections(firebaseUser,
           // inputLang, targetLang
         );
 
-      } else {
-        setUser(null)
       }
+      setUser(firebaseUser);
       setIsAuthLoading(false);
     });
     return () => unsubscribe();
-  }, []);
+  }, [searchParams, router]);
 
 
   // Save a new collection to Firestore

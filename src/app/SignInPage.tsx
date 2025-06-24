@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useState, useEffect, ReactElement } from 'react';
 import { OnboardingLanguageSelect } from './components/OnboardingLanguageSelect';
 import { languageOptions } from './types';
+import { useRouter } from 'next/navigation';
 
 interface Advantage {
     text: string;
@@ -31,6 +32,7 @@ export function SignInPage({
     showLanguageSelect,
     onAuthSuccess,
 }: SignInPageProps) {
+    const router = useRouter();
     const [inputLang, setInputLang] = useState(languageOptions[0]?.code || 'en-US');
     const [targetLang, setTargetLang] = useState('it-IT');
     const [isFirstVisit, setIsFirstVisit] = useState(false);
@@ -66,7 +68,7 @@ export function SignInPage({
                 } else {
                     // Default behavior - redirect to home page with query params
                     // TODO - I wonder if using next router here would be better as this probably remounts some stuff
-                    window.location.href = `/?firstVisit=true&inputLang=${inputLang}&targetLang=${targetLang}`;
+                    router.push(`/?firstVisit=true&inputLang=${inputLang}&targetLang=${targetLang}`);
                 }
             } else if (onAuthSuccess) {
                 onAuthSuccess(result.user);
@@ -97,7 +99,7 @@ export function SignInPage({
                 onAuthSuccess(result.user);
             } else if (isSignUp) {
                 // Default behavior - redirect to home page with query params
-                window.location.href = `/?firstVisit=true&inputLang=${inputLang}&targetLang=${targetLang}`;
+                router.push(`/?firstVisit=true&inputLang=${inputLang}&targetLang=${targetLang}`);
             }
         } catch (error: unknown) {
             console.error('Error with email authentication:', error);
