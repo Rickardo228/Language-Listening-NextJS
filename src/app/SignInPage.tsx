@@ -65,6 +65,7 @@ export function SignInPage({
                     onAuthSuccess(result.user);
                 } else {
                     // Default behavior - redirect to home page with query params
+                    // TODO - I wonder if using next router here would be better as this probably remounts some stuff
                     window.location.href = `/?firstVisit=true&inputLang=${inputLang}&targetLang=${targetLang}`;
                 }
             } else if (onAuthSuccess) {

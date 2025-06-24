@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Config, languageOptions, Phrase, PresentationConfig, CollectionType as CollectionTypeEnum } from './types';
 import { usePresentationConfig } from './hooks/usePresentationConfig';
 import { API_BASE_URL } from './consts';
@@ -33,6 +33,7 @@ export default function Home() {
 
   const [selectedCollection, setSelectedCollection] = useState<string>('')
   const [savedCollections, setSavedCollections] = useState<Config[]>([])
+  const [collectionsLoading, setCollectionsLoading] = useState(false);
 
   // Instead of multiple arrays, we now store all per-phrase data in one state variable.
   const [phrases, setPhrasesBase] = useState<Phrase[]>([]);
@@ -92,42 +93,11 @@ export default function Home() {
     clarity.init("rmwvuwqm9k");
   }, []);
 
-  // Update user identification when auth state changes
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-      if (firebaseUser) {
-        setUser(firebaseUser);
-        // Identify user in Clarity
-        clarity.identify(firebaseUser.email || firebaseUser.uid);
-
-        // Check for first visit query params
-        const urlParams = new URLSearchParams(window.location.search);
-        const inputLang = urlParams.get('inputLang');
-        const targetLang = urlParams.get('targetLang');
-
-        if (inputLang && targetLang) {
-          // Set the languages from query params
-          setAddToCollectionInputLang(inputLang);
-          setAddToCollectionTargetLang(targetLang);
-          setNewCollectionInputLang(inputLang);
-          setNewCollectionTargetLang(targetLang);
-          hasSetLanguages.current = true;
-
-          // Remove the query params from the URL
-          window.history.replaceState({}, '', '/');
-        }
-      } else {
-        setUser(null)
-      }
-      setIsAuthLoading(false);
-    });
-    return () => unsubscribe();
-  }, []);
-
   // Load saved collections from Firestore on mount or when user changes
-  useEffect(() => {
-    if (!user) return;
-
+  const initialiseCollections = useCallback(async (user: User,
+    // inputLang?: string, targetLang?: string
+  ) => {
+    console.log("initialiseCollections", user)
     const fetchCollections = async () => {
       const colRef = collection(firestore, 'users', user.uid, 'collections');
       const snapshot = await getDocs(colRef);
@@ -146,23 +116,26 @@ export default function Home() {
         } as Config);
       });
       setSavedCollections(loaded);
-
+      console.log("loaded", loaded)
       // If no collections exist, create a new one with default phrases
       if (loaded.length === 0) {
+        // const defaultPhrase =
+        // {
+        //   input: "",
+        //   translated: "",
+        //   inputLang: inputLang,
+        //   targetLang: targetLang,
+        //   inputAudio: null,
+        //   outputAudio: null,
+        //   romanized: "",
+        //   created_at: new Date().toISOString()
+        // }
         const defaultPhrases: Phrase[] = [
-          // {
-          //   input: "",
-          //   translated: "",
-          //   inputLang: newCollectionInputLang,
-          //   targetLang: newCollectionTargetLang,
-          //   inputAudio: null,
-          //   outputAudio: null,
-          //   romanized: "",
-          //   created_at: new Date().toISOString()
-          // }
+
         ];
-        await handleCreateCollection(defaultPhrases, "My List");
-        setShowImportDialog(true);
+        const firstCollectionId = await handleCreateCollection(defaultPhrases, "My List", "phrases", user);
+        if (firstCollectionId) setShowImportDialog(true);
+        setCollectionsLoading(false);
       }
 
       // Set input and target languages based on most recent phrases
@@ -185,12 +158,56 @@ export default function Home() {
         }
       }
     };
-    fetchCollections();
-  }, [user]);
+
+    if (!savedCollections.length) {
+      setLoading(true);
+    }
+    await fetchCollections();
+  }, [savedCollections.length]);
+
+  // Update user identification when auth state changes
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      console.log("onAuthStateChanged", firebaseUser)
+      if (firebaseUser) {
+        setUser(firebaseUser);
+        // Identify user in Clarity
+        clarity.identify(firebaseUser.email || firebaseUser.uid);
+
+        // Check for first visit query params
+        const urlParams = new URLSearchParams(window.location.search);
+        const inputLang = urlParams.get('inputLang');
+        const targetLang = urlParams.get('targetLang');
+
+        if (inputLang && targetLang) {
+          // Set the languages from query params
+          setAddToCollectionInputLang(inputLang);
+          setAddToCollectionTargetLang(targetLang);
+          setNewCollectionInputLang(inputLang);
+          setNewCollectionTargetLang(targetLang);
+          hasSetLanguages.current = true;
+
+          // Remove the query params from the URL
+          window.history.replaceState({}, '', '/');
+        }
+        setCollectionsLoading(true);
+        await initialiseCollections(firebaseUser,
+          // inputLang, targetLang
+        );
+
+      } else {
+        setUser(null)
+      }
+      setIsAuthLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
+
 
   // Save a new collection to Firestore
-  const handleCreateCollection = async (phrases: Phrase[], prompt?: string, collectionType?: CollectionTypeEnum) => {
-    if (!user) return;
+  const handleCreateCollection = async (phrases: Phrase[], prompt?: string, collectionType?: CollectionTypeEnum, userArg?: User) => {
+    const userId = userArg?.uid || user?.uid;
+    if (!userId) return;
     const generatedName = prompt || 'New List';
     const now = new Date().toISOString();
     const newCollection = {
@@ -206,12 +223,13 @@ export default function Home() {
         name: generatedName
       }
     };
-    const colRef = collection(firestore, 'users', user.uid, 'collections');
+    const colRef = collection(firestore, 'users', userId, 'collections');
     const docRef = await addDoc(colRef, newCollection);
     const newCollectionConfig = {
       ...newCollection,
       id: docRef.id
     };
+    console.log("newCollectionConfig", newCollectionConfig)
     setSavedCollections(prev => [...prev, newCollectionConfig]);
     handleLoadCollection(newCollectionConfig);
     return docRef.id;
@@ -740,6 +758,7 @@ export default function Home() {
             onRenameCollection={handleRenameCollection}
             onDeleteCollection={handleDeleteCollection}
             selectedCollection={selectedCollection}
+            loading={collectionsLoading}
           />
         </div>
 
