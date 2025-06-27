@@ -57,6 +57,10 @@ export function SignInPage({
 
         try {
             const provider = new GoogleAuthProvider();
+            if (isFirstVisit || isSignUp && !onAuthSuccess) {
+                // Default behavior - redirect to home page with query params
+                router.push(`/?firstVisit=true&inputLang=${inputLang}&targetLang=${targetLang}`);
+            }
             const result = await signInWithPopup(auth, provider);
 
             // If this is the first visit, store the selected languages
@@ -65,10 +69,6 @@ export function SignInPage({
 
                 if (onAuthSuccess) {
                     onAuthSuccess(result.user);
-                } else {
-                    // Default behavior - redirect to home page with query params
-                    // TODO - I wonder if using next router here would be better as this probably remounts some stuff
-                    router.push(`/?firstVisit=true&inputLang=${inputLang}&targetLang=${targetLang}`);
                 }
             } else if (onAuthSuccess) {
                 onAuthSuccess(result.user);

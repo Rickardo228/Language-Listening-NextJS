@@ -18,12 +18,72 @@ import { ImportPhrasesDialog } from './ImportPhrasesDialog';
 import clarity from '@microsoft/clarity';
 import { PhrasePlaybackView, PhrasePlaybackMethods } from './components/PhrasePlaybackView';
 import { useRouter, useSearchParams } from 'next/navigation';
+import defaultPhrasesData from '../defaultPhrases.json';
+
+type PhraseData = {
+  translated: string;
+  audioUrl: string;
+  duration: number;
+  voice: string;
+  romanized: string;
+};
+type LangData = {
+  lang: string;
+  data: { [key: string]: PhraseData };
+};
 
 const firestore = getFirestore();
 
+// Function to get default phrases for a given input and target language
+const getDefaultPhrasesForLanguages = (inputLang: string, targetLang: string): Phrase[] => {
+  const inputLangData = defaultPhrasesData.find(item => item.lang === inputLang) as LangData | undefined;
+  const targetLangData = defaultPhrasesData.find(item => item.lang === targetLang) as LangData | undefined;
+  if (!inputLangData || !targetLangData) return [];
+
+  const now = new Date().toISOString();
+  return Object.entries(inputLangData.data).map(([input, inputPhraseData]: [string, { translated: string; romanized: string; audioUrl: string; duration: number; voice: string }]) => {
+    // Try to find the same phrase in the target language data
+    const targetPhraseData = targetLangData.data[input];
+
+    // Handle romanized field - use target language romanized if available, otherwise use input language romanized
+    // If both are "null" (string), use empty string
+    let romanized = "";
+    if (targetPhraseData && targetPhraseData.romanized && targetPhraseData.romanized !== "null") {
+      romanized = targetPhraseData.romanized;
+    } else if (inputPhraseData.romanized && inputPhraseData.romanized !== "null") {
+      romanized = inputPhraseData.romanized;
+    }
+
+    return {
+      input,
+      translated: targetPhraseData ? targetPhraseData.translated : inputPhraseData.translated,
+      inputLang: inputLang,
+      targetLang: targetLang,
+      inputAudio: inputPhraseData.audioUrl ? { audioUrl: inputPhraseData.audioUrl, duration: inputPhraseData.duration } : null,
+      outputAudio: targetPhraseData && targetPhraseData.audioUrl ? { audioUrl: targetPhraseData.audioUrl, duration: targetPhraseData.duration } : null,
+      romanized: romanized,
+      inputVoice: inputPhraseData.voice,
+      targetVoice: targetPhraseData ? targetPhraseData.voice : undefined,
+      created_at: now
+    };
+  });
+};
+
 export default function Home() {
   const router = useRouter();
-  const searchParams = useSearchParams();
+
+  // Helper function to get URL parameters directly
+  const getUrlParams = () => {
+    if (typeof window === 'undefined') return {};
+    const urlParams = new URLSearchParams(window.location.search);
+    return {
+      inputLang: urlParams.get('inputLang'),
+      targetLang: urlParams.get('targetLang'),
+      firstVisit: urlParams.get('firstVisit')
+    };
+  };
+
+
 
   // User input and language selection
   const [phrasesInput, setPhrasesInput] = useState<string>('');
@@ -97,11 +157,11 @@ export default function Home() {
     clarity.init("rmwvuwqm9k");
   }, []);
 
+
   // Load saved collections from Firestore on mount or when user changes
   const initialiseCollections = useCallback(async (user: User,
-    // inputLang?: string, targetLang?: string
+    inputLang?: string, targetLang?: string
   ) => {
-    console.log("initialiseCollections", user)
     const fetchCollections = async () => {
       const colRef = collection(firestore, 'users', user.uid, 'collections');
       const snapshot = await getDocs(colRef);
@@ -124,22 +184,16 @@ export default function Home() {
       // Default phrase
       // If no collections exist, create a new one with default phrases
       if (loaded.length === 0) {
-        // const defaultPhrase =
-        // {
-        //   input: "",
-        //   translated: "",
-        //   inputLang: inputLang,
-        //   targetLang: targetLang,
-        //   inputAudio: null,
-        //   outputAudio: null,
-        //   romanized: "",
-        //   created_at: new Date().toISOString()
-        // }
-        const defaultPhrases: Phrase[] = [
+        let defaultPhrases: Phrase[] = [];
 
-        ];
-        const firstCollectionId = await handleCreateCollection(defaultPhrases, "My List", "phrases", user);
-        if (firstCollectionId) setShowImportDialog(true);
+        // If inputLang and targetLang are available, populate with default phrases
+        if (inputLang && targetLang) {
+          // Get default phrases for the input language
+          defaultPhrases = getDefaultPhrasesForLanguages(inputLang, targetLang);
+        }
+
+        await handleCreateCollection(defaultPhrases, "My List", "phrases", user);
+        // if (firstCollectionId) setShowImportDialog(true);
       }
 
       // Set input and target languages based on most recent phrases
@@ -183,24 +237,14 @@ export default function Home() {
         // Identify user in Clarity
         clarity.identify(firebaseUser.email || firebaseUser.uid);
 
-        // Check for first visit query params
-        const inputLang = searchParams.get('inputLang');
-        const targetLang = searchParams.get('targetLang');
+        // Use the language values that were set on component mount
+        const urlParams = getUrlParams();
+        const inputLang = urlParams.inputLang;
+        const targetLang = urlParams.targetLang;
 
-        if (inputLang && targetLang) {
-          // Set the languages from query params
-          setAddToCollectionInputLang(inputLang);
-          setAddToCollectionTargetLang(targetLang);
-          setNewCollectionInputLang(inputLang);
-          setNewCollectionTargetLang(targetLang);
-          hasSetLanguages.current = true;
-
-          // Remove the query params from the URL
-          router.replace('/');
-        }
         setCollectionsLoading(true);
         await initialiseCollections(firebaseUser,
-          // inputLang, targetLang
+          inputLang || undefined, targetLang || undefined
         );
 
       }
@@ -208,8 +252,7 @@ export default function Home() {
       setIsAuthLoading(false);
     });
     return () => unsubscribe();
-  }, [searchParams, router]);
-
+  }, [router, initialiseCollections, newCollectionInputLang, newCollectionTargetLang]);
 
   // Save a new collection to Firestore
   const handleCreateCollection = async (phrases: Phrase[], prompt?: string, collectionType?: CollectionTypeEnum, userArg?: User) => {
