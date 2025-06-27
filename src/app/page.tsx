@@ -17,7 +17,7 @@ import { SignInPage } from './SignInPage';
 import { ImportPhrasesDialog } from './ImportPhrasesDialog';
 import clarity from '@microsoft/clarity';
 import { PhrasePlaybackView, PhrasePlaybackMethods } from './components/PhrasePlaybackView';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import defaultPhrasesData from '../defaultPhrases.json';
 
 type PhraseData = {
