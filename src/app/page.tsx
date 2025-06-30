@@ -215,13 +215,14 @@ export default function Home() {
           }
         }
       }
-
-      setCollectionsLoading(false);
     };
 
     if (!savedCollections.length) {
+      setCollectionsLoading(true);
       setLoading(true);
       await fetchCollections();
+      setCollectionsLoading(false);
+      setLoading(false);
     }
   }, [savedCollections.length]);
 
@@ -242,7 +243,6 @@ export default function Home() {
         const inputLang = urlParams.inputLang;
         const targetLang = urlParams.targetLang;
 
-        setCollectionsLoading(true);
         await initialiseCollections(firebaseUser,
           inputLang || undefined, targetLang || undefined
         );
