@@ -2,6 +2,8 @@ import { Maximize2, Pause, Play, Repeat, ArrowLeft, ArrowRight, Settings } from 
 import { SettingsModal } from './SettingsModal';
 import { PresentationConfig } from './types';
 import { useState } from 'react';
+import { getFlagEmoji } from './utils/languageUtils';
+import { playbackSpeedOptions } from './configDefinitions';
 
 interface PresentationControlsProps {
     fullscreen: boolean;
@@ -23,6 +25,8 @@ interface PresentationControlsProps {
     onNext: () => void;
     canGoBack: boolean;
     canGoForward: boolean;
+    inputLang?: string;
+    targetLang?: string;
 }
 
 export function PresentationControls({
@@ -44,9 +48,30 @@ export function PresentationControls({
     onPrevious,
     onNext,
     canGoBack,
-    canGoForward
+    canGoForward,
+    inputLang,
+    targetLang
 }: PresentationControlsProps) {
     const [settingsOpen, setSettingsOpen] = useState(false);
+
+    const handleSpeedToggle = (speedType: 'input' | 'output') => {
+        const currentSpeed = speedType === 'input'
+            ? (presentationConfig.inputPlaybackSpeed || 1.0)
+            : (presentationConfig.outputPlaybackSpeed || 1.0);
+
+        const currentIndex = playbackSpeedOptions.findIndex(option => option.value === currentSpeed);
+        const nextIndex = (currentIndex + 1) % playbackSpeedOptions.length;
+        const newSpeed = playbackSpeedOptions[nextIndex].value;
+
+        setPresentationConfig({
+            ...presentationConfig,
+            [speedType === 'input' ? 'inputPlaybackSpeed' : 'outputPlaybackSpeed']: newSpeed
+        });
+    };
+
+    const getSpeedLabel = (speed: number) => {
+        return playbackSpeedOptions.find(option => option.value === speed)?.label || '1.0x';
+    };
 
     return (
         <>
@@ -77,6 +102,32 @@ export function PresentationControls({
                         <Repeat className="h-8 w-8 text-gray-700 dark:text-gray-300" />
                     </button>
                 )}
+                <button
+                    onClick={() => handleSpeedToggle('input')}
+                    className="p-2 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 dark:hover:bg-gray-600 flex items-center gap-1 h-12"
+                    title={`Input Language Speed: ${getSpeedLabel(presentationConfig.inputPlaybackSpeed || 1.0)}`}
+                >
+                    {/* <Zap className="h-4 w-4 text-gray-700 dark:text-gray-300" /> */}
+                    {inputLang && (
+                        <span className="text-sm">{getFlagEmoji(inputLang)}</span>
+                    )}
+                    <span className="text-xs font-medium text-gray-700 dark:text-gray-300">
+                        {getSpeedLabel(presentationConfig.inputPlaybackSpeed || 1.0)}
+                    </span>
+                </button>
+                <button
+                    onClick={() => handleSpeedToggle('output')}
+                    className="p-2 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 dark:hover:bg-gray-600 flex items-center gap-1 h-12"
+                    title={`Output Language Speed: ${getSpeedLabel(presentationConfig.outputPlaybackSpeed || 1.0)}`}
+                >
+                    {/* <Zap className="h-4 w-4 text-gray-700 dark:text-gray-300" /> */}
+                    {targetLang && (
+                        <span className="text-sm">{getFlagEmoji(targetLang)}</span>
+                    )}
+                    <span className="text-xs font-medium text-gray-700 dark:text-gray-300">
+                        {getSpeedLabel(presentationConfig.outputPlaybackSpeed || 1.0)}
+                    </span>
+                </button>
                 {/* <label className="flex items-center gap-1">
                     <input
                         type="checkbox"

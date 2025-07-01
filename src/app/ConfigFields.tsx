@@ -117,6 +117,32 @@ const ConfigFields: React.FC<ConfigFieldsProps> = ({
                     </div>
                 }
 
+                // Render a select input.
+                if (inputType === "select") {
+                    return (
+                        <div key={key} className="flex flex-col">
+                            <label htmlFor={String(key)} className="block font-medium mb-1">
+                                {label}
+                            </label>
+                            <select
+                                id={String(key)}
+                                value={value as number}
+                                onChange={(e) => handleChange(key, Number(e.target.value))}
+                                className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                            >
+                                {field.options?.map((option) => (
+                                    <option key={option.value} value={option.value}>
+                                        {option.label}
+                                    </option>
+                                ))}
+                            </select>
+                            {description && (
+                                <p className="text-sm text-muted-foreground mt-1">{description}</p>
+                            )}
+                        </div>
+                    );
+                }
+
                 // Render a text input (this covers text and color types, etc.)
                 return (
                     <div key={key} className="flex flex-col">

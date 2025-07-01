@@ -19,6 +19,8 @@ export type PresentationConfig = {
   enableOutputDurationDelay: boolean;
   enableInputDurationDelay: boolean;
   enableOutputBeforeInput?: boolean;
+  inputPlaybackSpeed?: number;
+  outputPlaybackSpeed?: number;
 };
 
 export type Config = {

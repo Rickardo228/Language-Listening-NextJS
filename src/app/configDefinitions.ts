@@ -4,9 +4,20 @@ import { PresentationConfig } from "./types";
 export type ConfigFieldDefinition = {
   key: keyof PresentationConfig;
   label: string;
-  inputType: "text" | "number" | "checkbox" | "file" | "color";
+  inputType: "text" | "number" | "checkbox" | "file" | "color" | "select";
   description?: string;
+  options?: { value: number; label: string }[];
 };
+
+// Shared speed options to avoid duplication
+export const playbackSpeedOptions = [
+  { value: 0.75, label: "0.75x" },
+  { value: 0.85, label: "0.85x" },
+  { value: 1.0, label: "1.0x" },
+  { value: 1.25, label: "1.25x" },
+  { value: 1.5, label: "1.5x" },
+  { value: 2.0, label: "2.0x" },
+];
 
 export const presentationConfigDefinition: ConfigFieldDefinition[] = [
   // { key: "bgImage", label: "Background Image", inputType: "file" },
@@ -37,6 +48,20 @@ export const presentationConfigDefinition: ConfigFieldDefinition[] = [
     inputType: "checkbox",
     description:
       "Play the output audio before the input audio for each phrase.",
+  },
+  {
+    key: "inputPlaybackSpeed",
+    label: "Input Language Speed",
+    inputType: "select",
+    options: playbackSpeedOptions,
+    description: "Control the playback speed of input language audio.",
+  },
+  {
+    key: "outputPlaybackSpeed",
+    label: "Output Language Speed",
+    inputType: "select",
+    options: playbackSpeedOptions,
+    description: "Control the playback speed of output language audio.",
   },
   // {
   //   key: "containerBg",

@@ -19,6 +19,8 @@ const basePresentationConfig: PresentationConfig = {
   enableOutputDurationDelay: true,
   enableInputDurationDelay: false,
   enableOutputBeforeInput: false,
+  inputPlaybackSpeed: 1.0,
+  outputPlaybackSpeed: 0.85,
 };
 export const defaultPresentationConfigs: Record<
   CollectionType,
