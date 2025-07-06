@@ -738,6 +738,14 @@ export default function Home() {
         <div className={`flex items-center justify-between w-full ${selectedCollection ? 'hidden lg:flex' : 'flex'}`}>
           <h1 className="text-2xl font-bold">Language Shadowing</h1>
           <div className="flex items-center gap-4">
+            {/* Templates Link */}
+            {/* <button
+              onClick={() => router.push('/templates')}
+              className="px-4 py-2 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground"
+              title="View Templates"
+            >
+              Templates
+            </button> */}
             {/* Theme Toggle Button */}
             <button
               onClick={toggleTheme}
