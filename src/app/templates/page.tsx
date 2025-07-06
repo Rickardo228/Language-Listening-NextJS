@@ -2,18 +2,26 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { getFirestore, collection, query, where, getDocs } from 'firebase/firestore';
+import { getFirestore, collection, query, where, getDocs, Timestamp } from 'firebase/firestore';
 import { auth } from '../firebase';
 import { User as FirebaseUser } from 'firebase/auth';
 
 const firestore = getFirestore();
 
+interface TemplatePhrase {
+    translated?: string;
+    audioUrl?: string;
+    duration?: number;
+    romanized?: string;
+    voice?: string;
+}
+
 interface Template {
     id: string;
     groupId: string;
     lang: string;
-    phrases: any[];
-    createdAt: any;
+    phrases: Record<string, TemplatePhrase>;
+    createdAt: Timestamp;
     inputLang: string;
     targetLang: string;
     complexity: string;

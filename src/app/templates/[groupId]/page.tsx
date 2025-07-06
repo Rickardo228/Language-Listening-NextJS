@@ -124,16 +124,11 @@ export default function TemplateDetailPage() {
     // Convert template phrases to the format expected by PhrasePlaybackView
     const convertTemplatesToConfig = (inputTemplate: Template, targetTemplate: Template): Config => {
         const inputPhrases = inputTemplate.phrases;
+        console.log(inputPhrases)
         const targetPhrases = targetTemplate.phrases;
-        console.log(inputTemplate)
-        console.log(targetTemplate)
-        // Get all phrase keys from both templates
-        const allPhraseKeys = new Set([
-            ...Object.keys(inputPhrases),
-            ...Object.keys(targetPhrases)
-        ]);
 
-        const phrases: Phrase[] = Array.from(allPhraseKeys).map((phraseKey) => {
+
+        const phrases: Phrase[] = [...Object.keys(inputPhrases)].map((phraseKey) => {
             const inputPhrase = inputPhrases[phraseKey];
             const targetPhrase = targetPhrases[phraseKey];
 
