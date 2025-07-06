@@ -104,7 +104,7 @@ export function PresentationControls({
                 )}
                 <button
                     onClick={() => handleSpeedToggle('input')}
-                    className="p-2 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 dark:hover:bg-gray-600 flex items-center gap-1 h-12"
+                    className="hidden md:flex p-2 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 dark:hover:bg-gray-600 items-center gap-1 h-12"
                     title={`Input Language Speed: ${getSpeedLabel(presentationConfig.inputPlaybackSpeed || 1.0)}`}
                 >
                     {/* <Zap className="h-4 w-4 text-gray-700 dark:text-gray-300" /> */}
@@ -117,7 +117,7 @@ export function PresentationControls({
                 </button>
                 <button
                     onClick={() => handleSpeedToggle('output')}
-                    className="p-2 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 dark:hover:bg-gray-600 flex items-center gap-1 h-12"
+                    className="hidden md:flex p-2 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 dark:hover:bg-gray-600 items-center gap-1 h-12"
                     title={`Output Language Speed: ${getSpeedLabel(presentationConfig.outputPlaybackSpeed || 1.0)}`}
                 >
                     {/* <Zap className="h-4 w-4 text-gray-700 dark:text-gray-300" /> */}
