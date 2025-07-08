@@ -3,11 +3,10 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Config, Phrase, languageOptions } from '../../types';
-import { auth } from '../../firebase';
-import { User as FirebaseUser } from 'firebase/auth';
 import { getFirestore, collection, query, where, getDocs, Timestamp } from 'firebase/firestore';
 import { PhrasePlaybackView } from '../../components/PhrasePlaybackView';
 import { LanguageFlags } from '../../components/LanguageFlags';
+import { useUser } from '../../contexts/UserContext';
 
 const firestore = getFirestore();
 
@@ -38,20 +37,13 @@ const getLanguageLabel = (code: string): string => {
 export default function TemplateDetailPage() {
     const { groupId } = useParams();
     const router = useRouter();
+    const { user, isAuthLoading } = useUser();
     const [inputTemplate, setInputTemplate] = useState<Template | null>(null);
     const [targetTemplate, setTargetTemplate] = useState<Template | null>(null);
     const [loading, setLoading] = useState(true);
-    const [user, setUser] = useState<FirebaseUser | null>(null);
     const [selectedInputLang, setSelectedInputLang] = useState<string>('en-GB');
     const [selectedTargetLang, setSelectedTargetLang] = useState<string>('it-IT');
     const [availableLanguages, setAvailableLanguages] = useState<string[]>([]);
-
-    useEffect(() => {
-        const unsubscribe = auth.onAuthStateChanged((user) => {
-            setUser(user);
-        });
-        return () => unsubscribe();
-    }, []);
 
     useEffect(() => {
         const fetchTemplates = async () => {
@@ -181,7 +173,7 @@ export default function TemplateDetailPage() {
         };
     };
 
-    if (loading) {
+    if (isAuthLoading || loading) {
         return (
             <div className="flex items-center justify-center min-h-screen bg-background">
                 <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>

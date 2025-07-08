@@ -4,20 +4,19 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Config, Phrase, PresentationConfig } from '../../types';
 import { defaultAdvantages, SignInPage } from '../../SignInPage';
-import { auth } from '../../firebase';
-import { User as FirebaseUser } from 'firebase/auth';
 import { getFirestore, doc, getDoc, collection as firestoreCollection, addDoc, query, where, getDocs } from 'firebase/firestore';
 import { PhrasePlaybackView } from '../../components/PhrasePlaybackView';
 import { LanguageFlags } from '../../components/LanguageFlags';
+import { useUser } from '../../contexts/UserContext';
 
 const firestore = getFirestore();
 
 export default function SharedList() {
     const { listId } = useParams();
     const router = useRouter();
+    const { user, isAuthLoading } = useUser();
     const [collection, setCollection] = useState<Config | null>(null);
     const [loading, setLoading] = useState(true);
-    const [user, setUser] = useState<FirebaseUser | null>(null);
     const [showSignIn, setShowSignIn] = useState(false);
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
     const [previousPhraseCount, setPreviousPhraseCount] = useState<number | null>(null);
@@ -41,13 +40,6 @@ export default function SharedList() {
     }, [listId]);
 
     useEffect(() => {
-        const unsubscribe = auth.onAuthStateChanged((user) => {
-            setUser(user);
-        });
-        return () => unsubscribe();
-    }, []);
-
-    useEffect(() => {
         if (collection && previousPhraseCount !== null && collection.phrases.length < previousPhraseCount) {
             setShowSignIn(true);
         }
@@ -64,7 +56,7 @@ export default function SharedList() {
         await saveListToUser(user);
     };
 
-    const saveListToUser = async (user: FirebaseUser) => {
+    const saveListToUser = async (user: any) => {
         if (!collection) return;
 
         try {
@@ -106,7 +98,7 @@ export default function SharedList() {
         }
     };
 
-    if (loading) {
+    if (isAuthLoading || loading) {
         return (
             <div className="flex items-center justify-center min-h-screen bg-background">
                 <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
