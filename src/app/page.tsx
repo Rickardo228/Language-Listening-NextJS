@@ -5,8 +5,8 @@ import { Config, languageOptions, Phrase, PresentationConfig, CollectionType as 
 import { usePresentationConfig } from './hooks/usePresentationConfig';
 import { API_BASE_URL } from './consts';
 import { ImportPhrases } from './ImportPhrases';
-import { onAuthStateChanged, User } from 'firebase/auth';
-import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, increment, setDoc, query, where } from 'firebase/firestore';
+import { User } from 'firebase/auth';
+import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, where } from 'firebase/firestore';
 import { CollectionList } from './CollectionList';
 import { CollectionHeader } from './CollectionHeader';
 import { useTheme } from './ThemeProvider';
@@ -15,10 +15,12 @@ import { auth } from './firebase';
 import { defaultPresentationConfig, defaultPresentationConfigs } from './defaultConfig';
 import { SignInPage } from './SignInPage';
 import { ImportPhrasesDialog } from './ImportPhrasesDialog';
+import { useUser } from './contexts/UserContext';
 import clarity from '@microsoft/clarity';
 import { PhrasePlaybackView, PhrasePlaybackMethods } from './components/PhrasePlaybackView';
 import { useRouter } from 'next/navigation';
 import defaultPhrasesData from '../defaultPhrases.json';
+import { updateUserStats } from './utils/userStats';
 
 type PhraseData = {
   translated: string;
@@ -91,10 +93,8 @@ export default function Home() {
   const [newCollectionTargetLang, setNewCollectionTargetLang] = useState<string>('it-IT');
   const [addToCollectionInputLang, setAddToCollectionInputLang] = useState<string>(languageOptions[0]?.code);
   const [addToCollectionTargetLang, setAddToCollectionTargetLang] = useState<string>('it-IT');
-  const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [showImportDialog, setShowImportDialog] = useState(false);
   const hasSetLanguages = useRef(false);
-  const hasInitialisedForUser = useRef(false);
   const [selectedCollection, setSelectedCollection] = useState<string>('')
   const [savedCollections, setSavedCollections] = useState<Config[]>([])
   const [collectionsLoading, setCollectionsLoading] = useState(false);
@@ -143,7 +143,7 @@ export default function Home() {
   // Loading state for processing
   const [loading, setLoading] = useState<boolean>(false);
 
-  const [user, setUser] = useState<User | null>(null);
+  const { user, isAuthLoading, hasInitialisedForUser } = useUser();
   const [avatarDialogOpen, setAvatarDialogOpen] = useState(false);
 
   const { theme, toggleTheme } = useTheme();
@@ -158,10 +158,18 @@ export default function Home() {
   }, []);
 
 
+
+
+
+
   // Load saved collections from Firestore on mount or when user changes
-  const initialiseCollections = useCallback(async (user: User,
-    inputLang?: string, targetLang?: string
-  ) => {
+  const initialiseCollections = useCallback(async (user: User) => {
+    // Use the language values that were set on component mount
+    const urlParams = getUrlParams();
+    const inputLang = urlParams.inputLang || undefined;
+    const targetLang = urlParams.targetLang || undefined;
+
+
     const fetchCollections = async () => {
       const colRef = collection(firestore, 'users', user.uid, 'collections');
       const snapshot = await getDocs(colRef);
@@ -226,33 +234,12 @@ export default function Home() {
     }
   }, [savedCollections.length]);
 
-  // Update user identification when auth state changes
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      console.log("onAuthStateChanged", firebaseUser);
-      console.log("hasInitialisedForUser", hasInitialisedForUser?.current);
-      if (firebaseUser && !hasInitialisedForUser.current) {
-        console.log("onAuthStateChanged 2", firebaseUser)
-
-        hasInitialisedForUser.current = true;
-        // Identify user in Clarity
-        clarity.identify(firebaseUser.email || firebaseUser.uid);
-
-        // Use the language values that were set on component mount
-        const urlParams = getUrlParams();
-        const inputLang = urlParams.inputLang;
-        const targetLang = urlParams.targetLang;
-
-        await initialiseCollections(firebaseUser,
-          inputLang || undefined, targetLang || undefined
-        );
-
-      }
-      setUser(firebaseUser);
-      setIsAuthLoading(false);
-    });
-    return () => unsubscribe();
-  }, [router, initialiseCollections, newCollectionInputLang, newCollectionTargetLang]);
+    if (user && !hasInitialisedForUser.current) {
+      hasInitialisedForUser.current = true;
+      initialiseCollections(user);
+    }
+  }, [initialiseCollections, user, hasInitialisedForUser])
 
   // Save a new collection to Firestore
   const handleCreateCollection = async (phrases: Phrase[], prompt?: string, collectionType?: CollectionTypeEnum, userArg?: User) => {
@@ -438,93 +425,9 @@ export default function Home() {
   };
 
   // Update user stats when audio ends
-  const updateUserStats = async (currentPhraseIndex: number) => {
-    if (!user) return;
-    const now = new Date();
-    const today = now.toISOString().split('T')[0]; // Get YYYY-MM-DD format
-
-    // Get current phrase's languages
-    const currentPhrase = phrases[currentPhraseIndex];
-    if (!currentPhrase) return;
-    const { inputLang, targetLang } = currentPhrase;
-
-    try {
-      // Update the main stats document
-      const statsRef = doc(firestore, 'users', user.uid, 'stats', 'listening');
-      await updateDoc(statsRef, {
-        phrasesListened: increment(1),
-        lastListenedAt: now.toISOString()
-      });
-
-      // Update the daily stats
-      const dailyStatsRef = doc(firestore, 'users', user.uid, 'stats', 'listening', 'daily', today);
-      await updateDoc(dailyStatsRef, {
-        count: increment(1),
-        lastUpdated: now.toISOString()
-      }).catch(async (err: unknown) => {
-        // If the daily document doesn't exist, create it
-        if (err && typeof err === 'object' && 'code' in err && err.code === 'not-found') {
-          await setDoc(dailyStatsRef, {
-            count: 1,
-            lastUpdated: now.toISOString(),
-            date: today
-          });
-        } else {
-          console.error('Error updating daily stats:', err);
-        }
-      });
-
-      // Update language stats
-      const languageStatsRef = doc(firestore, 'users', user.uid, 'stats', 'listening', 'languages', `${inputLang}-${targetLang}`);
-      await updateDoc(languageStatsRef, {
-        count: increment(1),
-        lastUpdated: now.toISOString(),
-        inputLang,
-        targetLang
-      }).catch(async (err: unknown) => {
-        // If the language document doesn't exist, create it
-        if (err && typeof err === 'object' && 'code' in err && err.code === 'not-found') {
-          await setDoc(languageStatsRef, {
-            count: 1,
-            lastUpdated: now.toISOString(),
-            inputLang,
-            targetLang,
-            firstListened: now.toISOString()
-          });
-        } else {
-          console.error('Error updating language stats:', err);
-        }
-      });
-
-    } catch (err: unknown) {
-      // If the main stats document doesn't exist, create it
-      if (err && typeof err === 'object' && 'code' in err && err.code === 'not-found') {
-        const statsRef = doc(firestore, 'users', user.uid, 'stats', 'listening');
-        await setDoc(statsRef, {
-          phrasesListened: 1,
-          lastListenedAt: now.toISOString()
-        });
-
-        // Create the daily stats document
-        const dailyStatsRef = doc(firestore, 'users', user.uid, 'stats', 'listening', 'daily', today);
-        await setDoc(dailyStatsRef, {
-          count: 1,
-          lastUpdated: now.toISOString(),
-          date: today
-        });
-
-        // Create the language stats document
-        const languageStatsRef = doc(firestore, 'users', user.uid, 'stats', 'listening', 'languages', `${inputLang}-${targetLang}`);
-        await setDoc(languageStatsRef, {
-          count: 1,
-          lastUpdated: now.toISOString(),
-          inputLang,
-          targetLang,
-          firstListened: now.toISOString()
-        });
-      } else {
-        console.error('Error updating user stats:', err);
-      }
+  const handleUpdateUserStats = async (currentPhraseIndex: number) => {
+    if (user) {
+      await updateUserStats(phrases, user, currentPhraseIndex);
     }
   };
 
@@ -832,7 +735,7 @@ export default function Home() {
             collectionName={savedCollections.find(col => col.id === selectedCollection)?.name}
             showImportPhrases={true}
             stickyHeaderContent={stickyHeaderContent}
-            updateUserStats={updateUserStats}
+            updateUserStats={handleUpdateUserStats}
             methodsRef={playbackMethodsRef}
           />
         )}

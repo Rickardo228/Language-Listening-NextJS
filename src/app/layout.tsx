@@ -5,6 +5,7 @@ import {
 } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from './ThemeProvider'
+import { UserContextProvider } from './contexts/UserContext'
 
 const playpenSans = Playpen_Sans({
   subsets: ["latin"],
@@ -37,7 +38,9 @@ export default function RootLayout({
     <html lang="en" className={`${playpenSans.variable} ${mPlusRounded1c.className} antialiased`} suppressHydrationWarning>
       <body>
         <ThemeProvider>
-          {children}
+          <UserContextProvider>
+            {children}
+          </UserContextProvider>
         </ThemeProvider>
       </body>
     </html>
