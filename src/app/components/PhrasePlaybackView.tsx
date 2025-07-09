@@ -5,6 +5,7 @@ import { EditablePhrases } from '../EditablePhrases';
 import { Phrase, PresentationConfig } from '../types';
 import { generateAudio } from '../utils/audioUtils';
 import { BLEED_START_DELAY, DELAY_AFTER_INPUT_PHRASES_MULTIPLIER, DELAY_AFTER_OUTPUT_PHRASES_MULTIPLIER, } from '../consts';
+import { useUpdateUserStats } from '../utils/userStats';
 
 // Extract the methods ref type into a reusable type
 export type PhrasePlaybackMethods = {
@@ -26,7 +27,6 @@ interface PhrasePlaybackViewProps {
     collectionName?: string;
     showImportPhrases?: boolean;
     stickyHeaderContent?: React.ReactNode;
-    updateUserStats?: (currentPhraseIndex: number) => void;
     methodsRef?: React.MutableRefObject<PhrasePlaybackMethods | null>;
 }
 
@@ -39,9 +39,9 @@ export function PhrasePlaybackView({
     collectionName,
     showImportPhrases = false,
     stickyHeaderContent,
-    updateUserStats,
     methodsRef,
 }: PhrasePlaybackViewProps) {
+    const { updateUserStats, StatsUpdatePopup, showStatsUpdate } = useUpdateUserStats();
     const [currentPhraseIndex, setCurrentPhraseIndex] = useState<number>(0);
     const [currentPhase, setCurrentPhase] = useState<'input' | 'output'>('input');
     const [fullscreen, setFullscreen] = useState<boolean>(false);
@@ -116,6 +116,7 @@ export function PhrasePlaybackView({
             audioRef.current.pause();
         }
         setPaused(true);
+        showStatsUpdate();
     };
 
     const handleStop = () => {
@@ -125,6 +126,7 @@ export function PhrasePlaybackView({
             audioRef.current.src = '';
         }
         setPaused(true);
+        showStatsUpdate();
     };
 
     const handlePlay = () => {
@@ -218,15 +220,15 @@ export function PhrasePlaybackView({
         const outputDuration = presentationConfig.enableOutputDurationDelay ? (audioRef.current?.duration || 1) * 1000 * DELAY_AFTER_INPUT_PHRASES_MULTIPLIER : 0;
 
         if (currentPhase === 'input') {
+            if (playOutputBeforeInput) {
+                updateUserStats(phrases, currentPhraseIndex);
+
+            }
+
             const timeoutId = window.setTimeout(() => {
                 setCurrentPhase('output');
 
                 if (playOutputBeforeInput) {
-                    // Update user stats when phrase ends
-                    if (updateUserStats) {
-                        updateUserStats(currentPhraseIndex);
-                    }
-
                     if (currentPhraseIndex < phrases.length - 1 && !paused) {
                         setCurrentPhraseIndex(currentPhraseIndex + 1);
                     } else {
@@ -241,15 +243,15 @@ export function PhrasePlaybackView({
             }, playOutputBeforeInput ? outputDuration + 1000 : inputDuration + presentationConfig.delayBetweenPhrases);
             timeoutIds.current.push(timeoutId);
         } else {
+            // Update user stats before phrase ends
+            if (!playOutputBeforeInput) {
+                updateUserStats(phrases, currentPhraseIndex);
+            }
+
             const timeoutId = window.setTimeout(() => {
                 if (playOutputBeforeInput) {
                     setCurrentPhase('input');
                 } else {
-                    // Update user stats when phrase ends
-                    if (updateUserStats) {
-                        updateUserStats(currentPhraseIndex);
-                    }
-
                     if (currentPhraseIndex < phrases.length - 1 && !paused) {
                         setCurrentPhraseIndex(currentPhraseIndex + 1);
                         setCurrentPhase('input');
@@ -325,7 +327,11 @@ export function PhrasePlaybackView({
     };
 
     return (
-        <div className="flex-1 lg:overflow-y-auto lg:relative">            {/* Audio Element */}
+        <div className="flex-1 lg:overflow-y-auto lg:relative">
+            {/* Stats Update Popup */}
+            {StatsUpdatePopup}
+
+            {/* Audio Element */}
             <audio ref={audioRef} onEnded={handleAudioEnded} controls hidden />
 
             {/* Main content */}

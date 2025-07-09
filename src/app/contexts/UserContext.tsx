@@ -30,6 +30,13 @@ export const UserContextProvider: React.FC<UserContextProviderProps> = ({ childr
     const [isAuthLoading, setIsAuthLoading] = useState(true);
     const hasInitialisedForUser = useRef(false);
 
+    // Initialize Clarity on mount
+    useEffect(() => {
+        // Initialize Clarity with your project ID
+        clarity.init("rmwvuwqm9k");
+    }, []);
+
+
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
             console.log("onAuthStateChanged", firebaseUser);

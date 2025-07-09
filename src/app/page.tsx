@@ -11,16 +11,12 @@ import { CollectionList } from './CollectionList';
 import { CollectionHeader } from './CollectionHeader';
 import { useTheme } from './ThemeProvider';
 import { UserAvatar } from './components/UserAvatar';
-import { auth } from './firebase';
 import { defaultPresentationConfig, defaultPresentationConfigs } from './defaultConfig';
 import { SignInPage } from './SignInPage';
 import { ImportPhrasesDialog } from './ImportPhrasesDialog';
 import { useUser } from './contexts/UserContext';
-import clarity from '@microsoft/clarity';
 import { PhrasePlaybackView, PhrasePlaybackMethods } from './components/PhrasePlaybackView';
-import { useRouter } from 'next/navigation';
 import defaultPhrasesData from '../defaultPhrases.json';
-import { updateUserStats } from './utils/userStats';
 
 type PhraseData = {
   translated: string;
@@ -72,7 +68,6 @@ const getDefaultPhrasesForLanguages = (inputLang: string, targetLang: string): P
 };
 
 export default function Home() {
-  const router = useRouter();
 
   // Helper function to get URL parameters directly
   const getUrlParams = () => {
@@ -143,7 +138,7 @@ export default function Home() {
   // Loading state for processing
   const [loading, setLoading] = useState<boolean>(false);
 
-  const { user, isAuthLoading, hasInitialisedForUser } = useUser();
+  const { user, isAuthLoading, } = useUser();
   const [avatarDialogOpen, setAvatarDialogOpen] = useState(false);
 
   const { theme, toggleTheme } = useTheme();
@@ -151,24 +146,12 @@ export default function Home() {
   // Update the ref type to use PhrasePlaybackMethods
   const playbackMethodsRef = useRef<PhrasePlaybackMethods | null>(null);
 
-  // Initialize Clarity on mount
-  useEffect(() => {
-    // Initialize Clarity with your project ID
-    clarity.init("rmwvuwqm9k");
-  }, []);
-
-
-
-
-
-
   // Load saved collections from Firestore on mount or when user changes
   const initialiseCollections = useCallback(async (user: User) => {
     // Use the language values that were set on component mount
     const urlParams = getUrlParams();
     const inputLang = urlParams.inputLang || undefined;
     const targetLang = urlParams.targetLang || undefined;
-
 
     const fetchCollections = async () => {
       const colRef = collection(firestore, 'users', user.uid, 'collections');
@@ -235,11 +218,11 @@ export default function Home() {
   }, [savedCollections.length]);
 
   useEffect(() => {
-    if (user && !hasInitialisedForUser.current) {
-      hasInitialisedForUser.current = true;
+
+    if (user) {
       initialiseCollections(user);
     }
-  }, [initialiseCollections, user, hasInitialisedForUser])
+  }, [initialiseCollections, user])
 
   // Save a new collection to Firestore
   const handleCreateCollection = async (phrases: Phrase[], prompt?: string, collectionType?: CollectionTypeEnum, userArg?: User) => {
@@ -424,12 +407,6 @@ export default function Home() {
     }
   };
 
-  // Update user stats when audio ends
-  const handleUpdateUserStats = async (currentPhraseIndex: number) => {
-    if (user) {
-      await updateUserStats(phrases, user, currentPhraseIndex);
-    }
-  };
 
   // Rename a collection
   const handleRenameCollection = async (id: string) => {
@@ -735,7 +712,6 @@ export default function Home() {
             collectionName={savedCollections.find(col => col.id === selectedCollection)?.name}
             showImportPhrases={true}
             stickyHeaderContent={stickyHeaderContent}
-            updateUserStats={handleUpdateUserStats}
             methodsRef={playbackMethodsRef}
           />
         )}
