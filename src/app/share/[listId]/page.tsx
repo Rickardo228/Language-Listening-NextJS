@@ -8,6 +8,7 @@ import { getFirestore, doc, getDoc, collection as firestoreCollection, addDoc, q
 import { PhrasePlaybackView } from '../../components/PhrasePlaybackView';
 import { LanguageFlags } from '../../components/LanguageFlags';
 import { useUser } from '../../contexts/UserContext';
+import { User } from 'firebase/auth';
 
 const firestore = getFirestore();
 
@@ -56,8 +57,8 @@ export default function SharedList() {
         await saveListToUser(user);
     };
 
-    const saveListToUser = async (user: any) => {
-        if (!collection) return;
+    const saveListToUser = async (user: User | null) => {
+        if (!collection || !user) return;
 
         try {
             // Check for existing copies of this list
