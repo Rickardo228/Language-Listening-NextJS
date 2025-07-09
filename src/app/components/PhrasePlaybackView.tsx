@@ -236,6 +236,7 @@ export function PhrasePlaybackView({
                             // If looping is enabled, restart from beginning
                             setCurrentPhraseIndex(0);
                         } else {
+                            showStatsUpdate()
                             setPaused(true);
                         }
                     }
@@ -261,6 +262,7 @@ export function PhrasePlaybackView({
                             setCurrentPhraseIndex(0);
                             setCurrentPhase('input');
                         } else {
+                            showStatsUpdate()
                             setPaused(true);
                         }
                     }
