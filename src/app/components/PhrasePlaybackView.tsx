@@ -507,7 +507,6 @@ export function PhrasePlaybackView({
 
                                         // Track previous navigation
                                         if (currentPhraseIndex >= 0 && phrases[currentPhraseIndex]) {
-                                            const phrase = phrases[currentPhraseIndex];
                                             trackPlaybackEvent('previous', `${collectionId || 'unknown'}-${currentPhraseIndex}`, targetPhase, currentPhraseIndex, speed);
                                         }
                                     }
@@ -550,7 +549,6 @@ export function PhrasePlaybackView({
 
                                         // Track next navigation
                                         if (currentPhraseIndex >= 0 && phrases[currentPhraseIndex]) {
-                                            const phrase = phrases[currentPhraseIndex];
                                             trackPlaybackEvent('next', `${collectionId || 'unknown'}-${currentPhraseIndex}`, targetPhase, currentPhraseIndex, speed);
                                         }
                                     }
