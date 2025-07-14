@@ -7,7 +7,7 @@ export default function MixpanelProvider({ children }: { children: React.ReactNo
 
     useEffect(() => {
         // Only initialize Mixpanel in production
-        if (process.env.NODE_ENV === 'production') {
+        if (window.location.hostname !== 'localhost') {
             initMixpanel(); // Initialize Mixpanel
         }
     }, []);
