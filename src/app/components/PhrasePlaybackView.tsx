@@ -6,6 +6,7 @@ import { Phrase, PresentationConfig } from '../types';
 import { generateAudio } from '../utils/audioUtils';
 import { BLEED_START_DELAY, DELAY_AFTER_INPUT_PHRASES_MULTIPLIER, DELAY_AFTER_OUTPUT_PHRASES_MULTIPLIER, } from '../consts';
 import { useUpdateUserStats } from '../utils/userStats';
+import { trackAudioEnded, trackPlaybackEvent } from '../../lib/mixpanelClient';
 
 // Extract the methods ref type into a reusable type
 export type PhrasePlaybackMethods = {
@@ -117,6 +118,15 @@ export function PhrasePlaybackView({
         }
         setPaused(true);
         showStatsUpdate();
+
+        // Track pause event
+        if (currentPhraseIndex >= 0 && phrases[currentPhraseIndex]) {
+            const phrase = phrases[currentPhraseIndex];
+            const speed = currentPhase === 'input'
+                ? (presentationConfig.inputPlaybackSpeed || 1.0)
+                : (presentationConfig.outputPlaybackSpeed || 1.0);
+            trackPlaybackEvent('pause', phrase.id, currentPhase, currentPhraseIndex, speed);
+        }
     };
 
     const handleStop = () => {
@@ -127,6 +137,15 @@ export function PhrasePlaybackView({
         }
         setPaused(true);
         showStatsUpdate();
+
+        // Track stop event
+        if (currentPhraseIndex >= 0 && phrases[currentPhraseIndex]) {
+            const phrase = phrases[currentPhraseIndex];
+            const speed = currentPhase === 'input'
+                ? (presentationConfig.inputPlaybackSpeed || 1.0)
+                : (presentationConfig.outputPlaybackSpeed || 1.0);
+            trackPlaybackEvent('stop', phrase.id, currentPhase, currentPhraseIndex, speed);
+        }
     };
 
     const handlePlay = () => {
@@ -149,6 +168,12 @@ export function PhrasePlaybackView({
                 // If playback fails, try to regenerate the audio
                 handleAudioError(currentPhase, true);
             });
+
+            // Track play event
+            if (currentPhraseIndex >= 0 && phrases[currentPhraseIndex]) {
+                const phrase = phrases[currentPhraseIndex];
+                trackPlaybackEvent('play', phrase.id, currentPhase, currentPhraseIndex, speed);
+            }
         }
     };
 
@@ -176,6 +201,12 @@ export function PhrasePlaybackView({
             setCurrentPhraseIndex(0);
         }, presentationConfig.postProcessDelay + BLEED_START_DELAY);
         timeoutIds.current.push(timeoutId);
+
+        // Track replay event
+        if (phrases[0]) {
+            const speed = presentationConfig.inputPlaybackSpeed || 1.0;
+            trackPlaybackEvent('replay', phrases[0].id, 'input', 0, speed);
+        }
     };
 
     const handlePlayPhrase = (index: number, phase: 'input' | 'output') => {
@@ -209,11 +240,27 @@ export function PhrasePlaybackView({
                     handleAudioError(currentPhase, true);
                 });
             }
+
+            // Track play phrase event
+            if (phrases[index]) {
+                trackPlaybackEvent('play', phrases[index].id, phase, index, speed);
+            }
         }
     };
 
     const handleAudioEnded = () => {
         if (paused) return;
+
+        // Track audio ended event
+        const currentPhrase = phrases[currentPhraseIndex];
+        if (currentPhrase) {
+            const audioDuration = audioRef.current?.duration || 0;
+            trackAudioEnded(
+                `${collectionId || 'unknown'}-${currentPhraseIndex}`,
+                audioDuration,
+                collectionId
+            );
+        }
 
         const playOutputBeforeInput = presentationConfig.enableOutputBeforeInput;
         const inputDuration = presentationConfig.enableInputDurationDelay ? (audioRef.current?.duration || 1) * 1000 : 0;
@@ -458,6 +505,12 @@ export function PhrasePlaybackView({
                                         if (speed !== 1.0) {
                                             audioRef.current.playbackRate = speed;
                                         }
+
+                                        // Track previous navigation
+                                        if (currentPhraseIndex >= 0 && phrases[currentPhraseIndex]) {
+                                            const phrase = phrases[currentPhraseIndex];
+                                            trackPlaybackEvent('previous', phrase.id, targetPhase, currentPhraseIndex, speed);
+                                        }
                                     }
                                 }}
                                 onNext={() => {
@@ -494,6 +547,12 @@ export function PhrasePlaybackView({
                                             : (presentationConfig.outputPlaybackSpeed || 1.0);
                                         if (speed !== 1.0) {
                                             audioRef.current.playbackRate = speed;
+                                        }
+
+                                        // Track next navigation
+                                        if (currentPhraseIndex >= 0 && phrases[currentPhraseIndex]) {
+                                            const phrase = phrases[currentPhraseIndex];
+                                            trackPlaybackEvent('next', phrase.id, targetPhase, currentPhraseIndex, speed);
                                         }
                                     }
                                 }}

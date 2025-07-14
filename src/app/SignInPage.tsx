@@ -5,6 +5,7 @@ import { useState, useEffect, ReactElement } from 'react';
 import { OnboardingLanguageSelect } from './components/OnboardingLanguageSelect';
 import { languageOptions } from './types';
 import { useRouter } from 'next/navigation';
+import { trackSignUp, identifyUser } from '../lib/mixpanelClient';
 
 interface Advantage {
     text: string;
@@ -67,6 +68,13 @@ export function SignInPage({
             if (isFirstVisit || isSignUp) {
                 localStorage.setItem('hasVisitedBefore', 'true');
 
+                // Track sign up event for new users
+                if (isSignUp) {
+                    // Identify user in Mixpanel
+                    identifyUser(result.user.uid, result.user.email || undefined);
+                    trackSignUp(result.user.uid, result.user.providerData[0]?.providerId || 'google');
+                }
+
                 if (onAuthSuccess) {
                     onAuthSuccess(result.user);
                 }
@@ -91,6 +99,11 @@ export function SignInPage({
             if (isSignUp) {
                 result = await createUserWithEmailAndPassword(auth, email, password);
                 localStorage.setItem('hasVisitedBefore', 'true');
+
+                // Identify user in Mixpanel
+                identifyUser(result.user.uid, result.user.email || undefined);
+                // Track sign up event for new users
+                trackSignUp(result.user.uid, 'email');
             } else {
                 result = await signInWithEmailAndPassword(auth, email, password);
             }

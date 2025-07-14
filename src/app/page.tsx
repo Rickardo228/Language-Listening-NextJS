@@ -17,6 +17,7 @@ import { ImportPhrasesDialog } from './ImportPhrasesDialog';
 import { useUser } from './contexts/UserContext';
 import { PhrasePlaybackView, PhrasePlaybackMethods } from './components/PhrasePlaybackView';
 import defaultPhrasesData from '../defaultPhrases.json';
+import { trackCreateList, trackSelectList, trackCreatePhrase } from '../lib/mixpanelClient';
 
 type PhraseData = {
   translated: string;
@@ -251,6 +252,15 @@ export default function Home() {
     };
     console.log("newCollectionConfig", newCollectionConfig)
     setSavedCollections(prev => [...prev, newCollectionConfig]);
+
+    // Track the creation of the list
+    trackCreateList(
+      docRef.id,
+      generatedName,
+      phrases.length,
+      collectionType || 'phrases'
+    );
+
     handleLoadCollection(newCollectionConfig);
     return docRef.id;
   };
@@ -300,6 +310,17 @@ export default function Home() {
       }));
 
       const collectionId = await handleCreateCollection(processedPhrases, prompt, collectionType);
+
+      // Track phrase creation for each processed phrase
+      processedPhrases.forEach((phrase, index) => {
+        trackCreatePhrase(
+          `${collectionId}-${index}`,
+          phrase.inputLang,
+          phrase.targetLang,
+          !!(phrase.inputAudio || phrase.outputAudio)
+        );
+      });
+
       setPhrases(processedPhrases, collectionId);
       setPhrasesInput('');
 
@@ -362,6 +383,17 @@ export default function Home() {
 
       // Add new phrases to existing collection
       const updatedPhrases = [...phrases, ...processedPhrases];
+
+      // Track phrase creation for each new phrase added to collection
+      processedPhrases.forEach((phrase, index) => {
+        trackCreatePhrase(
+          `${selectedCollection}-${phrases.length + index}`,
+          phrase.inputLang,
+          phrase.targetLang,
+          !!(phrase.inputAudio || phrase.outputAudio)
+        );
+      });
+
       setPhrases(updatedPhrases);
       setPhrasesInput('');
     } catch (err) {
@@ -399,6 +431,13 @@ export default function Home() {
       });
 
       setPhrases(config.phrases, config.id);
+
+      // Track the selection of the list
+      trackSelectList(
+        config.id,
+        config.name,
+        config.phrases.length
+      );
     } catch (err) {
       console.error('Loading error:', err);
       alert('Error loading configuration: ' + err);

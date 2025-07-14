@@ -4,6 +4,7 @@ import React, { createContext, useContext, useEffect, useState, useRef } from 'r
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { auth } from '../firebase';
 import clarity from '@microsoft/clarity';
+import { trackLogin, identifyUser } from '../../lib/mixpanelClient';
 
 interface UserContextType {
     user: User | null;
@@ -45,8 +46,15 @@ export const UserContextProvider: React.FC<UserContextProviderProps> = ({ childr
             if (firebaseUser && !hasInitialisedForUser.current) {
                 console.log("onAuthStateChanged 2", firebaseUser);
                 hasInitialisedForUser.current = true;
+
                 // Identify user in Clarity
                 clarity.identify(firebaseUser.email || firebaseUser.uid);
+
+                // Identify user in Mixpanel with email
+                identifyUser(firebaseUser.uid, firebaseUser.email || undefined);
+
+                // Track login event
+                trackLogin(firebaseUser.uid, firebaseUser.providerData[0]?.providerId || 'email');
             }
 
             setUser(firebaseUser);

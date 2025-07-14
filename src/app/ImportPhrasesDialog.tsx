@@ -6,6 +6,7 @@ import { X } from 'lucide-react'
 import { API_BASE_URL } from './consts'
 import { createPortal } from 'react-dom'
 import { LanguageFlags } from './components/LanguageFlags'
+import { trackGeneratePhrases } from '../lib/mixpanelClient'
 
 export interface ImportPhrasesDialogProps {
     onClose: () => void
@@ -88,6 +89,16 @@ export function ImportPhrasesDialog({
             const data = await response.json();
             if (data.phrases) {
                 setPhrasesInput(data.phrases);
+
+                // Track phrase generation event
+                const phraseCount = data.phrases.split('\n').filter((line: string) => line.trim()).length;
+                trackGeneratePhrases(
+                    prompt,
+                    processInputLang,
+                    processTargetLang,
+                    collectionType,
+                    phraseCount
+                );
             }
         } catch (error) {
             console.error('Error generating phrases:', error);
