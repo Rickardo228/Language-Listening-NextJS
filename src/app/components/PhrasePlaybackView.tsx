@@ -121,11 +121,10 @@ export function PhrasePlaybackView({
 
         // Track pause event
         if (currentPhraseIndex >= 0 && phrases[currentPhraseIndex]) {
-            const phrase = phrases[currentPhraseIndex];
             const speed = currentPhase === 'input'
                 ? (presentationConfig.inputPlaybackSpeed || 1.0)
                 : (presentationConfig.outputPlaybackSpeed || 1.0);
-            trackPlaybackEvent('pause', phrase.id, currentPhase, currentPhraseIndex, speed);
+            trackPlaybackEvent('pause', `${collectionId || 'unknown'}-${currentPhraseIndex}`, currentPhase, currentPhraseIndex, speed);
         }
     };
 
@@ -140,11 +139,11 @@ export function PhrasePlaybackView({
 
         // Track stop event
         if (currentPhraseIndex >= 0 && phrases[currentPhraseIndex]) {
-            const phrase = phrases[currentPhraseIndex];
+
             const speed = currentPhase === 'input'
                 ? (presentationConfig.inputPlaybackSpeed || 1.0)
                 : (presentationConfig.outputPlaybackSpeed || 1.0);
-            trackPlaybackEvent('stop', phrase.id, currentPhase, currentPhraseIndex, speed);
+            trackPlaybackEvent('stop', `${collectionId || 'unknown'}-${currentPhraseIndex}`, currentPhase, currentPhraseIndex, speed);
         }
     };
 
@@ -171,8 +170,8 @@ export function PhrasePlaybackView({
 
             // Track play event
             if (currentPhraseIndex >= 0 && phrases[currentPhraseIndex]) {
-                const phrase = phrases[currentPhraseIndex];
-                trackPlaybackEvent('play', phrase.id, currentPhase, currentPhraseIndex, speed);
+
+                trackPlaybackEvent('play', `${collectionId || 'unknown'}-${currentPhraseIndex}`, currentPhase, currentPhraseIndex, speed);
             }
         }
     };
@@ -205,7 +204,7 @@ export function PhrasePlaybackView({
         // Track replay event
         if (phrases[0]) {
             const speed = presentationConfig.inputPlaybackSpeed || 1.0;
-            trackPlaybackEvent('replay', phrases[0].id, 'input', 0, speed);
+            trackPlaybackEvent('replay', `${collectionId || 'unknown'}-0`, 'input', 0, speed);
         }
     };
 
@@ -243,7 +242,7 @@ export function PhrasePlaybackView({
 
             // Track play phrase event
             if (phrases[index]) {
-                trackPlaybackEvent('play', phrases[index].id, phase, index, speed);
+                trackPlaybackEvent('play', `${collectionId || 'unknown'}-${index}`, phase, index, speed);
             }
         }
     };
@@ -509,7 +508,7 @@ export function PhrasePlaybackView({
                                         // Track previous navigation
                                         if (currentPhraseIndex >= 0 && phrases[currentPhraseIndex]) {
                                             const phrase = phrases[currentPhraseIndex];
-                                            trackPlaybackEvent('previous', phrase.id, targetPhase, currentPhraseIndex, speed);
+                                            trackPlaybackEvent('previous', `${collectionId || 'unknown'}-${currentPhraseIndex}`, targetPhase, currentPhraseIndex, speed);
                                         }
                                     }
                                 }}
@@ -552,7 +551,7 @@ export function PhrasePlaybackView({
                                         // Track next navigation
                                         if (currentPhraseIndex >= 0 && phrases[currentPhraseIndex]) {
                                             const phrase = phrases[currentPhraseIndex];
-                                            trackPlaybackEvent('next', phrase.id, targetPhase, currentPhraseIndex, speed);
+                                            trackPlaybackEvent('next', `${collectionId || 'unknown'}-${currentPhraseIndex}`, targetPhase, currentPhraseIndex, speed);
                                         }
                                     }
                                 }}

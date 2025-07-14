@@ -258,7 +258,9 @@ export default function Home() {
       docRef.id,
       generatedName,
       phrases.length,
-      collectionType || 'phrases'
+      collectionType || 'phrases',
+      phrases[0]?.inputLang || 'unknown',
+      phrases[0]?.targetLang || 'unknown'
     );
 
     handleLoadCollection(newCollectionConfig);
@@ -436,7 +438,9 @@ export default function Home() {
       trackSelectList(
         config.id,
         config.name,
-        config.phrases.length
+        config.phrases.length,
+        config.phrases[0]?.inputLang || 'unknown',
+        config.phrases[0]?.targetLang || 'unknown'
       );
     } catch (err) {
       console.error('Loading error:', err);
