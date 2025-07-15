@@ -51,7 +51,9 @@ export const UserContextProvider: React.FC<UserContextProviderProps> = ({ childr
                 hasInitialisedForUser.current = true;
 
                 // Identify user in Clarity
-                clarity.identify(firebaseUser.email || firebaseUser.uid);
+                if ((window as unknown as { clarity: unknown })?.clarity) {
+                    clarity.identify(firebaseUser.email || firebaseUser.uid);
+                }
 
                 // Identify user in Mixpanel with email
                 identifyUser(firebaseUser.uid, firebaseUser.email || undefined);
