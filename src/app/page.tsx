@@ -442,10 +442,18 @@ export default function Home() {
         config.phrases[0]?.inputLang || 'unknown',
         config.phrases[0]?.targetLang || 'unknown'
       );
+
+
     } catch (err) {
       console.error('Loading error:', err);
       alert('Error loading configuration: ' + err);
     } finally {
+      // Auto-start playback after a short delay to ensure everything is loaded
+      setTimeout(() => {
+        if (playbackMethodsRef.current && config.phrases.length > 0) {
+          playbackMethodsRef.current.handleReplay();
+        }
+      }, 500);
       setLoading(false);
     }
   };
