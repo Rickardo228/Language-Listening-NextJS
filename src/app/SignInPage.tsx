@@ -97,6 +97,11 @@ export function SignInPage({
         try {
             let result;
             if (isSignUp) {
+                if (!onAuthSuccess) {
+                    // Default behavior - redirect to home page with query params
+                    router.push(`/?firstVisit=true&inputLang=${inputLang}&targetLang=${targetLang}`);
+                }
+
                 result = await createUserWithEmailAndPassword(auth, email, password);
                 localStorage.setItem('hasVisitedBefore', 'true');
 
@@ -110,9 +115,6 @@ export function SignInPage({
 
             if (onAuthSuccess) {
                 onAuthSuccess(result.user);
-            } else if (isSignUp) {
-                // Default behavior - redirect to home page with query params
-                router.push(`/?firstVisit=true&inputLang=${inputLang}&targetLang=${targetLang}`);
             }
         } catch (error: unknown) {
             console.error('Error with email authentication:', error);
