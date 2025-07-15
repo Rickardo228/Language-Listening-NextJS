@@ -43,12 +43,16 @@ export function PhrasePlaybackView({
     methodsRef,
 }: PhrasePlaybackViewProps) {
     const { updateUserStats, StatsUpdatePopup, showStatsUpdate } = useUpdateUserStats();
-    const [currentPhraseIndex, setCurrentPhraseIndex] = useState<number>(0);
+    const [currentPhraseIndex, setCurrentPhraseIndex] = useState(-1);
     const [currentPhase, setCurrentPhase] = useState<'input' | 'output'>('input');
-    const [fullscreen, setFullscreen] = useState<boolean>(false);
     const [paused, setPaused] = useState(true);
+    const [fullscreen, setFullscreen] = useState(false);
     const [showTitle, setShowTitle] = useState(false);
-    const [configName, setConfigName] = useState<string>('');
+    const [configName, setConfigName] = useState('Default');
+
+    const [showProgressBar, setShowProgressBar] = useState(false);
+    const [progressDuration, setProgressDuration] = useState(0);
+    const [progressDelay, setProgressDelay] = useState(0);
     const audioRef = useRef<HTMLAudioElement>(null);
     const timeoutIds = useRef<number[]>([]);
     const currentInputAudioUrl = useMemo(() => {
@@ -113,6 +117,7 @@ export function PhrasePlaybackView({
     // Playback control handlers
     const handlePause = () => {
         clearAllTimeouts();
+        setShowProgressBar(false);
         if (audioRef.current) {
             audioRef.current.pause();
         }
@@ -130,6 +135,7 @@ export function PhrasePlaybackView({
 
     const handleStop = () => {
         clearAllTimeouts();
+        setShowProgressBar(false);
         if (audioRef.current) {
             audioRef.current.pause();
             audioRef.current.src = '';
@@ -265,14 +271,19 @@ export function PhrasePlaybackView({
         const inputDuration = presentationConfig.enableInputDurationDelay ? (audioRef.current?.duration || 1) * 1000 : 0;
         const outputDuration = presentationConfig.enableOutputDurationDelay ? (audioRef.current?.duration || 1) * 1000 * DELAY_AFTER_INPUT_PHRASES_MULTIPLIER : 0;
 
+        // Set progress bar for recall (input duration delay)
+        setShowProgressBar(true);
+        setProgressDuration(playOutputBeforeInput ? outputDuration + 1000 : inputDuration + presentationConfig.delayBetweenPhrases);
+        setProgressDelay(0);
+
         if (currentPhase === 'input') {
             if (playOutputBeforeInput) {
                 updateUserStats(phrases, currentPhraseIndex);
-
             }
 
             const timeoutId = window.setTimeout(() => {
                 setCurrentPhase('output');
+                setShowProgressBar(false);
 
                 if (playOutputBeforeInput) {
                     if (currentPhraseIndex < phrases.length - 1 && !paused) {
@@ -295,7 +306,14 @@ export function PhrasePlaybackView({
                 updateUserStats(phrases, currentPhraseIndex);
             }
 
+            // Set progress bar for shadow (output duration delay)
+            setShowProgressBar(true);
+            setProgressDuration(playOutputBeforeInput ? inputDuration + 1000 : (outputDuration * DELAY_AFTER_OUTPUT_PHRASES_MULTIPLIER) + presentationConfig.delayBetweenPhrases);
+            setProgressDelay(0);
+
+
             const timeoutId = window.setTimeout(() => {
+                setShowProgressBar(false);
                 if (playOutputBeforeInput) {
                     setCurrentPhase('input');
                 } else {
@@ -453,6 +471,9 @@ export function PhrasePlaybackView({
                             title={showTitle ? (collectionName || configName) : undefined}
                             showAllPhrases={presentationConfig.showAllPhrases}
                             enableOutputBeforeInput={presentationConfig.enableOutputBeforeInput}
+                            showProgressBar={showProgressBar}
+                            progressDuration={progressDuration}
+                            progressDelay={progressDelay}
                         />
                         <div className="py-1 px-1 lg:py-2">
                             <PresentationControls

@@ -28,6 +28,9 @@ interface PresentationViewProps {
   title?: string;       // New optional prop for a title
   showAllPhrases?: boolean; // New prop to show all phrases simultaneously
   enableOutputBeforeInput?: boolean; // New prop to indicate if output plays before input
+  showProgressBar?: boolean; // New prop to show progress bar during recall/shadow
+  progressDuration?: number; // New prop for progress bar duration in milliseconds
+  progressDelay?: number; // New prop for delay before progress bar starts
 }
 
 export const TITLE_ANIMATION_DURATION = 1000
@@ -73,6 +76,9 @@ export function PresentationView({
   title,
   showAllPhrases,
   enableOutputBeforeInput,
+  showProgressBar,
+  progressDuration,
+  progressDelay,
 }: PresentationViewProps) {
   const [isIdle, setIsIdle] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -149,224 +155,248 @@ export function PresentationView({
   console.log(textBg)
 
   const content = (
-    <div ref={containerRef} className={`${containerClass} ${isIdle ? "cursor-none" : ""}`} style={containerStyle} onClick={() => setFullscreen(prev => !prev)}>
-      {enableOrtonEffect && (
-        <div
-          style={{
-            mixBlendMode: "lighten",
-            filter: "blur(50px)",
-            opacity: "50%",
-            backgroundImage: `url(${bgImage})`,
-            width: "100%",
-            height: "100%",
-          }}
-        ></div>
-      )}
-      {enableSnow && (
-        <div className="wrapper" style={{ position: fullScreen ? "absolute" : "static" }}>
-          <div className="snow layer1 a"></div>
-          <div className="snow layer1"></div>
-          <div className="snow layer2 a"></div>
-          <div className="snow layer2"></div>
-          <div className="snow layer3 a"></div>
-          <div className="snow layer3"></div>
-        </div>
-      )}
-      {enableLeaves && (
-        <div id="leaves" style={{ position: fullScreen ? "absolute" : "static" }}>
-          <i></i>
-          <i></i>
-          <i></i>
-          <i></i>
-          <i></i>
-          <i></i>
-          <i></i>
-          <i></i>
-          <i></i>
-          <i></i>
-          <i></i>
-          <i></i>
-          <i></i>
-          <i></i>
-          <i></i>
-        </div>
-      )}
-      {enableAutumnLeaves && <AutumnLeaves fullScreen={fullScreen} />}
-      {enableCherryBlossom && <CherryBlossom fullScreen={fullScreen} />}
-      {/* {<ParticleEffect />} */}
-      {fullScreen && enableParticles && <ParticleAnimation />
-      }
-      {enableSteam && <div style={{ position: 'absolute', width: '100%', height: '100%', top: '410px', left: '710px' }}>
-        <span className="steam" style={{
-
-        }}></span>
-      </div>}
-      {/* Animate the title in/out with AnimatePresence */}
-      <AnimatePresence mode={'sync'}>
-        {title ? (
-          <motion.div
-            key="title"
-            initial={{ opacity: 0, y: -20, scale: 0.98 }}
-            animate={{
-              opacity: 1,
-              y: 0,
-              scale: 1,
-              transition: { duration: TITLE_ANIMATION_DURATION / 1000, ease: "easeOut", delay: (BLEED_START_DELAY + TITLE_DELAY) / 1000 }
-            }}
-            exit={{
-              opacity: 0,
-              y: 20,
-              scale: 0.98,
-              transition: { duration: TITLE_ANIMATION_DURATION / 1000, ease: "easeOut" }
-            }}
-            className={`text-center absolute flex flex-col ${textColorClass}`}
+    <>
+      {/* CSS Animation for Progress Bar */}
+      <style jsx>{`
+        @keyframes progressBar {
+          from { width: 0%; }
+          to { width: 100%; }
+        }
+      `}</style>
+      <div ref={containerRef} className={`${containerClass} ${isIdle ? "cursor-none" : ""}`} style={containerStyle} onClick={() => setFullscreen(prev => !prev)}>
+        {enableOrtonEffect && (
+          <div
             style={{
-              maxWidth: "600px",
-              padding: 20,
-              alignItems: "center",
-              justifyContent: "center",
-              textShadow: textBg ? `2px 2px 2px ${textBg}` : "2px 2px 2px rgba(0,0,0,0.2)",
-              backgroundColor: textBg
-                ? (textBg.includes("rgb")
-                  ? (textBg.slice(0, -1) + " 0.7)").replaceAll(" ", ",")
-                  : textBg)
-                : "rgba(255,255,255,0.9) dark:bg-gray-800",
-              borderRadius: "1rem"
+              mixBlendMode: "lighten",
+              filter: "blur(50px)",
+              opacity: "50%",
+              backgroundImage: `url(${bgImage})`,
+              width: "100%",
+              height: "100%",
             }}
-          >
-            <h1 className={titlePropClass} style={{ margin: 0, padding: 0 }}>
-              {title}
-            </h1>
-          </motion.div>
-        ) : showAllPhrases ? (
-          // Show all phrases simultaneously with highlighting
-          (currentPhrase || currentTranslated) && (
+          ></div>
+        )}
+        {enableSnow && (
+          <div className="wrapper" style={{ position: fullScreen ? "absolute" : "static" }}>
+            <div className="snow layer1 a"></div>
+            <div className="snow layer1"></div>
+            <div className="snow layer2 a"></div>
+            <div className="snow layer2"></div>
+            <div className="snow layer3 a"></div>
+            <div className="snow layer3"></div>
+          </div>
+        )}
+        {enableLeaves && (
+          <div id="leaves" style={{ position: fullScreen ? "absolute" : "static" }}>
+            <i></i>
+            <i></i>
+            <i></i>
+            <i></i>
+            <i></i>
+            <i></i>
+            <i></i>
+            <i></i>
+            <i></i>
+            <i></i>
+            <i></i>
+            <i></i>
+            <i></i>
+            <i></i>
+            <i></i>
+          </div>
+        )}
+        {enableAutumnLeaves && <AutumnLeaves fullScreen={fullScreen} />}
+        {enableCherryBlossom && <CherryBlossom fullScreen={fullScreen} />}
+        {/* {<ParticleEffect />} */}
+        {fullScreen && enableParticles && <ParticleAnimation />
+        }
+        {enableSteam && <div style={{ position: 'absolute', width: '100%', height: '100%', top: '410px', left: '710px' }}>
+          <span className="steam" style={{
+
+          }}></span>
+        </div>}
+        {/* Animate the title in/out with AnimatePresence */}
+        <AnimatePresence mode={'sync'}>
+          {title ? (
             <motion.div
-              key="all-phrases"
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 10 }}
-              transition={{ duration: 0.3, ease: "easeOut" }}
-              className={`text-center px-12 ${alignPhraseTop ? 'pb-4' : ''} absolute flex bg-opacity-90 flex-col ${textColorClass}`}
+              key="title"
+              initial={{ opacity: 0, y: -20, scale: 0.98 }}
+              animate={{
+                opacity: 1,
+                y: 0,
+                scale: 1,
+                transition: { duration: TITLE_ANIMATION_DURATION / 1000, ease: "easeOut", delay: (BLEED_START_DELAY + TITLE_DELAY) / 1000 }
+              }}
+              exit={{
+                opacity: 0,
+                y: 20,
+                scale: 0.98,
+                transition: { duration: TITLE_ANIMATION_DURATION / 1000, ease: "easeOut" }
+              }}
+              className={`text-center absolute flex flex-col ${textColorClass}`}
               style={{
+                maxWidth: "600px",
+                padding: 20,
                 alignItems: "center",
                 justifyContent: "center",
-                flexDirection: enableOutputBeforeInput ? "column-reverse" : "column",
+                textShadow: textBg ? `2px 2px 2px ${textBg}` : "2px 2px 2px rgba(0,0,0,0.2)",
                 backgroundColor: textBg
                   ? (textBg.includes("rgb")
-                    ? (textBg.slice(0, -1) + " 0.9)").replaceAll(" ", ",")
+                    ? (textBg.slice(0, -1) + " 0.7)").replaceAll(" ", ",")
                     : textBg)
                   : "rgba(255,255,255,0.9) dark:bg-gray-800",
-                borderRadius: '1rem'
+                borderRadius: "1rem"
               }}
             >
-              {/* Input phrase */}
-              {currentPhrase && (
-                <h2
-                  className="font-bold mb-2"
-                  style={{
-                    margin: 0,
-                    padding: 0,
-                    fontSize: calculateFontSize(currentPhrase, fullScreen, false),
-                    color: currentPhase === "input" ? "#3b82f6" : undefined, // Blue highlight for input phase
-                    textShadow: currentPhase === "input" ? "0 0 10px rgba(59, 130, 246, 0.5)" : undefined,
-                    transition: "color 0.3s ease, text-shadow 0.3s ease"
-                  }}
-                >
-                  {currentPhrase.trim()}
-                </h2>
-              )}
+              <h1 className={titlePropClass} style={{ margin: 0, padding: 0 }}>
+                {title}
+              </h1>
+            </motion.div>
+          ) : showAllPhrases ? (
+            // Show all phrases simultaneously with highlighting
+            (currentPhrase || currentTranslated) && (
+              <motion.div
+                key="all-phrases"
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 10 }}
+                transition={{ duration: 0.3, ease: "easeOut" }}
+                className={`text-center px-12 ${alignPhraseTop ? 'pb-4' : ''} absolute flex bg-opacity-90 flex-col ${textColorClass}`}
+                style={{
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexDirection: enableOutputBeforeInput ? "column-reverse" : "column",
+                  backgroundColor: textBg
+                    ? (textBg.includes("rgb")
+                      ? (textBg.slice(0, -1) + " 0.9)").replaceAll(" ", ",")
+                      : textBg)
+                    : "rgba(255,255,255,0.9) dark:bg-gray-800",
+                  borderRadius: '1rem'
+                }}
+              >
+                {/* Input phrase */}
+                {currentPhrase && (
+                  <h2
+                    className="font-bold mb-2"
+                    style={{
+                      margin: 0,
+                      padding: 0,
+                      fontSize: calculateFontSize(currentPhrase, fullScreen, false),
+                      color: currentPhase === "input" ? "#3b82f6" : undefined, // Blue highlight for input phase
+                      textShadow: currentPhase === "input" ? "0 0 10px rgba(59, 130, 246, 0.5)" : undefined,
+                      transition: "color 0.3s ease, text-shadow 0.3s ease"
+                    }}
+                  >
+                    {currentPhrase.trim()}
+                  </h2>
+                )}
 
-              <div>
-                {currentTranslated && <h2
+                <div>
+                  {currentTranslated && <h2
+                    className="font-bold"
+                    style={{
+                      margin: 0,
+                      padding: 0,
+                      fontSize: calculateFontSize(
+                        currentTranslated,
+                        fullScreen,
+                        romanizedOutput ? true : false
+                      ),
+                      color: currentPhase === "output" ? "#10b981" : undefined, // Green highlight for output phase
+                      textShadow: currentPhase === "output" ? "0 0 10px rgba(16, 185, 129, 0.5)" : undefined,
+                      transition: "color 0.3s ease, text-shadow 0.3s ease"
+                    }}
+                  >
+                    {currentTranslated.trim()}
+
+                  </h2>}
+                  {romanizedOutput && (
+                    <h2
+                      className="font-bold mt-3"
+                      style={{
+                        margin: 0,
+                        padding: 0,
+                        fontSize: calculateFontSize(romanizedOutput, fullScreen, true),
+                        color: currentPhase === "output" ? "#f59e0b" : undefined, // Amber highlight for romanization during output phase
+                        textShadow: currentPhase === "output" ? "0 0 10px rgba(245, 158, 11, 0.5)" : undefined,
+                        transition: "color 0.3s ease, text-shadow 0.3s ease"
+                      }}
+                    >
+                      {romanizedOutput}
+                    </h2>
+                  )}
+                </div>
+
+              </motion.div>
+            )
+          ) : (
+            // Original single phrase display
+            (currentTranslated || currentPhrase) && (
+              <motion.div
+                key={currentPhase}
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 10 }}
+                transition={{ duration: 0.3, ease: "easeOut" }}
+                className={`text-center px-12 ${alignPhraseTop ? 'pb-4' : ''} absolute flex bg-opacity-90 flex-col ${textColorClass}`}
+                style={{
+                  alignItems: "center",
+                  justifyContent: "center",
+                  backgroundColor: textBg
+                    ? (textBg.includes("rgb")
+                      ? (textBg.slice(0, -1) + " 0.9)").replaceAll(" ", ",")
+                      : textBg)
+                    : "rgba(255,255,255,0.9) dark:bg-gray-800",
+                  borderRadius: '1rem'
+                }}
+              >
+                <h2
                   className="font-bold"
                   style={{
                     margin: 0,
                     padding: 0,
                     fontSize: calculateFontSize(
-                      currentTranslated,
+                      currentPhase === "input" ? currentPhrase : currentTranslated,
                       fullScreen,
                       romanizedOutput ? true : false
-                    ),
-                    color: currentPhase === "output" ? "#10b981" : undefined, // Green highlight for output phase
-                    textShadow: currentPhase === "output" ? "0 0 10px rgba(16, 185, 129, 0.5)" : undefined,
-                    transition: "color 0.3s ease, text-shadow 0.3s ease"
+                    )
                   }}
                 >
-                  {currentTranslated.trim()}
-
-                </h2>}
-                {romanizedOutput && (
+                  {currentPhase === "input"
+                    ? currentPhrase?.trim()
+                    : currentTranslated?.trim()}
+                </h2>
+                {currentPhase === "output" && romanizedOutput && (
                   <h2
                     className="font-bold mt-3"
                     style={{
-                      margin: 0,
-                      padding: 0,
-                      fontSize: calculateFontSize(romanizedOutput, fullScreen, true),
-                      color: currentPhase === "output" ? "#f59e0b" : undefined, // Amber highlight for romanization during output phase
-                      textShadow: currentPhase === "output" ? "0 0 10px rgba(245, 158, 11, 0.5)" : undefined,
-                      transition: "color 0.3s ease, text-shadow 0.3s ease"
+                      fontSize: calculateFontSize(romanizedOutput, fullScreen, true)
                     }}
                   >
                     {romanizedOutput}
                   </h2>
                 )}
-              </div>
-
-            </motion.div>
-          )
-        ) : (
-          // Original single phrase display
-          (currentTranslated || currentPhrase) && (
-            <motion.div
-              key={currentPhase}
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 10 }}
-              transition={{ duration: 0.3, ease: "easeOut" }}
-              className={`text-center px-12 ${alignPhraseTop ? 'pb-4' : ''} absolute flex bg-opacity-90 flex-col ${textColorClass}`}
+              </motion.div>
+            )
+          )}
+        </AnimatePresence>
+        {/* Progress Bar for Recall/Shadow */}
+        {showProgressBar && progressDuration && (
+          <div
+            className="absolute bottom-0 left-0 w-full h-1 bg-gray-300 dark:bg-gray-600 overflow-hidden"
+            style={{ zIndex: 10 }}
+          >
+            <div
+              className="h-full bg-blue-500 transition-all duration-300 ease-linear"
               style={{
-                alignItems: "center",
-                justifyContent: "center",
-                backgroundColor: textBg
-                  ? (textBg.includes("rgb")
-                    ? (textBg.slice(0, -1) + " 0.9)").replaceAll(" ", ",")
-                    : textBg)
-                  : "rgba(255,255,255,0.9) dark:bg-gray-800",
-                borderRadius: '1rem'
+                width: '0%',
+                animation: `progressBar ${progressDuration}ms linear ${progressDelay || 0}ms forwards`
               }}
-            >
-              <h2
-                className="font-bold"
-                style={{
-                  margin: 0,
-                  padding: 0,
-                  fontSize: calculateFontSize(
-                    currentPhase === "input" ? currentPhrase : currentTranslated,
-                    fullScreen,
-                    romanizedOutput ? true : false
-                  )
-                }}
-              >
-                {currentPhase === "input"
-                  ? currentPhrase?.trim()
-                  : currentTranslated?.trim()}
-              </h2>
-              {currentPhase === "output" && romanizedOutput && (
-                <h2
-                  className="font-bold mt-3"
-                  style={{
-                    fontSize: calculateFontSize(romanizedOutput, fullScreen, true)
-                  }}
-                >
-                  {romanizedOutput}
-                </h2>
-              )}
-            </motion.div>
-          )
+            />
+          </div>
         )}
-      </AnimatePresence>
-    </div>
+      </div>
+    </>
   );
 
   // Use portal for fullscreen mode, regular render for inline mode
