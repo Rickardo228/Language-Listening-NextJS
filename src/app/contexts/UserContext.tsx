@@ -31,10 +31,13 @@ export const UserContextProvider: React.FC<UserContextProviderProps> = ({ childr
     const [isAuthLoading, setIsAuthLoading] = useState(true);
     const hasInitialisedForUser = useRef(false);
 
-    // Initialize Clarity on mount
+    // Initialize Clarity on mount (only in production)
     useEffect(() => {
-        // Initialize Clarity with your project ID
-        clarity.init("rmwvuwqm9k");
+        // Only initialize Clarity if not on localhost
+        if (typeof window !== 'undefined' && !window?.location?.hostname?.includes('localhost')) {
+            // Initialize Clarity with your project ID
+            clarity.init("rmwvuwqm9k");
+        }
     }, []);
 
 
