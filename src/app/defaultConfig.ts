@@ -21,6 +21,7 @@ const basePresentationConfig: PresentationConfig = {
   enableOutputBeforeInput: false,
   inputPlaybackSpeed: 1.0,
   outputPlaybackSpeed: 0.85,
+  showAllPhrases: false,
 };
 export const defaultPresentationConfigs: Record<
   CollectionType,

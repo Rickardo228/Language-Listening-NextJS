@@ -26,6 +26,8 @@ interface PresentationViewProps {
   textBg?: string;      // New prop for text container background color (default: 'bg-rose-400')
   romanizedOutput?: string;
   title?: string;       // New optional prop for a title
+  showAllPhrases?: boolean; // New prop to show all phrases simultaneously
+  enableOutputBeforeInput?: boolean; // New prop to indicate if output plays before input
 }
 
 export const TITLE_ANIMATION_DURATION = 1000
@@ -69,6 +71,8 @@ export function PresentationView({
   textBg,
   romanizedOutput,
   title,
+  showAllPhrases,
+  enableOutputBeforeInput,
 }: PresentationViewProps) {
   const [isIdle, setIsIdle] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -234,7 +238,85 @@ export function PresentationView({
               {title}
             </h1>
           </motion.div>
+        ) : showAllPhrases ? (
+          // Show all phrases simultaneously with highlighting
+          (currentPhrase || currentTranslated) && (
+            <motion.div
+              key="all-phrases"
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 10 }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
+              className={`text-center px-12 ${alignPhraseTop ? 'pb-4' : ''} absolute flex bg-opacity-90 flex-col ${textColorClass}`}
+              style={{
+                alignItems: "center",
+                justifyContent: "center",
+                flexDirection: enableOutputBeforeInput ? "column-reverse" : "column",
+                backgroundColor: textBg
+                  ? (textBg.includes("rgb")
+                    ? (textBg.slice(0, -1) + " 0.9)").replaceAll(" ", ",")
+                    : textBg)
+                  : "rgba(255,255,255,0.9) dark:bg-gray-800",
+                borderRadius: '1rem'
+              }}
+            >
+              {/* Input phrase */}
+              {currentPhrase && (
+                <h2
+                  className="font-bold mb-2"
+                  style={{
+                    margin: 0,
+                    padding: 0,
+                    fontSize: calculateFontSize(currentPhrase, fullScreen, false),
+                    color: currentPhase === "input" ? "#3b82f6" : undefined, // Blue highlight for input phase
+                    textShadow: currentPhase === "input" ? "0 0 10px rgba(59, 130, 246, 0.5)" : undefined,
+                    transition: "color 0.3s ease, text-shadow 0.3s ease"
+                  }}
+                >
+                  {currentPhrase.trim()}
+                </h2>
+              )}
+
+              <div>
+                {currentTranslated && <h2
+                  className="font-bold"
+                  style={{
+                    margin: 0,
+                    padding: 0,
+                    fontSize: calculateFontSize(
+                      currentTranslated,
+                      fullScreen,
+                      romanizedOutput ? true : false
+                    ),
+                    color: currentPhase === "output" ? "#10b981" : undefined, // Green highlight for output phase
+                    textShadow: currentPhase === "output" ? "0 0 10px rgba(16, 185, 129, 0.5)" : undefined,
+                    transition: "color 0.3s ease, text-shadow 0.3s ease"
+                  }}
+                >
+                  {currentTranslated.trim()}
+
+                </h2>}
+                {romanizedOutput && (
+                  <h2
+                    className="font-bold mt-3"
+                    style={{
+                      margin: 0,
+                      padding: 0,
+                      fontSize: calculateFontSize(romanizedOutput, fullScreen, true),
+                      color: currentPhase === "output" ? "#f59e0b" : undefined, // Amber highlight for romanization during output phase
+                      textShadow: currentPhase === "output" ? "0 0 10px rgba(245, 158, 11, 0.5)" : undefined,
+                      transition: "color 0.3s ease, text-shadow 0.3s ease"
+                    }}
+                  >
+                    {romanizedOutput}
+                  </h2>
+                )}
+              </div>
+
+            </motion.div>
+          )
         ) : (
+          // Original single phrase display
           (currentTranslated || currentPhrase) && (
             <motion.div
               key={currentPhase}

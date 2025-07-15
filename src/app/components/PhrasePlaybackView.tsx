@@ -451,6 +451,8 @@ export function PhrasePlaybackView({
                             enableSteam={presentationConfig.enableSteam}
                             romanizedOutput={phrases[currentPhraseIndex]?.romanized}
                             title={showTitle ? (collectionName || configName) : undefined}
+                            showAllPhrases={presentationConfig.showAllPhrases}
+                            enableOutputBeforeInput={presentationConfig.enableOutputBeforeInput}
                         />
                         <div className="py-1 px-1 lg:py-2">
                             <PresentationControls

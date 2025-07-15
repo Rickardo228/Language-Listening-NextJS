@@ -50,6 +50,13 @@ export const presentationConfigDefinition: ConfigFieldDefinition[] = [
       "Play the output audio before the input audio for each phrase.",
   },
   {
+    key: "showAllPhrases",
+    label: "Show All Phrases",
+    inputType: "checkbox",
+    description:
+      "Display input, translation, and romanization simultaneously with highlighting for the current phase.",
+  },
+  {
     key: "inputPlaybackSpeed",
     label: "Input Language Speed",
     inputType: "select",

@@ -21,6 +21,7 @@ export type PresentationConfig = {
   enableOutputBeforeInput?: boolean;
   inputPlaybackSpeed?: number;
   outputPlaybackSpeed?: number;
+  showAllPhrases?: boolean;
 };
 
 export type Config = {

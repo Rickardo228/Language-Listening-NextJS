@@ -217,7 +217,8 @@ export default function SharedList() {
                     enableOutputDurationDelay: false,
                     enableLoop: false,
                     inputPlaybackSpeed: 1.0,
-                    outputPlaybackSpeed: 1.0
+                    outputPlaybackSpeed: 1.0,
+                    showAllPhrases: false
                 }}
                 collectionName={collection.name}
                 setPhrases={async (phrases: Phrase[]) => {
@@ -254,7 +255,8 @@ export default function SharedList() {
                                 enableOutputDurationDelay: config.enableOutputDurationDelay ?? collection.presentationConfig?.enableOutputDurationDelay ?? false,
                                 enableLoop: config.enableLoop ?? collection.presentationConfig?.enableLoop ?? false,
                                 inputPlaybackSpeed: config.inputPlaybackSpeed ?? collection.presentationConfig?.inputPlaybackSpeed ?? 1.0,
-                                outputPlaybackSpeed: config.outputPlaybackSpeed ?? collection.presentationConfig?.outputPlaybackSpeed ?? 1.0
+                                outputPlaybackSpeed: config.outputPlaybackSpeed ?? collection.presentationConfig?.outputPlaybackSpeed ?? 1.0,
+                                showAllPhrases: config.showAllPhrases ?? collection.presentationConfig?.showAllPhrases ?? false
                             }
                         });
                         setHasUnsavedChanges(true);
