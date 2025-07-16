@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { languageOptions, CollectionType } from './types'
-import { X } from 'lucide-react'
+import { X, Plus } from 'lucide-react'
 import { API_BASE_URL } from './consts'
 import { createPortal } from 'react-dom'
 import { LanguageFlags } from './components/LanguageFlags'
@@ -285,9 +285,14 @@ export function ImportPhrasesDialog({
                                         onClose()
                                     }}
                                     disabled={loading || !phrasesInput.trim()}
-                                    className="flex-1 bg-primary text-primary-foreground px-4 py-2 rounded hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="flex-1 px-4 h-[50px] bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white font-medium rounded-lg transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-md"
                                 >
-                                    {loading ? 'Adding...' : 'Add Phrases'}
+                                    <div className="flex items-center gap-2 justify-center">
+                                        <Plus className="h-5 w-5" />
+                                        <span className="text-sm font-semibold">
+                                            {loading ? 'Adding...' : 'Add Phrases'}
+                                        </span>
+                                    </div>
                                 </button>
                             ) : (
                                 <button

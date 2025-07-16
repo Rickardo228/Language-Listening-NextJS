@@ -172,7 +172,10 @@ export function PresentationView({
             e.stopPropagation();
             setFullscreen(prev => !prev);
           }}
-          className="absolute bottom-4 left-4 p-3 bg-gray-200 dark:bg-gray-700 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 transition-all duration-200 z-10"
+          className={`absolute p-3 bg-gray-200 dark:bg-gray-700 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 transition-all duration-200 z-10 ${fullScreen && isMobile && onPrevious && onNext
+            ? "bottom-4 left-20" // Move right to avoid overlap with navigation button
+            : "bottom-4 left-4"
+            }`}
           title={fullScreen ? "Exit Presentation Mode" : "Enter Presentation Mode"}
           style={{
             opacity: shouldShowNavigationButtons ? 1 : 0,
