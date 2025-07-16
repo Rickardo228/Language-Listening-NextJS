@@ -403,7 +403,7 @@ export function PhrasePlaybackView({
             {/* Main content */}
             <div className="flex lg:flex-row flex-col-reverse w-full lg:h-[92vh]">
                 {/* Phrases List */}
-                <div className="flex-1 lg:overflow-y-auto lg:relative">
+                <div className="flex-1 lg:overflow-y-auto lg:relative lg:order-2">
                     {showImportPhrases && collectionId && stickyHeaderContent && (
                         <div className={`sticky lg:px-0 lg:pb-3 px-1 py-2 top-[320px] lg:top-[0px] lg:bg-background bg-gray-50 dark:bg-gray-900 z-1`}>
                             {stickyHeaderContent}
@@ -449,7 +449,7 @@ export function PhrasePlaybackView({
 
                 {/* Presentation View and Controls */}
                 {Boolean(typeof currentPhraseIndex === "number" && phrases?.length) && (
-                    <div className="xl:flex-1 sticky top-[64px] bg-background lg:p-2 z-1">
+                    <div className="xl:flex-1 sticky top-[64px] bg-background lg:p-2 z-1 lg:order-1">
                         <PresentationView
                             currentPhrase={phrases[currentPhraseIndex]?.input || ''}
                             currentTranslated={phrases[currentPhraseIndex]?.translated || ''}
