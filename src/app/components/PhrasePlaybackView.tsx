@@ -568,8 +568,6 @@ export function PhrasePlaybackView({
                         />
                         <div className="py-1 px-1 lg:py-2">
                             <PresentationControls
-                                fullscreen={fullscreen}
-                                setFullscreen={setFullscreen}
                                 recordScreen={false}
                                 stopScreenRecording={() => { }}
                                 handleReplay={handleReplay}

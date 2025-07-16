@@ -6,8 +6,6 @@ import { getFlagEmoji } from './utils/languageUtils';
 import { playbackSpeedOptions } from './configDefinitions';
 
 interface PresentationControlsProps {
-    fullscreen: boolean;
-    setFullscreen: (value: boolean) => void;
     recordScreen: boolean;
     stopScreenRecording: () => void;
     handleReplay: () => void;
@@ -30,8 +28,6 @@ interface PresentationControlsProps {
 }
 
 export function PresentationControls({
-    fullscreen,
-    setFullscreen,
     recordScreen,
     stopScreenRecording,
     handleReplay,
