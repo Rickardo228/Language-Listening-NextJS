@@ -151,7 +151,7 @@ export function PresentationControls({
                 <button
                     onClick={onPrevious}
                     disabled={!canGoBack}
-                    className="p-2 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="hidden md:flex p-2 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
                     title="Previous Phrase"
                 >
                     <ArrowLeft className="h-8 w-8 text-gray-700 dark:text-gray-300" />
@@ -159,7 +159,7 @@ export function PresentationControls({
                 <button
                     onClick={onNext}
                     disabled={!canGoForward}
-                    className="p-2 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="hidden md:flex p-2 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
                     title="Next Phrase"
                 >
                     <ArrowRight className="h-8 w-8 text-gray-700 dark:text-gray-300" />
