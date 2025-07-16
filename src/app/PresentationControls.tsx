@@ -75,10 +75,10 @@ export function PresentationControls({
 
     return (
         <>
-            <div className="flex mb-2 items-center gap-2">
+            <div className="flex mb-2 mt-2 md:mt-0 items-center gap-2">
                 <button
                     onClick={() => paused ? onPlay() : onPause()}
-                    className="px-4 h-[50px] mx-1 mt-1 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white font-medium rounded-lg transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105"
+                    className="px-4 h-[50px] mx-1 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white font-medium rounded-lg transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105"
                     title={paused ? "Start Presentation" : "Complete Current Phrase"}
                 >
                     <div className="flex items-center gap-2">

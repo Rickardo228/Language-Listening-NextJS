@@ -449,11 +449,12 @@ export default function Home() {
       alert('Error loading configuration: ' + err);
     } finally {
       // Auto-start playback after a short delay to ensure everything is loaded
-      setTimeout(() => {
-        if (playbackMethodsRef.current && config.phrases.length > 0) {
-          playbackMethodsRef.current.handleReplay();
-        }
-      }, 500);
+      // TODO - figure out a good approach to this so that its doesnt scare users
+      // setTimeout(() => {
+      //   if (playbackMethodsRef.current && config.phrases.length > 0) {
+      //     playbackMethodsRef.current.handleReplay();
+      //   }
+      // }, 500);
       setLoading(false);
     }
   };
