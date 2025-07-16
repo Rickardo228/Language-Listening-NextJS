@@ -253,6 +253,93 @@ export function PhrasePlaybackView({
         }
     };
 
+    // Shared navigation handlers
+    const handlePrevious = () => {
+        clearAllTimeouts();
+        if (audioRef.current) {
+            audioRef.current.pause();
+            let targetPhase = currentPhase;
+            if (presentationConfig.enableOutputBeforeInput) {
+                if (currentPhase === 'input') {
+                    audioRef.current.src = phrases[currentPhraseIndex].outputAudio?.audioUrl || '';
+                    setCurrentPhase('output');
+                    targetPhase = 'output';
+                } else if (currentPhraseIndex > 0) {
+                    audioRef.current.src = phrases[currentPhraseIndex - 1].inputAudio?.audioUrl || '';
+                    setCurrentPhraseIndex(prev => prev - 1);
+                    setCurrentPhase('input');
+                    targetPhase = 'input';
+                }
+            } else {
+                if (currentPhase === 'output') {
+                    audioRef.current.src = phrases[currentPhraseIndex].inputAudio?.audioUrl || '';
+                    setCurrentPhase('input');
+                    targetPhase = 'input';
+                } else if (currentPhraseIndex > 0) {
+                    audioRef.current.src = phrases[currentPhraseIndex - 1].outputAudio?.audioUrl || '';
+                    setCurrentPhraseIndex(prev => prev - 1);
+                    setCurrentPhase('output');
+                    targetPhase = 'output';
+                }
+            }
+            // Set playback speed based on target phase
+            const speed = targetPhase === 'input'
+                ? (presentationConfig.inputPlaybackSpeed || 1.0)
+                : (presentationConfig.outputPlaybackSpeed || 1.0);
+            if (speed !== 1.0) {
+                audioRef.current.playbackRate = speed;
+            }
+
+            // Track previous navigation
+            if (currentPhraseIndex >= 0 && phrases[currentPhraseIndex]) {
+                trackPlaybackEvent('previous', `${collectionId || 'unknown'}-${currentPhraseIndex}`, targetPhase, currentPhraseIndex, speed);
+            }
+        }
+    };
+
+    const handleNext = () => {
+        clearAllTimeouts();
+        if (audioRef.current) {
+            audioRef.current.pause();
+            let targetPhase = currentPhase;
+            if (presentationConfig.enableOutputBeforeInput) {
+                if (currentPhase === 'output') {
+                    audioRef.current.src = phrases[currentPhraseIndex].inputAudio?.audioUrl || '';
+                    setCurrentPhase('input');
+                    targetPhase = 'input';
+                } else if (currentPhraseIndex < phrases.length - 1) {
+                    audioRef.current.src = phrases[currentPhraseIndex + 1].outputAudio?.audioUrl || '';
+                    setCurrentPhraseIndex(prev => prev + 1);
+                    setCurrentPhase('output');
+                    targetPhase = 'output';
+                }
+            } else {
+                if (currentPhase === 'input') {
+                    audioRef.current.src = phrases[currentPhraseIndex].outputAudio?.audioUrl || '';
+                    setCurrentPhase('output');
+                    targetPhase = 'output';
+                } else if (currentPhraseIndex < phrases.length - 1) {
+                    audioRef.current.src = phrases[currentPhraseIndex + 1].inputAudio?.audioUrl || '';
+                    setCurrentPhraseIndex(prev => prev + 1);
+                    setCurrentPhase('input');
+                    targetPhase = 'input';
+                }
+            }
+            // Set playback speed based on target phase
+            const speed = targetPhase === 'input'
+                ? (presentationConfig.inputPlaybackSpeed || 1.0)
+                : (presentationConfig.outputPlaybackSpeed || 1.0);
+            if (speed !== 1.0) {
+                audioRef.current.playbackRate = speed;
+            }
+
+            // Track next navigation
+            if (currentPhraseIndex >= 0 && phrases[currentPhraseIndex]) {
+                trackPlaybackEvent('next', `${collectionId || 'unknown'}-${currentPhraseIndex}`, targetPhase, currentPhraseIndex, speed);
+            }
+        }
+    };
+
     const handleAudioEnded = () => {
         if (paused) return;
 
@@ -474,6 +561,10 @@ export function PhrasePlaybackView({
                             showProgressBar={showProgressBar}
                             progressDuration={progressDuration}
                             progressDelay={progressDelay}
+                            onPrevious={handlePrevious}
+                            onNext={handleNext}
+                            canGoBack={currentPhase === 'output' || currentPhraseIndex > 0}
+                            canGoForward={currentPhase === 'input' || currentPhraseIndex < phrases.length - 1}
                         />
                         <div className="py-1 px-1 lg:py-2">
                             <PresentationControls
@@ -492,90 +583,8 @@ export function PhrasePlaybackView({
                                 paused={paused}
                                 onPause={handlePause}
                                 onPlay={handlePlay}
-                                onPrevious={() => {
-                                    clearAllTimeouts();
-                                    if (audioRef.current) {
-                                        audioRef.current.pause();
-                                        let targetPhase = currentPhase;
-                                        if (presentationConfig.enableOutputBeforeInput) {
-                                            if (currentPhase === 'input') {
-                                                audioRef.current.src = phrases[currentPhraseIndex].outputAudio?.audioUrl || '';
-                                                setCurrentPhase('output');
-                                                targetPhase = 'output';
-                                            } else if (currentPhraseIndex > 0) {
-                                                audioRef.current.src = phrases[currentPhraseIndex - 1].inputAudio?.audioUrl || '';
-                                                setCurrentPhraseIndex(prev => prev - 1);
-                                                setCurrentPhase('input');
-                                                targetPhase = 'input';
-                                            }
-                                        } else {
-                                            if (currentPhase === 'output') {
-                                                audioRef.current.src = phrases[currentPhraseIndex].inputAudio?.audioUrl || '';
-                                                setCurrentPhase('input');
-                                                targetPhase = 'input';
-                                            } else if (currentPhraseIndex > 0) {
-                                                audioRef.current.src = phrases[currentPhraseIndex - 1].outputAudio?.audioUrl || '';
-                                                setCurrentPhraseIndex(prev => prev - 1);
-                                                setCurrentPhase('output');
-                                                targetPhase = 'output';
-                                            }
-                                        }
-                                        // Set playback speed based on target phase
-                                        const speed = targetPhase === 'input'
-                                            ? (presentationConfig.inputPlaybackSpeed || 1.0)
-                                            : (presentationConfig.outputPlaybackSpeed || 1.0);
-                                        if (speed !== 1.0) {
-                                            audioRef.current.playbackRate = speed;
-                                        }
-
-                                        // Track previous navigation
-                                        if (currentPhraseIndex >= 0 && phrases[currentPhraseIndex]) {
-                                            trackPlaybackEvent('previous', `${collectionId || 'unknown'}-${currentPhraseIndex}`, targetPhase, currentPhraseIndex, speed);
-                                        }
-                                    }
-                                }}
-                                onNext={() => {
-                                    clearAllTimeouts();
-                                    if (audioRef.current) {
-                                        audioRef.current.pause();
-                                        let targetPhase = currentPhase;
-                                        if (presentationConfig.enableOutputBeforeInput) {
-                                            if (currentPhase === 'output') {
-                                                audioRef.current.src = phrases[currentPhraseIndex].inputAudio?.audioUrl || '';
-                                                setCurrentPhase('input');
-                                                targetPhase = 'input';
-                                            } else if (currentPhraseIndex < phrases.length - 1) {
-                                                audioRef.current.src = phrases[currentPhraseIndex + 1].outputAudio?.audioUrl || '';
-                                                setCurrentPhraseIndex(prev => prev + 1);
-                                                setCurrentPhase('output');
-                                                targetPhase = 'output';
-                                            }
-                                        } else {
-                                            if (currentPhase === 'input') {
-                                                audioRef.current.src = phrases[currentPhraseIndex].outputAudio?.audioUrl || '';
-                                                setCurrentPhase('output');
-                                                targetPhase = 'output';
-                                            } else if (currentPhraseIndex < phrases.length - 1) {
-                                                audioRef.current.src = phrases[currentPhraseIndex + 1].inputAudio?.audioUrl || '';
-                                                setCurrentPhraseIndex(prev => prev + 1);
-                                                setCurrentPhase('input');
-                                                targetPhase = 'input';
-                                            }
-                                        }
-                                        // Set playback speed based on target phase
-                                        const speed = targetPhase === 'input'
-                                            ? (presentationConfig.inputPlaybackSpeed || 1.0)
-                                            : (presentationConfig.outputPlaybackSpeed || 1.0);
-                                        if (speed !== 1.0) {
-                                            audioRef.current.playbackRate = speed;
-                                        }
-
-                                        // Track next navigation
-                                        if (currentPhraseIndex >= 0 && phrases[currentPhraseIndex]) {
-                                            trackPlaybackEvent('next', `${collectionId || 'unknown'}-${currentPhraseIndex}`, targetPhase, currentPhraseIndex, speed);
-                                        }
-                                    }
-                                }}
+                                onPrevious={handlePrevious}
+                                onNext={handleNext}
                                 canGoBack={currentPhase === 'output' || currentPhraseIndex > 0}
                                 canGoForward={currentPhase === 'input' || currentPhraseIndex < phrases.length - 1}
                                 inputLang={phrases[0]?.inputLang}

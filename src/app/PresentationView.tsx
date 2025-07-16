@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { createPortal } from "react-dom";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 import { AutumnLeaves } from "./Effects/AutumnLeaves";
 import CherryBlossom from "./Effects/CherryBlossom";
 import { BLEED_START_DELAY, TITLE_DELAY } from './consts';
@@ -31,6 +32,10 @@ interface PresentationViewProps {
   showProgressBar?: boolean; // New prop to show progress bar during recall/shadow
   progressDuration?: number; // New prop for progress bar duration in milliseconds
   progressDelay?: number; // New prop for delay before progress bar starts
+  onPrevious?: () => void; // New prop for previous functionality
+  onNext?: () => void; // New prop for next functionality
+  canGoBack?: boolean; // New prop to check if can go back
+  canGoForward?: boolean; // New prop to check if can go forward
 }
 
 export const TITLE_ANIMATION_DURATION = 1000
@@ -79,8 +84,12 @@ export function PresentationView({
   showProgressBar,
   progressDuration,
   progressDelay,
+  onPrevious,
+  onNext,
+  canGoBack,
+  canGoForward,
 }: PresentationViewProps) {
-  const [isIdle, setIsIdle] = useState(false);
+  const [isHovering, setIsHovering] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const [portalContainer, setPortalContainer] = useState<HTMLElement | null>(null);
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
@@ -99,28 +108,21 @@ export function PresentationView({
     }
   }, []);
 
-  // useEffect to detect mouse movement and mark idle after 1 second.
-  useEffect(() => {
-    let idleTimer: NodeJS.Timeout;
+  // Handle hover events for the presentation container
+  const handleMouseEnter = () => {
+    if (!isMobile) {
+      setIsHovering(true);
+    }
+  };
 
-    const handleMouseMove = () => {
-      setIsIdle(false);
-      clearTimeout(idleTimer);
-      idleTimer = setTimeout(() => {
-        setIsIdle(true);
-      }, 1000);
-    };
+  const handleMouseLeave = () => {
+    if (!isMobile) {
+      setIsHovering(false);
+    }
+  };
 
-    window.addEventListener("mousemove", handleMouseMove);
-    idleTimer = setTimeout(() => {
-      setIsIdle(true);
-    }, 1000);
-
-    return () => {
-      window.removeEventListener("mousemove", handleMouseMove);
-      clearTimeout(idleTimer);
-    };
-  }, []);
+  // Determine if navigation buttons should be visible
+  const shouldShowNavigationButtons = isMobile || isHovering;
 
   const totalPhraseLength = (currentPhrase?.length + (romanizedOutput?.length ?? 0));
 
@@ -163,7 +165,46 @@ export function PresentationView({
           to { width: 100%; }
         }
       `}</style>
-      <div ref={containerRef} className={`${containerClass} ${isIdle ? "cursor-none" : ""}`} style={containerStyle} onClick={() => setFullscreen(prev => !prev)}>
+      <div ref={containerRef} className={`${containerClass} ${isMobile ? "" : (isHovering ? "" : "cursor-none")}`} style={containerStyle} onClick={() => setFullscreen(prev => !prev)} onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
+        {/* Navigation Buttons */}
+        {onPrevious && onNext && (
+          <>
+            {/* Left Navigation Button */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onPrevious();
+              }}
+              disabled={!canGoBack}
+              className="absolute left-4 top-1/2 transform -translate-y-1/2 p-3 bg-gray-200 dark:bg-gray-700 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 z-10"
+              title="Previous Phrase"
+              style={{
+                opacity: shouldShowNavigationButtons ? 1 : 0,
+                transition: 'opacity 0.3s ease'
+              }}
+            >
+              <ArrowLeft className="h-6 w-6 text-gray-700 dark:text-gray-300" />
+            </button>
+
+            {/* Right Navigation Button */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onNext();
+              }}
+              disabled={!canGoForward}
+              className="absolute right-4 top-1/2 transform -translate-y-1/2 p-3 bg-gray-200 dark:bg-gray-700 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 z-10"
+              title="Next Phrase"
+              style={{
+                opacity: shouldShowNavigationButtons ? 1 : 0,
+                transition: 'opacity 0.3s ease'
+              }}
+            >
+              <ArrowRight className="h-6 w-6 text-gray-700 dark:text-gray-300" />
+            </button>
+          </>
+        )}
+
         {enableOrtonEffect && (
           <div
             style={{
