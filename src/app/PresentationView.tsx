@@ -274,59 +274,78 @@ export function PresentationView({
                   borderRadius: '1rem'
                 }}
               >
-                {/* Input phrase */}
-                {currentPhrase && (
-                  <h2
-                    className="font-bold mb-2"
-                    style={{
-                      margin: 0,
-                      padding: 0,
-                      fontSize: calculateFontSize(currentPhrase, fullScreen, false),
-                      color: currentPhase === "input" ? "#3b82f6" : undefined, // Blue highlight for input phase
-                      textShadow: currentPhase === "input" ? "0 0 10px rgba(59, 130, 246, 0.5)" : undefined,
-                      transition: "color 0.3s ease, text-shadow 0.3s ease"
-                    }}
-                  >
-                    {currentPhrase.trim()}
-                  </h2>
-                )}
+                {/* Calculate the smaller font size for all phrases */}
+                {(() => {
+                  const phraseFontSize = currentPhrase ? calculateFontSize(currentPhrase, fullScreen, false) : '0px';
+                  const translatedFontSize = currentTranslated ? calculateFontSize(currentTranslated, fullScreen, romanizedOutput ? true : false) : '0px';
 
-                <div>
-                  {currentTranslated && <h2
-                    className="font-bold"
-                    style={{
-                      margin: 0,
-                      padding: 0,
-                      fontSize: calculateFontSize(
-                        currentTranslated,
-                        fullScreen,
-                        romanizedOutput ? true : false
-                      ),
-                      color: currentPhase === "output" ? "#10b981" : undefined, // Green highlight for output phase
-                      textShadow: currentPhase === "output" ? "0 0 10px rgba(16, 185, 129, 0.5)" : undefined,
-                      transition: "color 0.3s ease, text-shadow 0.3s ease"
-                    }}
-                  >
-                    {currentTranslated.trim()}
+                  // Extract numeric values for comparison
+                  const phraseSize = parseInt(phraseFontSize);
+                  const translatedSize = parseInt(translatedFontSize);
 
-                  </h2>}
-                  {romanizedOutput && (
-                    <h2
-                      className="font-bold mt-3"
-                      style={{
-                        margin: 0,
-                        padding: 0,
-                        fontSize: calculateFontSize(romanizedOutput, fullScreen, true),
-                        color: currentPhase === "output" ? "#f59e0b" : undefined, // Amber highlight for romanization during output phase
-                        textShadow: currentPhase === "output" ? "0 0 10px rgba(245, 158, 11, 0.5)" : undefined,
-                        transition: "color 0.3s ease, text-shadow 0.3s ease"
-                      }}
-                    >
-                      {romanizedOutput}
-                    </h2>
-                  )}
-                </div>
+                  // Use the smaller font size, or fallback to translated size if phrase is empty
+                  const commonFontSize = currentPhrase && currentTranslated
+                    ? `${Math.min(phraseSize, translatedSize)}px`
+                    : currentPhrase ? phraseFontSize : translatedFontSize;
 
+                  // Make currentPhrase slightly smaller (85% of common size)
+                  const inputFontSize = currentPhrase && currentTranslated
+                    ? `${Math.floor(Math.min(phraseSize, translatedSize) * 0.85)}px`
+                    : currentPhrase ? phraseFontSize : translatedFontSize;
+
+                  return (
+                    <>
+                      {/* Input phrase */}
+                      {currentPhrase && (
+                        <h2
+                          className="font-bold mb-2"
+                          style={{
+                            margin: 0,
+                            padding: 0,
+                            fontSize: enableOutputBeforeInput ? commonFontSize : inputFontSize,
+                            color: currentPhase === "input" ? "#3b82f6" : undefined, // Blue highlight for input phase
+                            textShadow: currentPhase === "input" ? "0 0 10px rgba(59, 130, 246, 0.5)" : undefined,
+                            transition: "color 0.3s ease, text-shadow 0.3s ease"
+                          }}
+                        >
+                          {currentPhrase.trim()}
+                        </h2>
+                      )}
+
+                      <div>
+                        {currentTranslated && <h2
+                          className="font-bold"
+                          style={{
+                            margin: 0,
+                            padding: 0,
+                            fontSize: enableOutputBeforeInput ? inputFontSize : commonFontSize,
+                            color: currentPhase === "output" ? "#10b981" : undefined, // Green highlight for output phase
+                            textShadow: currentPhase === "output" ? "0 0 10px rgba(16, 185, 129, 0.5)" : undefined,
+                            transition: "color 0.3s ease, text-shadow 0.3s ease"
+                          }}
+                        >
+                          {currentTranslated.trim()}
+
+                        </h2>}
+                        {romanizedOutput && (
+                          <h2
+                            className="font-bold mt-3"
+                            style={{
+                              margin: 0,
+                              padding: 0,
+                              fontSize: enableOutputBeforeInput ? inputFontSize : commonFontSize,
+                              color: currentPhase === "output" ? "#f59e0b" : undefined, // Amber highlight for romanization during output phase
+                              textShadow: currentPhase === "output" ? "0 0 10px rgba(245, 158, 11, 0.5)" : undefined,
+                              transition: "color 0.3s ease, text-shadow 0.3s ease"
+                            }}
+                          >
+                            {romanizedOutput}
+                          </h2>
+                        )}
+                      </div>
+                    </>
+                  );
+                })()}
               </motion.div>
             )
           ) : (
@@ -381,11 +400,18 @@ export function PresentationView({
           )}
         </AnimatePresence>
         {/* Progress Bar for Recall/Shadow */}
-        {showProgressBar && progressDuration && (
-          <div
-            className="absolute bottom-0 left-0 w-full h-1 bg-gray-300 dark:bg-gray-600 overflow-hidden"
-            style={{ zIndex: 10 }}
-          >
+        <div
+          className="absolute bottom-0 left-0 w-full h-1 overflow-hidden"
+          style={{
+            zIndex: 10,
+            backgroundColor: textBg
+              ? (textBg.includes("rgb")
+                ? (textBg.slice(0, -1) + " 0.3)").replaceAll(" ", ",")
+                : textBg + "4D") // 4D = 30% opacity in hex
+              : "rgba(0,0,0,0.1) dark:bg-gray-600"
+          }}
+        >
+          {showProgressBar && progressDuration && (
             <div
               className="h-full bg-blue-500 transition-all duration-300 ease-linear"
               style={{
@@ -393,8 +419,8 @@ export function PresentationView({
                 animation: `progressBar ${progressDuration}ms linear ${progressDelay || 0}ms forwards`
               }}
             />
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </>
   );
