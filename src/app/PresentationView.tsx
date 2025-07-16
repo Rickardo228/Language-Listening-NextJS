@@ -172,7 +172,7 @@ export function PresentationView({
             e.stopPropagation();
             setFullscreen(prev => !prev);
           }}
-          className="absolute top-4 right-4 p-3 bg-gray-200 dark:bg-gray-700 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 transition-all duration-200 z-10"
+          className="absolute bottom-4 left-4 p-3 bg-gray-200 dark:bg-gray-700 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 transition-all duration-200 z-10"
           title={fullScreen ? "Exit Presentation Mode" : "Enter Presentation Mode"}
           style={{
             opacity: shouldShowNavigationButtons ? 1 : 0,
@@ -192,7 +192,10 @@ export function PresentationView({
                 onPrevious();
               }}
               disabled={!canGoBack}
-              className="absolute left-4 top-1/2 transform -translate-y-1/2 p-3 bg-gray-200 dark:bg-gray-700 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 z-10"
+              className={`absolute p-3 bg-gray-200 dark:bg-gray-700 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 z-10 ${fullScreen && isMobile
+                ? "left-4 bottom-4"
+                : "left-4 top-1/2 transform -translate-y-1/2"
+                }`}
               title="Previous Phrase"
               style={{
                 opacity: shouldShowNavigationButtons ? 1 : 0,
@@ -209,7 +212,10 @@ export function PresentationView({
                 onNext();
               }}
               disabled={!canGoForward}
-              className="absolute right-4 top-1/2 transform -translate-y-1/2 p-3 bg-gray-200 dark:bg-gray-700 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 z-10"
+              className={`absolute p-3 bg-gray-200 dark:bg-gray-700 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 z-10 ${fullScreen && isMobile
+                ? "right-4 bottom-4"
+                : "right-4 top-1/2 transform -translate-y-1/2"
+                }`}
               title="Next Phrase"
               style={{
                 opacity: shouldShowNavigationButtons ? 1 : 0,
