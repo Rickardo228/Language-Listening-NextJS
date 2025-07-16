@@ -1,4 +1,4 @@
-import { Maximize2, Pause, Play, Repeat, ArrowLeft, ArrowRight, Settings } from 'lucide-react';
+import { Pause, Play, Repeat, ArrowLeft, ArrowRight, Settings } from 'lucide-react';
 import { SettingsModal } from './SettingsModal';
 import { PresentationConfig } from './types';
 import { useState } from 'react';
@@ -77,21 +77,19 @@ export function PresentationControls({
         <>
             <div className="flex mb-2 items-center gap-2">
                 <button
-                    onClick={() => setFullscreen(!fullscreen)}
-                    className="p-2 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 dark:hover:bg-gray-600"
-                    title={fullscreen ? "Exit Presentation Mode" : "Enter Presentation Mode"}
-                >
-                    <Maximize2 className="h-8 w-8 text-gray-700 dark:text-gray-300" />
-                </button>
-                <button
                     onClick={() => paused ? onPlay() : onPause()}
-                    className="p-2 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 dark:hover:bg-gray-600"
-                    title={paused ? "Resume" : "Pause"}
+                    className="px-4 py-4 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white font-medium rounded-lg transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105"
+                    title={paused ? "Start Presentation" : "Complete Current Phrase"}
                 >
-                    {paused ?
-                        <Play className="h-8 w-8 text-gray-700 dark:text-gray-300" /> :
-                        <Pause className="h-8 w-8 text-gray-700 dark:text-gray-300" />
-                    }
+                    <div className="flex items-center gap-2">
+                        {paused ?
+                            <Play className="h-5 w-5" /> :
+                            <Pause className="h-5 w-5" />
+                        }
+                        <span className="text-sm font-semibold">
+                            {paused ? "Start" : "Complete"}
+                        </span>
+                    </div>
                 </button>
                 {hasPhrasesLoaded && (
                     <button

@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { createPortal } from "react-dom";
-import { ArrowLeft, ArrowRight } from "lucide-react";
+import { ArrowLeft, ArrowRight, Maximize2 } from "lucide-react";
 import { AutumnLeaves } from "./Effects/AutumnLeaves";
 import CherryBlossom from "./Effects/CherryBlossom";
 import { BLEED_START_DELAY, TITLE_DELAY } from './consts';
@@ -166,6 +166,22 @@ export function PresentationView({
         }
       `}</style>
       <div ref={containerRef} className={`${containerClass} ${isMobile ? "" : (isHovering ? "" : "cursor-none")}`} style={containerStyle} onClick={() => setFullscreen(prev => !prev)} onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
+        {/* Fullscreen Button */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            setFullscreen(prev => !prev);
+          }}
+          className="absolute top-4 right-4 p-3 bg-gray-200 dark:bg-gray-700 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 transition-all duration-200 z-10"
+          title={fullScreen ? "Exit Presentation Mode" : "Enter Presentation Mode"}
+          style={{
+            opacity: shouldShowNavigationButtons ? 1 : 0,
+            transition: 'opacity 0.3s ease'
+          }}
+        >
+          <Maximize2 className="h-6 w-6 text-gray-700 dark:text-gray-300" />
+        </button>
+
         {/* Navigation Buttons */}
         {onPrevious && onNext && (
           <>
