@@ -1,5 +1,6 @@
 import { ImportPhrasesDialog, ImportPhrasesDialogProps } from './ImportPhrasesDialog';
 import { useState } from 'react';
+import { Plus } from 'lucide-react';
 
 export type ImportPhrasesProps = Omit<ImportPhrasesDialogProps, 'onClose'> & {
     className?: string;
@@ -20,8 +21,8 @@ export function ImportPhrases({
     const [isOpen, setIsOpen] = useState(false);
     const buttonText = onProcess ? 'Create New List' : 'Add Phrases';
     const buttonClassName = onProcess
-        ? "w-full bg-primary text-primary-foreground px-4 py-2 rounded hover:bg-primary/90"
-        : "bg-primary text-primary-foreground px-4 py-2 rounded hover:bg-primary/90";
+        ? "w-full px-4 h-[50px] bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white font-medium rounded-lg transition-all duration-200 shadow-md hover:shadow-md"
+        : "px-4 h-[50px] bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white font-medium rounded-lg transition-all duration-200 shadow-md hover:shadow-md";
 
     return (
         <>
@@ -29,7 +30,12 @@ export function ImportPhrases({
                 onClick={() => setIsOpen(true)}
                 className={`${buttonClassName} ${className}`}
             >
-                {buttonText}
+                <div className="flex items-center gap-2 justify-center">
+                    <Plus className="h-5 w-5" />
+                    <span className="text-sm font-semibold">
+                        {buttonText}
+                    </span>
+                </div>
             </button>
             {isOpen && <ImportPhrasesDialog
                 onClose={() => setIsOpen(false)}
