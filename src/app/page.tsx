@@ -94,6 +94,7 @@ export default function Home() {
   const [selectedCollection, setSelectedCollection] = useState<string>('')
   const [savedCollections, setSavedCollections] = useState<Config[]>([])
   const [collectionsLoading, setCollectionsLoading] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   // Instead of multiple arrays, we now store all per-phrase data in one state variable.
   const [phrases, setPhrasesBase] = useState<Phrase[]>([]);
@@ -726,29 +727,51 @@ export default function Home() {
       {/* Main content */}
       <div className={`flex lg:flex-row flex-col-reverse w-full lg:h-[92vh]`}>
         {/* Saved Configs List */}
-        <div className={`flex flex-col gap-10 bg-secondary/50 p-5 ${selectedCollection ? 'hidden lg:flex' : 'flex'} lg:w-[460px] min-w-[300px] max-w-[100vw] overflow-visible lg:overflow-y-auto mb-[80px]`}>
+        <div className={`flex flex-col gap-10 bg-secondary/50 p-5 ${selectedCollection ? 'hidden lg:flex' : 'flex'} ${isCollapsed ? 'lg:w-[50px] overflow-hidden' : 'lg:w-[460px] min-w-[300px]'} max-w-[100vw] h-[100%] overflow-visible lg:overflow-y-auto mb-[80px] relative transition-all duration-300`}>
+          {/* Desktop Collapse Toggle */}
+          <button
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            className="hidden lg:block absolute top-2 right-2 p-2 rounded-lg bg-secondary hover:bg-secondary/80 transition-colors"
+            title={isCollapsed ? 'Expand' : 'Collapse'}
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={1.5}
+              stroke="currentColor"
+              className={`w-5 h-5 transition-transform duration-200`}
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d={isCollapsed ? "M8.25 4.5l7.5 7.5-7.5 7.5" : "M15.75 19.5L8.25 12l7.5-7.5"} />
+            </svg>
+          </button>
 
-          <div className="fixed bottom-0 left-0 z-10 w-full lg:w-[460px] bg-secondary/50 p-5">
-            {/* Language Selection and Phrase Import */}
-            <ImportPhrases
-              inputLang={newCollectionInputLang}
-              setInputLang={setNewCollectionInputLang}
-              targetLang={newCollectionTargetLang}
-              setTargetLang={setNewCollectionTargetLang}
-              phrasesInput={phrasesInput}
-              setPhrasesInput={setPhrasesInput}
-              loading={loading}
-              onProcess={handleProcess}
-            />
-          </div>
-          <CollectionList
-            savedCollections={savedCollections}
-            onLoadCollection={handleLoadCollection}
-            onRenameCollection={handleRenameCollection}
-            onDeleteCollection={handleDeleteCollection}
-            selectedCollection={selectedCollection}
-            loading={collectionsLoading}
-          />
+          {!isCollapsed && (
+            <>
+              <div className="fixed bottom-0 left-0 z-10 w-full lg:w-[460px] bg-secondary/50 p-5">
+                {/* Language Selection and Phrase Import */}
+                <ImportPhrases
+                  inputLang={newCollectionInputLang}
+                  setInputLang={setNewCollectionInputLang}
+                  targetLang={newCollectionTargetLang}
+                  setTargetLang={setNewCollectionTargetLang}
+                  phrasesInput={phrasesInput}
+                  setPhrasesInput={setPhrasesInput}
+                  loading={loading}
+                  onProcess={handleProcess}
+                />
+              </div>
+              <CollectionList
+                savedCollections={savedCollections}
+                onLoadCollection={handleLoadCollection}
+                onRenameCollection={handleRenameCollection}
+                onDeleteCollection={handleDeleteCollection}
+                selectedCollection={selectedCollection}
+                loading={collectionsLoading}
+              />
+            </>
+          )}
+
         </div>
 
         {/* Phrases and Playback */}
