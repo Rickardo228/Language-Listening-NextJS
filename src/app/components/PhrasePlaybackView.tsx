@@ -44,7 +44,7 @@ export function PhrasePlaybackView({
     methodsRef,
 }: PhrasePlaybackViewProps) {
     const { updateUserStats, StatsUpdatePopup, showStatsUpdate } = useUpdateUserStats();
-    const [currentPhraseIndex, setCurrentPhraseIndex] = useState(-1);
+    const [currentPhraseIndex, setCurrentPhraseIndex] = useState(0);
     const [currentPhase, setCurrentPhase] = useState<'input' | 'output'>('input');
     const [paused, setPaused] = useState(true);
     const [fullscreen, setFullscreen] = useState(false);
