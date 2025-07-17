@@ -8,6 +8,7 @@ import { AutumnLeaves } from "./Effects/AutumnLeaves";
 import CherryBlossom from "./Effects/CherryBlossom";
 import { BLEED_START_DELAY, TITLE_DELAY } from './consts';
 import ParticleAnimation from "./Effects/ParticleGlow";
+import { PhraseCounter } from "./components/PhraseCounter";
 
 interface PresentationViewProps {
   currentPhrase: string;
@@ -36,6 +37,8 @@ interface PresentationViewProps {
   onNext?: () => void; // New prop for next functionality
   canGoBack?: boolean; // New prop to check if can go back
   canGoForward?: boolean; // New prop to check if can go forward
+  currentPhraseIndex?: number; // New prop for current phrase index (0-based)
+  totalPhrases?: number; // New prop for total number of phrases
 }
 
 export const TITLE_ANIMATION_DURATION = 1000
@@ -88,12 +91,13 @@ export function PresentationView({
   onNext,
   canGoBack,
   canGoForward,
+  currentPhraseIndex,
+  totalPhrases,
 }: PresentationViewProps) {
   const [isHovering, setIsHovering] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const [portalContainer, setPortalContainer] = useState<HTMLElement | null>(null);
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
-
   // Create portal container on mount
   useEffect(() => {
     if (typeof document !== 'undefined') {
@@ -229,6 +233,20 @@ export function PresentationView({
             </button>
           </>
         )}
+
+        {/* Phrase Counter */}
+        <PhraseCounter
+          currentPhraseIndex={currentPhraseIndex}
+          totalPhrases={totalPhrases}
+          className={`absolute z-10 ${fullScreen && isMobile && onNext
+            ? "bottom-4 right-4 mr-16" // Move left to avoid overlap with navigation button
+            : "bottom-4 right-4"
+            }`}
+          style={{
+            opacity: shouldShowNavigationButtons ? 1 : 0,
+            transition: 'opacity 0.3s ease'
+          }}
+        />
 
         {enableOrtonEffect && (
           <div

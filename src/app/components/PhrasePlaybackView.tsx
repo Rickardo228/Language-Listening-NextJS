@@ -17,6 +17,7 @@ export type PhrasePlaybackMethods = {
     handlePlayPhrase: (index: number, phase: 'input' | 'output') => void;
     setCurrentPhraseIndex: (index: number) => void;
     setCurrentPhase: (phase: 'input' | 'output') => void;
+    getCurrentPhraseIndex: () => number;
 };
 
 interface PhrasePlaybackViewProps {
@@ -476,7 +477,8 @@ export function PhrasePlaybackView({
         handleReplay,
         handlePlayPhrase,
         setCurrentPhraseIndex,
-        setCurrentPhase
+        setCurrentPhase,
+        getCurrentPhraseIndex: () => currentPhraseIndex
     };
 
     return (
@@ -565,6 +567,8 @@ export function PhrasePlaybackView({
                             onNext={handleNext}
                             canGoBack={currentPhase === 'output' || currentPhraseIndex > 0}
                             canGoForward={currentPhase === 'input' || currentPhraseIndex < phrases.length - 1}
+                            currentPhraseIndex={currentPhraseIndex}
+                            totalPhrases={phrases.length}
                         />
                         <div className="py-1 px-1 lg:py-2">
                             <PresentationControls
