@@ -1,5 +1,6 @@
 import { Config } from './types';
 import { LanguageFlags } from './components/LanguageFlags';
+import { useRouter } from 'next/navigation';
 
 interface CollectionListProps {
     savedCollections: Config[];
@@ -18,6 +19,8 @@ export function CollectionList({
     selectedCollection,
     loading = false,
 }: CollectionListProps) {
+    const router = useRouter();
+
     // Sort collections by created_at in descending order (most recent first)
     const sortedCollections = [...savedCollections].sort((a, b) => {
         const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
@@ -27,7 +30,30 @@ export function CollectionList({
 
     return (
         <div className="space-y-4">
-            <h2 className="text-xl font-semibold">Your Lists</h2>
+            <div className="flex items-center justify-between">
+                <h2 className="text-xl font-semibold">Your Lists</h2>
+                <button
+                    onClick={() => router.push('/templates')}
+                    className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors lg:mr-10"
+                    title="Browse Templates"
+                >
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        strokeWidth={1.5}
+                        stroke="currentColor"
+                        className="w-3 h-3"
+                    >
+                        <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"
+                        />
+                    </svg>
+                    Templates
+                </button>
+            </div>
             {loading ? (
                 <div className="flex items-center justify-center py-8">
                     <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
