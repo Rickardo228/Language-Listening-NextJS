@@ -44,7 +44,7 @@ export default function TemplateDetailPage() {
     const [selectedInputLang, setSelectedInputLang] = useState<string>(searchParams.get('inputLang') || 'en-GB');
     const [selectedTargetLang, setSelectedTargetLang] = useState<string>(searchParams.get('targetLang') || 'it-IT');
     const [availableLanguages, setAvailableLanguages] = useState<string[]>([]);
-    const [presentationConfig, setPresentationConfig] = useState({
+    const [presentationConfig, setPresentationConfig] = useState<PresentationConfig>({
         name: `Template ${groupId}`,
         bgImage: null,
         containerBg: '',
@@ -63,7 +63,8 @@ export default function TemplateDetailPage() {
         enableOutputDurationDelay: false,
         enableLoop: false,
         inputPlaybackSpeed: 1.0,
-        outputPlaybackSpeed: 0.85
+        outputPlaybackSpeed: 0.85,
+        showAllPhrases: false
     });
 
     useEffect(() => {
@@ -260,7 +261,7 @@ export default function TemplateDetailPage() {
                     presentationConfig={presentationConfig}
                     collectionName={`Template Group ${groupId} (${selectedInputLang} → ${selectedTargetLang})`}
                     setPhrases={async (phrases: Phrase[]) => setPhrases(phrases)}
-                    setPresentationConfig={async (config: Partial<PresentationConfig>) => setPresentationConfig(config)}
+                    setPresentationConfig={async (config: Partial<PresentationConfig>) => setPresentationConfig(prev => ({ ...prev, ...config }))}
                 />
             )}
         </div>
