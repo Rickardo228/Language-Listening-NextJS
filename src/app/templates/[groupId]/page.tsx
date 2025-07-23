@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Phrase, languageOptions } from '../../types';
+import { Phrase, languageOptions, PresentationConfig } from '../../types';
 import { getFirestore, collection, query, where, getDocs, Timestamp } from 'firebase/firestore';
 import { PhrasePlaybackView } from '../../components/PhrasePlaybackView';
 import { LanguageFlags } from '../../components/LanguageFlags';
@@ -43,7 +43,7 @@ export default function TemplateDetailPage() {
     const [selectedInputLang, setSelectedInputLang] = useState<string>('en-GB');
     const [selectedTargetLang, setSelectedTargetLang] = useState<string>('it-IT');
     const [availableLanguages, setAvailableLanguages] = useState<string[]>([]);
-    const [presentationConfig, setPresentationConfig] = useState({
+    const [presentationConfig, setPresentationConfig] = useState<PresentationConfig>({
         name: `Template ${groupId}`,
         bgImage: null,
         containerBg: '',
@@ -257,8 +257,8 @@ export default function TemplateDetailPage() {
                     phrases={phrases}
                     presentationConfig={presentationConfig}
                     collectionName={`Template Group ${groupId} (${selectedInputLang} → ${selectedTargetLang})`}
-                    setPhrases={setPhrases}
-                    setPresentationConfig={setPresentationConfig}
+                    setPhrases={async (phrases: Phrase[]) => setPhrases(phrases)}
+                    setPresentationConfig={async (config: Partial<PresentationConfig>) => setPresentationConfig(prev => ({ ...prev, ...config }))}
                 />
             )}
         </div>
