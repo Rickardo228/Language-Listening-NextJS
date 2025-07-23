@@ -260,27 +260,49 @@ export function PhrasePlaybackView({
         if (audioRef.current) {
             audioRef.current.pause();
             let targetPhase = currentPhase;
+            let targetIndex = currentPhraseIndex;
+
             if (presentationConfig.enableOutputBeforeInput) {
                 if (currentPhase === 'input') {
                     audioRef.current.src = phrases[currentPhraseIndex].outputAudio?.audioUrl || '';
                     setCurrentPhase('output');
                     targetPhase = 'output';
-                } else if (currentPhraseIndex > 0) {
-                    audioRef.current.src = phrases[currentPhraseIndex - 1].inputAudio?.audioUrl || '';
-                    setCurrentPhraseIndex(prev => prev - 1);
-                    setCurrentPhase('input');
-                    targetPhase = 'input';
+                } else {
+                    // If we're at the first phrase and output phase, loop to last phrase input
+                    if (currentPhraseIndex === 0) {
+                        targetIndex = phrases.length - 1;
+                        audioRef.current.src = phrases[targetIndex].inputAudio?.audioUrl || '';
+                        setCurrentPhraseIndex(targetIndex);
+                        setCurrentPhase('input');
+                        targetPhase = 'input';
+                    } else {
+                        targetIndex = currentPhraseIndex - 1;
+                        audioRef.current.src = phrases[targetIndex].inputAudio?.audioUrl || '';
+                        setCurrentPhraseIndex(targetIndex);
+                        setCurrentPhase('input');
+                        targetPhase = 'input';
+                    }
                 }
             } else {
                 if (currentPhase === 'output') {
                     audioRef.current.src = phrases[currentPhraseIndex].inputAudio?.audioUrl || '';
                     setCurrentPhase('input');
                     targetPhase = 'input';
-                } else if (currentPhraseIndex > 0) {
-                    audioRef.current.src = phrases[currentPhraseIndex - 1].outputAudio?.audioUrl || '';
-                    setCurrentPhraseIndex(prev => prev - 1);
-                    setCurrentPhase('output');
-                    targetPhase = 'output';
+                } else {
+                    // If we're at the first phrase and input phase, loop to last phrase output
+                    if (currentPhraseIndex === 0) {
+                        targetIndex = phrases.length - 1;
+                        audioRef.current.src = phrases[targetIndex].outputAudio?.audioUrl || '';
+                        setCurrentPhraseIndex(targetIndex);
+                        setCurrentPhase('output');
+                        targetPhase = 'output';
+                    } else {
+                        targetIndex = currentPhraseIndex - 1;
+                        audioRef.current.src = phrases[targetIndex].outputAudio?.audioUrl || '';
+                        setCurrentPhraseIndex(targetIndex);
+                        setCurrentPhase('output');
+                        targetPhase = 'output';
+                    }
                 }
             }
             // Set playback speed based on target phase
@@ -292,8 +314,8 @@ export function PhrasePlaybackView({
             }
 
             // Track previous navigation
-            if (currentPhraseIndex >= 0 && phrases[currentPhraseIndex]) {
-                trackPlaybackEvent('previous', `${collectionId || 'unknown'}-${currentPhraseIndex}`, targetPhase, currentPhraseIndex, speed);
+            if (targetIndex >= 0 && phrases[targetIndex]) {
+                trackPlaybackEvent('previous', `${collectionId || 'unknown'}-${targetIndex}`, targetPhase, targetIndex, speed);
             }
         }
     };
@@ -303,27 +325,49 @@ export function PhrasePlaybackView({
         if (audioRef.current) {
             audioRef.current.pause();
             let targetPhase = currentPhase;
+            let targetIndex = currentPhraseIndex;
+
             if (presentationConfig.enableOutputBeforeInput) {
                 if (currentPhase === 'output') {
                     audioRef.current.src = phrases[currentPhraseIndex].inputAudio?.audioUrl || '';
                     setCurrentPhase('input');
                     targetPhase = 'input';
-                } else if (currentPhraseIndex < phrases.length - 1) {
-                    audioRef.current.src = phrases[currentPhraseIndex + 1].outputAudio?.audioUrl || '';
-                    setCurrentPhraseIndex(prev => prev + 1);
-                    setCurrentPhase('output');
-                    targetPhase = 'output';
+                } else {
+                    // If we're at the last phrase and input phase, loop to first phrase output
+                    if (currentPhraseIndex === phrases.length - 1) {
+                        targetIndex = 0;
+                        audioRef.current.src = phrases[targetIndex].outputAudio?.audioUrl || '';
+                        setCurrentPhraseIndex(targetIndex);
+                        setCurrentPhase('output');
+                        targetPhase = 'output';
+                    } else {
+                        targetIndex = currentPhraseIndex + 1;
+                        audioRef.current.src = phrases[targetIndex].outputAudio?.audioUrl || '';
+                        setCurrentPhraseIndex(targetIndex);
+                        setCurrentPhase('output');
+                        targetPhase = 'output';
+                    }
                 }
             } else {
                 if (currentPhase === 'input') {
                     audioRef.current.src = phrases[currentPhraseIndex].outputAudio?.audioUrl || '';
                     setCurrentPhase('output');
                     targetPhase = 'output';
-                } else if (currentPhraseIndex < phrases.length - 1) {
-                    audioRef.current.src = phrases[currentPhraseIndex + 1].inputAudio?.audioUrl || '';
-                    setCurrentPhraseIndex(prev => prev + 1);
-                    setCurrentPhase('input');
-                    targetPhase = 'input';
+                } else {
+                    // If we're at the last phrase and output phase, loop to first phrase input
+                    if (currentPhraseIndex === phrases.length - 1) {
+                        targetIndex = 0;
+                        audioRef.current.src = phrases[targetIndex].inputAudio?.audioUrl || '';
+                        setCurrentPhraseIndex(targetIndex);
+                        setCurrentPhase('input');
+                        targetPhase = 'input';
+                    } else {
+                        targetIndex = currentPhraseIndex + 1;
+                        audioRef.current.src = phrases[targetIndex].inputAudio?.audioUrl || '';
+                        setCurrentPhraseIndex(targetIndex);
+                        setCurrentPhase('input');
+                        targetPhase = 'input';
+                    }
                 }
             }
             // Set playback speed based on target phase
@@ -335,8 +379,8 @@ export function PhrasePlaybackView({
             }
 
             // Track next navigation
-            if (currentPhraseIndex >= 0 && phrases[currentPhraseIndex]) {
-                trackPlaybackEvent('next', `${collectionId || 'unknown'}-${currentPhraseIndex}`, targetPhase, currentPhraseIndex, speed);
+            if (targetIndex >= 0 && phrases[targetIndex]) {
+                trackPlaybackEvent('next', `${collectionId || 'unknown'}-${targetIndex}`, targetPhase, targetIndex, speed);
             }
         }
     };
@@ -565,8 +609,8 @@ export function PhrasePlaybackView({
                             progressDelay={progressDelay}
                             onPrevious={handlePrevious}
                             onNext={handleNext}
-                            canGoBack={currentPhase === 'output' || currentPhraseIndex > 0}
-                            canGoForward={currentPhase === 'input' || currentPhraseIndex < phrases.length - 1}
+                            canGoBack={true}
+                            canGoForward={true}
                             currentPhraseIndex={currentPhraseIndex}
                             totalPhrases={phrases.length}
                         />
@@ -587,8 +631,8 @@ export function PhrasePlaybackView({
                                 onPlay={handlePlay}
                                 onPrevious={handlePrevious}
                                 onNext={handleNext}
-                                canGoBack={currentPhase === 'output' || currentPhraseIndex > 0}
-                                canGoForward={currentPhase === 'input' || currentPhraseIndex < phrases.length - 1}
+                                canGoBack={true}
+                                canGoForward={true}
                                 inputLang={phrases[0]?.inputLang}
                                 targetLang={phrases[0]?.targetLang}
                             />
