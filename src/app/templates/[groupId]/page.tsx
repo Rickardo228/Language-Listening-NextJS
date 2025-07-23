@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Config, Phrase, languageOptions } from '../../types';
+import { Phrase, languageOptions } from '../../types';
 import { getFirestore, collection, query, where, getDocs, Timestamp } from 'firebase/firestore';
 import { PhrasePlaybackView } from '../../components/PhrasePlaybackView';
 import { LanguageFlags } from '../../components/LanguageFlags';
@@ -38,12 +38,32 @@ export default function TemplateDetailPage() {
     const { groupId } = useParams();
     const router = useRouter();
     const { user, isAuthLoading } = useUser();
-    const [inputTemplate, setInputTemplate] = useState<Template | null>(null);
-    const [targetTemplate, setTargetTemplate] = useState<Template | null>(null);
+    const [phrases, setPhrases] = useState<Phrase[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedInputLang, setSelectedInputLang] = useState<string>('en-GB');
     const [selectedTargetLang, setSelectedTargetLang] = useState<string>('it-IT');
     const [availableLanguages, setAvailableLanguages] = useState<string[]>([]);
+    const [presentationConfig, setPresentationConfig] = useState({
+        name: `Template ${groupId}`,
+        bgImage: null,
+        containerBg: '',
+        textBg: '',
+        enableSnow: false,
+        enableCherryBlossom: false,
+        enableLeaves: false,
+        enableAutumnLeaves: false,
+        enableOrtonEffect: false,
+        enableParticles: false,
+        enableSteam: false,
+        enableOutputBeforeInput: false,
+        postProcessDelay: 0,
+        delayBetweenPhrases: 0,
+        enableInputDurationDelay: false,
+        enableOutputDurationDelay: false,
+        enableLoop: false,
+        inputPlaybackSpeed: 1.0,
+        outputPlaybackSpeed: 0.85
+    });
 
     useEffect(() => {
         const fetchTemplates = async () => {
@@ -84,7 +104,6 @@ export default function TemplateDetailPage() {
                         ...doc.data()
                     } as Template;
                 }
-                setInputTemplate(inputTemplateData);
 
                 // Get target template
                 let targetTemplateData: Template | null = null;
@@ -95,7 +114,40 @@ export default function TemplateDetailPage() {
                         ...doc.data()
                     } as Template;
                 }
-                setTargetTemplate(targetTemplateData);
+
+                // Convert templates to phrases and store in state
+                if (inputTemplateData && targetTemplateData) {
+                    const inputPhrases = inputTemplateData.phrases;
+                    const targetPhrases = targetTemplateData.phrases;
+
+                    const convertedPhrases: Phrase[] = [...Object.keys(inputPhrases)].map((phraseKey) => {
+                        const inputPhrase = inputPhrases[phraseKey];
+                        const targetPhrase = targetPhrases[phraseKey];
+
+                        return {
+                            input: inputPhrase?.translated || '',
+                            translated: targetPhrase?.translated || '',
+                            inputAudio: inputPhrase ? {
+                                audioUrl: inputPhrase.audioUrl || '',
+                                duration: inputPhrase.duration || 0
+                            } : null,
+                            inputLang: inputTemplateData.lang,
+                            inputVoice: inputPhrase?.voice || '',
+                            outputAudio: targetPhrase ? {
+                                audioUrl: targetPhrase.audioUrl || '',
+                                duration: targetPhrase.duration || 0
+                            } : null,
+                            targetLang: targetTemplateData.lang,
+                            targetVoice: targetPhrase?.voice || '',
+                            romanized: targetPhrase?.romanized || '',
+                            created_at: inputTemplateData.createdAt?.toDate?.()?.toISOString() || new Date().toISOString()
+                        };
+                    });
+
+                    setPhrases(convertedPhrases);
+                } else {
+                    setPhrases([]);
+                }
 
                 // Get all available languages for this group
                 const allTemplatesQuery = query(templatesRef, where('groupId', '==', groupId));
@@ -105,6 +157,7 @@ export default function TemplateDetailPage() {
 
             } catch (err) {
                 console.error('Error fetching templates:', err);
+                setPhrases([]);
             } finally {
                 setLoading(false);
             }
@@ -112,66 +165,6 @@ export default function TemplateDetailPage() {
 
         fetchTemplates();
     }, [user, groupId, selectedInputLang, selectedTargetLang]);
-
-    // Convert template phrases to the format expected by PhrasePlaybackView
-    const convertTemplatesToConfig = (inputTemplate: Template, targetTemplate: Template): Config => {
-        const inputPhrases = inputTemplate.phrases;
-        console.log(inputPhrases)
-        const targetPhrases = targetTemplate.phrases;
-
-
-        const phrases: Phrase[] = [...Object.keys(inputPhrases)].map((phraseKey) => {
-            const inputPhrase = inputPhrases[phraseKey];
-            const targetPhrase = targetPhrases[phraseKey];
-
-            return {
-                input: inputPhrase?.translated || '',
-                translated: targetPhrase?.translated || '',
-                inputAudio: inputPhrase ? {
-                    audioUrl: inputPhrase.audioUrl || '',
-                    duration: inputPhrase.duration || 0
-                } : null,
-                inputLang: inputTemplate.lang,
-                inputVoice: inputPhrase?.voice || '',
-                outputAudio: targetPhrase ? {
-                    audioUrl: targetPhrase.audioUrl || '',
-                    duration: targetPhrase.duration || 0
-                } : null,
-                targetLang: targetTemplate.lang,
-                targetVoice: targetPhrase?.voice || '',
-                romanized: targetPhrase?.romanized || '',
-                created_at: inputTemplate.createdAt?.toDate?.()?.toISOString() || new Date().toISOString()
-            };
-        });
-
-        return {
-            id: `${inputTemplate.id}-${targetTemplate.id}`,
-            name: `Template Group ${inputTemplate.groupId} (${inputTemplate.lang} → ${targetTemplate.lang})`,
-            phrases,
-            created_at: inputTemplate.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
-            presentationConfig: {
-                name: `Template ${inputTemplate.groupId}`,
-                bgImage: null,
-                containerBg: '',
-                textBg: '',
-                enableSnow: false,
-                enableCherryBlossom: false,
-                enableLeaves: false,
-                enableAutumnLeaves: false,
-                enableOrtonEffect: false,
-                enableParticles: false,
-                enableSteam: false,
-                enableOutputBeforeInput: false,
-                postProcessDelay: 0,
-                delayBetweenPhrases: 0,
-                enableInputDurationDelay: false,
-                enableOutputDurationDelay: false,
-                enableLoop: false,
-                inputPlaybackSpeed: 1.0,
-                outputPlaybackSpeed: 0.85
-            }
-        };
-    };
 
     if (isAuthLoading || loading) {
         return (
@@ -203,7 +196,7 @@ export default function TemplateDetailPage() {
         );
     }
 
-    const config = inputTemplate && targetTemplate ? convertTemplatesToConfig(inputTemplate, targetTemplate) : null;
+
 
     return (
         <div className="font-sans lg:h-[100vh] flex flex-col bg-background text-foreground">
@@ -219,7 +212,7 @@ export default function TemplateDetailPage() {
                         </svg>
                         <h1 className='truncate'>Template Group {groupId}</h1>
                     </button>
-                    {config && config.phrases[0] && (
+                    {phrases.length > 0 && (
                         <LanguageFlags
                             inputLang={selectedInputLang}
                             targetLang={selectedTargetLang}
@@ -259,37 +252,13 @@ export default function TemplateDetailPage() {
                 </div>
             </div>
 
-            {config && (
+            {phrases.length > 0 && (
                 <PhrasePlaybackView
-                    phrases={config.phrases}
-                    presentationConfig={config.presentationConfig || {
-                        name: 'Default',
-                        bgImage: null,
-                        containerBg: '',
-                        textBg: '',
-                        enableSnow: false,
-                        enableCherryBlossom: false,
-                        enableLeaves: false,
-                        enableAutumnLeaves: false,
-                        enableOrtonEffect: false,
-                        enableParticles: false,
-                        enableSteam: false,
-                        enableOutputBeforeInput: false,
-                        postProcessDelay: 0,
-                        delayBetweenPhrases: 0,
-                        enableInputDurationDelay: false,
-                        enableOutputDurationDelay: false,
-                        enableLoop: false,
-                        inputPlaybackSpeed: 1.0,
-                        outputPlaybackSpeed: 1.0
-                    }}
-                    collectionName={config.name}
-                    setPhrases={async () => {
-                        // Read-only view, no changes allowed
-                    }}
-                    setPresentationConfig={async () => {
-                        // Read-only view, no changes allowed
-                    }}
+                    phrases={phrases}
+                    presentationConfig={presentationConfig}
+                    collectionName={`Template Group ${groupId} (${selectedInputLang} → ${selectedTargetLang})`}
+                    setPhrases={setPhrases}
+                    setPresentationConfig={setPresentationConfig}
                 />
             )}
         </div>
