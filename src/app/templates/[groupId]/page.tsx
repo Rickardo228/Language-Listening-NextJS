@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { Phrase, languageOptions, PresentationConfig } from '../../types';
 import { getFirestore, collection, query, where, getDocs, Timestamp } from 'firebase/firestore';
 import { PhrasePlaybackView } from '../../components/PhrasePlaybackView';
@@ -37,13 +37,14 @@ const getLanguageLabel = (code: string): string => {
 export default function TemplateDetailPage() {
     const { groupId } = useParams();
     const router = useRouter();
+    const searchParams = useSearchParams();
     const { user, isAuthLoading } = useUser();
     const [phrases, setPhrases] = useState<Phrase[]>([]);
     const [loading, setLoading] = useState(true);
-    const [selectedInputLang, setSelectedInputLang] = useState<string>('en-GB');
-    const [selectedTargetLang, setSelectedTargetLang] = useState<string>('it-IT');
+    const [selectedInputLang, setSelectedInputLang] = useState<string>(searchParams.get('inputLang') || 'en-GB');
+    const [selectedTargetLang, setSelectedTargetLang] = useState<string>(searchParams.get('targetLang') || 'it-IT');
     const [availableLanguages, setAvailableLanguages] = useState<string[]>([]);
-    const [presentationConfig, setPresentationConfig] = useState<PresentationConfig>({
+    const [presentationConfig, setPresentationConfig] = useState({
         name: `Template ${groupId}`,
         bgImage: null,
         containerBg: '',
@@ -153,6 +154,7 @@ export default function TemplateDetailPage() {
                 const allTemplatesQuery = query(templatesRef, where('groupId', '==', groupId));
                 const allTemplatesSnapshot = await getDocs(allTemplatesQuery);
                 const languages = allTemplatesSnapshot.docs.map(doc => doc.data().lang);
+                console.log('languages', languages);
                 setAvailableLanguages(languages);
 
             } catch (err) {
@@ -258,7 +260,7 @@ export default function TemplateDetailPage() {
                     presentationConfig={presentationConfig}
                     collectionName={`Template Group ${groupId} (${selectedInputLang} → ${selectedTargetLang})`}
                     setPhrases={async (phrases: Phrase[]) => setPhrases(phrases)}
-                    setPresentationConfig={async (config: Partial<PresentationConfig>) => setPresentationConfig(prev => ({ ...prev, ...config }))}
+                    setPresentationConfig={async (config: Partial<PresentationConfig>) => setPresentationConfig(config)}
                 />
             )}
         </div>

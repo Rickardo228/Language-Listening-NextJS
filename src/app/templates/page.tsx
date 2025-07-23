@@ -1,10 +1,12 @@
 'use client'
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { getFirestore, collection, query, where, getDocs, Timestamp } from 'firebase/firestore';
 import { auth } from '../firebase';
 import { User as FirebaseUser } from 'firebase/auth';
+import { languageOptions } from '../types';
+import { OnboardingLanguageSelect } from '../components/OnboardingLanguageSelect';
 
 const firestore = getFirestore();
 
@@ -33,10 +35,9 @@ export default function TemplatesPage() {
     const [templates, setTemplates] = useState<Template[]>([]);
     const [loading, setLoading] = useState(true);
     const [user, setUser] = useState<FirebaseUser | null>(null);
-
-    // Fixed languages as specified
-    const inputLang = 'en-GB';
-    const targetLang = 'it-IT';
+    const [inputLang, setInputLang] = useState('en-GB');
+    const [targetLang, setTargetLang] = useState('it-IT');
+    const hasInitialFetch = useRef(false);
 
     useEffect(() => {
         const unsubscribe = auth.onAuthStateChanged((user) => {
@@ -45,79 +46,133 @@ export default function TemplatesPage() {
         return () => unsubscribe();
     }, []);
 
+    const fetchTemplates = async (currentInputLang?: string, currentTargetLang?: string) => {
+        if (!user) {
+            setLoading(false);
+            return;
+        }
+
+        // Use the passed values or fall back to state values
+        const inputLangToUse = currentInputLang || inputLang;
+        const targetLangToUse = currentTargetLang || targetLang;
+
+        setLoading(true);
+
+        try {
+            const templatesRef = collection(firestore, 'templates');
+
+            // Create two separate queries for OR logic
+            const query1 = query(
+                templatesRef,
+                where('lang', '==', inputLangToUse)
+            );
+
+            const query2 = query(
+                templatesRef,
+                where('lang', '==', targetLangToUse)
+            );
+
+            // Execute both queries
+            const [querySnapshot1, querySnapshot2] = await Promise.all([
+                getDocs(query1),
+                getDocs(query2)
+            ]);
+
+            const templatesData: Template[] = [];
+            const seenIds = new Set<string>();
+
+            // Process first query results
+            querySnapshot1.forEach((doc) => {
+                if (!seenIds.has(doc.id)) {
+                    seenIds.add(doc.id);
+                    templatesData.push({
+                        id: doc.id,
+                        ...doc.data()
+                    } as Template);
+                }
+            });
+
+            // Process second query results (avoiding duplicates)
+            querySnapshot2.forEach((doc) => {
+                if (!seenIds.has(doc.id)) {
+                    seenIds.add(doc.id);
+                    templatesData.push({
+                        id: doc.id,
+                        ...doc.data()
+                    } as Template);
+                }
+            });
+
+            // Group by groupId and check for templates in both languages
+            const templatesByGroup = templatesData.reduce((acc, template) => {
+                if (!acc[template.groupId]) {
+                    acc[template.groupId] = [];
+                }
+                acc[template.groupId].push(template);
+                return acc;
+            }, {} as Record<string, Template[]>);
+
+            console.log('Templates by group:', templatesByGroup);
+            console.log('Input lang:', inputLangToUse, 'Target lang:', targetLangToUse);
+
+            // Only keep templates that have entries in both languages
+            const uniqueTemplates = Object.values(templatesByGroup)
+                .filter(groupTemplates => {
+                    const hasInputLang = groupTemplates.some(t => t.lang === inputLangToUse);
+                    const hasTargetLang = groupTemplates.some(t => t.lang === targetLangToUse);
+                    console.log(`Group ${groupTemplates[0]?.groupId}: hasInputLang=${hasInputLang}, hasTargetLang=${hasTargetLang}, languages=${groupTemplates.map(t => t.lang).join(', ')}`);
+                    return hasInputLang && hasTargetLang;
+                })
+                .map(groupTemplates => {
+                    // Return the template in the input language, or the first one if not found
+                    return groupTemplates.find(t => t.lang === inputLangToUse) || groupTemplates[0];
+                });
+
+            console.log('Final unique templates:', uniqueTemplates);
+
+            // Sort by newest first
+            const sortedTemplates = uniqueTemplates.sort((a, b) => {
+                const dateA = a.createdAt?.toDate?.() || new Date(0);
+                const dateB = b.createdAt?.toDate?.() || new Date(0);
+                return dateB.getTime() - dateA.getTime();
+            });
+
+            setTemplates(sortedTemplates);
+        } catch (err) {
+            console.error('Error fetching templates:', err);
+            setTemplates([]); // Clear templates on error
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Initial fetch when user is available (only once)
     useEffect(() => {
-        const fetchTemplates = async () => {
-            if (!user) {
-                setLoading(false);
-                return;
-            }
+        if (user && !hasInitialFetch.current) {
+            hasInitialFetch.current = true;
+            fetchTemplates();
+        }
+    }, [user]);
 
-            try {
-                const templatesRef = collection(firestore, 'templates');
+    // Handle language changes
+    const handleInputLangChange = (lang: string) => {
+        setTemplates([]);
+        setInputLang(lang);
+        fetchTemplates(lang, targetLang);
+    };
 
-                // Create two separate queries for OR logic
-                const query1 = query(
-                    templatesRef,
-                    where('lang', '==', inputLang)
-                );
-
-                const query2 = query(
-                    templatesRef,
-                    where('lang', '==', targetLang)
-                );
-
-                // Execute both queries
-                const [querySnapshot1, querySnapshot2] = await Promise.all([
-                    getDocs(query1),
-                    getDocs(query2)
-                ]);
-
-                const templatesData: Template[] = [];
-                const seenIds = new Set<string>();
-
-                // Process first query results
-                querySnapshot1.forEach((doc) => {
-                    if (!seenIds.has(doc.id)) {
-                        seenIds.add(doc.id);
-                        templatesData.push({
-                            id: doc.id,
-                            ...doc.data()
-                        } as Template);
-                    }
-                });
-
-                // Process second query results (avoiding duplicates)
-                querySnapshot2.forEach((doc) => {
-                    if (!seenIds.has(doc.id)) {
-                        seenIds.add(doc.id);
-                        templatesData.push({
-                            id: doc.id,
-                            ...doc.data()
-                        } as Template);
-                    }
-                });
-
-                // Group by groupId and get unique templates
-                const uniqueTemplates = templatesData.reduce((acc, template) => {
-                    if (!acc.find(t => t.groupId === template.groupId)) {
-                        acc.push(template);
-                    }
-                    return acc;
-                }, [] as Template[]);
-
-                setTemplates(uniqueTemplates);
-            } catch (err) {
-                console.error('Error fetching templates:', err);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchTemplates();
-    }, [user, inputLang, targetLang]);
+    const handleTargetLangChange = (lang: string) => {
+        setTemplates([]);
+        setTargetLang(lang);
+        fetchTemplates(inputLang, lang);
+    };
 
     const handleTemplateClick = (template: Template) => {
-        router.push(`/templates/${template.groupId}`);
+        router.push(`/templates/${template.groupId}?inputLang=${inputLang}&targetLang=${targetLang}`);
+    };
+
+    const getLanguageLabel = (value: string) => {
+        return languageOptions.find(option => option.code === value)?.label || value;
     };
 
     if (loading) {
@@ -144,16 +199,24 @@ export default function TemplatesPage() {
             <div className="max-w-4xl mx-auto p-6">
                 <div className="mb-8">
                     <h1 className="text-3xl font-bold mb-2">Templates</h1>
-                    <p className="text-muted-foreground">
-                        English (UK) → Italian templates
+                    <p className="text-muted-foreground mb-6">
+                        Select languages to view available templates
                     </p>
+
+                    {/* Language Selection */}
+                    <OnboardingLanguageSelect
+                        inputLang={inputLang}
+                        setInputLang={handleInputLangChange}
+                        targetLang={targetLang}
+                        setTargetLang={handleTargetLangChange}
+                    />
                 </div>
 
                 {templates.length === 0 ? (
                     <div className="text-center py-12">
                         <h2 className="text-xl font-semibold mb-2">No templates found</h2>
                         <p className="text-muted-foreground">
-                            No templates are available for English (UK) to Italian translation.
+                            No templates are available for {getLanguageLabel(inputLang)} to {getLanguageLabel(targetLang)} translation.
                         </p>
                     </div>
                 ) : (
