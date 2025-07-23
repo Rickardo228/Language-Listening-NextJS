@@ -230,7 +230,7 @@ export default function TemplatesPage() {
                                 <div className="flex items-center justify-between">
                                     <div>
                                         <h3 className="text-lg font-semibold mb-2">
-                                            Template Group {template.groupId}
+                                            {template.groupId}
                                         </h3>
                                         <div className="flex items-center gap-4 text-sm text-muted-foreground">
                                             <span>Complexity: {template.complexity}</span>
