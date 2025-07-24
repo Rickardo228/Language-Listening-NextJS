@@ -18,6 +18,7 @@ interface TemplatePhrase {
     voice?: string;
 }
 
+// TODO - generate these types from the backend
 interface Template {
     id: string;
     groupId: string;
@@ -28,6 +29,7 @@ interface Template {
     targetLang: string;
     complexity: string;
     phraseCount: number;
+    name?: string;
 }
 
 export default function TemplatesPage() {
@@ -241,7 +243,7 @@ export default function TemplatesPage() {
                                 <div className="flex items-center justify-between">
                                     <div>
                                         <h3 className="text-lg font-semibold mb-2">
-                                            {template.groupId}
+                                            {template.name || template.groupId}
                                         </h3>
                                         <div className="flex items-center gap-4 text-sm text-muted-foreground">
                                             <span>Complexity: {template.complexity}</span>
