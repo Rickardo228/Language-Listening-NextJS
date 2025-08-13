@@ -142,7 +142,7 @@ export function CollectionList({
                                         }
                                     >
                                         <div className="w-full">
-                                            <div className="text-base font-semibold truncate">{collection.name}</div>
+                                            <div className="text-lg sm:text-xl font-semibold leading-tight break-words line-clamp-2">{collection.name}</div>
                                             {showFlags && (
                                                 <div className="text-[10px] opacity-80 tracking-wider">
                                                     {languages ? (
