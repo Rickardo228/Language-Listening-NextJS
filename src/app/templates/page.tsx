@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation';
 import { getFirestore, collection, query, where, getDocs, Timestamp } from 'firebase/firestore';
 import { auth } from '../firebase';
 import { User as FirebaseUser } from 'firebase/auth';
-import { languageOptions } from '../types';
+import { languageOptions, Config } from '../types';
+import { CollectionList } from '../CollectionList';
 import { OnboardingLanguageSelect } from '../components/OnboardingLanguageSelect';
 
 const firestore = getFirestore();
@@ -169,10 +170,6 @@ export default function TemplatesPage() {
         fetchTemplates(inputLang, lang);
     };
 
-    const handleTemplateClick = (template: Template) => {
-        router.push(`/templates/${template.groupId}?inputLang=${inputLang}&targetLang=${targetLang}`);
-    };
-
     const getLanguageLabel = (value: string) => {
         return languageOptions.find(option => option.code === value)?.label || value;
     };
@@ -233,35 +230,28 @@ export default function TemplatesPage() {
                         </p>
                     </div>
                 ) : (
-                    <div className="grid gap-4">
-                        {templates.map((template) => (
-                            <div
-                                key={template.id}
-                                onClick={() => handleTemplateClick(template)}
-                                className="p-6 border rounded-lg hover:border-primary cursor-pointer transition-colors bg-card"
-                            >
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <h3 className="text-lg font-semibold mb-2">
-                                            {template.name || template.groupId}
-                                        </h3>
-                                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                                            <span>Complexity: {template.complexity}</span>
-                                            <span>Phrases: {template.phraseCount}</span>
-                                            <span>
-                                                Created: {template.createdAt?.toDate?.()?.toLocaleDateString() || 'Unknown'}
-                                            </span>
-                                        </div>
-                                    </div>
-                                    <div className="text-primary">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                            <path d="M9 18l6-6-6-6" />
-                                        </svg>
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
+                    (() => {
+                        const templateByGroup = new Map<string, Template>();
+                        templates.forEach(t => templateByGroup.set(t.groupId, t));
+                        const mapped: Config[] = templates.map((t) => ({
+                            id: t.groupId,
+                            name: t.name || t.groupId,
+                            phrases: [],
+                            created_at: t.createdAt?.toDate?.()?.toISOString(),
+                        }));
+                        return (
+                            <CollectionList
+                                title="Templates"
+                                showBrowseTemplatesButton={false}
+                                savedCollections={mapped}
+                                selectedCollection={undefined}
+                                loading={false}
+                                getPhraseCount={(c) => templateByGroup.get(c.id)?.phraseCount || 0}
+                                getLanguagePair={() => ({ inputLang, targetLang })}
+                                onLoadCollection={(c) => router.push(`/templates/${c.id}?inputLang=${inputLang}&targetLang=${targetLang}`)}
+                            />
+                        );
+                    })()
                 )}
             </div>
         </div>
