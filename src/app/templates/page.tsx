@@ -243,6 +243,8 @@ export default function TemplatesPage() {
                             <CollectionList
                                 title="Templates"
                                 showAllButton={false}
+                                itemVariant="card"
+                                layout="horizontal"
                                 savedCollections={mapped}
                                 selectedCollection={undefined}
                                 loading={false}

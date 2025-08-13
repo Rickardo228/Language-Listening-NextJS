@@ -12,6 +12,10 @@ interface CollectionListProps {
     title?: string;
     showAllButton?: boolean;
     onShowAllClick?: () => void;
+    // Controls the presentation style of each item
+    itemVariant?: 'list' | 'card';
+    // Controls the flow/layout of the list container
+    layout?: 'vertical' | 'horizontal';
     getPhraseCount?: (collection: Config) => number;
     getLanguagePair?: (collection: Config) => { inputLang: string; targetLang: string } | null;
 }
@@ -26,6 +30,8 @@ export function CollectionList({
     title,
     showAllButton = true,
     onShowAllClick,
+    itemVariant = 'list',
+    layout = 'vertical',
     getPhraseCount,
     getLanguagePair,
 }: CollectionListProps) {
@@ -71,13 +77,55 @@ export function CollectionList({
                     <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
                 </div>
             ) : (
-                <div className="space-y-2">
+                <div
+                    className={
+                        layout === 'horizontal'
+                            ? 'flex gap-4 overflow-x-auto pb-2'
+                            : 'space-y-2'
+                    }
+                >
                     {sortedCollections.map((collection) => {
                         // Determine phrase count and languages
                         const phraseCount = getPhraseCount ? getPhraseCount(collection) : collection.phrases.length;
                         const languages = getLanguagePair ? getLanguagePair(collection) : (collection.phrases[0]
                             ? { inputLang: collection.phrases[0].inputLang, targetLang: collection.phrases[0].targetLang }
                             : null);
+
+                        if (itemVariant === 'card') {
+                            return (
+                                <div
+                                    key={collection.id}
+                                    className={
+                                        `cursor-pointer transition-colors ${layout === 'horizontal' ? 'min-w-[220px] max-w-[220px]' : ''}`
+                                    }
+                                    onClick={() => onLoadCollection(collection)}
+                                >
+                                    <div
+                                        className={
+                                            `rounded-lg p-4 h-40 flex items-end border ${selectedCollection && selectedCollection === collection.id
+                                                ? 'bg-primary text-primary-foreground'
+                                                : 'bg-gradient-to-b from-secondary/60 to-secondary/30 hover:from-secondary hover:to-secondary/60'
+                                            }`
+                                        }
+                                    >
+                                        <div className="w-full">
+                                            <div className="text-base font-semibold truncate">{collection.name}</div>
+                                            <div className="text-[10px] opacity-80 tracking-wider">
+                                                {languages ? (
+                                                    <LanguageFlags
+                                                        inputLang={languages.inputLang}
+                                                        targetLang={languages.targetLang}
+                                                    />
+                                                ) : null}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <p className="text-xs text-muted-foreground mt-2 line-clamp-2">
+                                        {phraseCount} phrases
+                                    </p>
+                                </div>
+                            );
+                        }
 
                         return (
                             <div
