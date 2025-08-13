@@ -1,10 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { Phrase, languageOptions, PresentationConfig } from '../../types';
 import { getFirestore, collection, query, where, getDocs, Timestamp } from 'firebase/firestore';
-import { PhrasePlaybackView } from '../../components/PhrasePlaybackView';
+import { PhrasePlaybackView, PhrasePlaybackMethods } from '../../components/PhrasePlaybackView';
 import { LanguageFlags } from '../../components/LanguageFlags';
 import { useUser } from '../../contexts/UserContext';
 
@@ -39,6 +39,7 @@ export default function TemplateDetailPage() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { user, isAuthLoading } = useUser();
+    const methodsRef = useRef<PhrasePlaybackMethods | null>(null);
     const [phrases, setPhrases] = useState<Phrase[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedInputLang, setSelectedInputLang] = useState<string>(searchParams.get('inputLang') || 'en-GB');
@@ -169,6 +170,18 @@ export default function TemplateDetailPage() {
         fetchTemplates();
     }, [user, groupId, selectedInputLang, selectedTargetLang]);
 
+    // Autoplay when requested via query param once phrases are available
+    useEffect(() => {
+        const shouldAutoplay = searchParams.get('autoplay') === '1' || searchParams.get('autoplay') === 'true';
+        if (shouldAutoplay && phrases.length > 0) {
+            // small delay to ensure audio element/state ready
+            const id = setTimeout(() => {
+                methodsRef.current?.handleReplay?.();
+            }, 300);
+            return () => clearTimeout(id);
+        }
+    }, [phrases, searchParams]);
+
     if (isAuthLoading || loading) {
         return (
             <div className="flex items-center justify-center min-h-screen bg-background">
@@ -262,6 +275,7 @@ export default function TemplateDetailPage() {
                     collectionName={`${groupId} (${selectedInputLang} → ${selectedTargetLang})`}
                     setPhrases={async (phrases: Phrase[]) => setPhrases(phrases)}
                     setPresentationConfig={async (config: Partial<PresentationConfig>) => setPresentationConfig(prev => ({ ...prev, ...config }))}
+                    methodsRef={methodsRef}
                 />
             )}
         </div>

@@ -18,6 +18,10 @@ interface CollectionListProps {
     layout?: 'vertical' | 'horizontal';
     // Toggles display of language flags when language data is available
     showFlags?: boolean;
+    // Show a play button on hover for card variant
+    showPlayOnHover?: boolean;
+    // Handler when the play button is clicked
+    onPlayClick?: (collection: Config) => void;
     getPhraseCount?: (collection: Config) => number;
     getLanguagePair?: (collection: Config) => { inputLang: string; targetLang: string } | null;
 }
@@ -35,6 +39,8 @@ export function CollectionList({
     itemVariant = 'list',
     layout = 'vertical',
     showFlags = true,
+    showPlayOnHover,
+    onPlayClick,
     getPhraseCount,
     getLanguagePair,
 }: CollectionListProps) {
@@ -128,19 +134,38 @@ export function CollectionList({
                             return (
                                 <div
                                     key={collection.id}
-                                    className={
-                                        `cursor-pointer transition-colors ${layout === 'horizontal' ? 'min-w-[220px] max-w-[220px]' : ''}`
-                                    }
+                                    className={`group cursor-pointer transition-colors ${layout === 'horizontal' ? 'min-w-[220px] max-w-[220px]' : ''}`}
                                     onClick={() => onLoadCollection(collection)}
                                 >
                                     <div
                                         className={
-                                            `rounded-lg p-4 h-40 flex items-end border ${selectedCollection && selectedCollection === collection.id
+                                            `relative overflow-hidden rounded-lg p-4 h-40 flex items-end border ${selectedCollection && selectedCollection === collection.id
                                                 ? 'bg-primary text-primary-foreground'
                                                 : `${tileBackgroundClass} text-white`}
                                             `
                                         }
                                     >
+                                        {(showPlayOnHover ?? true) && (
+                                            <div className="absolute bottom-3 right-3">
+                                                <div className="pointer-events-none absolute inset-0 rounded-full bg-white/30 blur-md opacity-0 scale-75 group-hover:opacity-100 group-hover:scale-100 transition-all duration-300"></div>
+                                                <button
+                                                    aria-label="Play"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        if (onPlayClick) {
+                                                            onPlayClick(collection);
+                                                        } else {
+                                                            onLoadCollection(collection);
+                                                        }
+                                                    }}
+                                                    className="relative w-11 h-11 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-lg opacity-0 translate-y-1 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-200 hover:scale-110 hover:shadow-xl focus-visible:ring-2 focus-visible:ring-white/80 focus:outline-none"
+                                                >
+                                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+                                                        <path d="M8 5v14l11-7L8 5z" />
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        )}
                                         <div className="w-full">
                                             <div className="text-lg sm:text-xl font-semibold leading-tight break-words line-clamp-2">{collection.name}</div>
                                             {showFlags && (

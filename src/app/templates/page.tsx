@@ -252,6 +252,7 @@ export default function TemplatesPage() {
                                 getPhraseCount={(c) => templateByGroup.get(c.id)?.phraseCount || 0}
                                 getLanguagePair={() => ({ inputLang, targetLang })}
                                 onLoadCollection={(c) => router.push(`/templates/${c.id}?inputLang=${inputLang}&targetLang=${targetLang}`)}
+                                onPlayClick={(c) => router.push(`/templates/${c.id}?inputLang=${inputLang}&targetLang=${targetLang}&autoplay=1`)}
                             />
                         );
                     })()
