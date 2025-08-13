@@ -220,7 +220,7 @@ export default function TemplateDetailPage() {
             <div className="flex items-center justify-between shadow-md lg:mb-0 p-3 sticky top-0 bg-background border-b z-50">
                 <div className="flex items-center gap-4">
                     <button
-                        onClick={() => router.push('/templates')}
+                        onClick={() => router.push('/')}
                         className="flex items-center gap-2 hover:opacity-80 transition-opacity"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

@@ -1,6 +1,7 @@
 import { Config } from './types';
 import { LanguageFlags } from './components/LanguageFlags';
 import { useRouter } from 'next/navigation';
+import { useEffect, useRef, useState } from 'react';
 
 interface CollectionListProps {
     savedCollections: Config[];
@@ -22,6 +23,10 @@ interface CollectionListProps {
     showPlayOnHover?: boolean;
     // Handler when the play button is clicked
     onPlayClick?: (collection: Config) => void;
+    // Hide native scrollbar on horizontal layout
+    hideScrollbar?: boolean;
+    // Show prev/next buttons if content overflows horizontally
+    enableCarouselControls?: boolean;
     getPhraseCount?: (collection: Config) => number;
     getLanguagePair?: (collection: Config) => { inputLang: string; targetLang: string } | null;
 }
@@ -41,10 +46,37 @@ export function CollectionList({
     showFlags = true,
     showPlayOnHover,
     onPlayClick,
+    hideScrollbar = false,
+    enableCarouselControls = false,
     getPhraseCount,
     getLanguagePair,
 }: CollectionListProps) {
     const router = useRouter();
+    const containerRef = useRef<HTMLDivElement | null>(null);
+    const [canScrollLeft, setCanScrollLeft] = useState(false);
+    const [canScrollRight, setCanScrollRight] = useState(false);
+
+    const updateScrollButtons = () => {
+        if (!containerRef.current) return;
+        const el = containerRef.current;
+        setCanScrollLeft(el.scrollLeft > 0);
+        setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 1);
+    };
+
+    useEffect(() => {
+        if (layout !== 'horizontal') return;
+        updateScrollButtons();
+        const el = containerRef.current;
+        if (!el) return;
+        const onScroll = () => updateScrollButtons();
+        el.addEventListener('scroll', onScroll);
+        const ro = new ResizeObserver(() => updateScrollButtons());
+        ro.observe(el);
+        return () => {
+            el.removeEventListener('scroll', onScroll);
+            ro.disconnect();
+        };
+    }, [layout, savedCollections.length]);
 
     // Deterministic hash to map collections to palette indices
     const hashStringToNumber = (value: string): number => {
@@ -82,7 +114,7 @@ export function CollectionList({
     return (
         <div className="space-y-4">
             <div className="flex items-center justify-between">
-                <h2 className="text-xl font-semibold">{title || 'Your Lists'}</h2>
+                <h2 className="text-xl font-semibold">{title || 'Your Library'}</h2>
                 {showAllButton && (
                     <button
                         onClick={() => (onShowAllClick ? onShowAllClick() : router.push('/templates'))}
@@ -112,164 +144,193 @@ export function CollectionList({
                     <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
                 </div>
             ) : (
-                <div
-                    className={
-                        layout === 'horizontal'
-                            ? 'flex gap-4 overflow-x-auto pb-2'
-                            : 'space-y-2'
-                    }
-                >
-                    {sortedCollections.map((collection) => {
-                        // Determine phrase count and languages
-                        const phraseCount = getPhraseCount ? getPhraseCount(collection) : collection.phrases.length;
-                        const languages = getLanguagePair ? getLanguagePair(collection) : (collection.phrases[0]
-                            ? { inputLang: collection.phrases[0].inputLang, targetLang: collection.phrases[0].targetLang }
-                            : null);
+                <div className={layout === 'horizontal' ? 'relative' : undefined}>
+                    <div
+                        ref={containerRef}
+                        className={
+                            layout === 'horizontal'
+                                ? `flex gap-4 overflow-x-auto pb-2 ${hideScrollbar ? 'no-scrollbar' : ''}`
+                                : 'space-y-2'
+                        }
+                    >
+                        {sortedCollections.map((collection) => {
+                            // Determine phrase count and languages
+                            const phraseCount = getPhraseCount ? getPhraseCount(collection) : collection.phrases.length;
+                            const languages = getLanguagePair ? getLanguagePair(collection) : (collection.phrases[0]
+                                ? { inputLang: collection.phrases[0].inputLang, targetLang: collection.phrases[0].targetLang }
+                                : null);
 
-                        if (itemVariant === 'card') {
-                            const paletteIndex = tileBackgroundPalette.length
-                                ? hashStringToNumber(collection.id) % tileBackgroundPalette.length
-                                : 0;
-                            const tileBackgroundClass = tileBackgroundPalette[paletteIndex] || 'bg-secondary';
+                            if (itemVariant === 'card') {
+                                const paletteIndex = tileBackgroundPalette.length
+                                    ? hashStringToNumber(collection.id) % tileBackgroundPalette.length
+                                    : 0;
+                                const tileBackgroundClass = tileBackgroundPalette[paletteIndex] || 'bg-secondary';
+                                return (
+                                    <div
+                                        key={collection.id}
+                                        className={`group cursor-pointer transition-colors ${layout === 'horizontal' ? 'min-w-[220px] max-w-[220px]' : ''}`}
+                                        onClick={() => onLoadCollection(collection)}
+                                    >
+                                        <div
+                                            className={
+                                                `relative overflow-hidden rounded-lg p-4 h-40 flex items-end border ${selectedCollection && selectedCollection === collection.id
+                                                    ? 'bg-primary text-primary-foreground'
+                                                    : `${tileBackgroundClass} text-white`}
+                                            `
+                                            }
+                                        >
+                                            {(showPlayOnHover ?? true) && (
+                                                <div className="absolute bottom-3 right-3">
+                                                    <div className="pointer-events-none absolute inset-0 rounded-full bg-white/30 blur-md opacity-0 scale-75 group-hover:opacity-100 group-hover:scale-100 transition-all duration-300"></div>
+                                                    <button
+                                                        aria-label="Play"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            if (onPlayClick) {
+                                                                onPlayClick(collection);
+                                                            } else {
+                                                                onLoadCollection(collection);
+                                                            }
+                                                        }}
+                                                        className="relative w-11 h-11 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-lg opacity-0 translate-y-1 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-200 hover:scale-110 hover:shadow-xl focus-visible:ring-2 focus-visible:ring-white/80 focus:outline-none"
+                                                    >
+                                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+                                                            <path d="M8 5v14l11-7L8 5z" />
+                                                        </svg>
+                                                    </button>
+                                                </div>
+                                            )}
+                                            <div className="w-full">
+                                                <div className="text-lg sm:text-xl font-semibold leading-tight break-words line-clamp-2">{collection.name}</div>
+                                                {showFlags && (
+                                                    <div className="text-[10px] opacity-80 tracking-wider">
+                                                        {languages ? (
+                                                            <LanguageFlags
+                                                                inputLang={languages.inputLang}
+                                                                targetLang={languages.targetLang}
+                                                            />
+                                                        ) : null}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <p className="text-xs text-muted-foreground mt-2 line-clamp-2">
+                                            {phraseCount} phrases
+                                        </p>
+                                    </div>
+                                );
+                            }
+
                             return (
                                 <div
                                     key={collection.id}
-                                    className={`group cursor-pointer transition-colors ${layout === 'horizontal' ? 'min-w-[220px] max-w-[220px]' : ''}`}
+                                    className={`p-4 rounded-lg border cursor-pointer transition-colors ${selectedCollection && selectedCollection === collection.id
+                                        ? 'bg-primary text-primary-foreground'
+                                        : 'bg-background hover:bg-secondary'
+                                        }`}
                                     onClick={() => onLoadCollection(collection)}
                                 >
-                                    <div
-                                        className={
-                                            `relative overflow-hidden rounded-lg p-4 h-40 flex items-end border ${selectedCollection && selectedCollection === collection.id
-                                                ? 'bg-primary text-primary-foreground'
-                                                : `${tileBackgroundClass} text-white`}
-                                            `
-                                        }
-                                    >
-                                        {(showPlayOnHover ?? true) && (
-                                            <div className="absolute bottom-3 right-3">
-                                                <div className="pointer-events-none absolute inset-0 rounded-full bg-white/30 blur-md opacity-0 scale-75 group-hover:opacity-100 group-hover:scale-100 transition-all duration-300"></div>
-                                                <button
-                                                    aria-label="Play"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        if (onPlayClick) {
-                                                            onPlayClick(collection);
-                                                        } else {
-                                                            onLoadCollection(collection);
-                                                        }
-                                                    }}
-                                                    className="relative w-11 h-11 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-lg opacity-0 translate-y-1 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-200 hover:scale-110 hover:shadow-xl focus-visible:ring-2 focus-visible:ring-white/80 focus:outline-none"
-                                                >
-                                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
-                                                        <path d="M8 5v14l11-7L8 5z" />
-                                                    </svg>
-                                                </button>
-                                            </div>
-                                        )}
-                                        <div className="w-full">
-                                            <div className="text-lg sm:text-xl font-semibold leading-tight break-words line-clamp-2">{collection.name}</div>
-                                            {showFlags && (
-                                                <div className="text-[10px] opacity-80 tracking-wider">
-                                                    {languages ? (
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex-1 min-w-0">
+                                            <h3 className="text-sm font-medium truncate">{collection.name}</h3>
+                                            <p className="text-xs opacity-80 flex items-center gap-1">
+                                                <span>{phraseCount} phrases</span>
+                                                {showFlags && languages && (
+                                                    <>
+                                                        <span className="mx-1">•</span>
                                                         <LanguageFlags
                                                             inputLang={languages.inputLang}
                                                             targetLang={languages.targetLang}
                                                         />
-                                                    ) : null}
-                                                </div>
-                                            )}
+                                                    </>
+                                                )}
+                                            </p>
                                         </div>
+                                        {(onRenameCollection || onDeleteCollection) && (
+                                            <div className="flex items-center gap-2 ml-4">
+                                                {onRenameCollection && (
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            onRenameCollection(collection.id);
+                                                        }}
+                                                        className="p-1 rounded hover:bg-secondary"
+                                                        title="Rename collection"
+                                                    >
+                                                        <svg
+                                                            xmlns="http://www.w3.org/2000/svg"
+                                                            fill="none"
+                                                            viewBox="0 0 24 24"
+                                                            strokeWidth={1.5}
+                                                            stroke="currentColor"
+                                                            className="w-4 h-4"
+                                                        >
+                                                            <path
+                                                                strokeLinecap="round"
+                                                                strokeLinejoin="round"
+                                                                d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"
+                                                            />
+                                                        </svg>
+                                                    </button>
+                                                )}
+                                                {onDeleteCollection && (
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            onDeleteCollection(collection.id);
+                                                        }}
+                                                        className="p-1 rounded hover:bg-destructive hover:text-destructive-foreground"
+                                                        title="Delete collection"
+                                                    >
+                                                        <svg
+                                                            xmlns="http://www.w3.org/2000/svg"
+                                                            fill="none"
+                                                            viewBox="0 0 24 24"
+                                                            strokeWidth={1.5}
+                                                            stroke="currentColor"
+                                                            className="w-4 h-4"
+                                                        >
+                                                            <path
+                                                                strokeLinecap="round"
+                                                                strokeLinejoin="round"
+                                                                d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"
+                                                            />
+                                                        </svg>
+                                                    </button>
+                                                )}
+                                            </div>
+                                        )}
                                     </div>
-                                    <p className="text-xs text-muted-foreground mt-2 line-clamp-2">
-                                        {phraseCount} phrases
-                                    </p>
                                 </div>
                             );
-                        }
-
-                        return (
-                            <div
-                                key={collection.id}
-                                className={`p-4 rounded-lg border cursor-pointer transition-colors ${selectedCollection && selectedCollection === collection.id
-                                    ? 'bg-primary text-primary-foreground'
-                                    : 'bg-background hover:bg-secondary'
-                                    }`}
-                                onClick={() => onLoadCollection(collection)}
-                            >
-                                <div className="flex items-center justify-between">
-                                    <div className="flex-1 min-w-0">
-                                        <h3 className="text-sm font-medium truncate">{collection.name}</h3>
-                                        <p className="text-xs opacity-80 flex items-center gap-1">
-                                            <span>{phraseCount} phrases</span>
-                                            {showFlags && languages && (
-                                                <>
-                                                    <span className="mx-1">•</span>
-                                                    <LanguageFlags
-                                                        inputLang={languages.inputLang}
-                                                        targetLang={languages.targetLang}
-                                                    />
-                                                </>
-                                            )}
-                                        </p>
-                                    </div>
-                                    {(onRenameCollection || onDeleteCollection) && (
-                                        <div className="flex items-center gap-2 ml-4">
-                                            {onRenameCollection && (
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        onRenameCollection(collection.id);
-                                                    }}
-                                                    className="p-1 rounded hover:bg-secondary"
-                                                    title="Rename collection"
-                                                >
-                                                    <svg
-                                                        xmlns="http://www.w3.org/2000/svg"
-                                                        fill="none"
-                                                        viewBox="0 0 24 24"
-                                                        strokeWidth={1.5}
-                                                        stroke="currentColor"
-                                                        className="w-4 h-4"
-                                                    >
-                                                        <path
-                                                            strokeLinecap="round"
-                                                            strokeLinejoin="round"
-                                                            d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"
-                                                        />
-                                                    </svg>
-                                                </button>
-                                            )}
-                                            {onDeleteCollection && (
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        onDeleteCollection(collection.id);
-                                                    }}
-                                                    className="p-1 rounded hover:bg-destructive hover:text-destructive-foreground"
-                                                    title="Delete collection"
-                                                >
-                                                    <svg
-                                                        xmlns="http://www.w3.org/2000/svg"
-                                                        fill="none"
-                                                        viewBox="0 0 24 24"
-                                                        strokeWidth={1.5}
-                                                        stroke="currentColor"
-                                                        className="w-4 h-4"
-                                                    >
-                                                        <path
-                                                            strokeLinecap="round"
-                                                            strokeLinejoin="round"
-                                                            d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"
-                                                        />
-                                                    </svg>
-                                                </button>
-                                            )}
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        );
-                    })}
+                        })}
+                    </div>
+                    {layout === 'horizontal' && enableCarouselControls && (
+                        <>
+                            {canScrollLeft && (
+                                <button
+                                    className="absolute -left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-background/70 backdrop-blur border shadow hover:bg-background"
+                                    onClick={() => containerRef.current?.scrollBy({ left: -260, behavior: 'smooth' })}
+                                    aria-label="Scroll left"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 mx-auto">
+                                        <path d="M15.75 19.5L8.25 12l7.5-7.5" />
+                                    </svg>
+                                </button>
+                            )}
+                            {canScrollRight && (
+                                <button
+                                    className="absolute -right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-background/70 backdrop-blur border shadow hover:bg-background"
+                                    onClick={() => containerRef.current?.scrollBy({ left: 260, behavior: 'smooth' })}
+                                    aria-label="Scroll right"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 mx-auto">
+                                        <path d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                                    </svg>
+                                </button>
+                            )}
+                        </>
+                    )}
                 </div>
             )}
         </div>

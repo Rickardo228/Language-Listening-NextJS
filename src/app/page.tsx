@@ -18,6 +18,7 @@ import { useUser } from './contexts/UserContext';
 import { PhrasePlaybackView, PhrasePlaybackMethods } from './components/PhrasePlaybackView';
 import defaultPhrasesData from '../defaultPhrases.json';
 import { trackCreateList, trackSelectList, trackCreatePhrase } from '../lib/mixpanelClient';
+import { TemplatesBrowser } from './components/TemplatesBrowser';
 
 type PhraseData = {
   translated: string;
@@ -775,7 +776,11 @@ export default function Home() {
         </div>
 
         {/* Phrases and Playback */}
-        {!phrases?.length && !selectedCollection && <h3 className="hidden lg:block p-3">Select a List or Import Phrases</h3>}
+        {!phrases?.length && !selectedCollection && (
+          <div className="hidden lg:block p-3">
+            <TemplatesBrowser showHeader={false} />
+          </div>
+        )}
         {selectedCollection && (
           <PhrasePlaybackView
             phrases={phrases}
