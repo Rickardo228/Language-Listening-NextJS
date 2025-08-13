@@ -10,7 +10,8 @@ interface CollectionListProps {
     selectedCollection?: string;
     loading?: boolean;
     title?: string;
-    showBrowseTemplatesButton?: boolean;
+    showAllButton?: boolean;
+    onShowAllClick?: () => void;
     getPhraseCount?: (collection: Config) => number;
     getLanguagePair?: (collection: Config) => { inputLang: string; targetLang: string } | null;
 }
@@ -23,7 +24,8 @@ export function CollectionList({
     selectedCollection,
     loading = false,
     title,
-    showBrowseTemplatesButton = true,
+    showAllButton = true,
+    onShowAllClick,
     getPhraseCount,
     getLanguagePair,
 }: CollectionListProps) {
@@ -40,11 +42,11 @@ export function CollectionList({
         <div className="space-y-4">
             <div className="flex items-center justify-between">
                 <h2 className="text-xl font-semibold">{title || 'Your Lists'}</h2>
-                {showBrowseTemplatesButton && (
+                {showAllButton && (
                     <button
-                        onClick={() => router.push('/templates')}
+                        onClick={() => (onShowAllClick ? onShowAllClick() : router.push('/templates'))}
                         className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors lg:mr-10"
-                        title="Browse Templates"
+                        title="Show all"
                     >
                         <svg
                             xmlns="http://www.w3.org/2000/svg"
@@ -60,7 +62,7 @@ export function CollectionList({
                                 d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"
                             />
                         </svg>
-                        Templates
+                        Show all
                     </button>
                 )}
             </div>

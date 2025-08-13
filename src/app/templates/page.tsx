@@ -242,7 +242,7 @@ export default function TemplatesPage() {
                         return (
                             <CollectionList
                                 title="Templates"
-                                showBrowseTemplatesButton={false}
+                                showAllButton={false}
                                 savedCollections={mapped}
                                 selectedCollection={undefined}
                                 loading={false}
