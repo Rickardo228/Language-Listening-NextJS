@@ -728,7 +728,7 @@ export default function Home() {
       {/* Main content */}
       <div className={`flex lg:flex-row flex-col-reverse w-full lg:h-[92vh]`}>
         {/* Saved Configs List */}
-        <div className={`flex flex-col gap-10 bg-secondary/50 p-5 ${selectedCollection ? 'hidden lg:flex' : 'flex'} ${isCollapsed ? 'lg:w-[50px] overflow-hidden' : 'lg:w-[460px] min-w-[300px]'} max-w-[100vw] h-[100%] overflow-visible lg:overflow-y-auto mb-[80px] relative transition-all duration-300`}>
+        <div className={`flex flex-col gap-10 bg-neutral-950 lg:bg-secondary/50 p-5 ${selectedCollection ? 'hidden lg:flex' : 'flex'} ${isCollapsed ? 'lg:w-[50px] overflow-hidden' : 'lg:w-[460px] min-w-[300px]'} max-w-[100vw] h-[100%] overflow-visible lg:overflow-y-auto mb-[80px] relative transition-all duration-300`}>
           {/* Desktop Collapse Toggle */}
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}
@@ -749,7 +749,11 @@ export default function Home() {
 
           {!isCollapsed && (
             <>
-              <div className="fixed bottom-0 left-0 z-10 w-full lg:w-[460px] bg-secondary/50 p-5">
+              {/* Mobile: Featured Templates above the list */}
+              <div className="lg:hidden mb-4">
+                <TemplatesBrowser showHeader={false} />
+              </div>
+              <div className="fixed bottom-0 left-0 z-10 w-full lg:w-[460px] bg-neutral-950 lg:bg-secondary/50 p-5">
                 {/* Language Selection and Phrase Import */}
                 <ImportPhrases
                   inputLang={newCollectionInputLang}
@@ -769,6 +773,7 @@ export default function Home() {
                 onDeleteCollection={handleDeleteCollection}
                 selectedCollection={selectedCollection}
                 loading={collectionsLoading}
+                showAllButton={false}
               />
             </>
           )}
