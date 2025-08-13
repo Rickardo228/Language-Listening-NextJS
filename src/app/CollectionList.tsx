@@ -37,6 +37,32 @@ export function CollectionList({
 }: CollectionListProps) {
     const router = useRouter();
 
+    // Deterministic hash to map collections to palette indices
+    const hashStringToNumber = (value: string): number => {
+        let hash = 0;
+        for (let i = 0; i < value.length; i++) {
+            const chr = value.charCodeAt(i);
+            hash = (hash << 5) - hash + chr;
+            hash |= 0; // Convert to 32bit integer
+        }
+        return Math.abs(hash);
+    };
+
+    // Palette inspired by the screenshot: purple, orange, blue, red, green/purple
+    // Using Tailwind arbitrary color values for precise hues
+    const tileBackgroundPalette: string[] = [
+        // Top Songs Global (purple)
+        'bg-[#7B5CFF]',
+        // Top Songs UK (orange)
+        'bg-[#C47A57]',
+        // Top 50 Global (teal → blue gradient)
+        'bg-gradient-to-b from-[#0CA7A6] to-[#1F4DD8]',
+        // Top 50 UK (red gradient)
+        'bg-gradient-to-b from-[#FF4B5A] to-[#8E1E2B]',
+        // Viral 50 Global (green → purple split feel)
+        'bg-gradient-to-b from-[#1ED760] to-[#6D28D9]'
+    ];
+
     // Sort collections by created_at in descending order (most recent first)
     const sortedCollections = [...savedCollections].sort((a, b) => {
         const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
@@ -92,6 +118,10 @@ export function CollectionList({
                             : null);
 
                         if (itemVariant === 'card') {
+                            const paletteIndex = tileBackgroundPalette.length
+                                ? hashStringToNumber(collection.id) % tileBackgroundPalette.length
+                                : 0;
+                            const tileBackgroundClass = tileBackgroundPalette[paletteIndex] || 'bg-secondary';
                             return (
                                 <div
                                     key={collection.id}
@@ -104,8 +134,8 @@ export function CollectionList({
                                         className={
                                             `rounded-lg p-4 h-40 flex items-end border ${selectedCollection && selectedCollection === collection.id
                                                 ? 'bg-primary text-primary-foreground'
-                                                : 'bg-gradient-to-b from-secondary/60 to-secondary/30 hover:from-secondary hover:to-secondary/60'
-                                            }`
+                                                : `${tileBackgroundClass} text-white`}
+                                            `
                                         }
                                     >
                                         <div className="w-full">
