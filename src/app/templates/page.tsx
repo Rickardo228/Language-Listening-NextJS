@@ -245,6 +245,7 @@ export default function TemplatesPage() {
                                 showAllButton={false}
                                 itemVariant="card"
                                 layout="horizontal"
+                                showFlags={false}
                                 savedCollections={mapped}
                                 selectedCollection={undefined}
                                 loading={false}

@@ -16,6 +16,8 @@ interface CollectionListProps {
     itemVariant?: 'list' | 'card';
     // Controls the flow/layout of the list container
     layout?: 'vertical' | 'horizontal';
+    // Toggles display of language flags when language data is available
+    showFlags?: boolean;
     getPhraseCount?: (collection: Config) => number;
     getLanguagePair?: (collection: Config) => { inputLang: string; targetLang: string } | null;
 }
@@ -32,6 +34,7 @@ export function CollectionList({
     onShowAllClick,
     itemVariant = 'list',
     layout = 'vertical',
+    showFlags = true,
     getPhraseCount,
     getLanguagePair,
 }: CollectionListProps) {
@@ -140,14 +143,16 @@ export function CollectionList({
                                     >
                                         <div className="w-full">
                                             <div className="text-base font-semibold truncate">{collection.name}</div>
-                                            <div className="text-[10px] opacity-80 tracking-wider">
-                                                {languages ? (
-                                                    <LanguageFlags
-                                                        inputLang={languages.inputLang}
-                                                        targetLang={languages.targetLang}
-                                                    />
-                                                ) : null}
-                                            </div>
+                                            {showFlags && (
+                                                <div className="text-[10px] opacity-80 tracking-wider">
+                                                    {languages ? (
+                                                        <LanguageFlags
+                                                            inputLang={languages.inputLang}
+                                                            targetLang={languages.targetLang}
+                                                        />
+                                                    ) : null}
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                     <p className="text-xs text-muted-foreground mt-2 line-clamp-2">
@@ -171,7 +176,7 @@ export function CollectionList({
                                         <h3 className="text-sm font-medium truncate">{collection.name}</h3>
                                         <p className="text-xs opacity-80 flex items-center gap-1">
                                             <span>{phraseCount} phrases</span>
-                                            {languages && (
+                                            {showFlags && languages && (
                                                 <>
                                                     <span className="mx-1">•</span>
                                                     <LanguageFlags
