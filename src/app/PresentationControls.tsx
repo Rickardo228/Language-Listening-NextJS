@@ -83,7 +83,7 @@ export function PresentationControls({
                             <Pause className="h-5 w-5" />
                         }
                         <span className="text-sm font-semibold">
-                            {paused ? "Start" : "Pause"}
+                            {paused ? "Play" : "Pause"}
                         </span>
                     </div>
                 </button>

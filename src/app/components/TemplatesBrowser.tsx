@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { getFirestore, collection, query, where, getDocs, Timestamp } from 'firebase/firestore';
+import { getFirestore, collection, query, where, getDocs, Timestamp, orderBy, limit } from 'firebase/firestore';
 import { languageOptions, Config } from '../types';
 import { CollectionList } from '../CollectionList';
 import { OnboardingLanguageSelect } from './OnboardingLanguageSelect';
@@ -46,11 +46,16 @@ export function TemplatesBrowser({
     const router = useRouter();
     const [templates, setTemplates] = useState<Template[]>([]);
     const [loading, setLoading] = useState(true);
+    const [isShowingAll, setIsShowingAll] = useState(false);
     const [inputLang, setInputLang] = useState(initialInputLang);
     const [targetLang, setTargetLang] = useState(initialTargetLang);
     const hasInitialFetch = useRef(false);
 
-    const fetchTemplates = async (currentInputLang?: string, currentTargetLang?: string) => {
+    const fetchTemplates = async (
+        currentInputLang?: string,
+        currentTargetLang?: string,
+        options?: { fetchAll?: boolean; limitCount?: number }
+    ) => {
         // Use the passed values or fall back to state values
         const inputLangToUse = currentInputLang || inputLang;
         const targetLangToUse = currentTargetLang || targetLang;
@@ -60,8 +65,19 @@ export function TemplatesBrowser({
         try {
             const templatesRef = collection(firestore, 'templates');
 
-            const query1 = query(templatesRef, where('lang', '==', inputLangToUse));
-            const query2 = query(templatesRef, where('lang', '==', targetLangToUse));
+            const FETCH_LIMIT = options?.limitCount || 10;
+            const query1 = query(
+                templatesRef,
+                where('lang', '==', inputLangToUse),
+                orderBy('createdAt', 'desc'),
+                ...(options?.fetchAll ? [] as [] : [limit(FETCH_LIMIT)])
+            );
+            const query2 = query(
+                templatesRef,
+                where('lang', '==', targetLangToUse),
+                orderBy('createdAt', 'desc'),
+                ...(options?.fetchAll ? [] as [] : [limit(FETCH_LIMIT)])
+            );
 
             const [querySnapshot1, querySnapshot2] = await Promise.all([
                 getDocs(query1),
@@ -106,8 +122,8 @@ export function TemplatesBrowser({
                 return dateB.getTime() - dateA.getTime();
             });
 
-            // Limit to top 10
-            setTemplates(sortedTemplates.slice(0, 10));
+            // Limit visible to 10 unless fetching all
+            setTemplates(options?.fetchAll ? sortedTemplates : sortedTemplates.slice(0, FETCH_LIMIT));
         } catch (err) {
             console.error('Error fetching templates:', err);
             setTemplates([]);
@@ -119,20 +135,22 @@ export function TemplatesBrowser({
     useEffect(() => {
         if (!hasInitialFetch.current) {
             hasInitialFetch.current = true;
-            fetchTemplates();
+            fetchTemplates(undefined, undefined, { fetchAll: false, limitCount: 10 });
         }
     }, []);
 
     const handleInputLangChange = (lang: string) => {
         setTemplates([]);
         setInputLang(lang);
-        fetchTemplates(lang, targetLang);
+        setIsShowingAll(false);
+        fetchTemplates(lang, targetLang, { fetchAll: false, limitCount: 10 });
     };
 
     const handleTargetLangChange = (lang: string) => {
         setTemplates([]);
         setTargetLang(lang);
-        fetchTemplates(inputLang, lang);
+        setIsShowingAll(false);
+        fetchTemplates(inputLang, lang, { fetchAll: false, limitCount: 10 });
     };
 
     const getLanguageLabel = (value: string) => {
@@ -205,7 +223,7 @@ export function TemplatesBrowser({
                         return (
                             <CollectionList
                                 title={'Featured'}
-                                showAllButton={false}
+                                showAllButton={!isShowingAll}
                                 itemVariant="card"
                                 layout="horizontal"
                                 showFlags={false}
@@ -224,6 +242,10 @@ export function TemplatesBrowser({
                                 }
                                 hideScrollbar
                                 enableCarouselControls
+                                onShowAllClick={async () => {
+                                    setIsShowingAll(true);
+                                    await fetchTemplates(undefined, undefined, { fetchAll: true });
+                                }}
                             />
                         );
                     })()

@@ -6,7 +6,7 @@ import { usePresentationConfig } from './hooks/usePresentationConfig';
 import { API_BASE_URL } from './consts';
 import { ImportPhrases } from './ImportPhrases';
 import { User } from 'firebase/auth';
-import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, where } from 'firebase/firestore';
+import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, where, orderBy, limit as fbLimit } from 'firebase/firestore';
 import { CollectionList } from './CollectionList';
 import { CollectionHeader } from './CollectionHeader';
 import { useTheme } from './ThemeProvider';
@@ -95,6 +95,7 @@ export default function Home() {
   const [selectedCollection, setSelectedCollection] = useState<string>('')
   const [savedCollections, setSavedCollections] = useState<Config[]>([])
   const [collectionsLoading, setCollectionsLoading] = useState(false);
+  const [collectionsLimited, setCollectionsLimited] = useState(true);
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   // Instead of multiple arrays, we now store all per-phrase data in one state variable.
@@ -156,9 +157,12 @@ export default function Home() {
     const inputLang = urlParams.inputLang || undefined;
     const targetLang = urlParams.targetLang || undefined;
 
-    const fetchCollections = async () => {
+    const fetchCollections = async (opts?: { fetchAll?: boolean; limitCount?: number }) => {
       const colRef = collection(firestore, 'users', user.uid, 'collections');
-      const snapshot = await getDocs(colRef);
+      const q = opts?.fetchAll
+        ? query(colRef, orderBy('created_at', 'desc'))
+        : query(colRef, orderBy('created_at', 'desc'), fbLimit(opts?.limitCount || 10));
+      const snapshot = await getDocs(q);
       const loaded: Config[] = [];
       snapshot.forEach(docSnap => {
         const data = docSnap.data();
@@ -214,7 +218,8 @@ export default function Home() {
     if (!savedCollections.length) {
       setCollectionsLoading(true);
       setLoading(true);
-      await fetchCollections();
+      await fetchCollections({ fetchAll: false, limitCount: 10 });
+      setCollectionsLimited(true);
       setCollectionsLoading(false);
       setLoading(false);
     }
@@ -773,7 +778,26 @@ export default function Home() {
                 onDeleteCollection={handleDeleteCollection}
                 selectedCollection={selectedCollection}
                 loading={collectionsLoading}
-                showAllButton={false}
+                showAllButton={collectionsLimited}
+                onShowAllClick={async () => {
+                  if (!user) return;
+                  setCollectionsLoading(true);
+                  const colRef = collection(firestore, 'users', user.uid, 'collections');
+                  const q = query(colRef, orderBy('created_at', 'desc'));
+                  const snapshot = await getDocs(q);
+                  const loaded: Config[] = [];
+                  snapshot.forEach(docSnap => {
+                    const data = docSnap.data();
+                    const phrases = data.phrases.map((phrase: Phrase) => ({
+                      ...phrase,
+                      created_at: phrase.created_at || data.created_at
+                    }));
+                    loaded.push({ ...data, phrases, id: docSnap.id } as Config);
+                  });
+                  setSavedCollections(loaded);
+                  setCollectionsLimited(false);
+                  setCollectionsLoading(false);
+                }}
               />
             </>
           )}
