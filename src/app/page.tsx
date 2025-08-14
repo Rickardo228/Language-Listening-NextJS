@@ -806,7 +806,7 @@ export default function Home() {
 
         {/* Phrases and Playback */}
         {!phrases?.length && !selectedCollection && (
-          <div className="hidden lg:block p-3">
+          <div className="hidden lg:block p-3 flex-grow">
             <TemplatesBrowser showHeader={false} />
           </div>
         )}
