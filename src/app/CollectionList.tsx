@@ -179,7 +179,7 @@ export function CollectionList({
                         ref={containerRef}
                         className={
                             layout === 'horizontal'
-                                ? `flex gap-4 overflow-x-auto pb-2 ${hideScrollbar ? 'no-scrollbar' : ''}`
+                                ? `flex gap-4 overflow-x-auto pb-2 pr-8 ${hideScrollbar ? 'no-scrollbar' : ''}`
                                 : 'space-y-2'
                         }
                     >
