@@ -157,13 +157,7 @@ export function TemplatesBrowser({
         return languageOptions.find((option) => option.code === value)?.label || value;
     };
 
-    if (loading) {
-        return (
-            <div className={`flex items-center justify-center ${showHeader ? 'min-h-screen' : ''} bg-background`}>
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
-            </div>
-        );
-    }
+    // No separate loader branch; `CollectionList` will show skeletons when loading is true
 
     return (
         <div className={`bg-background ${className || ''}`}>
@@ -203,7 +197,7 @@ export function TemplatesBrowser({
                     </div>
                 )}
 
-                {templates.length === 0 ? (
+                {templates.length === 0 && !loading ? (
                     <div className="text-center py-12">
                         <h2 className="text-xl font-semibold mb-2">No templates found</h2>
                         <p className="text-muted-foreground">
@@ -229,7 +223,7 @@ export function TemplatesBrowser({
                                 showFlags={false}
                                 savedCollections={mapped}
                                 selectedCollection={undefined}
-                                loading={false}
+                                loading={loading}
                                 getPhraseCount={(c) => templateByGroup.get(c.id)?.phraseCount || 0}
                                 getLanguagePair={() => ({ inputLang, targetLang })}
                                 onLoadCollection={(c) =>

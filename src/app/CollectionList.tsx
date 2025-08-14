@@ -140,8 +140,38 @@ export function CollectionList({
                 )}
             </div>
             {loading ? (
-                <div className="flex items-center justify-center py-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
+                <div
+                    ref={layout === 'horizontal' ? containerRef : undefined}
+                    className={
+                        layout === 'horizontal'
+                            ? `flex gap-4 overflow-x-auto pb-2 ${hideScrollbar ? 'no-scrollbar' : ''}`
+                            : 'space-y-2'
+                    }
+                >
+                    {Array.from({ length: layout === 'horizontal' || itemVariant === 'card' ? 6 : 5 }).map((_, index) => (
+                        itemVariant === 'card' ? (
+                            <div
+                                key={`skeleton-card-${index}`}
+                                className={`${layout === 'horizontal' ? 'min-w-[220px] max-w-[220px]' : ''}`}
+                            >
+                                <div className="rounded-lg h-40 border bg-secondary/40 animate-pulse" />
+                                <div className="h-3 w-2/3 bg-secondary/40 rounded mt-2 animate-pulse" />
+                            </div>
+                        ) : (
+                            <div key={`skeleton-row-${index}`} className="p-4 rounded-lg border bg-secondary/40 animate-pulse">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex-1 min-w-0">
+                                        <div className="h-4 w-1/3 bg-secondary/60 rounded mb-2" />
+                                        <div className="h-3 w-1/4 bg-secondary/50 rounded" />
+                                    </div>
+                                    <div className="flex items-center gap-2 ml-4">
+                                        <div className="w-4 h-4 bg-secondary/60 rounded" />
+                                        <div className="w-4 h-4 bg-secondary/60 rounded" />
+                                    </div>
+                                </div>
+                            </div>
+                        )
+                    ))}
                 </div>
             ) : (
                 <div className={layout === 'horizontal' ? 'relative' : undefined}>
