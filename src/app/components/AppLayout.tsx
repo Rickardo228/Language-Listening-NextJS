@@ -97,6 +97,16 @@ export function AppLayout({ children }: AppLayoutProps) {
 
   // Don't show sidebar for certain routes
   const hideSidebar = pathname?.startsWith('/share/') || pathname?.startsWith('/privacy') || pathname?.startsWith('/terms');
+  
+  // Extract current collection ID from URL for highlighting in sidebar
+  const getCurrentCollectionId = () => {
+    if (pathname?.startsWith('/collection/')) {
+      return pathname.split('/collection/')[1] || '';
+    }
+    return '';
+  };
+  
+  const currentCollectionId = getCurrentCollectionId();
 
   // Load saved collections from Firestore on mount or when user changes
   const initialiseCollections = useCallback(async (user: User) => {
@@ -485,7 +495,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                   onLoadCollection={handleLoadCollection}
                   onRenameCollection={handleRenameCollection}
                   onDeleteCollection={handleDeleteCollection}
-                  selectedCollection=""
+                  selectedCollection={currentCollectionId}
                   loading={collectionsLoading}
                   showAllButton={collectionsLimited}
                   onShowAllClick={async () => {
