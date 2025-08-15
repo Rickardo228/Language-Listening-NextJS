@@ -7,6 +7,7 @@ import "./globals.css";
 import { ThemeProvider } from './ThemeProvider'
 import { UserContextProvider } from './contexts/UserContext'
 import MixpanelProvider from './components/MixpanelProvider'
+import { AppLayout } from './components/AppLayout'
 
 const playpenSans = Playpen_Sans({
   subsets: ["latin"],
@@ -41,7 +42,9 @@ export default function RootLayout({
         <ThemeProvider>
           <UserContextProvider>
             <MixpanelProvider>
-              {children}
+              <AppLayout>
+                {children}
+              </AppLayout>
             </MixpanelProvider>
           </UserContextProvider>
         </ThemeProvider>

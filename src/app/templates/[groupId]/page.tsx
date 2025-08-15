@@ -215,60 +215,8 @@ export default function TemplateDetailPage() {
 
 
     return (
-        <div className="font-sans lg:h-[100vh] flex flex-col bg-background text-foreground">
-            {/* Nav */}
-            <div className="flex items-center justify-between shadow-md lg:mb-0 p-3 sticky top-0 bg-background border-b z-50">
-                <div className="flex items-center gap-4">
-                    <button
-                        onClick={() => router.push('/')}
-                        className="flex items-center gap-2 hover:opacity-80 transition-opacity"
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M19 12H5M12 19l-7-7 7-7" />
-                        </svg>
-                        <h1 className='truncate'>{groupId}</h1>
-                    </button>
-                    {phrases.length > 0 && (
-                        <LanguageFlags
-                            inputLang={selectedInputLang}
-                            targetLang={selectedTargetLang}
-                            size="lg"
-                        />
-                    )}
-                </div>
-
-                <div className="flex items-center gap-4">
-                    {availableLanguages.length > 1 && (
-                        <>
-                            <select
-                                value={selectedInputLang}
-                                onChange={(e) => setSelectedInputLang(e.target.value)}
-                                className="px-3 py-2 border rounded-lg bg-background"
-                            >
-                                {availableLanguages.map(lang => (
-                                    <option key={`input-${lang}`} value={lang}>
-                                        {getLanguageLabel(lang)}
-                                    </option>
-                                ))}
-                            </select>
-                            <span className="text-sm">→</span>
-                            <select
-                                value={selectedTargetLang}
-                                onChange={(e) => setSelectedTargetLang(e.target.value)}
-                                className="px-3 py-2 border rounded-lg bg-background"
-                            >
-                                {availableLanguages.map(lang => (
-                                    <option key={`target-${lang}`} value={lang}>
-                                        {getLanguageLabel(lang)}
-                                    </option>
-                                ))}
-                            </select>
-                        </>
-                    )}
-                </div>
-            </div>
-
-            {phrases.length > 0 && (
+        <div className="h-full">
+            {phrases.length > 0 ? (
                 <PhrasePlaybackView
                     phrases={phrases}
                     presentationConfig={presentationConfig}
@@ -277,6 +225,42 @@ export default function TemplateDetailPage() {
                     setPresentationConfig={async (config: Partial<PresentationConfig>) => setPresentationConfig(prev => ({ ...prev, ...config }))}
                     methodsRef={methodsRef}
                 />
+            ) : (
+                <div className="flex items-center justify-center h-full">
+                    <div className="text-center">
+                        <h2 className="text-xl font-semibold mb-2">No phrases found</h2>
+                        <p className="text-muted-foreground">
+                            No phrases available for {getLanguageLabel(selectedInputLang)} to {getLanguageLabel(selectedTargetLang)} translation.
+                        </p>
+                        {availableLanguages.length > 1 && (
+                            <div className="flex items-center gap-4 mt-4 justify-center">
+                                <select
+                                    value={selectedInputLang}
+                                    onChange={(e) => setSelectedInputLang(e.target.value)}
+                                    className="px-3 py-2 border rounded-lg bg-background"
+                                >
+                                    {availableLanguages.map(lang => (
+                                        <option key={`input-${lang}`} value={lang}>
+                                            {getLanguageLabel(lang)}
+                                        </option>
+                                    ))}
+                                </select>
+                                <span className="text-sm">→</span>
+                                <select
+                                    value={selectedTargetLang}
+                                    onChange={(e) => setSelectedTargetLang(e.target.value)}
+                                    className="px-3 py-2 border rounded-lg bg-background"
+                                >
+                                    {availableLanguages.map(lang => (
+                                        <option key={`target-${lang}`} value={lang}>
+                                            {getLanguageLabel(lang)}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
+                    </div>
+                </div>
             )}
         </div>
     );
