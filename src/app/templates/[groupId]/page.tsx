@@ -6,6 +6,7 @@ import { Phrase, languageOptions, PresentationConfig } from '../../types';
 import { getFirestore, collection, query, where, getDocs, Timestamp } from 'firebase/firestore';
 import { PhrasePlaybackView, PhrasePlaybackMethods } from '../../components/PhrasePlaybackView';
 import { LanguageFlags } from '../../components/LanguageFlags';
+import { CollectionHeader } from '../../CollectionHeader';
 import { useUser } from '../../contexts/UserContext';
 
 const firestore = getFirestore();
@@ -212,7 +213,52 @@ export default function TemplateDetailPage() {
         );
     }
 
+    // Create a proper collection config for the template
+    const templateAsCollection = {
+        id: groupId as string,
+        name: groupId as string,
+        phrases: phrases,
+        created_at: new Date().toISOString(),
+        collectionType: 'phrases' as const,
+        presentationConfig: presentationConfig
+    };
 
+    // Dummy handlers for CollectionHeader (templates aren't editable)
+    const handleRename = async (id: string) => {
+        // Templates can't be renamed
+    };
+    const handleDelete = async (id: string) => {
+        // Templates can't be deleted
+    };
+    const handleVoiceChange = async (inputVoice: string, targetVoice: string) => {
+        // Templates don't support voice changes
+    };
+    const handleShare = async (id: string) => {
+        // Could potentially share template links
+    };
+    const handleUnshare = async (id: string) => {
+        // Templates don't support unsharing
+    };
+
+    // Create the collection header content
+    const collectionHeaderContent = (
+        <div className="w-full flex items-center p-2">
+            <CollectionHeader
+                collectionId={groupId as string}
+                savedCollections={[templateAsCollection]}
+                onRename={handleRename}
+                onDelete={handleDelete}
+                onVoiceChange={handleVoiceChange}
+                onShare={handleShare}
+                onUnshare={handleUnshare}
+                inputLang={selectedInputLang}
+                targetLang={selectedTargetLang}
+                className="flex"
+                titleClassName="max-w-[250px]"
+            />
+
+        </div>
+    );
 
     return (
         <div className="h-full">
@@ -224,6 +270,9 @@ export default function TemplateDetailPage() {
                     setPhrases={async (phrases: Phrase[]) => setPhrases(phrases)}
                     setPresentationConfig={async (config: Partial<PresentationConfig>) => setPresentationConfig(prev => ({ ...prev, ...config }))}
                     methodsRef={methodsRef}
+                    collectionId={groupId as string}
+                    stickyHeaderContent={collectionHeaderContent}
+                    showImportPhrases={true}
                 />
             ) : (
                 <div className="flex items-center justify-center h-full">
