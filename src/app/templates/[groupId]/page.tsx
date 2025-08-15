@@ -223,34 +223,12 @@ export default function TemplateDetailPage() {
         presentationConfig: presentationConfig
     };
 
-    // Dummy handlers for CollectionHeader (templates aren't editable)
-    const handleRename = async (id: string) => {
-        // Templates can't be renamed
-    };
-    const handleDelete = async (id: string) => {
-        // Templates can't be deleted
-    };
-    const handleVoiceChange = async (inputVoice: string, targetVoice: string) => {
-        // Templates don't support voice changes
-    };
-    const handleShare = async (id: string) => {
-        // Could potentially share template links
-    };
-    const handleUnshare = async (id: string) => {
-        // Templates don't support unsharing
-    };
-
     // Create the collection header content
     const collectionHeaderContent = (
         <div className="w-full flex items-center p-2">
             <CollectionHeader
                 collectionId={groupId as string}
                 savedCollections={[templateAsCollection]}
-                onRename={handleRename}
-                onDelete={handleDelete}
-                onVoiceChange={handleVoiceChange}
-                onShare={handleShare}
-                onUnshare={handleUnshare}
                 inputLang={selectedInputLang}
                 targetLang={selectedTargetLang}
                 className="flex"
