@@ -6,7 +6,8 @@ import { Config, Phrase, PresentationConfig } from '../../types';
 import { usePresentationConfig } from '../../hooks/usePresentationConfig';
 import { API_BASE_URL } from '../../consts';
 import { ImportPhrases } from '../../ImportPhrases';
-import { getFirestore, doc, updateDoc, getDoc } from 'firebase/firestore';
+import { getFirestore, doc, updateDoc, getDoc, deleteDoc, collection, addDoc, query, where, getDocs } from 'firebase/firestore';
+import { useRouter } from 'next/navigation';
 import { CollectionHeader } from '../../CollectionHeader';
 import { defaultPresentationConfig } from '../../defaultConfig';
 import { useUser } from '../../contexts/UserContext';
@@ -16,6 +17,7 @@ const firestore = getFirestore();
 
 export default function CollectionPage() {
   const params = useParams();
+  const router = useRouter();
   const collectionId = params.id as string;
   const { user } = useUser();
 
@@ -204,11 +206,73 @@ export default function CollectionPage() {
     }
   };
 
-  // Dummy handlers for collection operations (these will be managed from the sidebar)
-  const handleRenameCollection = async () => {};
-  const handleDeleteCollection = async () => {};
-  const handleShare = async () => {};
-  const handleUnshare = async () => {};
+  // Collection operation handlers
+  const handleRenameCollection = async (id: string) => {
+    if (!user || !collectionConfig) return;
+    const newName = prompt("Enter new list name:", collectionConfig.name);
+    if (!newName || newName.trim() === collectionConfig.name) return;
+    try {
+      const docRef = doc(firestore, 'users', user.uid, 'collections', id);
+      await updateDoc(docRef, { name: newName.trim() });
+      setCollectionConfig({ ...collectionConfig, name: newName.trim() });
+    } catch (err) {
+      alert("Failed to rename list: " + err);
+    }
+  };
+
+  const handleDeleteCollection = async (id: string) => {
+    if (!user || !collectionConfig) return;
+    if (!window.confirm(`Delete list "${collectionConfig.name}"? This cannot be undone.`)) return;
+    try {
+      const docRef = doc(firestore, 'users', user.uid, 'collections', id);
+      await deleteDoc(docRef);
+      // Navigate back to home after deletion
+      router.push('/');
+    } catch (err) {
+      alert("Failed to delete list: " + err);
+    }
+  };
+
+  const handleShare = async (id: string) => {
+    if (!user || !collectionConfig) return;
+    try {
+      const sharedPhraseList = {
+        ...collectionConfig,
+        shared_by: user.uid,
+        shared_at: new Date().toISOString(),
+        shared_from_list: collectionConfig.id
+      };
+      const sharedRef = collection(firestore, 'published_collections');
+      const docRef = await addDoc(sharedRef, sharedPhraseList);
+
+      const shareUrl = `${window.location.origin}/share/${docRef.id}`;
+      await navigator.clipboard.writeText(shareUrl);
+      alert('Share link copied to clipboard!');
+    } catch (err) {
+      console.error('Error sharing collection:', err);
+      alert('Failed to share collection: ' + err);
+    }
+  };
+
+  const handleUnshare = async (id: string) => {
+    if (!user || !collectionConfig) return;
+    try {
+      const sharedRef = collection(firestore, 'published_collections');
+      const q = query(sharedRef, where('shared_by', '==', user.uid), where('shared_from_list', '==', id));
+      const querySnapshot = await getDocs(q);
+
+      if (!querySnapshot.empty) {
+        const docRef = querySnapshot.docs[0].ref;
+        await deleteDoc(docRef);
+        alert('List unshared successfully!');
+      } else {
+        alert('No shared list found to unshare.');
+      }
+    } catch (err) {
+      console.error('Error unsharing collection:', err);
+      alert('Failed to unshare collection: ' + err);
+    }
+  };
 
   // Create the sticky header content
   const stickyHeaderContent = (
@@ -224,7 +288,7 @@ export default function CollectionPage() {
           onUnshare={handleUnshare}
           inputLang={addToCollectionInputLang}
           targetLang={addToCollectionTargetLang}
-          className="hidden lg:flex"
+          className="flex"
           titleClassName="max-w-[250px]"
         />
       )}
