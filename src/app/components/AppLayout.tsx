@@ -462,7 +462,7 @@ export function AppLayout({ children }: AppLayoutProps) {
       <div className={`flex lg:flex-row flex-col-reverse w-full lg:h-[92vh] ${hideSidebar ? '' : ''}`}>
         {/* Saved Configs List - hide for certain routes */}
         {!hideSidebar && user && (
-          <div className={`flex flex-col gap-10 bg-neutral-950 lg:bg-secondary/50 p-5 ${isCollapsed ? 'lg:w-[60px] overflow-hidden' : 'lg:w-[460px] min-w-[300px]'} max-w-[100vw] h-[100%] overflow-visible lg:overflow-y-auto mb-[80px] relative transition-all duration-300`}>
+          <div className={`group flex flex-col gap-10 bg-neutral-950 lg:bg-secondary/50 p-5 ${isCollapsed ? 'lg:w-[60px] overflow-hidden' : 'lg:w-[460px] min-w-[300px]'} max-w-[100vw] h-[100%] overflow-visible lg:overflow-y-auto mb-[80px] relative transition-all duration-300`}>
 
             {!isCollapsed && (
               <>
@@ -491,10 +491,10 @@ export function AppLayout({ children }: AppLayoutProps) {
                   loading={collectionsLoading}
                   showAllButton={collectionsLimited}
                   title={
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center">
                       <button
                         onClick={() => setIsCollapsed(true)}
-                        className="p-1 rounded-lg bg-secondary hover:bg-secondary/80 transition-colors"
+                        className="hidden lg:block p-1 rounded-lg bg-secondary hover:bg-secondary/80 transition-all duration-200 opacity-0 group-hover:opacity-100 w-0 group-hover:w-6 overflow-hidden group-hover:mr-2"
                         title="Collapse"
                       >
                         <svg
@@ -503,7 +503,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                           viewBox="0 0 24 24"
                           strokeWidth={1.5}
                           stroke="currentColor"
-                          className="w-4 h-4 transition-transform duration-200"
+                          className="w-4 h-4 transition-transform duration-200 min-w-4"
                           style={{
                             transform: 'rotate(180deg)'
                           }}
