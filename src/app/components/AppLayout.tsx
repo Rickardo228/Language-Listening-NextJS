@@ -470,7 +470,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                 <div className="lg:hidden mb-4">
                   <TemplatesBrowser showHeader={false} />
                 </div>
-                <div className="fixed bottom-0 left-0 z-10 w-full lg:w-[460px] bg-neutral-950 lg:bg-secondary/50 p-5">
+                <div className={`fixed bottom-0 left-0 z-10 w-full lg:w-[460px] bg-neutral-950 lg:bg-secondary/50 p-5 ${pathname !== '/' ? 'hidden lg:block' : ''}`}>
                   <ImportPhrases
                     inputLang={newCollectionInputLang}
                     setInputLang={setNewCollectionInputLang}
