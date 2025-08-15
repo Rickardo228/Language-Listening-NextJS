@@ -10,7 +10,7 @@ interface CollectionListProps {
     onDeleteCollection?: (id: string) => void;
     selectedCollection?: string;
     loading?: boolean;
-    title?: string;
+    title?: string | React.ReactNode;
     showAllButton?: boolean;
     onShowAllClick?: () => void;
     // Controls the presentation style of each item
@@ -114,7 +114,15 @@ export function CollectionList({
     return (
         <div className="space-y-4">
             <div className="flex items-center justify-between">
-                <h2 className="text-xl font-semibold">{title || 'Your Library'}</h2>
+                <div className="flex items-center gap-2">
+                    {typeof title === 'string' ? (
+                        <h2 className="text-xl font-semibold">{title}</h2>
+                    ) : title ? (
+                        <div className="text-xl font-semibold">{title}</div>
+                    ) : (
+                        <h2 className="text-xl font-semibold">Your Library</h2>
+                    )}
+                </div>
                 {showAllButton && (
                     <button
                         onClick={() => (onShowAllClick ? onShowAllClick() : router.push('/templates'))}

@@ -12,6 +12,7 @@ import { useTheme } from '../ThemeProvider';
 import { UserAvatar } from './UserAvatar';
 import { defaultPresentationConfig, defaultPresentationConfigs } from '../defaultConfig';
 import { useUser } from '../contexts/UserContext';
+import { useSidebar } from '../contexts/SidebarContext';
 import defaultPhrasesData from '../../defaultPhrases.json';
 import { trackCreateList, trackSelectList, trackCreatePhrase } from '../../lib/mixpanelClient';
 import { TemplatesBrowser } from './TemplatesBrowser';
@@ -71,7 +72,8 @@ export function AppLayout({ children }: AppLayoutProps) {
   const pathname = usePathname();
   const { user, isAuthLoading } = useUser();
   const { theme, toggleTheme } = useTheme();
-  
+  const { isCollapsed, setIsCollapsed } = useSidebar();
+
   // Helper function to get URL parameters directly
   const getUrlParams = () => {
     if (typeof window === 'undefined') return {};
@@ -91,13 +93,12 @@ export function AppLayout({ children }: AppLayoutProps) {
   const [savedCollections, setSavedCollections] = useState<Config[]>([])
   const [collectionsLoading, setCollectionsLoading] = useState(false);
   const [collectionsLimited, setCollectionsLimited] = useState(true);
-  const [isCollapsed, setIsCollapsed] = useState(false);
   const [avatarDialogOpen, setAvatarDialogOpen] = useState(false);
   const [loading, setLoading] = useState<boolean>(false);
 
   // Don't show sidebar for certain routes
   const hideSidebar = pathname?.startsWith('/share/') || pathname?.startsWith('/privacy') || pathname?.startsWith('/terms');
-  
+
   // Extract current collection ID from URL for highlighting in sidebar
   const getCurrentCollectionId = () => {
     if (pathname?.startsWith('/collection/')) {
@@ -105,7 +106,7 @@ export function AppLayout({ children }: AppLayoutProps) {
     }
     return '';
   };
-  
+
   const currentCollectionId = getCurrentCollectionId();
 
   // Load saved collections from Firestore on mount or when user changes
@@ -331,7 +332,7 @@ export function AppLayout({ children }: AppLayoutProps) {
       const docRef = doc(firestore, 'users', user.uid, 'collections', id);
       await deleteDoc(docRef);
       setSavedCollections(prev => prev.filter(col => col.id !== id));
-      
+
       // Navigate back to home if we deleted the current collection
       router.push('/');
     } catch (err) {
@@ -411,8 +412,8 @@ export function AppLayout({ children }: AppLayoutProps) {
       {/* Nav */}
       <div className="flex items-center justify-between shadow-md lg:mb-0 p-3 sticky top-0 bg-background border-b z-50">
         <div className="flex items-center gap-4">
-          <h1 
-            className="text-2xl font-bold cursor-pointer hover:opacity-80 transition-opacity" 
+          <h1
+            className="text-2xl font-bold cursor-pointer hover:opacity-80 transition-opacity"
             onClick={handleHome}
             title="Home"
           >
@@ -430,7 +431,7 @@ export function AppLayout({ children }: AppLayoutProps) {
             </button>
           )}
         </div>
-        
+
         <div className="flex items-center gap-4">
           <button
             onClick={toggleTheme}
@@ -461,24 +462,7 @@ export function AppLayout({ children }: AppLayoutProps) {
       <div className={`flex lg:flex-row flex-col-reverse w-full lg:h-[92vh] ${hideSidebar ? '' : ''}`}>
         {/* Saved Configs List - hide for certain routes */}
         {!hideSidebar && user && (
-          <div className={`flex flex-col gap-10 bg-neutral-950 lg:bg-secondary/50 p-5 ${isCollapsed ? 'lg:w-[50px] overflow-hidden' : 'lg:w-[460px] min-w-[300px]'} max-w-[100vw] h-[100%] overflow-visible lg:overflow-y-auto mb-[80px] relative transition-all duration-300`}>
-            {/* Desktop Collapse Toggle */}
-            <button
-              onClick={() => setIsCollapsed(!isCollapsed)}
-              className="hidden lg:block absolute top-2 right-2 p-2 rounded-lg bg-secondary hover:bg-secondary/80 transition-colors"
-              title={isCollapsed ? 'Expand' : 'Collapse'}
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={1.5}
-                stroke="currentColor"
-                className="w-5 h-5 transition-transform duration-200"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" d={isCollapsed ? "M8.25 4.5l7.5 7.5-7.5 7.5" : "M15.75 19.5L8.25 12l7.5-7.5"} />
-              </svg>
-            </button>
+          <div className={`flex flex-col gap-10 bg-neutral-950 lg:bg-secondary/50 p-5 ${isCollapsed ? 'lg:w-[60px] overflow-hidden' : 'lg:w-[460px] min-w-[300px]'} max-w-[100vw] h-[100%] overflow-visible lg:overflow-y-auto mb-[80px] relative transition-all duration-300`}>
 
             {!isCollapsed && (
               <>
@@ -506,6 +490,30 @@ export function AppLayout({ children }: AppLayoutProps) {
                   selectedCollection={currentCollectionId}
                   loading={collectionsLoading}
                   showAllButton={collectionsLimited}
+                  title={
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setIsCollapsed(true)}
+                        className="p-1 rounded-lg bg-secondary hover:bg-secondary/80 transition-colors"
+                        title="Collapse"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          strokeWidth={1.5}
+                          stroke="currentColor"
+                          className="w-4 h-4 transition-transform duration-200"
+                          style={{
+                            transform: 'rotate(180deg)'
+                          }}
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                        </svg>
+                      </button>
+                      <span>Your Library</span>
+                    </div>
+                  }
                   onShowAllClick={async () => {
                     if (!user) return;
                     setCollectionsLoading(true);
@@ -527,6 +535,27 @@ export function AppLayout({ children }: AppLayoutProps) {
                   }}
                 />
               </>
+            )}
+
+            {isCollapsed && (
+              <div className="flex flex-col items-center pt-2 px-2">
+                <button
+                  onClick={() => setIsCollapsed(false)}
+                  className="p-2 rounded-lg bg-secondary hover:bg-secondary/80 transition-colors"
+                  title="Open Library"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="currentColor"
+                    viewBox="0 0 24 24"
+                    className="w-5 h-5"
+                  >
+                    <rect x="4" y="6" width="3" height="12" rx="0.5" />
+                    <rect x="9" y="4" width="3" height="16" rx="0.5" />
+                    <rect x="14" y="8" width="3" height="8" rx="0.5" />
+                  </svg>
+                </button>
+              </div>
             )}
           </div>
         )}

@@ -6,6 +6,7 @@ import {
 import "./globals.css";
 import { ThemeProvider } from './ThemeProvider'
 import { UserContextProvider } from './contexts/UserContext'
+import { SidebarProvider } from './contexts/SidebarContext'
 import MixpanelProvider from './components/MixpanelProvider'
 import { AppLayout } from './components/AppLayout'
 
@@ -41,11 +42,13 @@ export default function RootLayout({
       <body>
         <ThemeProvider>
           <UserContextProvider>
-            <MixpanelProvider>
-              <AppLayout>
-                {children}
-              </AppLayout>
-            </MixpanelProvider>
+            <SidebarProvider>
+              <MixpanelProvider>
+                <AppLayout>
+                  {children}
+                </AppLayout>
+              </MixpanelProvider>
+            </SidebarProvider>
           </UserContextProvider>
         </ThemeProvider>
       </body>
