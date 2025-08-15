@@ -514,7 +514,7 @@ export function AppLayout({ children }: AppLayoutProps) {
         )}
 
         {/* Main Content Area */}
-        <div className={`flex-1 ${hideSidebar ? '' : 'p-3'}`}>
+        <div className="flex-1">
           {children}
         </div>
       </div>
