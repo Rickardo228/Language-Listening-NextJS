@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { Config, Phrase, PresentationConfig } from '../../types';
 import { usePresentationConfig } from '../../hooks/usePresentationConfig';
@@ -233,7 +233,7 @@ export default function CollectionPage() {
     }
   };
 
-  const handleShare = async (id: string) => {
+  const handleShare = async () => {
     if (!user || !collectionConfig) return;
     try {
       const sharedPhraseList = {
@@ -284,7 +284,7 @@ export default function CollectionPage() {
           onRename={handleRenameCollection}
           onDelete={handleDeleteCollection}
           onVoiceChange={handleVoiceChange}
-          onShare={handleShare}
+          onShare={() => handleShare()}
           onUnshare={handleUnshare}
           inputLang={addToCollectionInputLang}
           targetLang={addToCollectionTargetLang}

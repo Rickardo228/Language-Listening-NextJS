@@ -1,11 +1,10 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react';
-import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import { Phrase, languageOptions, PresentationConfig } from '../../types';
 import { getFirestore, collection, query, where, getDocs, Timestamp } from 'firebase/firestore';
 import { PhrasePlaybackView, PhrasePlaybackMethods } from '../../components/PhrasePlaybackView';
-import { LanguageFlags } from '../../components/LanguageFlags';
 import { CollectionHeader } from '../../CollectionHeader';
 import { useUser } from '../../contexts/UserContext';
 
@@ -37,7 +36,7 @@ const getLanguageLabel = (code: string): string => {
 
 export default function TemplateDetailPage() {
     const { groupId } = useParams();
-    const router = useRouter();
+    // const router = useRouter();
     const searchParams = useSearchParams();
     const { user, isAuthLoading } = useUser();
     const methodsRef = useRef<PhrasePlaybackMethods | null>(null);

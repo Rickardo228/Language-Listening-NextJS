@@ -2,11 +2,11 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { Config, languageOptions, Phrase, PresentationConfig, CollectionType as CollectionTypeEnum } from '../types';
+import { Config, languageOptions, Phrase, CollectionType as CollectionTypeEnum } from '../types';
 import { API_BASE_URL } from '../consts';
 import { ImportPhrases } from '../ImportPhrases';
 import { User } from 'firebase/auth';
-import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, where, orderBy, limit as fbLimit } from 'firebase/firestore';
+import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, orderBy, limit as fbLimit } from 'firebase/firestore';
 import { CollectionList } from '../CollectionList';
 import { useTheme } from '../ThemeProvider';
 import { UserAvatar } from './UserAvatar';
@@ -340,52 +340,6 @@ export function AppLayout({ children }: AppLayoutProps) {
     }
   };
 
-  const handleShare = async (id: string) => {
-    if (!user) return;
-    const phraseList = savedCollections.find(col => col.id === id);
-    if (!phraseList) return;
-
-    try {
-      const sharedPhraseList = {
-        ...phraseList,
-        shared_by: user.uid,
-        shared_at: new Date().toISOString(),
-        shared_from_list: phraseList.id
-      };
-      const sharedRef = collection(firestore, 'published_collections');
-      const docRef = await addDoc(sharedRef, sharedPhraseList);
-
-      const shareUrl = `${window.location.origin}/share/${docRef.id}`;
-      await navigator.clipboard.writeText(shareUrl);
-      alert('Share link copied to clipboard!');
-    } catch (err) {
-      console.error('Error sharing collection:', err);
-      alert('Failed to share collection: ' + err);
-    }
-  };
-
-  const handleUnshare = async (id: string) => {
-    if (!user) return;
-    const phraseList = savedCollections.find(col => col.id === id);
-    if (!phraseList) return;
-
-    try {
-      const sharedRef = collection(firestore, 'published_collections');
-      const q = query(sharedRef, where('shared_by', '==', user.uid), where('shared_from_list', '==', id));
-      const querySnapshot = await getDocs(q);
-
-      if (!querySnapshot.empty) {
-        const docRef = querySnapshot.docs[0].ref;
-        await deleteDoc(docRef);
-        alert('List unshared successfully!');
-      } else {
-        alert('No shared list found to unshare.');
-      }
-    } catch (err) {
-      console.error('Error unsharing collection:', err);
-      alert('Failed to unshare collection: ' + err);
-    }
-  };
 
   const handleHome = () => {
     router.push('/');
