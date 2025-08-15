@@ -109,7 +109,7 @@ export default function CollectionPage() {
     };
 
     loadCollection();
-  }, [user, collectionId, setPresentationConfigBase]);
+  }, [user, collectionId]);
 
   const handleAddToCollection = async (inputLang?: string, targetLang?: string, isSwapped?: boolean) => {
     const splitPhrases = phrasesInput
