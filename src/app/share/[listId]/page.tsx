@@ -166,7 +166,7 @@ export default function SharedList() {
     }
 
     return (
-        <div className="font-sans lg:h-[100vh] flex flex-col bg-background text-foreground">
+        <div className="lg:h-[100vh] flex flex-col bg-background text-foreground">
             {/* Nav */}
             <div className="flex items-center justify-between shadow-md lg:mb-0 p-3 sticky top-0 bg-background border-b z-50">
                 <div className="flex items-center gap-2">

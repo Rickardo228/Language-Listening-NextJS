@@ -22,6 +22,7 @@ const playpenSans = Playpen_Sans({
 const mPlusRounded1c = M_PLUS_Rounded_1c({
   subsets: ["latin"],
   weight: ["400", "700"],
+  variable: "--font-mplus-rounded",
   display: "swap",
   preload: true,
   fallback: ["system-ui", "arial"],
@@ -38,7 +39,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className={`${playpenSans.variable} ${mPlusRounded1c.className} antialiased`} suppressHydrationWarning>
+    <html lang="en" className={`${playpenSans.variable} ${mPlusRounded1c.variable} antialiased`} suppressHydrationWarning>
       <body>
         <ThemeProvider>
           <UserContextProvider>

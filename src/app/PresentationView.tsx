@@ -138,8 +138,8 @@ export function PresentationView({
     (!containerBg ? " bg-gray-100 dark:bg-gray-900" : "");
 
   const titlePropClass = fullScreen
-    ? "text-8xl font-bold mb-4"
-    : "text-2xl font-bold mb-2";
+    ? "font-display text-8xl font-bold mb-4"
+    : "font-display text-2xl font-bold mb-2";
 
   const textColorClass = !textBg ? "text-gray-800 dark:text-gray-100" : "text-white";
 
@@ -332,7 +332,11 @@ export function PresentationView({
                 borderRadius: "1rem"
               }}
             >
-              <h1 className={titlePropClass} style={{ margin: 0, padding: 0 }}>
+              <h1 className={titlePropClass} style={{
+                margin: 0,
+                padding: 0,
+                fontFamily: 'var(--font-playpen-sans), "Playpen Sans", system-ui, sans-serif'
+              }}>
                 {title}
               </h1>
             </motion.div>
