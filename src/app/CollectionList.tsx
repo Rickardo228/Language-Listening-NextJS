@@ -218,7 +218,7 @@ export function CollectionList({
                                             }
                                         >
                                             {(showPlayOnHover ?? true) && (
-                                                <div className="absolute bottom-3 right-3">
+                                                <div className="absolute bottom-3 right-3 hidden sm:block">
                                                     <div className="pointer-events-none absolute inset-0 rounded-full bg-white/30 blur-md opacity-0 scale-75 group-hover:opacity-100 group-hover:scale-100 transition-all duration-300"></div>
                                                     <button
                                                         aria-label="Play"
