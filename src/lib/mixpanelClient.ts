@@ -199,6 +199,22 @@ export const trackPlaybackEvent = (
   });
 };
 
+export const trackPhrasesListenedPopup = (
+  action: "show" | "continue" | "view_stats" | "escape_dismiss",
+  phrasesCount: number,
+  isPersistent: boolean,
+  sessionEndType?: "natural" | "manual"
+) => {
+  if (!MIXPANEL_TOKEN || !isInitialized) return;
+  mixpanel.track("Phrases Listened Popup", {
+    action,
+    phrasesCount,
+    isPersistent,
+    sessionEndType,
+    timestamp: new Date().toISOString(),
+  });
+};
+
 // Generic tracking function for other events
 export const track = (
   eventName: string,

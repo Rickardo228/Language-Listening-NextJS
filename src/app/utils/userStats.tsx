@@ -10,12 +10,16 @@ import { useRef, useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useUser } from "../contexts/UserContext";
 import { motion, AnimatePresence } from "framer-motion";
+import { UserStatsModal } from "../components/UserStatsModal";
+import { trackPhrasesListenedPopup } from "../../lib/mixpanelClient";
 
 const firestore = getFirestore();
 
 export const useUpdateUserStats = () => {
   const [showPopup, setShowPopup] = useState(false);
   const [countToShow, setCountToShow] = useState(0);
+  const [persistUntilInteraction, setPersistUntilInteraction] = useState(false);
+  const [showStatsModal, setShowStatsModal] = useState(false);
   const phrasesListenedRef = useRef(0);
   const [mounted, setMounted] = useState(false);
   const { user } = useUser();
@@ -24,6 +28,22 @@ export const useUpdateUserStats = () => {
     setMounted(true);
     return () => setMounted(false);
   }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && showPopup && persistUntilInteraction) {
+        closeStatsPopup("escape");
+      }
+    };
+
+    if (showPopup && persistUntilInteraction) {
+      document.addEventListener('keydown', handleKeyDown);
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [showPopup, persistUntilInteraction]);
 
   const updateUserStats = async (
     phrases: Phrase[],
@@ -176,17 +196,59 @@ export const useUpdateUserStats = () => {
     }
   };
 
-  const showStatsUpdate = () => {
+  const showStatsUpdate = (shouldPersistUntilInteraction: boolean = false) => {
     if (phrasesListenedRef.current > 0) {
+      const phrasesCount = phrasesListenedRef.current;
       setShowPopup(true);
-      setCountToShow(phrasesListenedRef.current);
+      setCountToShow(phrasesCount);
+      setPersistUntilInteraction(shouldPersistUntilInteraction);
+      
+      // Track popup show event
+      trackPhrasesListenedPopup(
+        "show",
+        phrasesCount,
+        shouldPersistUntilInteraction,
+        shouldPersistUntilInteraction ? "natural" : "manual"
+      );
+      
       phrasesListenedRef.current = 0;
     }
 
-    setTimeout(() => {
-      setShowPopup(false);
-    }, 2000);
+    if (!shouldPersistUntilInteraction) {
+      setTimeout(() => {
+        setShowPopup(false);
+        setPersistUntilInteraction(false);
+      }, 2000);
+    }
+  };
 
+  const closeStatsPopup = (source: "continue" | "escape" = "continue") => {
+    // Track close action before closing
+    if (showPopup) {
+      trackPhrasesListenedPopup(
+        source === "continue" ? "continue" : "escape_dismiss",
+        countToShow,
+        persistUntilInteraction
+      );
+    }
+    
+    setShowPopup(false);
+    setPersistUntilInteraction(false);
+  };
+
+  const openStatsModal = () => {
+    // Track view stats action before closing popup
+    if (showPopup) {
+      trackPhrasesListenedPopup(
+        "view_stats",
+        countToShow,
+        persistUntilInteraction
+      );
+    }
+    
+    setShowStatsModal(true);
+    setShowPopup(false);
+    setPersistUntilInteraction(false);
   };
   const StatsUpdatePopup = mounted ? createPortal(
     <AnimatePresence>
@@ -210,25 +272,50 @@ export const useUpdateUserStats = () => {
               duration: 0.3
             }}
           >
-            <div className="flex items-center space-x-3">
-              <motion.svg
-                className="w-6 h-6"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-                initial={{ rotate: -180, scale: 0 }}
-                animate={{ rotate: 0, scale: 1 }}
-                transition={{ delay: 0.1, type: "spring", stiffness: 400 }}
-              >
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-              </motion.svg>
-              <motion.span
-                className="font-bold text-lg"
-                initial={{ opacity: 0, x: 10 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.2, duration: 0.3 }}
-              >
-                {countToShow} phrase{countToShow !== 1 ? 's' : ''} listened
-              </motion.span>
+            <div className="space-y-2">
+              <div className="flex items-center space-x-3">
+                <motion.svg
+                  className="w-6 h-6"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                  initial={{ rotate: -180, scale: 0 }}
+                  animate={{ rotate: 0, scale: 1 }}
+                  transition={{ delay: 0.1, type: "spring", stiffness: 400 }}
+                >
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </motion.svg>
+                <motion.span
+                  className="font-bold text-lg"
+                  initial={{ opacity: 0, x: 10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.2, duration: 0.3 }}
+                >
+                  {countToShow} phrase{countToShow !== 1 ? 's' : ''} listened
+                </motion.span>
+              </div>
+              {persistUntilInteraction && (
+                <motion.div
+                  className="mt-3 space-y-2"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.4, duration: 0.3 }}
+                >
+                  {user && (
+                    <button
+                      className="w-full px-4 py-2 bg-yellow-800 hover:bg-yellow-900 text-white rounded text-sm font-medium transition-colors"
+                      onClick={openStatsModal}
+                    >
+                      View Stats
+                    </button>
+                  )}
+                  <button
+                    className="w-full px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded text-sm font-medium transition-colors shadow-md"
+                    onClick={() => closeStatsPopup("continue")}
+                  >
+                    Continue
+                  </button>
+                </motion.div>
+              )}
             </div>
           </motion.div>
         </motion.div>
@@ -237,10 +324,20 @@ export const useUpdateUserStats = () => {
     document.body
   ) : null;
 
+  const StatsModal = user && showStatsModal ? (
+    <UserStatsModal
+      isOpen={showStatsModal}
+      onClose={() => setShowStatsModal(false)}
+      user={user}
+    />
+  ) : null;
+
   return {
     updateUserStats,
     StatsUpdatePopup,
+    StatsModal,
     showStatsUpdate,
+    closeStatsPopup,
     phrasesListened: phrasesListenedRef.current,
   };
 };

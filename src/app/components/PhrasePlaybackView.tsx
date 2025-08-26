@@ -43,7 +43,7 @@ export function PhrasePlaybackView({
     stickyHeaderContent,
     methodsRef,
 }: PhrasePlaybackViewProps) {
-    const { updateUserStats, StatsUpdatePopup, showStatsUpdate } = useUpdateUserStats();
+    const { updateUserStats, StatsUpdatePopup, StatsModal, showStatsUpdate } = useUpdateUserStats();
     const [currentPhraseIndex, setCurrentPhraseIndex] = useState(0);
     const [currentPhase, setCurrentPhase] = useState<'input' | 'output'>('input');
     const [paused, setPaused] = useState(true);
@@ -123,7 +123,7 @@ export function PhrasePlaybackView({
             audioRef.current.pause();
         }
         setPaused(true);
-        showStatsUpdate();
+        showStatsUpdate(true);
 
         // Track pause event
         if (currentPhraseIndex >= 0 && phrases[currentPhraseIndex]) {
@@ -425,7 +425,7 @@ export function PhrasePlaybackView({
                             // If looping is enabled, restart from beginning
                             setCurrentPhraseIndex(0);
                         } else {
-                            showStatsUpdate()
+                            showStatsUpdate(true)
                             setPaused(true);
                         }
                     }
@@ -458,7 +458,7 @@ export function PhrasePlaybackView({
                             setCurrentPhraseIndex(0);
                             setCurrentPhase('input');
                         } else {
-                            showStatsUpdate()
+                            showStatsUpdate(true)
                             setPaused(true);
                         }
                     }
@@ -529,6 +529,9 @@ export function PhrasePlaybackView({
         <div className="flex-1 lg:overflow-y-auto lg:relative">
             {/* Stats Update Popup */}
             {StatsUpdatePopup}
+            
+            {/* Stats Modal */}
+            {StatsModal}
 
             {/* Audio Element */}
             <audio ref={audioRef} onEnded={handleAudioEnded} controls hidden />
