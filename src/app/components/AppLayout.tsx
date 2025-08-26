@@ -367,7 +367,7 @@ export function AppLayout({ children }: AppLayoutProps) {
       <div className="flex items-center justify-between shadow-md lg:mb-0 p-3 sticky top-0 bg-background border-b z-50">
         <div className="flex items-center gap-4">
           <h1
-            className="text-2xl font-bold cursor-pointer hover:opacity-80 transition-opacity"
+            className="text-2xl font-bold cursor-pointer hover:opacity-80 transition-opacity hidden sm:block"
             onClick={handleHome}
             title="Home"
           >
