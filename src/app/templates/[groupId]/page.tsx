@@ -26,6 +26,7 @@ interface Template {
     createdAt: Timestamp;
     complexity: string;
     phraseCount: number;
+    name: string;
 }
 
 // Helper function to get language label from code
@@ -47,6 +48,7 @@ export default function TemplateDetailPage() {
     const [selectedInputLang, setSelectedInputLang] = useState<string>(searchParams.get('inputLang') || 'en-GB');
     const [selectedTargetLang, setSelectedTargetLang] = useState<string>(searchParams.get('targetLang') || 'it-IT');
     const [availableLanguages, setAvailableLanguages] = useState<string[]>([]);
+    const [templateData, setTemplateData] = useState<Template | null>(null);
     const [presentationConfig, setPresentationConfig] = useState<PresentationConfig>({
         name: `Template ${groupId}`,
         bgImage: null,
@@ -150,6 +152,9 @@ export default function TemplateDetailPage() {
                     });
 
                     setPhrases(convertedPhrases);
+
+                    // Store template data for name extraction
+                    setTemplateData(inputTemplateData);
                 } else {
                     setPhrases([]);
                 }
@@ -190,17 +195,17 @@ export default function TemplateDetailPage() {
             const groupSnapshot = await getDocs(groupQuery);
 
             // Delete all templates in the group
-            const deletePromises = groupSnapshot.docs.map(docSnapshot => 
+            const deletePromises = groupSnapshot.docs.map(docSnapshot =>
                 deleteDoc(doc(firestore, 'templates', docSnapshot.id))
             );
 
             await Promise.all(deletePromises);
 
             alert(`Template group "${templateGroupId}" has been successfully deleted.`);
-            
+
             // Redirect back to templates list or home
             window.location.href = '/templates';
-            
+
         } catch (error) {
             console.error('Error deleting template:', error);
             alert('Failed to delete template. Please try again.');
@@ -252,7 +257,7 @@ export default function TemplateDetailPage() {
     // Create a proper collection config for the template
     const templateAsCollection = {
         id: groupId as string,
-        name: groupId as string,
+        name: templateData?.name || groupId as string, // Use template name if available, fall back to groupId
         phrases: phrases,
         created_at: new Date().toISOString(),
         collectionType: 'phrases' as const,

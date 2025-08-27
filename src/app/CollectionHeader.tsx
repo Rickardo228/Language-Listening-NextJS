@@ -143,7 +143,7 @@ export function CollectionHeader({
 
     return (
         <div className={`flex items-center gap-2 ${className}`}>
-            <h2 className={`font-semibold truncate ${titleClassName}`}>
+            <h2 className={`font-semibold truncate capitalize ${titleClassName}`}>
                 {currentCollection.name}
             </h2>
             {hasMenuItems && (
