@@ -189,8 +189,11 @@ export const trackPlaybackEvent = (
   playbackSpeed: number
 ) => {
   if (!MIXPANEL_TOKEN || !isInitialized) return;
-  mixpanel.track("Playback Control", {
-    eventType,
+  
+  // Create specific event name by capitalizing and appending eventType
+  const eventName = `Playback ${eventType.charAt(0).toUpperCase() + eventType.slice(1)}`;
+  
+  mixpanel.track(eventName, {
     phraseId,
     phase,
     phraseIndex,
@@ -206,8 +209,25 @@ export const trackPhrasesListenedPopup = (
   sessionEndType?: "natural" | "manual"
 ) => {
   if (!MIXPANEL_TOKEN || !isInitialized) return;
-  mixpanel.track("Phrases Listened Popup", {
-    action,
+  
+  // Create specific event name by transforming action
+  let eventName = "Phrases Popup ";
+  switch (action) {
+    case "show":
+      eventName += "Shown";
+      break;
+    case "continue":
+      eventName += "Continued";
+      break;
+    case "view_stats":
+      eventName = "Phrases Stats Viewed";
+      break;
+    case "escape_dismiss":
+      eventName += "Dismissed";
+      break;
+  }
+  
+  mixpanel.track(eventName, {
     phrasesCount,
     isPersistent,
     sessionEndType,
