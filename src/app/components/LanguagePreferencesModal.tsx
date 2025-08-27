@@ -6,6 +6,7 @@ import { User } from 'firebase/auth';
 import { languageOptions } from '../types';
 import { createOrUpdateUserProfile } from '../utils/userPreferences';
 import { useUser } from '../contexts/UserContext';
+import { getFlagEmoji } from '../utils/languageUtils';
 
 interface LanguagePreferencesModalProps {
     isOpen: boolean;
@@ -112,7 +113,7 @@ export function LanguagePreferencesModal({ isOpen, onClose, user }: LanguagePref
                             >
                                 {languageOptions.map((lang) => (
                                     <option key={lang.code} value={lang.code}>
-                                        {lang.flag} {lang.label}
+                                        {getFlagEmoji(lang.code)} {lang.label}
                                     </option>
                                 ))}
                             </select>
@@ -131,7 +132,7 @@ export function LanguagePreferencesModal({ isOpen, onClose, user }: LanguagePref
                             >
                                 {languageOptions.map((lang) => (
                                     <option key={lang.code} value={lang.code}>
-                                        {lang.flag} {lang.label}
+                                        {getFlagEmoji(lang.code)} {lang.label}
                                     </option>
                                 ))}
                             </select>
@@ -141,9 +142,9 @@ export function LanguagePreferencesModal({ isOpen, onClose, user }: LanguagePref
                         <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
                             <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Preview:</p>
                             <div className="flex items-center gap-2 text-sm">
-                                <span className="font-medium">{inputLanguage?.flag} {inputLanguage?.label}</span>
+                                <span className="font-medium">{inputLanguage && getFlagEmoji(inputLanguage.code)} {inputLanguage?.label}</span>
                                 <span className="text-gray-400">→</span>
-                                <span className="font-medium">{targetLanguage?.flag} {targetLanguage?.label}</span>
+                                <span className="font-medium">{targetLanguage && getFlagEmoji(targetLanguage.code)} {targetLanguage?.label}</span>
                             </div>
                         </div>
                     </div>
