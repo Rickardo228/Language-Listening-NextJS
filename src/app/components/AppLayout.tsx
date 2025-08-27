@@ -13,56 +13,13 @@ import { UserAvatar } from './UserAvatar';
 import { defaultPresentationConfig, defaultPresentationConfigs } from '../defaultConfig';
 import { useUser } from '../contexts/UserContext';
 import { useSidebar } from '../contexts/SidebarContext';
-import defaultPhrasesData from '../../defaultPhrases.json';
 import { trackCreateList, trackSelectList, trackCreatePhrase } from '../../lib/mixpanelClient';
 import { TemplatesBrowser } from './TemplatesBrowser';
 import { SignInPage } from '../SignInPage';
 import { OnboardingGuard } from './OnboardingGuard';
 
-type PhraseData = {
-  translated: string;
-  audioUrl: string;
-  duration: number;
-  voice: string;
-  romanized: string;
-};
-type LangData = {
-  lang: string;
-  data: { [key: string]: PhraseData };
-};
 
 const firestore = getFirestore();
-
-const getDefaultPhrasesForLanguages = (inputLang: string, targetLang: string): Phrase[] => {
-  const inputLangData = defaultPhrasesData.find(item => item.lang === inputLang) as LangData | undefined;
-  const targetLangData = defaultPhrasesData.find(item => item.lang === targetLang) as LangData | undefined;
-  if (!inputLangData || !targetLangData) return [];
-
-  const now = new Date().toISOString();
-  return Object.entries(inputLangData.data).map(([input, inputPhraseData]: [string, { translated: string; romanized: string; audioUrl: string; duration: number; voice: string }]) => {
-    const targetPhraseData = targetLangData.data[input];
-
-    let romanized = "";
-    if (targetPhraseData && targetPhraseData.romanized && targetPhraseData.romanized !== "null") {
-      romanized = targetPhraseData.romanized;
-    } else if (inputPhraseData.romanized && inputPhraseData.romanized !== "null") {
-      romanized = inputPhraseData.romanized;
-    }
-
-    return {
-      input,
-      translated: targetPhraseData ? targetPhraseData.translated : inputPhraseData.translated,
-      inputLang: inputLang,
-      targetLang: targetLang,
-      inputAudio: inputPhraseData.audioUrl ? { audioUrl: inputPhraseData.audioUrl, duration: inputPhraseData.duration } : null,
-      outputAudio: targetPhraseData && targetPhraseData.audioUrl ? { audioUrl: targetPhraseData.audioUrl, duration: targetPhraseData.duration } : null,
-      romanized: romanized,
-      inputVoice: inputPhraseData.voice,
-      targetVoice: targetPhraseData ? targetPhraseData.voice : undefined,
-      created_at: now
-    };
-  });
-};
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -75,16 +32,6 @@ export function AppLayout({ children }: AppLayoutProps) {
   const { theme, toggleTheme } = useTheme();
   const { isCollapsed, setIsCollapsed } = useSidebar();
 
-  // Helper function to get URL parameters directly
-  const getUrlParams = () => {
-    if (typeof window === 'undefined') return {};
-    const urlParams = new URLSearchParams(window.location.search);
-    return {
-      inputLang: urlParams.get('inputLang'),
-      targetLang: urlParams.get('targetLang'),
-      firstVisit: urlParams.get('firstVisit')
-    };
-  };
 
   // User input and language selection
   const [phrasesInput, setPhrasesInput] = useState<string>('');
@@ -98,7 +45,7 @@ export function AppLayout({ children }: AppLayoutProps) {
   const [savedCollections, setSavedCollections] = useState<Config[]>([])
   const [collectionsLoading, setCollectionsLoading] = useState(false);
   const [collectionsLimited, setCollectionsLimited] = useState(true);
-  
+
   // Update collection languages when user profile loads
   useEffect(() => {
     if (userProfile?.preferredInputLang && userProfile?.preferredTargetLang) {
@@ -124,11 +71,7 @@ export function AppLayout({ children }: AppLayoutProps) {
 
   // Load saved collections from Firestore on mount or when user changes
   const initialiseCollections = useCallback(async (user: User) => {
-    const urlParams = getUrlParams();
-    
-    // Priority: User Profile → URL Parameters → Defaults
-    const inputLang = userProfile?.preferredInputLang || urlParams.inputLang || 'en-GB';
-    const targetLang = userProfile?.preferredTargetLang || urlParams.targetLang || 'it-IT';
+
 
     const fetchCollections = async (opts?: { fetchAll?: boolean; limitCount?: number }) => {
       const colRef = collection(firestore, 'users', user.uid, 'collections');

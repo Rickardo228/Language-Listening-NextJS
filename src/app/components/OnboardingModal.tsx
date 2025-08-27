@@ -14,48 +14,48 @@ import defaultPhrasesData from '../../defaultPhrases.json';
 import { User } from 'firebase/auth';
 
 type PhraseData = {
-  translated: string;
-  audioUrl: string;
-  duration: number;
-  voice: string;
-  romanized: string;
+    translated: string;
+    audioUrl: string;
+    duration: number;
+    voice: string;
+    romanized: string;
 };
 type LangData = {
-  lang: string;
-  data: { [key: string]: PhraseData };
+    lang: string;
+    data: { [key: string]: PhraseData };
 };
 
 const firestore = getFirestore();
 
 const getDefaultPhrasesForLanguages = (inputLang: string, targetLang: string): Phrase[] => {
-  const inputLangData = defaultPhrasesData.find(item => item.lang === inputLang) as LangData | undefined;
-  const targetLangData = defaultPhrasesData.find(item => item.lang === targetLang) as LangData | undefined;
-  if (!inputLangData || !targetLangData) return [];
+    const inputLangData = defaultPhrasesData.find(item => item.lang === inputLang) as LangData | undefined;
+    const targetLangData = defaultPhrasesData.find(item => item.lang === targetLang) as LangData | undefined;
+    if (!inputLangData || !targetLangData) return [];
 
-  const now = new Date().toISOString();
-  return Object.entries(inputLangData.data).map(([input, inputPhraseData]: [string, { translated: string; romanized: string; audioUrl: string; duration: number; voice: string }]) => {
-    const targetPhraseData = targetLangData.data[input];
+    const now = new Date().toISOString();
+    return Object.entries(inputLangData.data).map(([input, inputPhraseData]: [string, { translated: string; romanized: string; audioUrl: string; duration: number; voice: string }]) => {
+        const targetPhraseData = targetLangData.data[input];
 
-    let romanized = "";
-    if (targetPhraseData && targetPhraseData.romanized && targetPhraseData.romanized !== "null") {
-      romanized = targetPhraseData.romanized;
-    } else if (inputPhraseData.romanized && inputPhraseData.romanized !== "null") {
-      romanized = inputPhraseData.romanized;
-    }
+        let romanized = "";
+        if (targetPhraseData && targetPhraseData.romanized && targetPhraseData.romanized !== "null") {
+            romanized = targetPhraseData.romanized;
+        } else if (inputPhraseData.romanized && inputPhraseData.romanized !== "null") {
+            romanized = inputPhraseData.romanized;
+        }
 
-    return {
-      input,
-      translated: targetPhraseData ? targetPhraseData.translated : inputPhraseData.translated,
-      inputLang: inputLang,
-      targetLang: targetLang,
-      inputAudio: inputPhraseData.audioUrl ? { audioUrl: inputPhraseData.audioUrl, duration: inputPhraseData.duration } : null,
-      outputAudio: targetPhraseData && targetPhraseData.audioUrl ? { audioUrl: targetPhraseData.audioUrl, duration: targetPhraseData.duration } : null,
-      romanized: romanized,
-      inputVoice: inputPhraseData.voice,
-      targetVoice: targetPhraseData ? targetPhraseData.voice : undefined,
-      created_at: now
-    };
-  });
+        return {
+            input,
+            translated: targetPhraseData ? targetPhraseData.translated : inputPhraseData.translated,
+            inputLang: inputLang,
+            targetLang: targetLang,
+            inputAudio: inputPhraseData.audioUrl ? { audioUrl: inputPhraseData.audioUrl, duration: inputPhraseData.duration } : null,
+            outputAudio: targetPhraseData && targetPhraseData.audioUrl ? { audioUrl: targetPhraseData.audioUrl, duration: targetPhraseData.duration } : null,
+            romanized: romanized,
+            inputVoice: inputPhraseData.voice,
+            targetVoice: targetPhraseData ? targetPhraseData.voice : undefined,
+            created_at: now
+        };
+    });
 };
 
 interface OnboardingModalProps {
@@ -65,11 +65,11 @@ interface OnboardingModalProps {
     preselectedTargetLang?: string;
 }
 
-export function OnboardingModal({ 
-    isOpen, 
-    onComplete, 
-    preselectedInputLang, 
-    preselectedTargetLang 
+export function OnboardingModal({
+    isOpen,
+    onComplete,
+    preselectedInputLang,
+    preselectedTargetLang
 }: OnboardingModalProps) {
     const { user } = useUser();
     const [currentStep, setCurrentStep] = useState<'languages' | 'ability' | 'complete'>('languages');
@@ -123,7 +123,7 @@ export function OnboardingModal({
 
     const handleComplete = async () => {
         if (!user) return;
-        
+
         setIsLoading(true);
         try {
             // Save onboarding data to Firestore with complete user profile
@@ -132,24 +132,24 @@ export function OnboardingModal({
                 inputLang,
                 targetLang
             }, user); // Pass Firebase user for complete profile data
-            
+
             // Check if user has any collections, create default if none
             const colRef = collection(firestore, 'users', user.uid, 'collections');
             const q = query(colRef, orderBy('created_at', 'desc'), fbLimit(1));
             const snapshot = await getDocs(q);
-            
+
             if (snapshot.empty) {
                 // Always create default phrases with user's preferred languages
                 const defaultPhrases = getDefaultPhrasesForLanguages(inputLang, targetLang);
                 await handleCreateCollection(defaultPhrases, "My List", "phrases", user);
             }
-            
+
             // Track completion in analytics
             trackOnboardingCompleted(user.uid, abilityLevel, inputLang, targetLang);
-            
+
             // Move to complete step - DON'T close modal yet
             setCurrentStep('complete');
-            
+
         } catch (error) {
             console.error('Error completing onboarding:', error);
         } finally {
@@ -189,36 +189,31 @@ export function OnboardingModal({
                             Welcome to Language Shadowing!
                         </h2>
                         <p className="text-gray-600 dark:text-gray-400">
-                            Let's personalize your learning experience in just a few steps
+                            {`Let's personalise your learning experience in just a few steps`}
                         </p>
                     </div>
 
                     {/* Progress Indicator */}
                     <div className="px-8 pt-6">
                         <div className="flex items-center justify-between mb-8">
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                                currentStep === 'languages' ? 'bg-blue-600 text-white' :
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${currentStep === 'languages' ? 'bg-blue-600 text-white' :
                                 currentStep === 'ability' || currentStep === 'complete' ? 'bg-green-600 text-white' :
-                                'bg-gray-200 text-gray-600'
-                            }`}>
+                                    'bg-gray-200 text-gray-600'
+                                }`}>
                                 1
                             </div>
-                            <div className={`flex-1 h-2 mx-4 rounded ${
-                                currentStep === 'ability' || currentStep === 'complete' ? 'bg-green-600' : 'bg-gray-200'
-                            }`} />
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                                currentStep === 'ability' ? 'bg-blue-600 text-white' :
+                            <div className={`flex-1 h-2 mx-4 rounded ${currentStep === 'ability' || currentStep === 'complete' ? 'bg-green-600' : 'bg-gray-200'
+                                }`} />
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${currentStep === 'ability' ? 'bg-blue-600 text-white' :
                                 currentStep === 'complete' ? 'bg-green-600 text-white' :
-                                'bg-gray-200 text-gray-600'
-                            }`}>
+                                    'bg-gray-200 text-gray-600'
+                                }`}>
                                 2
                             </div>
-                            <div className={`flex-1 h-2 mx-4 rounded ${
-                                currentStep === 'complete' ? 'bg-green-600' : 'bg-gray-200'
-                            }`} />
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                                currentStep === 'complete' ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-600'
-                            }`}>
+                            <div className={`flex-1 h-2 mx-4 rounded ${currentStep === 'complete' ? 'bg-green-600' : 'bg-gray-200'
+                                }`} />
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${currentStep === 'complete' ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-600'
+                                }`}>
                                 ✓
                             </div>
                         </div>
@@ -240,13 +235,13 @@ export function OnboardingModal({
                                             Choose Your Languages
                                         </h3>
                                         <p className="text-gray-600 dark:text-gray-400">
-                                            {preselectedInputLang && preselectedTargetLang 
+                                            {preselectedInputLang && preselectedTargetLang
                                                 ? "We've pre-selected your languages from sign-up. You can change them if needed."
                                                 : "Select the languages you want to practice with"
                                             }
                                         </p>
                                     </div>
-                                    
+
                                     <OnboardingLanguageSelect
                                         inputLang={inputLang}
                                         setInputLang={setInputLang}

@@ -1,8 +1,9 @@
 import { useRef, useEffect, useState } from 'react';
 import { User, signOut, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import { auth } from '../firebase';
-import { BarChart3, MessageSquare, LogOut } from 'lucide-react';
+import { BarChart3, MessageSquare, LogOut, Languages } from 'lucide-react';
 import { UserStatsModal } from './UserStatsModal';
+import { LanguagePreferencesModal } from './LanguagePreferencesModal';
 
 interface UserAvatarProps {
     user: User | null;
@@ -13,6 +14,7 @@ interface UserAvatarProps {
 export function UserAvatar({ user, avatarDialogOpen, setAvatarDialogOpen }: UserAvatarProps) {
     const dialogRef = useRef<HTMLDivElement>(null);
     const [statsModalOpen, setStatsModalOpen] = useState(false);
+    const [languagePrefsModalOpen, setLanguagePrefsModalOpen] = useState(false);
 
     useEffect(() => {
         function handleClickOutside(event: MouseEvent) {
@@ -76,6 +78,16 @@ export function UserAvatar({ user, avatarDialogOpen, setAvatarDialogOpen }: User
                         <BarChart3 className="w-4 h-4" />
                         View Stats
                     </button>
+                    <button
+                        className="w-full text-left px-4 py-2 hover:bg-secondary flex items-center gap-2"
+                        onClick={() => {
+                            setLanguagePrefsModalOpen(true);
+                            setAvatarDialogOpen(false);
+                        }}
+                    >
+                        <Languages className="w-4 h-4" />
+                        Languages
+                    </button>
                     <a
                         href="mailto:hello@lingopaper.com?subject=Feedback for LingoPaper"
                         className="block w-full text-left px-4 py-2 hover:bg-secondary flex items-center gap-2"
@@ -102,6 +114,14 @@ export function UserAvatar({ user, avatarDialogOpen, setAvatarDialogOpen }: User
                 onClose={() => setStatsModalOpen(false)}
                 user={user!}
             />
+
+            {user && (
+                <LanguagePreferencesModal
+                    isOpen={languagePrefsModalOpen}
+                    onClose={() => setLanguagePrefsModalOpen(false)}
+                    user={user}
+                />
+            )}
         </div>
     );
 } 
