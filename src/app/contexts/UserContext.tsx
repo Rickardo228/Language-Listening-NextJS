@@ -5,10 +5,11 @@ import { onAuthStateChanged, User } from 'firebase/auth';
 import { auth } from '../firebase';
 import clarity from '@microsoft/clarity';
 import { trackLogin, identifyUser } from '../../lib/mixpanelClient';
+import { getUserProfile, UserProfile } from '../utils/userPreferences';
 
 interface UserClaims {
     admin?: boolean;
-    [key: string]: any; // Allow for other custom claims
+    [key: string]: unknown; // Allow for other custom claims
 }
 
 interface UserContextType {
@@ -17,6 +18,9 @@ interface UserContextType {
     hasInitialisedForUser: React.MutableRefObject<boolean>;
     userClaims: UserClaims | null;
     isAdmin: boolean;
+    userProfile: UserProfile | null;
+    needsOnboarding: boolean;
+    refreshUserProfile: () => Promise<void>;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -37,10 +41,22 @@ export const UserContextProvider: React.FC<UserContextProviderProps> = ({ childr
     const [user, setUser] = useState<User | null>(null);
     const [isAuthLoading, setIsAuthLoading] = useState(true);
     const [userClaims, setUserClaims] = useState<UserClaims | null>(null);
+    const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
     const hasInitialisedForUser = useRef(false);
 
     // Note: Clarity initialization is now handled by CookieConsent component for GDPR compliance
 
+    // Function to refresh user profile
+    const refreshUserProfile = async () => {
+        if (user) {
+            try {
+                const profile = await getUserProfile(user.uid);
+                setUserProfile(profile);
+            } catch (error) {
+                console.error('Error refreshing user profile:', error);
+            }
+        }
+    };
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
@@ -59,6 +75,15 @@ export const UserContextProvider: React.FC<UserContextProviderProps> = ({ childr
                     setUserClaims(null);
                 }
 
+                // Load user profile
+                try {
+                    const profile = await getUserProfile(firebaseUser.uid);
+                    setUserProfile(profile);
+                } catch (error) {
+                    console.error("Error getting user profile:", error);
+                    setUserProfile(null);
+                }
+
                 if (!hasInitialisedForUser.current) {
                     console.log("onAuthStateChanged 2", firebaseUser);
                     hasInitialisedForUser.current = true;
@@ -75,8 +100,9 @@ export const UserContextProvider: React.FC<UserContextProviderProps> = ({ childr
                     trackLogin(firebaseUser.uid, firebaseUser.providerData[0]?.providerId || 'email');
                 }
             } else {
-                // User is signed out, clear claims
+                // User is signed out, clear claims and profile
                 setUserClaims(null);
+                setUserProfile(null);
             }
 
             setUser(firebaseUser);
@@ -84,7 +110,7 @@ export const UserContextProvider: React.FC<UserContextProviderProps> = ({ childr
         });
 
         return () => unsubscribe();
-    }, []);
+    }, [user]); // Add user as dependency to trigger profile refresh
 
     const value: UserContextType = {
         user,
@@ -92,6 +118,9 @@ export const UserContextProvider: React.FC<UserContextProviderProps> = ({ childr
         hasInitialisedForUser,
         userClaims,
         isAdmin: Boolean(userClaims?.admin),
+        userProfile,
+        needsOnboarding: Boolean(user && (!userProfile || !userProfile.onboardingCompleted)),
+        refreshUserProfile,
     };
 
     return (

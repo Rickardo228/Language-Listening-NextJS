@@ -70,7 +70,7 @@ interface AppLayoutProps {
 export function AppLayout({ children }: AppLayoutProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const { user, isAuthLoading } = useUser();
+  const { user, isAuthLoading, userProfile } = useUser();
   const { theme, toggleTheme } = useTheme();
   const { isCollapsed, setIsCollapsed } = useSidebar();
 
@@ -87,12 +87,24 @@ export function AppLayout({ children }: AppLayoutProps) {
 
   // User input and language selection
   const [phrasesInput, setPhrasesInput] = useState<string>('');
-  const [newCollectionInputLang, setNewCollectionInputLang] = useState<string>(languageOptions[0]?.code);
-  const [newCollectionTargetLang, setNewCollectionTargetLang] = useState<string>('it-IT');
+  const [newCollectionInputLang, setNewCollectionInputLang] = useState<string>(
+    userProfile?.preferredInputLang || languageOptions[0]?.code || 'en-GB'
+  );
+  const [newCollectionTargetLang, setNewCollectionTargetLang] = useState<string>(
+    userProfile?.preferredTargetLang || 'it-IT'
+  );
   const hasSetLanguages = useRef(false);
   const [savedCollections, setSavedCollections] = useState<Config[]>([])
   const [collectionsLoading, setCollectionsLoading] = useState(false);
   const [collectionsLimited, setCollectionsLimited] = useState(true);
+  
+  // Update collection languages when user profile loads
+  useEffect(() => {
+    if (userProfile?.preferredInputLang && userProfile?.preferredTargetLang) {
+      setNewCollectionInputLang(userProfile.preferredInputLang);
+      setNewCollectionTargetLang(userProfile.preferredTargetLang);
+    }
+  }, [userProfile?.preferredInputLang, userProfile?.preferredTargetLang]);
   const [avatarDialogOpen, setAvatarDialogOpen] = useState(false);
   const [loading, setLoading] = useState<boolean>(false);
 
@@ -112,8 +124,10 @@ export function AppLayout({ children }: AppLayoutProps) {
   // Load saved collections from Firestore on mount or when user changes
   const initialiseCollections = useCallback(async (user: User) => {
     const urlParams = getUrlParams();
-    const inputLang = urlParams.inputLang || undefined;
-    const targetLang = urlParams.targetLang || undefined;
+    
+    // Priority: User Profile → URL Parameters → Defaults
+    const inputLang = userProfile?.preferredInputLang || urlParams.inputLang || 'en-GB';
+    const targetLang = userProfile?.preferredTargetLang || urlParams.targetLang || 'it-IT';
 
     const fetchCollections = async (opts?: { fetchAll?: boolean; limitCount?: number }) => {
       const colRef = collection(firestore, 'users', user.uid, 'collections');
@@ -137,12 +151,8 @@ export function AppLayout({ children }: AppLayoutProps) {
       setSavedCollections(loaded);
 
       if (loaded.length === 0) {
-        let defaultPhrases: Phrase[] = [];
-
-        if (inputLang && targetLang) {
-          defaultPhrases = getDefaultPhrasesForLanguages(inputLang, targetLang);
-        }
-
+        // Always create default phrases with user's preferred languages
+        const defaultPhrases = getDefaultPhrasesForLanguages(inputLang, targetLang);
         await handleCreateCollection(defaultPhrases, "My List", "phrases", user);
       }
 
@@ -171,7 +181,7 @@ export function AppLayout({ children }: AppLayoutProps) {
       setCollectionsLoading(false);
       setLoading(false);
     }
-  }, [savedCollections.length]);
+  }, [savedCollections.length, userProfile?.preferredInputLang, userProfile?.preferredTargetLang]);
 
   useEffect(() => {
     if (user && !hideSidebar) {

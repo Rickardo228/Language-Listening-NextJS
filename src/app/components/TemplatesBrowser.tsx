@@ -6,6 +6,7 @@ import { getFirestore, collection, query, where, getDocs, Timestamp, orderBy, li
 import { languageOptions, Config } from '../types';
 import { CollectionList } from '../CollectionList';
 import { OnboardingLanguageSelect } from './OnboardingLanguageSelect';
+import { useUser } from '../contexts/UserContext';
 
 const firestore = getFirestore();
 
@@ -44,12 +45,36 @@ export function TemplatesBrowser({
     className,
 }: TemplatesBrowserProps) {
     const router = useRouter();
+    const { userProfile } = useUser();
     const [templates, setTemplates] = useState<Template[]>([]);
     const [loading, setLoading] = useState(true);
     const [isShowingAll, setIsShowingAll] = useState(false);
-    const [inputLang, setInputLang] = useState(initialInputLang);
-    const [targetLang, setTargetLang] = useState(initialTargetLang);
+    
+    // Use user preferences if available, otherwise fall back to props
+    const [inputLang, setInputLang] = useState(
+        userProfile?.preferredInputLang || initialInputLang
+    );
+    const [targetLang, setTargetLang] = useState(
+        userProfile?.preferredTargetLang || initialTargetLang
+    );
     const hasInitialFetch = useRef(false);
+
+    // Update languages when user profile loads/changes
+    useEffect(() => {
+        if (userProfile?.preferredInputLang && userProfile?.preferredTargetLang) {
+            const newInputLang = userProfile.preferredInputLang;
+            const newTargetLang = userProfile.preferredTargetLang;
+            
+            // Only update if different to avoid infinite loops
+            if (inputLang !== newInputLang || targetLang !== newTargetLang) {
+                setInputLang(newInputLang);
+                setTargetLang(newTargetLang);
+                
+                // Refetch templates with new languages
+                fetchTemplates(newInputLang, newTargetLang);
+            }
+        }
+    }, [userProfile?.preferredInputLang, userProfile?.preferredTargetLang, inputLang, targetLang]);
 
     const fetchTemplates = async (
         currentInputLang?: string,

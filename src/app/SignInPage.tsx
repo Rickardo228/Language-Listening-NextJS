@@ -67,6 +67,12 @@ export function SignInPage({
             // If this is the first visit, store the selected languages
             if (isFirstVisit || isSignUp) {
                 localStorage.setItem('hasVisitedBefore', 'true');
+                
+                // Store selected languages for onboarding
+                if (showLanguageSelect) {
+                    localStorage.setItem('signupInputLang', inputLang);
+                    localStorage.setItem('signupTargetLang', targetLang);
+                }
 
                 // Track sign up event for new users
                 if (isSignUp) {
@@ -104,6 +110,12 @@ export function SignInPage({
 
                 result = await createUserWithEmailAndPassword(auth, email, password);
                 localStorage.setItem('hasVisitedBefore', 'true');
+                
+                // Store selected languages for onboarding
+                if (showLanguageSelect) {
+                    localStorage.setItem('signupInputLang', inputLang);
+                    localStorage.setItem('signupTargetLang', targetLang);
+                }
 
                 // Identify user in Mixpanel
                 identifyUser(result.user.uid, result.user.email || undefined);

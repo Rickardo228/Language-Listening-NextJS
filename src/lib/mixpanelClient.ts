@@ -181,6 +181,22 @@ export const trackGeneratePhrases = (
   });
 };
 
+export const trackOnboardingCompleted = (
+  userId: string,
+  abilityLevel: string,
+  inputLang: string,
+  targetLang: string
+) => {
+  if (!MIXPANEL_TOKEN || !isInitialized) return;
+  mixpanel.track("Onboarding Completed", {
+    userId,
+    abilityLevel,
+    inputLang,
+    targetLang,
+    timestamp: new Date().toISOString(),
+  });
+};
+
 export const trackPlaybackEvent = (
   eventType: "play" | "pause" | "stop" | "replay" | "next" | "previous",
   phraseId: string,
