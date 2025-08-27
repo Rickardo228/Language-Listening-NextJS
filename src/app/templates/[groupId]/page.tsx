@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import { Phrase, languageOptions, PresentationConfig } from '../../types';
-import { getFirestore, collection, query, where, getDocs, Timestamp } from 'firebase/firestore';
+import { getFirestore, collection, query, where, getDocs, Timestamp, deleteDoc, doc } from 'firebase/firestore';
 import { PhrasePlaybackView, PhrasePlaybackMethods } from '../../components/PhrasePlaybackView';
 import { CollectionHeader } from '../../CollectionHeader';
 import { useUser } from '../../contexts/UserContext';
@@ -38,7 +38,7 @@ export default function TemplateDetailPage() {
     const { groupId } = useParams();
     // const router = useRouter();
     const searchParams = useSearchParams();
-    const { user, isAuthLoading } = useUser();
+    const { user, isAuthLoading, isAdmin } = useUser();
     const methodsRef = useRef<PhrasePlaybackMethods | null>(null);
     const [phrases, setPhrases] = useState<Phrase[]>([]);
     const [loading, setLoading] = useState(true);
@@ -170,6 +170,41 @@ export default function TemplateDetailPage() {
         fetchTemplates();
     }, [user, groupId, selectedInputLang, selectedTargetLang]);
 
+    // Admin-only template deletion function
+    const handleDeleteTemplate = async (templateGroupId: string) => {
+        if (!isAdmin) {
+            alert('Only administrators can delete templates.');
+            return;
+        }
+
+        if (!window.confirm(`Are you sure you want to delete the template group "${templateGroupId}"? This action cannot be undone and will delete ALL language variants of this template.`)) {
+            return;
+        }
+
+        try {
+            // Query all templates in this group
+            const templatesRef = collection(firestore, 'templates');
+            const groupQuery = query(templatesRef, where('groupId', '==', templateGroupId));
+            const groupSnapshot = await getDocs(groupQuery);
+
+            // Delete all templates in the group
+            const deletePromises = groupSnapshot.docs.map(docSnapshot => 
+                deleteDoc(doc(firestore, 'templates', docSnapshot.id))
+            );
+
+            await Promise.all(deletePromises);
+
+            alert(`Template group "${templateGroupId}" has been successfully deleted.`);
+            
+            // Redirect back to templates list or home
+            window.location.href = '/templates';
+            
+        } catch (error) {
+            console.error('Error deleting template:', error);
+            alert('Failed to delete template. Please try again.');
+        }
+    };
+
     // Autoplay when requested via query param once phrases are available
     useEffect(() => {
         const shouldAutoplay = searchParams.get('autoplay') === '1' || searchParams.get('autoplay') === 'true';
@@ -232,6 +267,7 @@ export default function TemplateDetailPage() {
                 targetLang={selectedTargetLang}
                 className="flex"
                 titleClassName="max-w-[250px]"
+                onDelete={isAdmin ? handleDeleteTemplate : undefined}
             />
 
         </div>
