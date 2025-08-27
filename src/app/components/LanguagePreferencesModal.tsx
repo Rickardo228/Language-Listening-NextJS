@@ -35,10 +35,10 @@ export function LanguagePreferencesModal({ isOpen, onClose, user }: LanguagePref
                 preferredInputLang: inputLang,
                 preferredTargetLang: targetLang
             });
-            
+
             // Refresh user profile to get updated data
             await refreshUserProfile();
-            
+
             onClose();
         } catch (error) {
             console.error('Error saving language preferences:', error);
@@ -113,7 +113,7 @@ export function LanguagePreferencesModal({ isOpen, onClose, user }: LanguagePref
                             >
                                 {languageOptions.map((lang) => (
                                     <option key={lang.code} value={lang.code}>
-                                        {getFlagEmoji(lang.code)} {lang.label}
+                                        {lang.label}
                                     </option>
                                 ))}
                             </select>
@@ -132,7 +132,7 @@ export function LanguagePreferencesModal({ isOpen, onClose, user }: LanguagePref
                             >
                                 {languageOptions.map((lang) => (
                                     <option key={lang.code} value={lang.code}>
-                                        {getFlagEmoji(lang.code)} {lang.label}
+                                        {lang.label}
                                     </option>
                                 ))}
                             </select>
@@ -142,9 +142,9 @@ export function LanguagePreferencesModal({ isOpen, onClose, user }: LanguagePref
                         <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
                             <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Preview:</p>
                             <div className="flex items-center gap-2 text-sm">
-                                <span className="font-medium">{inputLanguage && getFlagEmoji(inputLanguage.code)} {inputLanguage?.label}</span>
+                                <span className="font-medium">{inputLanguage && inputLanguage?.label}</span>
                                 <span className="text-gray-400">→</span>
-                                <span className="font-medium">{targetLanguage && getFlagEmoji(targetLanguage.code)} {targetLanguage?.label}</span>
+                                <span className="font-medium">{targetLanguage && targetLanguage?.label}</span>
                             </div>
                         </div>
                     </div>
