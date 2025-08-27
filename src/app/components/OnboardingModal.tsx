@@ -4,10 +4,59 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { OnboardingLanguageSelect } from './OnboardingLanguageSelect';
 import { OnboardingAbilitySelect } from './OnboardingAbilitySelect';
-import { languageOptions } from '../types';
+import { languageOptions, Phrase, CollectionType as CollectionTypeEnum } from '../types';
 import { saveOnboardingData } from '../utils/userPreferences';
-import { trackOnboardingCompleted } from '../../lib/mixpanelClient';
+import { trackOnboardingCompleted, trackCreateList } from '../../lib/mixpanelClient';
 import { useUser } from '../contexts/UserContext';
+import { getFirestore, collection, addDoc, getDocs, query, orderBy, limit as fbLimit } from 'firebase/firestore';
+import { defaultPresentationConfig, defaultPresentationConfigs } from '../defaultConfig';
+import defaultPhrasesData from '../../defaultPhrases.json';
+import { User } from 'firebase/auth';
+
+type PhraseData = {
+  translated: string;
+  audioUrl: string;
+  duration: number;
+  voice: string;
+  romanized: string;
+};
+type LangData = {
+  lang: string;
+  data: { [key: string]: PhraseData };
+};
+
+const firestore = getFirestore();
+
+const getDefaultPhrasesForLanguages = (inputLang: string, targetLang: string): Phrase[] => {
+  const inputLangData = defaultPhrasesData.find(item => item.lang === inputLang) as LangData | undefined;
+  const targetLangData = defaultPhrasesData.find(item => item.lang === targetLang) as LangData | undefined;
+  if (!inputLangData || !targetLangData) return [];
+
+  const now = new Date().toISOString();
+  return Object.entries(inputLangData.data).map(([input, inputPhraseData]: [string, { translated: string; romanized: string; audioUrl: string; duration: number; voice: string }]) => {
+    const targetPhraseData = targetLangData.data[input];
+
+    let romanized = "";
+    if (targetPhraseData && targetPhraseData.romanized && targetPhraseData.romanized !== "null") {
+      romanized = targetPhraseData.romanized;
+    } else if (inputPhraseData.romanized && inputPhraseData.romanized !== "null") {
+      romanized = inputPhraseData.romanized;
+    }
+
+    return {
+      input,
+      translated: targetPhraseData ? targetPhraseData.translated : inputPhraseData.translated,
+      inputLang: inputLang,
+      targetLang: targetLang,
+      inputAudio: inputPhraseData.audioUrl ? { audioUrl: inputPhraseData.audioUrl, duration: inputPhraseData.duration } : null,
+      outputAudio: targetPhraseData && targetPhraseData.audioUrl ? { audioUrl: targetPhraseData.audioUrl, duration: targetPhraseData.duration } : null,
+      romanized: romanized,
+      inputVoice: inputPhraseData.voice,
+      targetVoice: targetPhraseData ? targetPhraseData.voice : undefined,
+      created_at: now
+    };
+  });
+};
 
 interface OnboardingModalProps {
     isOpen: boolean;
@@ -39,6 +88,39 @@ export function OnboardingModal({
         if (preselectedTargetLang) setTargetLang(preselectedTargetLang);
     }, [preselectedInputLang, preselectedTargetLang]);
 
+    const handleCreateCollection = async (phrases: Phrase[], prompt?: string, collectionType?: CollectionTypeEnum, userArg?: User) => {
+        const userId = userArg?.uid || user?.uid;
+        if (!userId) return;
+        const generatedName = prompt || 'New List';
+        const now = new Date().toISOString();
+        const newCollection = {
+            name: generatedName,
+            phrases: phrases.map(phrase => ({
+                ...phrase,
+                created_at: now
+            })),
+            created_at: now,
+            collectionType: collectionType || 'phrases',
+            presentationConfig: {
+                ...(collectionType ? defaultPresentationConfigs[collectionType] : defaultPresentationConfig),
+                name: generatedName
+            }
+        };
+        const colRef = collection(firestore, 'users', userId, 'collections');
+        const docRef = await addDoc(colRef, newCollection);
+
+        trackCreateList(
+            docRef.id,
+            generatedName,
+            phrases.length,
+            collectionType || 'phrases',
+            phrases[0]?.inputLang || 'unknown',
+            phrases[0]?.targetLang || 'unknown'
+        );
+
+        return docRef.id;
+    };
+
     const handleComplete = async () => {
         if (!user) return;
         
@@ -50,6 +132,17 @@ export function OnboardingModal({
                 inputLang,
                 targetLang
             }, user); // Pass Firebase user for complete profile data
+            
+            // Check if user has any collections, create default if none
+            const colRef = collection(firestore, 'users', user.uid, 'collections');
+            const q = query(colRef, orderBy('created_at', 'desc'), fbLimit(1));
+            const snapshot = await getDocs(q);
+            
+            if (snapshot.empty) {
+                // Always create default phrases with user's preferred languages
+                const defaultPhrases = getDefaultPhrasesForLanguages(inputLang, targetLang);
+                await handleCreateCollection(defaultPhrases, "My List", "phrases", user);
+            }
             
             // Track completion in analytics
             trackOnboardingCompleted(user.uid, abilityLevel, inputLang, targetLang);
@@ -96,7 +189,7 @@ export function OnboardingModal({
                             Welcome to Language Shadowing!
                         </h2>
                         <p className="text-gray-600 dark:text-gray-400">
-                            Let&apos;s personalize your learning experience in just a few steps
+                            Let's personalize your learning experience in just a few steps
                         </p>
                     </div>
 
@@ -148,7 +241,7 @@ export function OnboardingModal({
                                         </h3>
                                         <p className="text-gray-600 dark:text-gray-400">
                                             {preselectedInputLang && preselectedTargetLang 
-                                                ? "We&apos;ve pre-selected your languages from sign-up. You can change them if needed."
+                                                ? "We've pre-selected your languages from sign-up. You can change them if needed."
                                                 : "Select the languages you want to practice with"
                                             }
                                         </p>

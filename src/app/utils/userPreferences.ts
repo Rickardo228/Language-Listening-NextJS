@@ -109,9 +109,6 @@ export const saveOnboardingData = async (
   const profileData: Partial<UserProfile> = {
     // Core user info (from Firebase user if available)
     uid: userId,
-    email: firebaseUser?.email || undefined,
-    displayName: firebaseUser?.displayName || undefined,
-    photoURL: firebaseUser?.photoURL || undefined,
     
     // Onboarding & preferences (from form data)
     abilityLevel: data.abilityLevel as UserProfile['abilityLevel'],
@@ -122,6 +119,17 @@ export const saveOnboardingData = async (
     // Metadata (set current timestamp for activity)
     lastActiveAt: new Date().toISOString(),
   };
+
+  // Only add Firebase user fields if they have values (not undefined)
+  if (firebaseUser?.email) {
+    profileData.email = firebaseUser.email;
+  }
+  if (firebaseUser?.displayName) {
+    profileData.displayName = firebaseUser.displayName;
+  }
+  if (firebaseUser?.photoURL) {
+    profileData.photoURL = firebaseUser.photoURL;
+  }
 
   await createOrUpdateUserProfile(userId, profileData);
 };
