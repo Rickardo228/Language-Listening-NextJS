@@ -6,10 +6,17 @@ import { auth } from '../firebase';
 import clarity from '@microsoft/clarity';
 import { trackLogin, identifyUser } from '../../lib/mixpanelClient';
 
+interface UserClaims {
+    admin?: boolean;
+    [key: string]: any; // Allow for other custom claims
+}
+
 interface UserContextType {
     user: User | null;
     isAuthLoading: boolean;
     hasInitialisedForUser: React.MutableRefObject<boolean>;
+    userClaims: UserClaims | null;
+    isAdmin: boolean;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -29,6 +36,7 @@ interface UserContextProviderProps {
 export const UserContextProvider: React.FC<UserContextProviderProps> = ({ children }) => {
     const [user, setUser] = useState<User | null>(null);
     const [isAuthLoading, setIsAuthLoading] = useState(true);
+    const [userClaims, setUserClaims] = useState<UserClaims | null>(null);
     const hasInitialisedForUser = useRef(false);
 
     // Initialize Clarity on mount (only in production)
@@ -46,20 +54,36 @@ export const UserContextProvider: React.FC<UserContextProviderProps> = ({ childr
             console.log("onAuthStateChanged", firebaseUser);
             console.log("hasInitialisedForUser", hasInitialisedForUser?.current);
 
-            if (firebaseUser && !hasInitialisedForUser.current) {
-                console.log("onAuthStateChanged 2", firebaseUser);
-                hasInitialisedForUser.current = true;
-
-                // Identify user in Clarity
-                if ((window as unknown as { clarity: unknown })?.clarity) {
-                    clarity.identify(firebaseUser.email || firebaseUser.uid);
+            if (firebaseUser) {
+                // Extract custom claims from ID token
+                try {
+                    const idTokenResult = await firebaseUser.getIdTokenResult();
+                    const claims = idTokenResult.claims as UserClaims;
+                    console.log("Custom claims:", claims);
+                    setUserClaims(claims);
+                } catch (error) {
+                    console.error("Error getting custom claims:", error);
+                    setUserClaims(null);
                 }
 
-                // Identify user in Mixpanel with email
-                identifyUser(firebaseUser.uid, firebaseUser.email || undefined);
+                if (!hasInitialisedForUser.current) {
+                    console.log("onAuthStateChanged 2", firebaseUser);
+                    hasInitialisedForUser.current = true;
 
-                // Track login event
-                trackLogin(firebaseUser.uid, firebaseUser.providerData[0]?.providerId || 'email');
+                    // Identify user in Clarity
+                    if ((window as unknown as { clarity: unknown })?.clarity) {
+                        clarity.identify(firebaseUser.email || firebaseUser.uid);
+                    }
+
+                    // Identify user in Mixpanel with email
+                    identifyUser(firebaseUser.uid, firebaseUser.email || undefined);
+
+                    // Track login event
+                    trackLogin(firebaseUser.uid, firebaseUser.providerData[0]?.providerId || 'email');
+                }
+            } else {
+                // User is signed out, clear claims
+                setUserClaims(null);
             }
 
             setUser(firebaseUser);
@@ -73,6 +97,8 @@ export const UserContextProvider: React.FC<UserContextProviderProps> = ({ childr
         user,
         isAuthLoading,
         hasInitialisedForUser,
+        userClaims,
+        isAdmin: Boolean(userClaims?.admin),
     };
 
     return (
