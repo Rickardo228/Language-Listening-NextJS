@@ -35,7 +35,9 @@ const getLanguageLabel = (code: string): string => {
 };
 
 export default function TemplateDetailPage() {
-    const { groupId } = useParams();
+    const { groupId: rawGroupId } = useParams();
+    // Decode the URL-encoded groupId to handle spaces and special characters
+    const groupId = rawGroupId ? decodeURIComponent(rawGroupId as string) : null;
     // const router = useRouter();
     const searchParams = useSearchParams();
     const { user, isAuthLoading, isAdmin } = useUser();
