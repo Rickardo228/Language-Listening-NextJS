@@ -9,6 +9,7 @@ import { UserContextProvider } from './contexts/UserContext'
 import { SidebarProvider } from './contexts/SidebarContext'
 import MixpanelProvider from './components/MixpanelProvider'
 import { AppLayout } from './components/AppLayout'
+import { CookieConsent } from './components/CookieConsent'
 
 const playpenSans = Playpen_Sans({
   subsets: ["latin"],
@@ -48,6 +49,7 @@ export default function RootLayout({
                 <AppLayout>
                   {children}
                 </AppLayout>
+                <CookieConsent />
               </MixpanelProvider>
             </SidebarProvider>
           </UserContextProvider>

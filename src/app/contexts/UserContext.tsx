@@ -39,14 +39,7 @@ export const UserContextProvider: React.FC<UserContextProviderProps> = ({ childr
     const [userClaims, setUserClaims] = useState<UserClaims | null>(null);
     const hasInitialisedForUser = useRef(false);
 
-    // Initialize Clarity on mount (only in production)
-    useEffect(() => {
-        // Only initialize Clarity if not on localhost
-        if (typeof window !== 'undefined' && !window?.location?.hostname?.includes('localhost')) {
-            // Initialize Clarity with your project ID
-            clarity.init("rmwvuwqm9k");
-        }
-    }, []);
+    // Note: Clarity initialization is now handled by CookieConsent component for GDPR compliance
 
 
     useEffect(() => {
