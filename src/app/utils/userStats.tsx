@@ -37,7 +37,7 @@ function getStreakMessage(streakCount: number): { emoji: string; message: string
     { range: [5, 5], emoji: "🚀", message: "ROCKETING UP!" },
     { range: [6, 6], emoji: "⭐", message: "SHINING BRIGHT!" },
     { range: [7, 7], emoji: "👑", message: "WEEK CHAMPION!" },
-    
+
     // Day 8-14: Second week
     { range: [8, 8], emoji: "💎", message: "DIAMOND STREAK!" },
     { range: [9, 9], emoji: "🎯", message: "PRECISION MODE!" },
@@ -46,7 +46,7 @@ function getStreakMessage(streakCount: number): { emoji: string; message: string
     { range: [12, 12], emoji: "🎨", message: "MASTERY MODE!" },
     { range: [13, 13], emoji: "⚔️", message: "WARRIOR SPIRIT!" },
     { range: [14, 14], emoji: "🎪", message: "TWO WEEK CIRCUS!" },
-    
+
     // Day 15-21: Third week
     { range: [15, 15], emoji: "🌟", message: "SUPERSTAR!" },
     { range: [16, 16], emoji: "🎭", message: "PERFORMANCE PEAK!" },
@@ -55,12 +55,12 @@ function getStreakMessage(streakCount: number): { emoji: string; message: string
     { range: [19, 19], emoji: "🎊", message: "CELEBRATION TIME!" },
     { range: [20, 20], emoji: "🎯", message: "BULLSEYE PRECISION!" },
     { range: [21, 21], emoji: "🎪", message: "THREE WEEK SHOW!" },
-    
+
     // Day 22-30: Month milestone
     { range: [22, 24], emoji: "🔮", message: "CRYSTAL CLEAR!" },
     { range: [25, 27], emoji: "🎨", message: "ARTISTIC GENIUS!" },
     { range: [28, 30], emoji: "🏰", message: "MONTH KINGDOM!" },
-    
+
     // Day 31-60: Habit formation
     { range: [31, 35], emoji: "👑", message: "HABIT ROYALTY!" },
     { range: [36, 40], emoji: "🎭", message: "MASTER PERFORMER!" },
@@ -68,20 +68,20 @@ function getStreakMessage(streakCount: number): { emoji: string; message: string
     { range: [46, 50], emoji: "🌟", message: "CONSTELLATION!" },
     { range: [51, 55], emoji: "🏅", message: "OLYMPIC LEVEL!" },
     { range: [56, 60], emoji: "🚀", message: "SPACE MISSION!" },
-    
+
     // Day 61-100: Elite tier
     { range: [61, 70], emoji: "💫", message: "COSMIC POWER!" },
     { range: [71, 80], emoji: "🌌", message: "GALAXY MASTER!" },
     { range: [81, 90], emoji: "⭐", message: "STELLAR PERFORMANCE!" },
     { range: [91, 100], emoji: "🌈", message: "RAINBOW WARRIOR!" },
-    
+
     // Day 101-365: Legendary
     { range: [101, 150], emoji: "🏛️", message: "TEMPLE GUARDIAN!" },
     { range: [151, 200], emoji: "🗿", message: "MONUMENT STATUS!" },
     { range: [201, 250], emoji: "🏔️", message: "MOUNTAIN CLIMBER!" },
     { range: [251, 300], emoji: "🌋", message: "VOLCANO POWER!" },
     { range: [301, 365], emoji: "🎆", message: "YEAR-LONG LEGEND!" },
-    
+
     // Day 366+: Mythical
     { range: [366, 500], emoji: "🔥", message: "ETERNAL FLAME!" },
     { range: [501, 750], emoji: "⚡", message: "LIGHTNING DEITY!" },
@@ -94,7 +94,7 @@ function getStreakMessage(streakCount: number): { emoji: string; message: string
       return { emoji: msg.emoji, message: msg.message };
     }
   }
-  
+
   // Fallback
   return { emoji: "🔥", message: "ON FIRE!" };
 }
@@ -123,20 +123,20 @@ async function calculateStreak(userId: string): Promise<number> {
     const dailyStatsRef = collection(firestore, 'users', userId, 'stats', 'listening', 'daily');
     const recentQuery = query(dailyStatsRef, orderBy('date', 'desc'), limit(90)); // Check last 90 days for streak
     const snapshot = await getDocs(recentQuery);
-    
+
     const dailyData = snapshot.docs.map(doc => ({
       date: doc.data().date,
       count: doc.data().count
     })).sort((a, b) => b.date.localeCompare(a.date)); // Sort by date descending
-    
+
     let streak = 0;
     const today = new Date().toISOString().split('T')[0];
     let checkDate = new Date();
-    
+
     for (let i = 0; i < 90; i++) {
       const dateStr = checkDate.toISOString().split('T')[0];
       const dayData = dailyData.find(d => d.date === dateStr);
-      
+
       if (dayData && dayData.count > 0) {
         streak++;
       } else if (dateStr === today) {
@@ -146,11 +146,11 @@ async function calculateStreak(userId: string): Promise<number> {
         // Gap found, streak is broken
         break;
       }
-      
+
       // Move to previous day
       checkDate.setDate(checkDate.getDate() - 1);
     }
-    
+
     return streak;
   } catch (error) {
     console.error('Error calculating streak:', error);
@@ -468,11 +468,11 @@ export const useUpdateUserStats = () => {
         console.error("Error updating user stats:", err);
       }
     }
-    
+
     // Calculate and update current streak after database updates
     try {
       const newStreak = await calculateStreak(user.uid);
-      
+
       // Check if streak actually incremented or if debug mode is on
       if (newStreak > currentStreak || DEBUG_STREAK_MODE) {
         setPreviousStreak(currentStreak);
@@ -609,13 +609,13 @@ export const useUpdateUserStats = () => {
                   >
                     <motion.span
                       className="text-2xl"
-                      animate={{ 
-                        scale: [1, 1.2, 1], 
-                        rotate: [0, 5, -5, 0] 
+                      animate={{
+                        scale: [1, 1.2, 1],
+                        rotate: [0, 5, -5, 0]
                       }}
-                      transition={{ 
-                        delay: 0.8, 
-                        duration: 0.8, 
+                      transition={{
+                        delay: 0.8,
+                        duration: 0.8,
                         repeat: 1,
                         ease: "easeInOut"
                       }}
@@ -636,11 +636,11 @@ export const useUpdateUserStats = () => {
                             initial={{ opacity: 0, y: -20, scale: 0.5 }}
                             animate={{ opacity: 1, y: 0, scale: 1 }}
                             exit={{ opacity: 0, y: 20, scale: 0.5 }}
-                            transition={{ 
-                              delay: 0.9, 
-                              duration: 0.4, 
-                              type: "spring", 
-                              stiffness: 300 
+                            transition={{
+                              delay: 0.9,
+                              duration: 0.4,
+                              type: "spring",
+                              stiffness: 300
                             }}
                           >
                             {currentStreak}
@@ -648,7 +648,7 @@ export const useUpdateUserStats = () => {
                         </AnimatePresence>
                         <span> day streak</span>
                       </motion.div>
-                      <motion.span 
+                      <motion.span
                         className="text-xs font-medium text-white/80 uppercase tracking-wide"
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
@@ -657,33 +657,33 @@ export const useUpdateUserStats = () => {
                         {streakData.message}
                       </motion.span>
                     </motion.div>
-                  
-                  {/* Enhanced sparkle effect for increment */}
-                  <motion.div className="absolute -top-1 -right-1">
-                    {[...Array(2)].map((_, i) => (
-                      <motion.span
-                        key={i}
-                        className="absolute text-yellow-200 text-sm"
-                        initial={{ opacity: 0, scale: 0 }}
-                        animate={{
-                          opacity: [0, 1, 0],
-                          scale: [0, 1, 0],
-                          rotate: [0, 180, 360],
-                          x: [0, Math.random() * 20 - 10],
-                          y: [0, -Math.random() * 15 - 5]
-                        }}
-                        transition={{
-                          delay: 1.2 + i * 0.2,
-                          duration: 1.0,
-                          ease: "easeOut"
-                        }}
-                      >
-                        ✨
-                      </motion.span>
-                    ))}
+
+                    {/* Enhanced sparkle effect for increment */}
+                    <motion.div className="absolute -top-1 -right-1">
+                      {[...Array(2)].map((_, i) => (
+                        <motion.span
+                          key={i}
+                          className="absolute text-yellow-200 text-sm"
+                          initial={{ opacity: 0, scale: 0 }}
+                          animate={{
+                            opacity: [0, 1, 0],
+                            scale: [0, 1, 0],
+                            rotate: [0, 180, 360],
+                            x: [0, Math.random() * 20 - 10],
+                            y: [0, -Math.random() * 15 - 5]
+                          }}
+                          transition={{
+                            delay: 1.2 + i * 0.2,
+                            duration: 1.0,
+                            ease: "easeOut"
+                          }}
+                        >
+                          ✨
+                        </motion.span>
+                      ))}
+                    </motion.div>
                   </motion.div>
-                </motion.div>
-              );
+                );
               })()}
 
               {/* Show recent milestones in the persistent popup */}
@@ -694,13 +694,13 @@ export const useUpdateUserStats = () => {
                   animate={{ opacity: 1, height: "auto" }}
                   transition={{ delay: 0.3, duration: 0.3 }}
                 >
-                  <motion.div 
+                  <motion.div
                     className="text-sm font-bold mb-3 flex items-center text-white"
                     initial={{ scale: 0.9 }}
                     animate={{ scale: 1 }}
                     transition={{ delay: 0.4, type: "spring", stiffness: 200 }}
                   >
-                    <motion.span 
+                    <motion.span
                       className="mr-2 text-base"
                       animate={{ rotate: [0, 10, -10, 0] }}
                       transition={{ delay: 0.5, duration: 0.8, repeat: 1 }}
@@ -716,8 +716,8 @@ export const useUpdateUserStats = () => {
                         className={`p-3 rounded-lg border ${getMilestoneBackgroundStyle(milestone.color)} shadow-sm`}
                         initial={{ opacity: 0, x: -20, scale: 0.9 }}
                         animate={{ opacity: 1, x: 0, scale: 1 }}
-                        transition={{ 
-                          delay: 0.5 + index * 0.1, 
+                        transition={{
+                          delay: 0.5 + index * 0.1,
                           type: "spring",
                           stiffness: 300,
                           damping: 20
@@ -728,17 +728,17 @@ export const useUpdateUserStats = () => {
                             <motion.div
                               className={`w-3 h-3 rounded-full ${milestone.color.replace('text-', 'bg-')}`}
                               animate={{ scale: [1, 1.2, 1] }}
-                              transition={{ 
-                                delay: 0.7 + index * 0.1, 
+                              transition={{
+                                delay: 0.7 + index * 0.1,
                                 duration: 0.6,
-                                repeat: 1 
+                                repeat: 1
                               }}
                             />
                             <span className={`font-bold text-sm ${milestone.color}`}>
                               {milestone.title}
                             </span>
                           </div>
-                          <motion.span 
+                          <motion.span
                             className="text-xs font-medium text-foreground/70 px-2 py-1 bg-white/50 dark:bg-black/20 rounded-full"
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
@@ -747,7 +747,7 @@ export const useUpdateUserStats = () => {
                             {milestone.count.toLocaleString()} phrases
                           </motion.span>
                         </div>
-                        <motion.div 
+                        <motion.div
                           className="text-xs text-foreground/60 mt-1 italic"
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}

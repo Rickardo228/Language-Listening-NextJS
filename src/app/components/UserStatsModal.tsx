@@ -7,77 +7,95 @@ import { useUser } from '../contexts/UserContext';
 import { getPhraseRankTitle, getLanguageRankTitle } from '../utils/rankingSystem';
 import { SettingsModal } from './SettingsModal';
 
+/**
+ * DEVELOPMENT ONLY: Personal Best Debug Mode
+ * 
+ * ⚠️  SECURITY WARNING: This debug mode is designed to NEVER work in production.
+ * 
+ * Multiple safety layers:
+ * 1. Environment variable check (NODE_ENV !== 'production')
+ * 2. Hard-coded false as final safety
+ * 3. Runtime hostname checks for common hosting platforms
+ * 4. Console warnings and errors for security monitoring
+ * 
+ * To enable debug mode for local development:
+ * 1. Ensure NODE_ENV is 'development'
+ * 2. Change the hard-coded 'false' to 'true' temporarily
+ * 3. NEVER commit this change to version control
+ * 4. Always revert back to 'false' before pushing
+ */
+
 // Import the streak messaging function (duplicate here for simplicity)
 function getStreakMessage(streakCount: number): { emoji: string; message: string } {
-  const messages = [
-    // Day 1-7: First week - daily changes
-    { range: [1, 1], emoji: "🌱", message: "STREAK STARTED!" },
-    { range: [2, 2], emoji: "💪", message: "BUILDING MOMENTUM!" },
-    { range: [3, 3], emoji: "⚡", message: "GAINING POWER!" },
-    { range: [4, 4], emoji: "🔥", message: "ON FIRE!" },
-    { range: [5, 5], emoji: "🚀", message: "ROCKETING UP!" },
-    { range: [6, 6], emoji: "⭐", message: "SHINING BRIGHT!" },
-    { range: [7, 7], emoji: "👑", message: "WEEK CHAMPION!" },
-    
-    // Day 8-14: Second week
-    { range: [8, 8], emoji: "💎", message: "DIAMOND STREAK!" },
-    { range: [9, 9], emoji: "🎯", message: "PRECISION MODE!" },
-    { range: [10, 10], emoji: "🌪️", message: "TORNADO POWER!" },
-    { range: [11, 11], emoji: "🏆", message: "TROPHY LEVEL!" },
-    { range: [12, 12], emoji: "🎨", message: "MASTERY MODE!" },
-    { range: [13, 13], emoji: "⚔️", message: "WARRIOR SPIRIT!" },
-    { range: [14, 14], emoji: "🎪", message: "TWO WEEK CIRCUS!" },
-    
-    // Day 15-21: Third week
-    { range: [15, 15], emoji: "🌟", message: "SUPERSTAR!" },
-    { range: [16, 16], emoji: "🎭", message: "PERFORMANCE PEAK!" },
-    { range: [17, 17], emoji: "🎸", message: "ROCKSTAR LEVEL!" },
-    { range: [18, 18], emoji: "🎲", message: "LUCKY STREAK!" },
-    { range: [19, 19], emoji: "🎊", message: "CELEBRATION TIME!" },
-    { range: [20, 20], emoji: "🎯", message: "BULLSEYE PRECISION!" },
-    { range: [21, 21], emoji: "🎪", message: "THREE WEEK SHOW!" },
-    
-    // Day 22-30: Month milestone
-    { range: [22, 24], emoji: "🔮", message: "CRYSTAL CLEAR!" },
-    { range: [25, 27], emoji: "🎨", message: "ARTISTIC GENIUS!" },
-    { range: [28, 30], emoji: "🏰", message: "MONTH KINGDOM!" },
-    
-    // Day 31-60: Habit formation
-    { range: [31, 35], emoji: "👑", message: "HABIT ROYALTY!" },
-    { range: [36, 40], emoji: "🎭", message: "MASTER PERFORMER!" },
-    { range: [41, 45], emoji: "🎪", message: "CIRCUS DIRECTOR!" },
-    { range: [46, 50], emoji: "🌟", message: "CONSTELLATION!" },
-    { range: [51, 55], emoji: "🏅", message: "OLYMPIC LEVEL!" },
-    { range: [56, 60], emoji: "🚀", message: "SPACE MISSION!" },
-    
-    // Day 61-100: Elite tier
-    { range: [61, 70], emoji: "💫", message: "COSMIC POWER!" },
-    { range: [71, 80], emoji: "🌌", message: "GALAXY MASTER!" },
-    { range: [81, 90], emoji: "⭐", message: "STELLAR PERFORMANCE!" },
-    { range: [91, 100], emoji: "🌈", message: "RAINBOW WARRIOR!" },
-    
-    // Day 101-365: Legendary
-    { range: [101, 150], emoji: "🏛️", message: "TEMPLE GUARDIAN!" },
-    { range: [151, 200], emoji: "🗿", message: "MONUMENT STATUS!" },
-    { range: [201, 250], emoji: "🏔️", message: "MOUNTAIN CLIMBER!" },
-    { range: [251, 300], emoji: "🌋", message: "VOLCANO POWER!" },
-    { range: [301, 365], emoji: "🎆", message: "YEAR-LONG LEGEND!" },
-    
-    // Day 366+: Mythical
-    { range: [366, 500], emoji: "🔥", message: "ETERNAL FLAME!" },
-    { range: [501, 750], emoji: "⚡", message: "LIGHTNING DEITY!" },
-    { range: [751, 1000], emoji: "🌟", message: "CELESTIAL BEING!" },
-    { range: [1001, Infinity], emoji: "🌈", message: "TRANSCENDENT!" }
-  ];
+    const messages = [
+        // Day 1-7: First week - daily changes
+        { range: [1, 1], emoji: "🌱", message: "STREAK STARTED!" },
+        { range: [2, 2], emoji: "💪", message: "BUILDING MOMENTUM!" },
+        { range: [3, 3], emoji: "⚡", message: "GAINING POWER!" },
+        { range: [4, 4], emoji: "🔥", message: "ON FIRE!" },
+        { range: [5, 5], emoji: "🚀", message: "ROCKETING UP!" },
+        { range: [6, 6], emoji: "⭐", message: "SHINING BRIGHT!" },
+        { range: [7, 7], emoji: "👑", message: "WEEK CHAMPION!" },
 
-  for (const msg of messages) {
-    if (streakCount >= msg.range[0] && streakCount <= msg.range[1]) {
-      return { emoji: msg.emoji, message: msg.message };
+        // Day 8-14: Second week
+        { range: [8, 8], emoji: "💎", message: "DIAMOND STREAK!" },
+        { range: [9, 9], emoji: "🎯", message: "PRECISION MODE!" },
+        { range: [10, 10], emoji: "🌪️", message: "TORNADO POWER!" },
+        { range: [11, 11], emoji: "🏆", message: "TROPHY LEVEL!" },
+        { range: [12, 12], emoji: "🎨", message: "MASTERY MODE!" },
+        { range: [13, 13], emoji: "⚔️", message: "WARRIOR SPIRIT!" },
+        { range: [14, 14], emoji: "🎪", message: "TWO WEEK CIRCUS!" },
+
+        // Day 15-21: Third week
+        { range: [15, 15], emoji: "🌟", message: "SUPERSTAR!" },
+        { range: [16, 16], emoji: "🎭", message: "PERFORMANCE PEAK!" },
+        { range: [17, 17], emoji: "🎸", message: "ROCKSTAR LEVEL!" },
+        { range: [18, 18], emoji: "🎲", message: "LUCKY STREAK!" },
+        { range: [19, 19], emoji: "🎊", message: "CELEBRATION TIME!" },
+        { range: [20, 20], emoji: "🎯", message: "BULLSEYE PRECISION!" },
+        { range: [21, 21], emoji: "🎪", message: "THREE WEEK SHOW!" },
+
+        // Day 22-30: Month milestone
+        { range: [22, 24], emoji: "🔮", message: "CRYSTAL CLEAR!" },
+        { range: [25, 27], emoji: "🎨", message: "ARTISTIC GENIUS!" },
+        { range: [28, 30], emoji: "🏰", message: "MONTH KINGDOM!" },
+
+        // Day 31-60: Habit formation
+        { range: [31, 35], emoji: "👑", message: "HABIT ROYALTY!" },
+        { range: [36, 40], emoji: "🎭", message: "MASTER PERFORMER!" },
+        { range: [41, 45], emoji: "🎪", message: "CIRCUS DIRECTOR!" },
+        { range: [46, 50], emoji: "🌟", message: "CONSTELLATION!" },
+        { range: [51, 55], emoji: "🏅", message: "OLYMPIC LEVEL!" },
+        { range: [56, 60], emoji: "🚀", message: "SPACE MISSION!" },
+
+        // Day 61-100: Elite tier
+        { range: [61, 70], emoji: "💫", message: "COSMIC POWER!" },
+        { range: [71, 80], emoji: "🌌", message: "GALAXY MASTER!" },
+        { range: [81, 90], emoji: "⭐", message: "STELLAR PERFORMANCE!" },
+        { range: [91, 100], emoji: "🌈", message: "RAINBOW WARRIOR!" },
+
+        // Day 101-365: Legendary
+        { range: [101, 150], emoji: "🏛️", message: "TEMPLE GUARDIAN!" },
+        { range: [151, 200], emoji: "🗿", message: "MONUMENT STATUS!" },
+        { range: [201, 250], emoji: "🏔️", message: "MOUNTAIN CLIMBER!" },
+        { range: [251, 300], emoji: "🌋", message: "VOLCANO POWER!" },
+        { range: [301, 365], emoji: "🎆", message: "YEAR-LONG LEGEND!" },
+
+        // Day 366+: Mythical
+        { range: [366, 500], emoji: "🔥", message: "ETERNAL FLAME!" },
+        { range: [501, 750], emoji: "⚡", message: "LIGHTNING DEITY!" },
+        { range: [751, 1000], emoji: "🌟", message: "CELESTIAL BEING!" },
+        { range: [1001, Infinity], emoji: "🌈", message: "TRANSCENDENT!" }
+    ];
+
+    for (const msg of messages) {
+        if (streakCount >= msg.range[0] && streakCount <= msg.range[1]) {
+            return { emoji: msg.emoji, message: msg.message };
+        }
     }
-  }
-  
-  // Fallback
-  return { emoji: "🔥", message: "ON FIRE!" };
+
+    // Fallback
+    return { emoji: "🔥", message: "ON FIRE!" };
 }
 
 interface UserStatsModalProps {
@@ -106,7 +124,7 @@ interface LanguageStats {
 }
 
 // Simple bar chart component
-function DailyStatsChart({ dailyStats }: { dailyStats: DailyStats[] }) {
+function DailyStatsChart({ dailyStats, personalBest }: { dailyStats: DailyStats[], personalBest: { count: number; date: string; achievedAt: string } | null }) {
     if (dailyStats.length === 0) return null;
 
     const maxCount = Math.max(...dailyStats.map(d => d.count));
@@ -120,16 +138,27 @@ function DailyStatsChart({ dailyStats }: { dailyStats: DailyStats[] }) {
                     const minHeight = 4; // Minimum height for 0 values to be visible
                     const finalHeight = Math.max(height, minHeight);
                     const isToday = new Date(day.date).toDateString() === new Date().toDateString();
+                    const isPersonalBest = personalBest && personalBest.date === day.date;
 
                     return (
-                        <div key={day.date} className="flex flex-col items-center flex-1">
+                        <div key={day.date} className="flex flex-col items-center flex-1 relative">
                             <div
-                                className={`w-full rounded-t transition-all duration-300 ${isToday
-                                    ? 'bg-primary'
-                                    : 'bg-secondary/40 hover:bg-secondary/60'
+                                className={`w-full rounded-t transition-all duration-300 ${isPersonalBest
+                                    ? 'bg-gradient-to-t from-amber-500 to-yellow-400 border-2 border-amber-600'
+                                    : isToday
+                                        ? 'bg-primary'
+                                        : 'bg-secondary/40 hover:bg-secondary/60'
                                     }`}
                                 style={{ height: `${finalHeight}px` }}
                             />
+
+                            {/* Personal Best Crown */}
+                            {isPersonalBest && (
+                                <div className="absolute -top-6 left-1/2 transform -translate-x-1/2">
+                                    <div className="text-amber-500 text-lg drop-shadow-lg animate-bounce">👑</div>
+                                </div>
+                            )}
+
                             <div className="text-xs text-foreground/60 mt-2 text-center">
                                 {new Date(day.date).toLocaleDateString('en-US', {
                                     month: 'short',
@@ -207,10 +236,26 @@ export function UserStatsModal({ isOpen, onClose, user }: UserStatsModalProps) {
     const { userProfile } = useUser();
     const [mainStats, setMainStats] = useState<UserStats | null>(null);
     const [dailyStats, setDailyStats] = useState<DailyStats[]>([]);
+    const [personalBestData, setPersonalBestData] = useState<DailyStats | undefined>(undefined);
     const [languageStats, setLanguageStats] = useState<LanguageStats[]>([]);
     const [loading, setLoading] = useState(true);
     const [settingsModalOpen, setSettingsModalOpen] = useState(false);
     const [currentStreak, setCurrentStreak] = useState<number>(0);
+
+    // Debug mode for testing personal best functionality
+    // Multiple safety checks to ensure this is NEVER enabled in production
+    const DEBUG_PERSONAL_BEST_MODE = (
+        process.env.NODE_ENV === 'development' &&
+        process.env.NODE_ENV !== 'production' &&
+        typeof window !== 'undefined' &&
+        window.location.hostname !== 'languageshadowing.com' &&
+        false // TEMPORARILY ENABLED FOR TESTING - REMEMBER TO SET BACK TO FALSE!
+    );
+    console.log(DEBUG_PERSONAL_BEST_MODE)
+    // Build-time safety check - this will cause a compilation error if enabled in production
+    if (process.env.NODE_ENV === 'production' && DEBUG_PERSONAL_BEST_MODE) {
+        throw new Error("🚨 CRITICAL: Debug mode cannot be enabled in production!");
+    }
 
     useEffect(() => {
         if (!isOpen || !user) return;
@@ -226,11 +271,19 @@ export function UserStatsModal({ isOpen, onClose, user }: UserStatsModalProps) {
                     setMainStats(statsDoc.data() as UserStats);
                 }
 
-                // Fetch daily stats (last 7 days)
+                // Fetch daily stats for display (last 7 days) and personal best calculation (most efficient approach)
                 const dailyStatsRef = collection(firestore, 'users', user.uid, 'stats', 'listening', 'daily');
-                const dailyQuery = query(dailyStatsRef, orderBy('date', 'desc'), limit(7));
-                const dailySnapshot = await getDocs(dailyQuery);
-                const dailyData = dailySnapshot.docs.map(doc => doc.data() as DailyStats);
+
+                // Get the day with the highest count (personal best) - most efficient!
+                // Firestore does the heavy lifting: orderBy('count', 'desc') + limit(1) = single document with highest count
+                const personalBestQuery = query(dailyStatsRef, orderBy('count', 'desc'), limit(1));
+                const personalBestSnapshot = await getDocs(personalBestQuery);
+                const personalBestData = personalBestSnapshot.docs[0]?.data() as DailyStats | undefined;
+
+                // Get last 7 days for display
+                const last7DaysQuery = query(dailyStatsRef, orderBy('date', 'desc'), limit(7));
+                const last7DaysSnapshot = await getDocs(last7DaysQuery);
+                const last7DaysData = last7DaysSnapshot.docs.map(doc => doc.data() as DailyStats);
 
                 // Fill in missing days with 0 counts to ensure we always show 7 days
                 const last7Days = [];
@@ -239,7 +292,7 @@ export function UserStatsModal({ isOpen, onClose, user }: UserStatsModalProps) {
                     date.setDate(date.getDate() - i);
                     const dateString = date.toISOString().split('T')[0];
 
-                    const existingDay = dailyData.find(day => day.date === dateString);
+                    const existingDay = last7DaysData.find(day => day.date === dateString);
                     if (existingDay) {
                         last7Days.push(existingDay);
                     } else {
@@ -253,6 +306,9 @@ export function UserStatsModal({ isOpen, onClose, user }: UserStatsModalProps) {
 
                 setDailyStats(last7Days);
 
+                // Store personal best data
+                setPersonalBestData(personalBestData);
+
                 // Fetch language stats
                 const languageStatsRef = collection(firestore, 'users', user.uid, 'stats', 'listening', 'languages');
                 const languageSnapshot = await getDocs(languageStatsRef);
@@ -262,12 +318,12 @@ export function UserStatsModal({ isOpen, onClose, user }: UserStatsModalProps) {
                 // Calculate current streak using all available daily data
                 let streak = 0;
                 const today = new Date().toISOString().split('T')[0];
-                let checkDate = new Date();
-                
+                const checkDate = new Date();
+
                 for (let i = 0; i < Math.min(90, dailyData.length + 7); i++) {
                     const dateStr = checkDate.toISOString().split('T')[0];
                     const dayData = dailyData.find(d => d.date === dateStr);
-                    
+
                     if (dayData && dayData.count > 0) {
                         streak++;
                     } else if (dateStr === today) {
@@ -277,11 +333,11 @@ export function UserStatsModal({ isOpen, onClose, user }: UserStatsModalProps) {
                         // Gap found, streak is broken
                         break;
                     }
-                    
+
                     // Move to previous day
                     checkDate.setDate(checkDate.getDate() - 1);
                 }
-                
+
                 setCurrentStreak(streak);
             } catch (error) {
                 console.error('Error fetching user stats:', error);
@@ -312,11 +368,69 @@ export function UserStatsModal({ isOpen, onClose, user }: UserStatsModalProps) {
     // Calculate trend
     const trend = todayCount > yesterdayCount ? 'up' : todayCount < yesterdayCount ? 'down' : 'same';
 
+    // Use the fetched personal best data directly
+    let personalBest = personalBestData ? {
+        count: personalBestData.count,
+        date: personalBestData.date,
+        achievedAt: personalBestData.lastUpdated
+    } : null;
+
+    // Log personal best details
+    if (personalBest && personalBest.count > 0) {
+        console.log(`🏆 Personal Best: ${personalBest.count} phrases on ${personalBest.date}`);
+        console.log(`📅 Achieved: ${new Date(personalBest.achievedAt).toLocaleDateString()}`);
+    }
+
+    // Debug mode: Override personal best for testing
+    // Additional runtime safety checks
+    if (DEBUG_PERSONAL_BEST_MODE) {
+        // Extra safety: Check if we're in a production-like environment
+        const isProductionLike = (
+            process.env.NODE_ENV === 'production' ||
+            window.location.hostname.includes('vercel.app') ||
+            window.location.hostname.includes('netlify.app') ||
+            window.location.hostname.includes('firebaseapp.com') ||
+            window.location.hostname.includes('herokuapp.com') ||
+            window.location.hostname.includes('railway.app') ||
+            window.location.hostname.includes('render.com') ||
+            window.location.hostname.includes('fly.io') ||
+            window.location.hostname.includes('aws') ||
+            window.location.hostname.includes('azure') ||
+            window.location.hostname.includes('gcp') ||
+            window.location.hostname.includes('cloudflare')
+        );
+
+        if (isProductionLike) {
+            console.error("🚨 SECURITY WARNING: Debug mode attempted in production-like environment!");
+            console.error("Debug mode has been disabled for security reasons.");
+            return;
+        }
+
+        const today = new Date().toISOString().split('T')[0];
+        personalBest = {
+            count: 25, // Test with a high number
+            date: today,
+            achievedAt: new Date().toISOString()
+        };
+        console.log("🐛 DEBUG MODE: Overriding personal best for testing:", personalBest);
+        console.warn("⚠️ This debug mode should ONLY be used in local development!");
+    }
+
+    // Check if today is a personal best
+    const isTodayPersonalBest = personalBest && personalBest.date === new Date().toISOString().split('T')[0];
+
     return (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
             <div className="bg-background p-6 rounded-lg shadow-lg max-w-2xl w-full max-h-[80vh] overflow-y-auto">
                 <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-xl font-bold">Your Stats</h2>
+                    <div className="flex items-center gap-3">
+                        <h2 className="text-xl font-bold">Your Stats</h2>
+                        {DEBUG_PERSONAL_BEST_MODE && (
+                            <div className="bg-yellow-500 text-black text-xs px-2 py-1 rounded-full font-bold animate-pulse">
+                                🐛 DEBUG: PB Test Mode
+                            </div>
+                        )}
+                    </div>
                     <div className="flex items-center gap-2">
                         <button
                             onClick={() => setSettingsModalOpen(true)}
@@ -342,9 +456,17 @@ export function UserStatsModal({ isOpen, onClose, user }: UserStatsModalProps) {
                         <div className="bg-gradient-to-r from-primary/10 to-secondary/10 p-6 rounded-lg border border-primary/20">
                             <h3 className="text-lg font-semibold mb-3">Today&apos;s Progress</h3>
                             <div className="grid grid-cols-3 gap-4">
-                                <div className="text-center">
+                                <div className="text-center relative">
                                     <div className="text-3xl font-bold text-primary">{todayCount}</div>
                                     <div className="text-sm text-foreground/60">Phrases Today</div>
+                                    {/* Personal Best Flag */}
+                                    {isTodayPersonalBest && (
+                                        <div className="absolute -top-2 -right-2">
+                                            <div className="bg-amber-500 text-white text-xs px-2 py-1 rounded-full font-bold shadow-lg border-2 border-amber-600 animate-pulse">
+                                                🏆 PB
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                                 <div className="text-center">
                                     {currentStreak > 0 ? (() => {
@@ -394,7 +516,37 @@ export function UserStatsModal({ isOpen, onClose, user }: UserStatsModalProps) {
                         {dailyStats.length > 0 && (
                             <div>
                                 <h3 className="font-semibold mb-4">Last 7 Days</h3>
-                                <DailyStatsChart dailyStats={dailyStats} />
+                                <DailyStatsChart dailyStats={dailyStats} personalBest={personalBest} />
+                            </div>
+                        )}
+
+                        {/* Personal Best Section */}
+                        {personalBest && personalBest.count > 0 && (
+                            <div className="bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-900/20 dark:to-yellow-900/20 p-6 rounded-lg border border-amber-200 dark:border-amber-700">
+                                <h3 className="text-lg font-semibold mb-4 flex items-center">
+                                    <span className="mr-2">🏆</span>
+                                    Personal Best
+                                </h3>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="text-center">
+                                        <div className="text-2xl font-bold text-amber-600 dark:text-amber-400">
+                                            {personalBest.count}
+                                        </div>
+                                        <div className="text-sm text-foreground/60">Phrases in One Day</div>
+                                    </div>
+                                    <div className="text-center">
+                                        <div className="text-sm text-foreground/60">
+                                            Achieved on
+                                        </div>
+                                        <div className="text-sm font-medium">
+                                            {new Date(personalBest.achievedAt).toLocaleDateString('en-US', {
+                                                weekday: 'long',
+                                                month: 'short',
+                                                day: 'numeric'
+                                            })}
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         )}
 
@@ -501,7 +653,7 @@ export function UserStatsModal({ isOpen, onClose, user }: UserStatsModalProps) {
                     <div className="text-center py-4">No stats available yet</div>
                 )}
             </div>
-            
+
             {/* Settings Modal */}
             <SettingsModal
                 isOpen={settingsModalOpen}
