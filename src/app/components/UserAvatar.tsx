@@ -1,9 +1,10 @@
 import { useRef, useEffect, useState } from 'react';
 import { User, signOut, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import { auth } from '../firebase';
-import { BarChart3, MessageSquare, LogOut, Languages } from 'lucide-react';
+import { BarChart3, MessageSquare, LogOut, Languages, Heart } from 'lucide-react';
 import { UserStatsModal } from './UserStatsModal';
 import { LanguagePreferencesModal } from './LanguagePreferencesModal';
+import { ContentPreferencesModal } from './ContentPreferencesModal';
 
 interface UserAvatarProps {
     user: User | null;
@@ -15,6 +16,7 @@ export function UserAvatar({ user, avatarDialogOpen, setAvatarDialogOpen }: User
     const dialogRef = useRef<HTMLDivElement>(null);
     const [statsModalOpen, setStatsModalOpen] = useState(false);
     const [languagePrefsModalOpen, setLanguagePrefsModalOpen] = useState(false);
+    const [contentPrefsModalOpen, setContentPrefsModalOpen] = useState(false);
 
     useEffect(() => {
         function handleClickOutside(event: MouseEvent) {
@@ -88,6 +90,16 @@ export function UserAvatar({ user, avatarDialogOpen, setAvatarDialogOpen }: User
                         <Languages className="w-4 h-4" />
                         Languages
                     </button>
+                    <button
+                        className="w-full text-left px-4 py-2 hover:bg-secondary flex items-center gap-2"
+                        onClick={() => {
+                            setContentPrefsModalOpen(true);
+                            setAvatarDialogOpen(false);
+                        }}
+                    >
+                        <Heart className="w-4 h-4" />
+                        Content Interests
+                    </button>
                     <a
                         href="mailto:hello@lingopaper.com?subject=Feedback for LingoPaper"
                         className="block w-full text-left px-4 py-2 hover:bg-secondary flex items-center gap-2"
@@ -119,6 +131,14 @@ export function UserAvatar({ user, avatarDialogOpen, setAvatarDialogOpen }: User
                 <LanguagePreferencesModal
                     isOpen={languagePrefsModalOpen}
                     onClose={() => setLanguagePrefsModalOpen(false)}
+                    user={user}
+                />
+            )}
+
+            {user && (
+                <ContentPreferencesModal
+                    isOpen={contentPrefsModalOpen}
+                    onClose={() => setContentPrefsModalOpen(false)}
                     user={user}
                 />
             )}
