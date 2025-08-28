@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
 import { User } from 'firebase/auth';
 import { getFirestore, doc, getDoc, collection, getDocs, query, orderBy, limit } from 'firebase/firestore';
+import { Settings } from 'lucide-react';
 import { getFlagEmoji, getLanguageName } from '../utils/languageUtils';
 import { useUser } from '../contexts/UserContext';
 import { getPhraseRankTitle, getLanguageRankTitle } from '../utils/rankingSystem';
+import { SettingsModal } from './SettingsModal';
 
 interface UserStatsModalProps {
     isOpen: boolean;
@@ -134,6 +136,7 @@ export function UserStatsModal({ isOpen, onClose, user }: UserStatsModalProps) {
     const [dailyStats, setDailyStats] = useState<DailyStats[]>([]);
     const [languageStats, setLanguageStats] = useState<LanguageStats[]>([]);
     const [loading, setLoading] = useState(true);
+    const [settingsModalOpen, setSettingsModalOpen] = useState(false);
 
     useEffect(() => {
         if (!isOpen || !user) return;
@@ -215,12 +218,21 @@ export function UserStatsModal({ isOpen, onClose, user }: UserStatsModalProps) {
             <div className="bg-background p-6 rounded-lg shadow-lg max-w-2xl w-full max-h-[80vh] overflow-y-auto">
                 <div className="flex justify-between items-center mb-6">
                     <h2 className="text-xl font-bold">Your Stats</h2>
-                    <button
-                        onClick={onClose}
-                        className="text-foreground/60 hover:text-foreground"
-                    >
-                        ✕
-                    </button>
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={() => setSettingsModalOpen(true)}
+                            className="text-foreground/60 hover:text-foreground p-1 rounded"
+                            title="Settings"
+                        >
+                            <Settings className="w-5 h-5" />
+                        </button>
+                        <button
+                            onClick={onClose}
+                            className="text-foreground/60 hover:text-foreground"
+                        >
+                            ✕
+                        </button>
+                    </div>
                 </div>
 
                 {loading ? (
@@ -371,6 +383,13 @@ export function UserStatsModal({ isOpen, onClose, user }: UserStatsModalProps) {
                     <div className="text-center py-4">No stats available yet</div>
                 )}
             </div>
+            
+            {/* Settings Modal */}
+            <SettingsModal
+                isOpen={settingsModalOpen}
+                onClose={() => setSettingsModalOpen(false)}
+                user={user}
+            />
         </div>
     );
 }

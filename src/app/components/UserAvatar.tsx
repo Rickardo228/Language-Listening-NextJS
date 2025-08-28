@@ -1,11 +1,10 @@
 import { useRef, useEffect, useState } from 'react';
 import { User, signOut, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import { auth } from '../firebase';
-import { BarChart3, MessageSquare, LogOut, Languages, Heart, Settings } from 'lucide-react';
+import { BarChart3, MessageSquare, LogOut, Languages, Heart } from 'lucide-react';
 import { UserStatsModal } from './UserStatsModal';
 import { LanguagePreferencesModal } from './LanguagePreferencesModal';
 import { ContentPreferencesModal } from './ContentPreferencesModal';
-import { SettingsModal } from './SettingsModal';
 
 interface UserAvatarProps {
     user: User | null;
@@ -18,7 +17,6 @@ export function UserAvatar({ user, avatarDialogOpen, setAvatarDialogOpen }: User
     const [statsModalOpen, setStatsModalOpen] = useState(false);
     const [languagePrefsModalOpen, setLanguagePrefsModalOpen] = useState(false);
     const [contentPrefsModalOpen, setContentPrefsModalOpen] = useState(false);
-    const [settingsModalOpen, setSettingsModalOpen] = useState(false);
 
     useEffect(() => {
         function handleClickOutside(event: MouseEvent) {
@@ -102,16 +100,6 @@ export function UserAvatar({ user, avatarDialogOpen, setAvatarDialogOpen }: User
                         <Heart className="w-4 h-4" />
                         Content Interests
                     </button>
-                    <button
-                        className="w-full text-left px-4 py-2 hover:bg-secondary flex items-center gap-2"
-                        onClick={() => {
-                            setSettingsModalOpen(true);
-                            setAvatarDialogOpen(false);
-                        }}
-                    >
-                        <Settings className="w-4 h-4" />
-                        Settings
-                    </button>
                     <a
                         href="mailto:hello@lingopaper.com?subject=Feedback for LingoPaper"
                         className="block w-full text-left px-4 py-2 hover:bg-secondary flex items-center gap-2"
@@ -151,14 +139,6 @@ export function UserAvatar({ user, avatarDialogOpen, setAvatarDialogOpen }: User
                 <ContentPreferencesModal
                     isOpen={contentPrefsModalOpen}
                     onClose={() => setContentPrefsModalOpen(false)}
-                    user={user}
-                />
-            )}
-
-            {user && (
-                <SettingsModal
-                    isOpen={settingsModalOpen}
-                    onClose={() => setSettingsModalOpen(false)}
                     user={user}
                 />
             )}

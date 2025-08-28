@@ -57,7 +57,7 @@ export function SettingsModal({ isOpen, onClose, user }: SettingsModalProps) {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
             <div className="bg-background p-6 rounded-lg shadow-lg max-w-md w-full mx-4">
                 <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-xl font-bold">Settings</h2>
+                    <h2 className="text-xl font-bold">Stats Settings</h2>
                     <button
                         onClick={onClose}
                         className="text-foreground/60 hover:text-foreground"
@@ -72,7 +72,7 @@ export function SettingsModal({ isOpen, onClose, user }: SettingsModalProps) {
                             Native Language
                         </label>
                         <p className="text-sm text-foreground/60 mb-3">
-                            Your native language is used for statistics and language pair filtering.
+                            Your native language determines which languages appear in your statistics. Languages matching your native language are filtered out from the &quot;Languages You&apos;re Learning&quot; section.
                         </p>
                         
                         <select
