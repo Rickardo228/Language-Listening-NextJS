@@ -16,10 +16,11 @@ import { getPhraseRankTitle, DEBUG_MILESTONE_THRESHOLDS } from "./rankingSystem"
 
 const firestore = getFirestore();
 
-// Debug mode for testing milestones - set to true to use debug thresholds
-const DEBUG_MILESTONE_MODE = true;
+// Debug mode for testing milestones - ONLY for development, never in production
+const DEBUG_MILESTONE_MODE = process.env.NODE_ENV === 'development' && false;
 
-// Use the shared debug milestone thresholds
+// Use the shared debug milestone thresholds (unused in this file but kept for potential future use)
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const DEBUG_MILESTONES = DEBUG_MILESTONE_THRESHOLDS;
 
 // Function to get appropriate background style based on rank color - solid and readable

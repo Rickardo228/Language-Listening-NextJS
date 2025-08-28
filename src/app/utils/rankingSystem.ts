@@ -27,21 +27,21 @@ const PRODUCTION_PHRASE_RANKS: Array<{ threshold: number } & RankInfo> = [
 export const DEBUG_MILESTONE_THRESHOLDS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
 
 const DEBUG_PHRASE_RANKS: Array<RankInfo> = [
-  { title: "Getting Started", color: "text-gray-500", description: "Every practice session counts" },
-  { title: "First Step", color: "text-gray-600", description: "You're taking your first steps" },
-  { title: "Early Learner", color: "text-orange-500", description: "Building momentum" },
-  { title: "Getting Into It", color: "text-orange-600", description: "You're developing interest" },
-  { title: "Active Learner", color: "text-yellow-500", description: "You're actively engaging" },
-  { title: "Regular User", color: "text-yellow-600", description: "Building consistent habits" },
-  { title: "Consistent", color: "text-green-500", description: "Developing consistency" },
-  { title: "Dedicated", color: "text-green-600", description: "Building solid habits" },
-  { title: "Very Dedicated", color: "text-blue-600", description: "Strong commitment" },
-  { title: "Highly Committed", color: "text-blue-600", description: "Impressive dedication" },
-  { title: "Practice Master", color: "text-purple-600", description: "Mastered consistent practice" },
-  { title: "Ultra Dedicated", color: "text-purple-600", description: "Extraordinary commitment" },
-  { title: "App Legend", color: "text-amber-500", description: "Legendary status achieved!" },
-  { title: "Ultimate Master", color: "text-amber-500", description: "You've transcended!" },
-  { title: "Phrase God", color: "text-amber-500", description: "Beyond legendary!" }
+  { title: "Getting Started", color: "text-gray-500", description: "Every practice session counts", nextMilestone: 2 },
+  { title: "First Step", color: "text-gray-600", description: "You're taking your first steps", nextMilestone: 3 },
+  { title: "Early Learner", color: "text-orange-500", description: "Building momentum", nextMilestone: 4 },
+  { title: "Getting Into It", color: "text-orange-600", description: "You're developing interest", nextMilestone: 5 },
+  { title: "Active Learner", color: "text-yellow-500", description: "You're actively engaging", nextMilestone: 6 },
+  { title: "Regular User", color: "text-yellow-600", description: "Building consistent habits", nextMilestone: 7 },
+  { title: "Consistent", color: "text-green-500", description: "Developing consistency", nextMilestone: 8 },
+  { title: "Dedicated", color: "text-green-600", description: "Building solid habits", nextMilestone: 9 },
+  { title: "Very Dedicated", color: "text-blue-600", description: "Strong commitment", nextMilestone: 10 },
+  { title: "Highly Committed", color: "text-blue-600", description: "Impressive dedication", nextMilestone: 11 },
+  { title: "Practice Master", color: "text-purple-600", description: "Mastered consistent practice", nextMilestone: 12 },
+  { title: "Ultra Dedicated", color: "text-purple-600", description: "Extraordinary commitment", nextMilestone: 13 },
+  { title: "App Legend", color: "text-amber-500", description: "Legendary status achieved!", nextMilestone: 14 },
+  { title: "Ultimate Master", color: "text-amber-500", description: "You've transcended!", nextMilestone: 15 },
+  { title: "Phrase God", color: "text-amber-500", description: "Beyond legendary!", nextMilestone: 0 }
 ];
 
 /**

@@ -40,7 +40,7 @@ function DailyStatsChart({ dailyStats }: { dailyStats: DailyStats[] }) {
     return (
         <div className="mt-2">
             <div className="flex items-end justify-between h-[120px] gap-1">
-                {dailyStats.map((day, index) => {
+                {dailyStats.map((day) => {
                     const height = maxCount > 0 ? (day.count / maxCount) * chartHeight : 0;
                     const minHeight = 4; // Minimum height for 0 values to be visible
                     const finalHeight = Math.max(height, minHeight);
@@ -74,7 +74,7 @@ function DailyStatsChart({ dailyStats }: { dailyStats: DailyStats[] }) {
 
 
 // Single language symbol component - using flag emojis
-function LanguageSymbol({ language, count }: {
+function LanguageSymbol({ language }: {
     language: string;
     count: number;
 }) {
@@ -229,7 +229,7 @@ export function UserStatsModal({ isOpen, onClose, user }: UserStatsModalProps) {
                     <div className="space-y-6">
                         {/* Today's Focus - Prominent Display */}
                         <div className="bg-gradient-to-r from-primary/10 to-secondary/10 p-6 rounded-lg border border-primary/20">
-                            <h3 className="text-lg font-semibold mb-3">Today's Progress</h3>
+                            <h3 className="text-lg font-semibold mb-3">Today&apos;s Progress</h3>
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="text-center">
                                     <div className="text-3xl font-bold text-primary">{todayCount}</div>
@@ -293,7 +293,7 @@ export function UserStatsModal({ isOpen, onClose, user }: UserStatsModalProps) {
                                                 🌍 Polyglot Learner
                                             </div>
                                             <div className="text-xs text-foreground/70">
-                                                You're practicing {aggregatedLanguages.length} different languages
+                                                You&apos;re practicing {aggregatedLanguages.length} different languages
                                             </div>
                                         </div>
                                     ) : null;
@@ -310,11 +310,11 @@ export function UserStatsModal({ isOpen, onClose, user }: UserStatsModalProps) {
                         {/* Languages with Ranking */}
                         {languageStats.length > 0 && (
                             <div>
-                                <h3 className="font-semibold mb-3">Languages You're Learning</h3>
+                                <h3 className="font-semibold mb-3">Languages You&apos;re Learning</h3>
                                 <div className="space-y-2">
                                     {(() => {
                                         const aggregatedLanguages = aggregateLanguageStats(languageStats, userProfile?.preferredInputLang);
-                                        return aggregatedLanguages.map((langStat, index) => {
+                                        return aggregatedLanguages.map((langStat) => {
                                             const rankInfo = getLanguageRankTitle(langStat.totalCount);
                                             return (
                                                 <div key={langStat.language} className="bg-secondary/20 p-3 rounded">
