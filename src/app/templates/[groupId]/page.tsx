@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import { Phrase, languageOptions, PresentationConfig } from '../../types';
+import { defaultPresentationConfig } from '../../defaultConfig';
 import { getFirestore, collection, query, where, getDocs, Timestamp, deleteDoc, doc } from 'firebase/firestore';
 import { PhrasePlaybackView, PhrasePlaybackMethods } from '../../components/PhrasePlaybackView';
 import { CollectionHeader } from '../../CollectionHeader';
@@ -50,26 +51,10 @@ export default function TemplateDetailPage() {
     const [availableLanguages, setAvailableLanguages] = useState<string[]>([]);
     const [templateData, setTemplateData] = useState<Template | null>(null);
     const [presentationConfig, setPresentationConfig] = useState<PresentationConfig>({
+        ...defaultPresentationConfig,
         name: `Template ${groupId}`,
-        bgImage: null,
-        containerBg: '',
-        textBg: '',
-        enableSnow: false,
-        enableCherryBlossom: false,
-        enableLeaves: false,
-        enableAutumnLeaves: false,
-        enableOrtonEffect: false,
-        enableParticles: false,
-        enableSteam: false,
-        enableOutputBeforeInput: false,
-        postProcessDelay: 0,
-        delayBetweenPhrases: 0,
-        enableInputDurationDelay: false,
-        enableOutputDurationDelay: false,
         enableLoop: false,
-        inputPlaybackSpeed: 1.0,
-        outputPlaybackSpeed: 0.85,
-        showAllPhrases: false
+        enableOutputDurationDelay: false
     });
 
     useEffect(() => {

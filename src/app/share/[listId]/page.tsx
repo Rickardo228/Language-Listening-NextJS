@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Config, Phrase, PresentationConfig } from '../../types';
+import { defaultPresentationConfig } from '../../defaultConfig';
 import { defaultAdvantages, SignInPage } from '../../SignInPage';
 import { getFirestore, doc, getDoc, collection as firestoreCollection, addDoc, query, where, getDocs } from 'firebase/firestore';
 import { PhrasePlaybackView } from '../../components/PhrasePlaybackView';
@@ -199,26 +200,8 @@ export default function SharedList() {
             <PhrasePlaybackView
                 phrases={collection.phrases}
                 presentationConfig={collection.presentationConfig || {
-                    name: 'Default',
-                    bgImage: null,
-                    containerBg: '#ffffff',
-                    textBg: '#ffffff',
-                    enableSnow: false,
-                    enableCherryBlossom: false,
-                    enableLeaves: false,
-                    enableAutumnLeaves: false,
-                    enableOrtonEffect: false,
-                    enableParticles: false,
-                    enableSteam: false,
-                    enableOutputBeforeInput: false,
-                    postProcessDelay: 0,
-                    delayBetweenPhrases: 0,
-                    enableInputDurationDelay: false,
-                    enableOutputDurationDelay: false,
-                    enableLoop: false,
-                    inputPlaybackSpeed: 1.0,
-                    outputPlaybackSpeed: 1.0,
-                    showAllPhrases: false
+                    ...defaultPresentationConfig,
+                    name: 'Default'
                 }}
                 collectionName={collection.name}
                 setPhrases={async (phrases: Phrase[]) => {
@@ -254,6 +237,7 @@ export default function SharedList() {
                                 enableInputDurationDelay: config.enableInputDurationDelay ?? collection.presentationConfig?.enableInputDurationDelay ?? false,
                                 enableOutputDurationDelay: config.enableOutputDurationDelay ?? collection.presentationConfig?.enableOutputDurationDelay ?? false,
                                 enableLoop: config.enableLoop ?? collection.presentationConfig?.enableLoop ?? false,
+                                enableInputPlayback: config.enableInputPlayback ?? collection.presentationConfig?.enableInputPlayback ?? true,
                                 inputPlaybackSpeed: config.inputPlaybackSpeed ?? collection.presentationConfig?.inputPlaybackSpeed ?? 1.0,
                                 outputPlaybackSpeed: config.outputPlaybackSpeed ?? collection.presentationConfig?.outputPlaybackSpeed ?? 1.0,
                                 showAllPhrases: config.showAllPhrases ?? collection.presentationConfig?.showAllPhrases ?? false

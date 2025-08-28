@@ -14,6 +14,8 @@ interface SettingsModalProps {
     presentationConfig: PresentationConfig;
     setPresentationConfig: (config: PresentationConfig) => void;
     handleImageUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
+    inputLang?: string;
+    targetLang?: string;
 }
 
 export function SettingsModal({
@@ -24,7 +26,9 @@ export function SettingsModal({
     // onSaveConfig,
     presentationConfig,
     setPresentationConfig,
-    handleImageUpload
+    handleImageUpload,
+    inputLang,
+    targetLang
 }: SettingsModalProps) {
     const [mounted, setMounted] = useState(false);
     useEffect(() => {
@@ -53,6 +57,8 @@ export function SettingsModal({
                         config={presentationConfig}
                         setConfig={(newConfig) => setPresentationConfig({ ...presentationConfig, ...newConfig })}
                         handleImageUpload={handleImageUpload}
+                        inputLang={inputLang}
+                        targetLang={targetLang}
                     />
                 </div>
                 {/* <div className="mt-4 border-t pt-4">

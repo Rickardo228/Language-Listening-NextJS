@@ -50,6 +50,41 @@ export function PresentationControls({
 }: PresentationControlsProps) {
     const [settingsOpen, setSettingsOpen] = useState(false);
 
+    // Function to get language names from language codes
+    const getLanguageName = (langCode: string): string => {
+        const languageMap: Record<string, string> = {
+            'en-GB': 'English (UK)',
+            'en-US': 'English (US)',
+            'en-AU': 'English (Australia)',
+            'es-ES': 'Spanish',
+            'fr-FR': 'French',
+            'de-DE': 'German',
+            'it-IT': 'Italian',
+            'ja-JP': 'Japanese',
+            'cmn-CN': 'Chinese',
+            'pt-BR': 'Portuguese (Brazil)',
+            'pt-PT': 'Portuguese (Portugal)',
+            'el-GR': 'Greek',
+            'pl-PL': 'Polish',
+            'sv-SE': 'Swedish',
+            'ru-RU': 'Russian',
+            'hi-IN': 'Hindi',
+            'ar-XA': 'Arabic',
+            'bn-IN': 'Bengali',
+            'id-ID': 'Indonesian',
+            'ko-KR': 'Korean',
+            'tr-TR': 'Turkish',
+            'vi-VN': 'Vietnamese',
+            'th-TH': 'Thai',
+            'uk-UA': 'Ukrainian',
+            'fr-CA': 'French (Canada)',
+            'nl-NL': 'Dutch',
+            'yue-HK': 'Cantonese',
+            'ta-IN': 'Tamil'
+        };
+        return languageMap[langCode] || langCode;
+    };
+
     const handleSpeedToggle = (speedType: 'input' | 'output') => {
         const currentSpeed = speedType === 'input'
             ? (presentationConfig.inputPlaybackSpeed || 1.0)
@@ -99,7 +134,7 @@ export function PresentationControls({
                 <button
                     onClick={() => handleSpeedToggle('input')}
                     className="hidden md:flex p-2 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 dark:hover:bg-gray-600 items-center gap-1 h-12"
-                    title={`Input Language Speed: ${getSpeedLabel(presentationConfig.inputPlaybackSpeed || 1.0)}`}
+                    title={`${inputLang ? getLanguageName(inputLang) : 'Input Language'} Speed: ${getSpeedLabel(presentationConfig.inputPlaybackSpeed || 1.0)}`}
                 >
                     {/* <Zap className="h-4 w-4 text-gray-700 dark:text-gray-300" /> */}
                     {inputLang && (
@@ -112,7 +147,7 @@ export function PresentationControls({
                 <button
                     onClick={() => handleSpeedToggle('output')}
                     className="hidden md:flex p-2 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 dark:hover:bg-gray-600 items-center gap-1 h-12"
-                    title={`Output Language Speed: ${getSpeedLabel(presentationConfig.outputPlaybackSpeed || 1.0)}`}
+                    title={`${targetLang ? getLanguageName(targetLang) : 'Output Language'} Speed: ${getSpeedLabel(presentationConfig.outputPlaybackSpeed || 1.0)}`}
                 >
                     {/* <Zap className="h-4 w-4 text-gray-700 dark:text-gray-300" /> */}
                     {targetLang && (
@@ -169,6 +204,8 @@ export function PresentationControls({
                 presentationConfig={presentationConfig}
                 setPresentationConfig={setPresentationConfig}
                 handleImageUpload={handleImageUpload}
+                inputLang={inputLang}
+                targetLang={targetLang}
             />
         </>
     );

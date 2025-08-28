@@ -9,6 +9,8 @@ interface ConfigFieldsProps {
     config: PresentationConfig;
     setConfig: (newConfig: Partial<PresentationConfig>) => void;
     handleImageUpload?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+    inputLang?: string;
+    targetLang?: string;
 }
 
 const ConfigFields: React.FC<ConfigFieldsProps> = ({
@@ -16,9 +18,73 @@ const ConfigFields: React.FC<ConfigFieldsProps> = ({
     config,
     setConfig,
     handleImageUpload,
+    inputLang,
+    targetLang,
 }) => {
     const handleChange = (key: keyof PresentationConfig, value: boolean | string | number) => {
         setConfig({ [key]: value });
+    };
+
+    // Function to get dynamic labels based on current languages
+    const getDynamicLabel = (key: keyof PresentationConfig, defaultLabel: string): string => {
+        if (!inputLang || !targetLang) return defaultLabel;
+
+        const inputLangName = getLanguageName(inputLang);
+        const targetLangName = getLanguageName(targetLang);
+
+        switch (key) {
+            case 'enableInputPlayback':
+                return `Play ${inputLangName} Audio`;
+            case 'enableInputDurationDelay':
+                return `Recall`;
+            case 'enableOutputDurationDelay':
+                return `Shadow`;
+            case 'enableOutputBeforeInput':
+                return `Play ${targetLangName} Before ${inputLangName}`;
+            case 'showAllPhrases':
+                return `Show ${inputLangName} & ${targetLangName}`;
+            case 'inputPlaybackSpeed':
+                return `${inputLangName} Speed`;
+            case 'outputPlaybackSpeed':
+                return `${targetLangName} Speed`;
+            default:
+                return defaultLabel;
+        }
+    };
+
+    // Function to get language names from language codes
+    const getLanguageName = (langCode: string): string => {
+        const languageMap: Record<string, string> = {
+            'en-GB': 'English',
+            'en-US': 'English',
+            'en-AU': 'English',
+            'es-ES': 'Spanish',
+            'fr-FR': 'French',
+            'de-DE': 'German',
+            'it-IT': 'Italian',
+            'ja-JP': 'Japanese',
+            'cmn-CN': 'Chinese',
+            'pt-BR': 'Portuguese',
+            'pt-PT': 'Portuguese',
+            'el-GR': 'Greek',
+            'pl-PL': 'Polish',
+            'sv-SE': 'Swedish',
+            'ru-RU': 'Russian',
+            'hi-IN': 'Hindi',
+            'ar-XA': 'Arabic',
+            'bn-IN': 'Bengali',
+            'id-ID': 'Indonesian',
+            'ko-KR': 'Korean',
+            'tr-TR': 'Turkish',
+            'vi-VN': 'Vietnamese',
+            'th-TH': 'Thai',
+            'uk-UA': 'Ukrainian',
+            'fr-CA': 'French',
+            'nl-NL': 'Dutch',
+            'yue-HK': 'Cantonese',
+            'ta-IN': 'Tamil'
+        };
+        return languageMap[langCode] || langCode;
     };
 
     return (
@@ -26,13 +92,14 @@ const ConfigFields: React.FC<ConfigFieldsProps> = ({
             {definition.map((field) => {
                 const { key, label, inputType, description } = field;
                 const value = config[key];
+                const dynamicLabel = getDynamicLabel(key, label);
 
                 // Render a file input if the field is for a file (e.g. background image).
                 if (inputType === "file") {
                     return (
                         <div key={key} className="flex flex-col">
                             <label htmlFor={String(key)} className="block font-medium mb-1">
-                                {label}
+                                {dynamicLabel}
                             </label>
                             <input
                                 type="file"
@@ -60,7 +127,7 @@ const ConfigFields: React.FC<ConfigFieldsProps> = ({
                                     className="mr-2"
                                 />
                                 <label htmlFor={String(key)} className="font-medium">
-                                    {label}
+                                    {dynamicLabel}
                                 </label>
                             </div>
                             {description && (
@@ -75,7 +142,7 @@ const ConfigFields: React.FC<ConfigFieldsProps> = ({
                     return (
                         <div key={key} className="flex flex-col">
                             <label htmlFor={String(key)} className="block font-medium mb-1">
-                                {label}
+                                {dynamicLabel}
                             </label>
                             <input
                                 type="number"
@@ -94,7 +161,7 @@ const ConfigFields: React.FC<ConfigFieldsProps> = ({
                 if (inputType === "color") {
                     return <div key={key} className="flex flex-col">
                         <label htmlFor={String(key)} className="block font-medium mb-1">
-                            {label}
+                            {dynamicLabel}
                         </label>
                         <input
                             list="bgColorOptions"
@@ -122,7 +189,7 @@ const ConfigFields: React.FC<ConfigFieldsProps> = ({
                     return (
                         <div key={key} className="flex flex-col">
                             <label htmlFor={String(key)} className="block font-medium mb-1">
-                                {label}
+                                {dynamicLabel}
                             </label>
                             <select
                                 id={String(key)}
@@ -147,7 +214,7 @@ const ConfigFields: React.FC<ConfigFieldsProps> = ({
                 return (
                     <div key={key} className="flex flex-col">
                         <label htmlFor={String(key)} className="block font-medium mb-1">
-                            {label}
+                            {dynamicLabel}
                         </label>
                         <input
                             type="text"
