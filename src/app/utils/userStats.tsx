@@ -19,9 +19,85 @@ const firestore = getFirestore();
 // Debug mode for testing milestones - ONLY for development, never in production
 const DEBUG_MILESTONE_MODE = process.env.NODE_ENV === 'development' && false;
 
+// Debug mode for testing streaks - ONLY for development, never in production
+const DEBUG_STREAK_MODE = process.env.NODE_ENV === 'development' && false;
+
 // Use the shared debug milestone thresholds (unused in this file but kept for potential future use)
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const DEBUG_MILESTONES = DEBUG_MILESTONE_THRESHOLDS;
+
+// Dynamic streak messaging system
+function getStreakMessage(streakCount: number): { emoji: string; message: string } {
+  const messages = [
+    // Day 1-7: First week - daily changes
+    { range: [1, 1], emoji: "🌱", message: "STREAK STARTED!" },
+    { range: [2, 2], emoji: "💪", message: "BUILDING MOMENTUM!" },
+    { range: [3, 3], emoji: "⚡", message: "GAINING POWER!" },
+    { range: [4, 4], emoji: "🔥", message: "ON FIRE!" },
+    { range: [5, 5], emoji: "🚀", message: "ROCKETING UP!" },
+    { range: [6, 6], emoji: "⭐", message: "SHINING BRIGHT!" },
+    { range: [7, 7], emoji: "👑", message: "WEEK CHAMPION!" },
+    
+    // Day 8-14: Second week
+    { range: [8, 8], emoji: "💎", message: "DIAMOND STREAK!" },
+    { range: [9, 9], emoji: "🎯", message: "PRECISION MODE!" },
+    { range: [10, 10], emoji: "🌪️", message: "TORNADO POWER!" },
+    { range: [11, 11], emoji: "🏆", message: "TROPHY LEVEL!" },
+    { range: [12, 12], emoji: "🎨", message: "MASTERY MODE!" },
+    { range: [13, 13], emoji: "⚔️", message: "WARRIOR SPIRIT!" },
+    { range: [14, 14], emoji: "🎪", message: "TWO WEEK CIRCUS!" },
+    
+    // Day 15-21: Third week
+    { range: [15, 15], emoji: "🌟", message: "SUPERSTAR!" },
+    { range: [16, 16], emoji: "🎭", message: "PERFORMANCE PEAK!" },
+    { range: [17, 17], emoji: "🎸", message: "ROCKSTAR LEVEL!" },
+    { range: [18, 18], emoji: "🎲", message: "LUCKY STREAK!" },
+    { range: [19, 19], emoji: "🎊", message: "CELEBRATION TIME!" },
+    { range: [20, 20], emoji: "🎯", message: "BULLSEYE PRECISION!" },
+    { range: [21, 21], emoji: "🎪", message: "THREE WEEK SHOW!" },
+    
+    // Day 22-30: Month milestone
+    { range: [22, 24], emoji: "🔮", message: "CRYSTAL CLEAR!" },
+    { range: [25, 27], emoji: "🎨", message: "ARTISTIC GENIUS!" },
+    { range: [28, 30], emoji: "🏰", message: "MONTH KINGDOM!" },
+    
+    // Day 31-60: Habit formation
+    { range: [31, 35], emoji: "👑", message: "HABIT ROYALTY!" },
+    { range: [36, 40], emoji: "🎭", message: "MASTER PERFORMER!" },
+    { range: [41, 45], emoji: "🎪", message: "CIRCUS DIRECTOR!" },
+    { range: [46, 50], emoji: "🌟", message: "CONSTELLATION!" },
+    { range: [51, 55], emoji: "🏅", message: "OLYMPIC LEVEL!" },
+    { range: [56, 60], emoji: "🚀", message: "SPACE MISSION!" },
+    
+    // Day 61-100: Elite tier
+    { range: [61, 70], emoji: "💫", message: "COSMIC POWER!" },
+    { range: [71, 80], emoji: "🌌", message: "GALAXY MASTER!" },
+    { range: [81, 90], emoji: "⭐", message: "STELLAR PERFORMANCE!" },
+    { range: [91, 100], emoji: "🌈", message: "RAINBOW WARRIOR!" },
+    
+    // Day 101-365: Legendary
+    { range: [101, 150], emoji: "🏛️", message: "TEMPLE GUARDIAN!" },
+    { range: [151, 200], emoji: "🗿", message: "MONUMENT STATUS!" },
+    { range: [201, 250], emoji: "🏔️", message: "MOUNTAIN CLIMBER!" },
+    { range: [251, 300], emoji: "🌋", message: "VOLCANO POWER!" },
+    { range: [301, 365], emoji: "🎆", message: "YEAR-LONG LEGEND!" },
+    
+    // Day 366+: Mythical
+    { range: [366, 500], emoji: "🔥", message: "ETERNAL FLAME!" },
+    { range: [501, 750], emoji: "⚡", message: "LIGHTNING DEITY!" },
+    { range: [751, 1000], emoji: "🌟", message: "CELESTIAL BEING!" },
+    { range: [1001, Infinity], emoji: "🌈", message: "TRANSCENDENT!" }
+  ];
+
+  for (const msg of messages) {
+    if (streakCount >= msg.range[0] && streakCount <= msg.range[1]) {
+      return { emoji: msg.emoji, message: msg.message };
+    }
+  }
+  
+  // Fallback
+  return { emoji: "🔥", message: "ON FIRE!" };
+}
 
 // Function to get appropriate background style based on rank color - solid and readable
 function getMilestoneBackgroundStyle(color: string): string {
@@ -37,6 +113,48 @@ function getMilestoneBackgroundStyle(color: string): string {
     return 'bg-gradient-to-br from-orange-100 to-orange-200 border-orange-300 dark:from-orange-800 dark:to-orange-700 dark:border-orange-600';
   } else {
     return 'bg-gradient-to-br from-gray-100 to-gray-200 border-gray-300 dark:from-gray-700 dark:to-gray-600 dark:border-gray-500';
+  }
+}
+
+// Function to calculate current streak from daily stats
+async function calculateStreak(userId: string): Promise<number> {
+  try {
+    const { collection, query, orderBy, limit, getDocs } = await import("firebase/firestore");
+    const dailyStatsRef = collection(firestore, 'users', userId, 'stats', 'listening', 'daily');
+    const recentQuery = query(dailyStatsRef, orderBy('date', 'desc'), limit(90)); // Check last 90 days for streak
+    const snapshot = await getDocs(recentQuery);
+    
+    const dailyData = snapshot.docs.map(doc => ({
+      date: doc.data().date,
+      count: doc.data().count
+    })).sort((a, b) => b.date.localeCompare(a.date)); // Sort by date descending
+    
+    let streak = 0;
+    const today = new Date().toISOString().split('T')[0];
+    let checkDate = new Date();
+    
+    for (let i = 0; i < 90; i++) {
+      const dateStr = checkDate.toISOString().split('T')[0];
+      const dayData = dailyData.find(d => d.date === dateStr);
+      
+      if (dayData && dayData.count > 0) {
+        streak++;
+      } else if (dateStr === today) {
+        // If today has no activity yet, don't break streak
+        // Continue checking previous days
+      } else {
+        // Gap found, streak is broken
+        break;
+      }
+      
+      // Move to previous day
+      checkDate.setDate(checkDate.getDate() - 1);
+    }
+    
+    return streak;
+  } catch (error) {
+    console.error('Error calculating streak:', error);
+    return 0;
   }
 }
 
@@ -56,6 +174,9 @@ export const useUpdateUserStats = () => {
   const totalPhrasesRef = useRef(0);
   const phraseCountSinceLastSync = useRef(0);
   const SYNC_AFTER_PHRASES = 10; // Re-sync every 10 phrases
+  const [currentStreak, setCurrentStreak] = useState(0);
+  const [previousStreak, setPreviousStreak] = useState(0);
+  const [showStreakIncrement, setShowStreakIncrement] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -347,6 +468,22 @@ export const useUpdateUserStats = () => {
         console.error("Error updating user stats:", err);
       }
     }
+    
+    // Calculate and update current streak after database updates
+    try {
+      const newStreak = await calculateStreak(user.uid);
+      
+      // Check if streak actually incremented or if debug mode is on
+      if (newStreak > currentStreak || DEBUG_STREAK_MODE) {
+        setPreviousStreak(currentStreak);
+        setCurrentStreak(newStreak);
+        setShowStreakIncrement(true);
+      } else {
+        setCurrentStreak(newStreak);
+      }
+    } catch (error) {
+      console.error("Error calculating streak:", error);
+    }
   };
 
   const showStatsUpdate = (shouldPersistUntilInteraction: boolean = false) => {
@@ -371,6 +508,7 @@ export const useUpdateUserStats = () => {
       setTimeout(() => {
         setShowPopup(false);
         setPersistUntilInteraction(false);
+        setShowStreakIncrement(false); // Hide streak when popup auto-hides
       }, 2000);
     }
   };
@@ -389,6 +527,8 @@ export const useUpdateUserStats = () => {
     setPersistUntilInteraction(false);
     // Clear recent milestones when user dismisses the popup
     setRecentMilestones([]);
+    // Also hide streak increment when popup is closed
+    setShowStreakIncrement(false);
   };
 
   const openStatsModal = () => {
@@ -406,6 +546,8 @@ export const useUpdateUserStats = () => {
     setPersistUntilInteraction(false);
     // Clear recent milestones when user opens stats modal
     setRecentMilestones([]);
+    // Also hide streak increment when opening stats modal
+    setShowStreakIncrement(false);
   };
   const StatsPopups = mounted ? createPortal(
     <AnimatePresence mode="multiple">
@@ -431,8 +573,9 @@ export const useUpdateUserStats = () => {
               duration: 0.3
             }}
           >
-            <div className="space-y-2">
-              <div className="flex items-center space-x-3">
+            <div className="space-y-3">
+              {/* Main achievement header */}
+              <div className="flex items-center justify-center space-x-3">
                 <motion.svg
                   className="w-6 h-6"
                   fill="currentColor"
@@ -449,9 +592,99 @@ export const useUpdateUserStats = () => {
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.2, duration: 0.3 }}
                 >
-                  {countToShow} phrase{countToShow !== 1 ? 's' : ''} listened
+                  {countToShow} phrase{countToShow !== 1 ? 's' : ''} listened!
                 </motion.span>
               </div>
+
+              {/* Streak display - only show when incrementing */}
+              {showStreakIncrement && currentStreak > 0 && (() => {
+                const streakData = getStreakMessage(currentStreak);
+                return (
+                  <motion.div
+                    className="relative flex items-center justify-center space-x-3 p-3 bg-white/10 dark:bg-black/20 rounded-lg border border-white/20"
+                    initial={{ opacity: 0, scale: 0.8, y: 15 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.9, y: -10 }}
+                    transition={{ delay: 0.5, duration: 0.4, type: "spring", stiffness: 200 }}
+                  >
+                    <motion.span
+                      className="text-2xl"
+                      animate={{ 
+                        scale: [1, 1.2, 1], 
+                        rotate: [0, 5, -5, 0] 
+                      }}
+                      transition={{ 
+                        delay: 0.8, 
+                        duration: 0.8, 
+                        repeat: 1,
+                        ease: "easeInOut"
+                      }}
+                    >
+                      {streakData.emoji}
+                    </motion.span>
+                    <motion.div
+                      className="flex flex-col items-center"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 0.7, duration: 0.3 }}
+                    >
+                      <motion.div className="text-lg font-bold text-white flex items-center space-x-1">
+                        {/* Animated number increment */}
+                        <AnimatePresence mode="wait">
+                          <motion.span
+                            key={currentStreak}
+                            initial={{ opacity: 0, y: -20, scale: 0.5 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: 20, scale: 0.5 }}
+                            transition={{ 
+                              delay: 0.9, 
+                              duration: 0.4, 
+                              type: "spring", 
+                              stiffness: 300 
+                            }}
+                          >
+                            {currentStreak}
+                          </motion.span>
+                        </AnimatePresence>
+                        <span> day streak</span>
+                      </motion.div>
+                      <motion.span 
+                        className="text-xs font-medium text-white/80 uppercase tracking-wide"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 1.0, duration: 0.3 }}
+                      >
+                        {streakData.message}
+                      </motion.span>
+                    </motion.div>
+                  
+                  {/* Enhanced sparkle effect for increment */}
+                  <motion.div className="absolute -top-1 -right-1">
+                    {[...Array(2)].map((_, i) => (
+                      <motion.span
+                        key={i}
+                        className="absolute text-yellow-200 text-sm"
+                        initial={{ opacity: 0, scale: 0 }}
+                        animate={{
+                          opacity: [0, 1, 0],
+                          scale: [0, 1, 0],
+                          rotate: [0, 180, 360],
+                          x: [0, Math.random() * 20 - 10],
+                          y: [0, -Math.random() * 15 - 5]
+                        }}
+                        transition={{
+                          delay: 1.2 + i * 0.2,
+                          duration: 1.0,
+                          ease: "easeOut"
+                        }}
+                      >
+                        ✨
+                      </motion.span>
+                    ))}
+                  </motion.div>
+                </motion.div>
+              );
+              })()}
 
               {/* Show recent milestones in the persistent popup */}
               {persistUntilInteraction && recentMilestones.length > 0 && (
@@ -699,5 +932,6 @@ export const useUpdateUserStats = () => {
     closeStatsPopup,
     forceSyncTotal,
     phrasesListened: phrasesListenedRef.current,
+    currentStreak,
   };
 };

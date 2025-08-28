@@ -7,6 +7,79 @@ import { useUser } from '../contexts/UserContext';
 import { getPhraseRankTitle, getLanguageRankTitle } from '../utils/rankingSystem';
 import { SettingsModal } from './SettingsModal';
 
+// Import the streak messaging function (duplicate here for simplicity)
+function getStreakMessage(streakCount: number): { emoji: string; message: string } {
+  const messages = [
+    // Day 1-7: First week - daily changes
+    { range: [1, 1], emoji: "🌱", message: "STREAK STARTED!" },
+    { range: [2, 2], emoji: "💪", message: "BUILDING MOMENTUM!" },
+    { range: [3, 3], emoji: "⚡", message: "GAINING POWER!" },
+    { range: [4, 4], emoji: "🔥", message: "ON FIRE!" },
+    { range: [5, 5], emoji: "🚀", message: "ROCKETING UP!" },
+    { range: [6, 6], emoji: "⭐", message: "SHINING BRIGHT!" },
+    { range: [7, 7], emoji: "👑", message: "WEEK CHAMPION!" },
+    
+    // Day 8-14: Second week
+    { range: [8, 8], emoji: "💎", message: "DIAMOND STREAK!" },
+    { range: [9, 9], emoji: "🎯", message: "PRECISION MODE!" },
+    { range: [10, 10], emoji: "🌪️", message: "TORNADO POWER!" },
+    { range: [11, 11], emoji: "🏆", message: "TROPHY LEVEL!" },
+    { range: [12, 12], emoji: "🎨", message: "MASTERY MODE!" },
+    { range: [13, 13], emoji: "⚔️", message: "WARRIOR SPIRIT!" },
+    { range: [14, 14], emoji: "🎪", message: "TWO WEEK CIRCUS!" },
+    
+    // Day 15-21: Third week
+    { range: [15, 15], emoji: "🌟", message: "SUPERSTAR!" },
+    { range: [16, 16], emoji: "🎭", message: "PERFORMANCE PEAK!" },
+    { range: [17, 17], emoji: "🎸", message: "ROCKSTAR LEVEL!" },
+    { range: [18, 18], emoji: "🎲", message: "LUCKY STREAK!" },
+    { range: [19, 19], emoji: "🎊", message: "CELEBRATION TIME!" },
+    { range: [20, 20], emoji: "🎯", message: "BULLSEYE PRECISION!" },
+    { range: [21, 21], emoji: "🎪", message: "THREE WEEK SHOW!" },
+    
+    // Day 22-30: Month milestone
+    { range: [22, 24], emoji: "🔮", message: "CRYSTAL CLEAR!" },
+    { range: [25, 27], emoji: "🎨", message: "ARTISTIC GENIUS!" },
+    { range: [28, 30], emoji: "🏰", message: "MONTH KINGDOM!" },
+    
+    // Day 31-60: Habit formation
+    { range: [31, 35], emoji: "👑", message: "HABIT ROYALTY!" },
+    { range: [36, 40], emoji: "🎭", message: "MASTER PERFORMER!" },
+    { range: [41, 45], emoji: "🎪", message: "CIRCUS DIRECTOR!" },
+    { range: [46, 50], emoji: "🌟", message: "CONSTELLATION!" },
+    { range: [51, 55], emoji: "🏅", message: "OLYMPIC LEVEL!" },
+    { range: [56, 60], emoji: "🚀", message: "SPACE MISSION!" },
+    
+    // Day 61-100: Elite tier
+    { range: [61, 70], emoji: "💫", message: "COSMIC POWER!" },
+    { range: [71, 80], emoji: "🌌", message: "GALAXY MASTER!" },
+    { range: [81, 90], emoji: "⭐", message: "STELLAR PERFORMANCE!" },
+    { range: [91, 100], emoji: "🌈", message: "RAINBOW WARRIOR!" },
+    
+    // Day 101-365: Legendary
+    { range: [101, 150], emoji: "🏛️", message: "TEMPLE GUARDIAN!" },
+    { range: [151, 200], emoji: "🗿", message: "MONUMENT STATUS!" },
+    { range: [201, 250], emoji: "🏔️", message: "MOUNTAIN CLIMBER!" },
+    { range: [251, 300], emoji: "🌋", message: "VOLCANO POWER!" },
+    { range: [301, 365], emoji: "🎆", message: "YEAR-LONG LEGEND!" },
+    
+    // Day 366+: Mythical
+    { range: [366, 500], emoji: "🔥", message: "ETERNAL FLAME!" },
+    { range: [501, 750], emoji: "⚡", message: "LIGHTNING DEITY!" },
+    { range: [751, 1000], emoji: "🌟", message: "CELESTIAL BEING!" },
+    { range: [1001, Infinity], emoji: "🌈", message: "TRANSCENDENT!" }
+  ];
+
+  for (const msg of messages) {
+    if (streakCount >= msg.range[0] && streakCount <= msg.range[1]) {
+      return { emoji: msg.emoji, message: msg.message };
+    }
+  }
+  
+  // Fallback
+  return { emoji: "🔥", message: "ON FIRE!" };
+}
+
 interface UserStatsModalProps {
     isOpen: boolean;
     onClose: () => void;
@@ -137,6 +210,7 @@ export function UserStatsModal({ isOpen, onClose, user }: UserStatsModalProps) {
     const [languageStats, setLanguageStats] = useState<LanguageStats[]>([]);
     const [loading, setLoading] = useState(true);
     const [settingsModalOpen, setSettingsModalOpen] = useState(false);
+    const [currentStreak, setCurrentStreak] = useState<number>(0);
 
     useEffect(() => {
         if (!isOpen || !user) return;
@@ -184,6 +258,31 @@ export function UserStatsModal({ isOpen, onClose, user }: UserStatsModalProps) {
                 const languageSnapshot = await getDocs(languageStatsRef);
                 const languageData = languageSnapshot.docs.map(doc => doc.data() as LanguageStats);
                 setLanguageStats(languageData);
+
+                // Calculate current streak using all available daily data
+                let streak = 0;
+                const today = new Date().toISOString().split('T')[0];
+                let checkDate = new Date();
+                
+                for (let i = 0; i < Math.min(90, dailyData.length + 7); i++) {
+                    const dateStr = checkDate.toISOString().split('T')[0];
+                    const dayData = dailyData.find(d => d.date === dateStr);
+                    
+                    if (dayData && dayData.count > 0) {
+                        streak++;
+                    } else if (dateStr === today) {
+                        // If today has no activity yet, don't break streak
+                        // Continue checking previous days
+                    } else {
+                        // Gap found, streak is broken
+                        break;
+                    }
+                    
+                    // Move to previous day
+                    checkDate.setDate(checkDate.getDate() - 1);
+                }
+                
+                setCurrentStreak(streak);
             } catch (error) {
                 console.error('Error fetching user stats:', error);
             } finally {
@@ -242,10 +341,29 @@ export function UserStatsModal({ isOpen, onClose, user }: UserStatsModalProps) {
                         {/* Today's Focus - Prominent Display */}
                         <div className="bg-gradient-to-r from-primary/10 to-secondary/10 p-6 rounded-lg border border-primary/20">
                             <h3 className="text-lg font-semibold mb-3">Today&apos;s Progress</h3>
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-3 gap-4">
                                 <div className="text-center">
                                     <div className="text-3xl font-bold text-primary">{todayCount}</div>
                                     <div className="text-sm text-foreground/60">Phrases Today</div>
+                                </div>
+                                <div className="text-center">
+                                    {currentStreak > 0 ? (() => {
+                                        const streakData = getStreakMessage(currentStreak);
+                                        return (
+                                            <div className="bg-gray-800 dark:bg-gray-900 p-3 rounded-xl border-2 border-gray-600 shadow-md">
+                                                <div className="flex items-center justify-center mb-1">
+                                                    <span className="text-2xl font-bold text-white mr-2">{currentStreak}</span>
+                                                    <span className="text-2xl animate-pulse">{streakData.emoji}</span>
+                                                </div>
+                                                <div className="text-xs font-semibold text-gray-300 uppercase tracking-wide">Day Streak</div>
+                                            </div>
+                                        );
+                                    })() : (
+                                        <>
+                                            <div className="text-2xl font-bold text-gray-400">0</div>
+                                            <div className="text-sm text-foreground/60">Day Streak</div>
+                                        </>
+                                    )}
                                 </div>
                                 <div className="text-center">
                                     <div className="text-lg font-semibold">
@@ -266,7 +384,7 @@ export function UserStatsModal({ isOpen, onClose, user }: UserStatsModalProps) {
                                         )}
                                     </div>
                                     <div className="text-sm text-foreground/60">
-                                        vs Yesterday ({yesterdayCount})
+                                        vs Yesterday ({todayCount - yesterdayCount >= 0 ? '+' : ''}{todayCount - yesterdayCount})
                                     </div>
                                 </div>
                             </div>
