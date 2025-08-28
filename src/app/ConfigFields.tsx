@@ -46,7 +46,7 @@ const ConfigFields: React.FC<ConfigFieldsProps> = ({
             case 'enableOutputBeforeInput':
                 return `Reverse Order (${targetLangName} → ${inputLangName})`;
             case 'showAllPhrases':
-                return `Show ${inputLangName} & ${targetLangName}`;
+                return `Multi-Language View`;
             case 'inputPlaybackSpeed':
                 return `${inputLangName} Speed`;
             case 'outputPlaybackSpeed':
@@ -125,7 +125,7 @@ const ConfigFields: React.FC<ConfigFieldsProps> = ({
     return (
         <div className="space-y-4">
             {definition.map((field) => {
-                const { key, label, inputType, description } = field;
+                const { key, label, inputType, description, decorator } = field;
                 const value = config[key];
                 const dynamicLabel = getDynamicLabel(key, label);
                 const dynamicDescription = getDynamicDescription(key, description);
@@ -166,6 +166,11 @@ const ConfigFields: React.FC<ConfigFieldsProps> = ({
                                     {dynamicLabel}
                                 </label>
                             </div>
+                            {decorator && (
+                                <div className="ml-6 mt-1">
+                                    {decorator()}
+                                </div>
+                            )}
                             {dynamicDescription && (
                                 <p className="text-sm text-muted-foreground mt-1 ml-6">{dynamicDescription}</p>
                             )}

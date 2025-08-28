@@ -73,6 +73,11 @@ export const presentationConfigDefinition: ConfigFieldDefinition[] = [
     inputType: "checkbox",
     description:
       "Display input, translation, and romanization simultaneously with highlighting for the current phase.",
+    decorator: () => (
+      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">
+        Beta
+      </span>
+    ),
   },
   {
     key: "inputPlaybackSpeed",
