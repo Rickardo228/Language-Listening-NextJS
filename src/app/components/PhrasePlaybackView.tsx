@@ -43,7 +43,7 @@ export function PhrasePlaybackView({
     stickyHeaderContent,
     methodsRef,
 }: PhrasePlaybackViewProps) {
-    const { updateUserStats, StatsUpdatePopup, StatsModal, showStatsUpdate } = useUpdateUserStats();
+    const { updateUserStats, StatsPopups, StatsModal, showStatsUpdate } = useUpdateUserStats();
     const [currentPhraseIndex, setCurrentPhraseIndex] = useState(0);
     const [currentPhase, setCurrentPhase] = useState<'input' | 'output'>(
         presentationConfig.enableInputPlayback ? 'input' : 'output'
@@ -614,8 +614,8 @@ export function PhrasePlaybackView({
 
     return (
         <div className="flex-1 lg:overflow-y-auto lg:relative">
-            {/* Stats Update Popup */}
-            {StatsUpdatePopup}
+            {/* All Stats Popups (unified portal) */}
+            {StatsPopups}
 
             {/* Stats Modal */}
             {StatsModal}
