@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { User } from 'firebase/auth';
 import { getFirestore, doc, getDoc, collection, getDocs, query, orderBy, limit } from 'firebase/firestore';
-import { getFlagEmoji } from '../utils/languageUtils';
+import { getFlagEmoji, getLanguageName } from '../utils/languageUtils';
 import { useUser } from '../contexts/UserContext';
 
 interface UserStatsModalProps {
@@ -235,88 +235,59 @@ function getLanguageRankTitle(count: number): { title: string; color: string; ne
     }
 }
 
-// Custom language pair symbol component - using flag emojis with target language prominence
-function LanguagePairSymbol({ lang1, lang2, inputCount, outputCount, userPreferredLang }: {
-    lang1: string;
-    lang2: string;
-    inputCount: number;
-    outputCount: number;
-    userPreferredLang?: string;
+// Single language symbol component - using flag emojis
+function LanguageSymbol({ language, count }: {
+    language: string;
+    count: number;
 }) {
-    // Determine which language is the target (learning) language
-    // If user has a preferred language, the other language is the target
-    const isLang1Target = userPreferredLang === lang2 && lang1 !== userPreferredLang;
-    const isLang2Target = userPreferredLang === lang1 && lang2 !== userPreferredLang;
-
-    // If neither language is the target, both should be XL
-    const isNeitherTarget = !isLang1Target && !isLang2Target;
-
     return (
-        <div className="relative w-16 h-10 flex-shrink-0">
-            <div className="flex w-full h-full">
-                {/* Left half - first language flag */}
-                <div className="w-1/2 h-full flex items-center justify-center relative">
-                    <span className={`transition-all duration-200 ${isLang1Target || isNeitherTarget ? 'text-2xl' : 'text-lg'}`}>
-                        {getFlagEmoji(lang1)}
-                    </span>
-
-                </div>
-                {/* Right half - second language flag */}
-                <div className="w-1/2 h-full flex items-center justify-center relative">
-                    <span className={`transition-all duration-200 ${isLang2Target || isNeitherTarget ? 'text-2xl' : 'text-lg'}`}>
-                        {getFlagEmoji(lang2)}
-                    </span>
-
-                </div>
-            </div>
-            {/* Center line separator */}
-            <div className="absolute left-1/2 top-0 bottom-0 w-px bg-gray-400"></div>
+        <div className="w-16 h-10 flex items-center justify-center">
+            <span className="text-2xl transition-all duration-200">
+                {getFlagEmoji(language)}
+            </span>
         </div>
     );
 }
 
-// Function to combine bidirectional language pairs
-function combineLanguagePairs(languageStats: LanguageStats[]): Array<{
-    languages: string[];
+// Function to aggregate individual language stats
+function aggregateLanguageStats(languageStats: LanguageStats[], userPreferredLang?: string): Array<{
+    language: string;
     totalCount: number;
     firstListened: string;
-    inputCount: number;
-    outputCount: number;
 }> {
-    const combinedMap = new Map<string, {
-        languages: string[];
+    const languageMap = new Map<string, {
+        language: string;
         totalCount: number;
         firstListened: string;
-        inputCount: number;
-        outputCount: number;
     }>();
 
     languageStats.forEach(stat => {
-        // Create a unique key for the language pair (sorted alphabetically)
-        const sortedLangs = [stat.inputLang, stat.targetLang].sort();
-        const key = sortedLangs.join('-');
+        // Aggregate by target language (the language being learned)
+        // This includes both directions: UK->Italian and Italian->UK both count towards Italian
+        const targetLang = stat.targetLang;
 
-        if (combinedMap.has(key)) {
-            const existing = combinedMap.get(key)!;
+        // Skip if this is the user's native language (preferred input language)
+        if (targetLang === userPreferredLang) {
+            return;
+        }
+
+        if (languageMap.has(targetLang)) {
+            const existing = languageMap.get(targetLang)!;
             existing.totalCount += stat.count;
-            existing.inputCount += stat.inputLang === sortedLangs[0] ? stat.count : 0;
-            existing.outputCount += stat.targetLang === sortedLangs[1] ? stat.count : 0;
             // Keep the earliest first listened date
             if (new Date(stat.firstListened) < new Date(existing.firstListened)) {
                 existing.firstListened = stat.firstListened;
             }
         } else {
-            combinedMap.set(key, {
-                languages: sortedLangs,
+            languageMap.set(targetLang, {
+                language: targetLang,
                 totalCount: stat.count,
-                firstListened: stat.firstListened,
-                inputCount: stat.inputLang === sortedLangs[0] ? stat.count : 0,
-                outputCount: stat.targetLang === sortedLangs[1] ? stat.count : 0
+                firstListened: stat.firstListened
             });
         }
     });
 
-    return Array.from(combinedMap.values()).sort((a, b) => b.totalCount - a.totalCount);
+    return Array.from(languageMap.values()).sort((a, b) => b.totalCount - a.totalCount);
 }
 
 export function UserStatsModal({ isOpen, onClose, user }: UserStatsModalProps) {
@@ -476,16 +447,19 @@ export function UserStatsModal({ isOpen, onClose, user }: UserStatsModalProps) {
                                 </div>
 
                                 {/* Polyglot recognition - only show if learning multiple languages */}
-                                {languageStats.length > 1 && (
-                                    <div className="bg-gradient-to-r from-purple-500/20 to-blue-500/20 p-3 rounded-lg border border-purple-300/30 mb-3">
-                                        <div className="text-sm font-medium text-purple-700 dark:text-purple-300 mb-1">
-                                            🌍 Polyglot Learner
+                                {(() => {
+                                    const aggregatedLanguages = aggregateLanguageStats(languageStats, userProfile?.preferredInputLang);
+                                    return aggregatedLanguages.length > 1 ? (
+                                        <div className="bg-gradient-to-r from-purple-500/20 to-blue-500/20 p-3 rounded-lg border border-purple-300/30 mb-3">
+                                            <div className="text-sm font-medium text-purple-700 dark:text-purple-300 mb-1">
+                                                🌍 Polyglot Learner
+                                            </div>
+                                            <div className="text-xs text-foreground/70">
+                                                You're practicing {aggregatedLanguages.length} different languages
+                                            </div>
                                         </div>
-                                        <div className="text-xs text-foreground/70">
-                                            You're practicing {languageStats.length} different language pairs
-                                        </div>
-                                    </div>
-                                )}
+                                    ) : null;
+                                })()}
 
                                 {getPhraseRankTitle(mainStats.phrasesListened).nextMilestone > 0 && (
                                     <div className="text-sm text-foreground/60">
@@ -495,35 +469,32 @@ export function UserStatsModal({ isOpen, onClose, user }: UserStatsModalProps) {
                             </div>
                         </div>
 
-                        {/* Language Pairs with Ranking */}
+                        {/* Languages with Ranking */}
                         {languageStats.length > 0 && (
                             <div>
-                                <h3 className="font-semibold mb-3">Language Pairs</h3>
+                                <h3 className="font-semibold mb-3">Languages You're Learning</h3>
                                 <div className="space-y-2">
                                     {(() => {
-                                        const combinedPairs = combineLanguagePairs(languageStats);
-                                        return combinedPairs.map((pair, index) => {
-                                            const rankInfo = getLanguageRankTitle(pair.totalCount);
+                                        const aggregatedLanguages = aggregateLanguageStats(languageStats, userProfile?.preferredInputLang);
+                                        return aggregatedLanguages.map((langStat, index) => {
+                                            const rankInfo = getLanguageRankTitle(langStat.totalCount);
                                             return (
-                                                <div key={pair.languages.join('-')} className="bg-secondary/20 p-3 rounded">
+                                                <div key={langStat.language} className="bg-secondary/20 p-3 rounded">
                                                     <div className="flex items-center gap-3">
-                                                        <LanguagePairSymbol
-                                                            lang1={pair.languages[0]}
-                                                            lang2={pair.languages[1]}
-                                                            inputCount={pair.inputCount}
-                                                            outputCount={pair.outputCount}
-                                                            userPreferredLang={userProfile?.preferredInputLang}
+                                                        <LanguageSymbol
+                                                            language={langStat.language}
+                                                            count={langStat.totalCount}
                                                         />
                                                         <div className="flex-1">
                                                             <div className="flex justify-between items-center">
                                                                 <span className="font-medium">
-                                                                    {pair.languages[0]} ↔ {pair.languages[1]}
+                                                                    {getLanguageName(langStat.language)}
                                                                 </span>
-                                                                <span className="font-semibold">{pair.totalCount.toLocaleString()} phrases</span>
+                                                                <span className="font-semibold">{langStat.totalCount.toLocaleString()} phrases</span>
                                                             </div>
                                                             <div className="flex justify-between items-center mt-1">
                                                                 <div className="text-sm text-foreground/60">
-                                                                    First practiced: {new Date(pair.firstListened).toLocaleDateString()}
+                                                                    First practiced: {new Date(langStat.firstListened).toLocaleDateString()}
                                                                 </div>
                                                                 <div className={`text-sm font-medium ${rankInfo.color}`}>
                                                                     {rankInfo.title}
