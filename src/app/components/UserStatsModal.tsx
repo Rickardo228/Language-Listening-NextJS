@@ -104,7 +104,7 @@ function aggregateLanguageStats(languageStats: LanguageStats[], userPreferredLan
         // This includes both directions: UK->Italian and Italian->UK both count towards Italian
         const targetLang = stat.targetLang;
 
-        // Skip if this is the user's native language (preferred input language)
+        // Skip if this is the user's native language
         if (targetLang === userPreferredLang) {
             return;
         }
@@ -286,7 +286,7 @@ export function UserStatsModal({ isOpen, onClose, user }: UserStatsModalProps) {
 
                                 {/* Polyglot recognition - only show if learning multiple languages */}
                                 {(() => {
-                                    const aggregatedLanguages = aggregateLanguageStats(languageStats, userProfile?.preferredInputLang);
+                                    const aggregatedLanguages = aggregateLanguageStats(languageStats, userProfile?.nativeLanguage || userProfile?.preferredInputLang);
                                     return aggregatedLanguages.length > 1 ? (
                                         <div className="bg-gradient-to-r from-purple-500/20 to-blue-500/20 p-3 rounded-lg border border-purple-300/30 mb-3">
                                             <div className="text-sm font-medium text-purple-700 dark:text-purple-300 mb-1">
@@ -313,7 +313,7 @@ export function UserStatsModal({ isOpen, onClose, user }: UserStatsModalProps) {
                                 <h3 className="font-semibold mb-3">Languages You&apos;re Learning</h3>
                                 <div className="space-y-2">
                                     {(() => {
-                                        const aggregatedLanguages = aggregateLanguageStats(languageStats, userProfile?.preferredInputLang);
+                                        const aggregatedLanguages = aggregateLanguageStats(languageStats, userProfile?.nativeLanguage || userProfile?.preferredInputLang);
                                         return aggregatedLanguages.map((langStat) => {
                                             const rankInfo = getLanguageRankTitle(langStat.totalCount);
                                             return (

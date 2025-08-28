@@ -15,6 +15,7 @@ export interface UserProfile {
   abilityLevel: 'beginner' | 'elementary' | 'intermediate' | 'advanced' | 'native';
   preferredInputLang: string;
   preferredTargetLang: string;
+  nativeLanguage?: string; // User's native/first language
   contentPreferences?: string[];
   
   // Metadata
@@ -116,6 +117,7 @@ export const saveOnboardingData = async (
     abilityLevel: data.abilityLevel as UserProfile['abilityLevel'],
     preferredInputLang: data.inputLang,
     preferredTargetLang: data.targetLang,
+    nativeLanguage: data.inputLang, // Save preferred input language as native language
     contentPreferences: data.contentPreferences,
     onboardingCompleted: true,
     
