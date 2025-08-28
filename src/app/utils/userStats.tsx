@@ -4,6 +4,7 @@ import {
   updateDoc,
   increment,
   setDoc,
+  runTransaction,
 } from "firebase/firestore";
 import { Phrase } from "../types";
 import { useRef, useState, useEffect } from "react";
@@ -180,6 +181,20 @@ export const useUpdateUserStats = () => {
 
   useEffect(() => {
     setMounted(true);
+
+    // Clean up old session storage entries for streak calculation
+    const cleanupOldStreakSessions = () => {
+      const today = new Date().toISOString().split('T')[0];
+      Object.keys(sessionStorage).forEach(key => {
+        if (key.startsWith('streakCalculated_') && !key.includes(today)) {
+          sessionStorage.removeItem(key);
+          console.log(`🧹 Cleaned up old streak session: ${key}`);
+        }
+      });
+    };
+
+    cleanupOldStreakSessions();
+
     return () => setMounted(false);
   }, []);
 
@@ -469,18 +484,95 @@ export const useUpdateUserStats = () => {
       }
     }
 
-    // Calculate and update current streak after database updates
+    // Smart incremental streak calculation - only update when streak actually changes
     try {
-      const newStreak = await calculateStreak(user.uid);
+      // Use Firestore transaction to prevent race conditions and double increments
+      const statsRef = doc(firestore, "users", user.uid, "stats", "listening");
 
-      // Check if streak actually incremented or if debug mode is on
-      if (newStreak > currentStreak || DEBUG_STREAK_MODE) {
-        setPreviousStreak(currentStreak);
-        setCurrentStreak(newStreak);
-        setShowStreakIncrement(true);
-      } else {
-        setCurrentStreak(newStreak);
+      // Check if we already calculated the streak for today in this session
+      const todayKey = `streakCalculated_${today}`;
+      if (sessionStorage.getItem(todayKey)) {
+        console.log(`📅 Streak already calculated for today in this session`);
+        return;
       }
+
+      // Use a transaction to ensure atomic streak updates
+      await runTransaction(firestore, async (transaction) => {
+        const statsDoc = await transaction.get(statsRef);
+        const currentStats = statsDoc.exists() ? statsDoc.data() : {};
+
+        // Check if streak was already calculated today by another process
+        const lastCalculation = currentStats.lastStreakCalculation;
+        const lastCalculationDate = lastCalculation ?
+          new Date(lastCalculation).toISOString().split('T')[0] : null;
+
+        if (lastCalculationDate === today) {
+          console.log(`📅 Streak already calculated today by another process`);
+          return; // Exit transaction early
+        }
+
+        let newStreak = currentStats.currentStreak || 0;
+        let streakChanged = false;
+        let streakChangeReason = '';
+
+        const lastActivityDate = currentStats.lastListenedAt ?
+          new Date(currentStats.lastListenedAt).toISOString().split('T')[0] : null;
+
+        if (lastActivityDate !== today) {
+          // Check if yesterday had activity
+          const yesterday = new Date();
+          yesterday.setDate(yesterday.getDate() - 1);
+          const yesterdayStr = yesterday.toISOString().split('T')[0];
+
+          if (lastActivityDate === yesterdayStr) {
+            // Consecutive day - increment streak
+            newStreak++;
+            streakChanged = true;
+            streakChangeReason = 'incremented';
+            console.log(`🔥 Streak incremented: ${newStreak} days`);
+          } else if (lastActivityDate !== today) {
+            // Gap found - reset streak to 1
+            newStreak = 1;
+            streakChanged = true;
+            streakChangeReason = 'reset';
+            console.log(`🔄 Streak reset: New streak started (1 day)`);
+          }
+        } else {
+          // Same day - streak continues unchanged
+          console.log(`📅 Same day activity - streak maintained: ${newStreak} days`);
+        }
+
+        // Only update streak data if it actually changed
+        if (streakChanged) {
+          console.log(`💾 Updating streak data: ${streakChangeReason} to ${newStreak} days`);
+
+          // Update main stats with new streak and metadata
+          transaction.update(statsRef, {
+            currentStreak: newStreak,
+            lastStreakCalculation: now.toISOString(),
+            longestStreak: Math.max(newStreak, currentStats.longestStreak || 0),
+            streakStartDate: newStreak === 1 ? today : (currentStats.streakStartDate || today)
+          });
+
+          // Update UI state for streak increment animation
+          setPreviousStreak(currentStreak);
+          setCurrentStreak(newStreak);
+          setShowStreakIncrement(true);
+        } else {
+          // Streak unchanged - just update local state
+          setCurrentStreak(newStreak);
+        }
+
+        // Mark that we've calculated the streak for today in this session
+        sessionStorage.setItem(todayKey, 'true');
+
+        console.log(`📊 Current streak: ${newStreak} days`);
+        if (streakChanged) {
+          console.log(`🏆 Longest streak: ${Math.max(newStreak, currentStats.longestStreak || 0)} days`);
+          console.log(`📅 Streak start date: ${newStreak === 1 ? today : (currentStats.streakStartDate || today)}`);
+        }
+      });
+
     } catch (error) {
       console.error("Error calculating streak:", error);
     }

@@ -107,6 +107,10 @@ interface UserStatsModalProps {
 interface UserStats {
     phrasesListened: number;
     lastListenedAt: string;
+    currentStreak?: number;
+    lastStreakCalculation?: string;
+    longestStreak?: number;
+    streakStartDate?: string;
 }
 
 interface DailyStats {
@@ -315,30 +319,11 @@ export function UserStatsModal({ isOpen, onClose, user }: UserStatsModalProps) {
                 const languageData = languageSnapshot.docs.map(doc => doc.data() as LanguageStats);
                 setLanguageStats(languageData);
 
-                // Calculate current streak using all available daily data
-                let streak = 0;
-                const today = new Date().toISOString().split('T')[0];
-                const checkDate = new Date();
+                // Get current streak from stored stats (calculated incrementally in userStats.tsx)
+                const currentStreak = mainStats?.currentStreak || 0;
+                setCurrentStreak(currentStreak);
 
-                for (let i = 0; i < Math.min(90, dailyData.length + 7); i++) {
-                    const dateStr = checkDate.toISOString().split('T')[0];
-                    const dayData = dailyData.find(d => d.date === dateStr);
-
-                    if (dayData && dayData.count > 0) {
-                        streak++;
-                    } else if (dateStr === today) {
-                        // If today has no activity yet, don't break streak
-                        // Continue checking previous days
-                    } else {
-                        // Gap found, streak is broken
-                        break;
-                    }
-
-                    // Move to previous day
-                    checkDate.setDate(checkDate.getDate() - 1);
-                }
-
-                setCurrentStreak(streak);
+                console.log(`🔥 Current streak from stats: ${currentStreak} days`);
             } catch (error) {
                 console.error('Error fetching user stats:', error);
             } finally {
@@ -478,6 +463,11 @@ export function UserStatsModal({ isOpen, onClose, user }: UserStatsModalProps) {
                                                     <span className="text-2xl animate-pulse">{streakData.emoji}</span>
                                                 </div>
                                                 <div className="text-xs font-semibold text-gray-300 uppercase tracking-wide">Day Streak</div>
+                                                {mainStats?.longestStreak && mainStats.longestStreak > currentStreak && (
+                                                    <div className="text-xs text-gray-400 mt-1">
+                                                        Best: {mainStats.longestStreak} days
+                                                    </div>
+                                                )}
                                             </div>
                                         );
                                     })() : (
