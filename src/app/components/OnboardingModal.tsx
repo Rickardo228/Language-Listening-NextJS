@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { OnboardingLanguageSelect } from './OnboardingLanguageSelect';
 import { OnboardingAbilitySelect } from './OnboardingAbilitySelect';
+import { OnboardingContentPreferences } from './OnboardingContentPreferences';
 import { languageOptions, Phrase, CollectionType as CollectionTypeEnum } from '../types';
 import { saveOnboardingData } from '../utils/userPreferences';
 import { trackOnboardingCompleted, trackCreateList } from '../../lib/mixpanelClient';
@@ -72,7 +73,7 @@ export function OnboardingModal({
     preselectedTargetLang
 }: OnboardingModalProps) {
     const { user } = useUser();
-    const [currentStep, setCurrentStep] = useState<'languages' | 'ability' | 'complete'>('languages');
+    const [currentStep, setCurrentStep] = useState<'languages' | 'ability' | 'preferences' | 'complete'>('languages');
     const [inputLang, setInputLang] = useState(
         preselectedInputLang || languageOptions[0]?.code || 'en-GB'
     );
@@ -80,6 +81,7 @@ export function OnboardingModal({
         preselectedTargetLang || 'it-IT'
     );
     const [abilityLevel, setAbilityLevel] = useState('beginner');
+    const [contentPreferences, setContentPreferences] = useState<string[]>([]);
     const [isLoading, setIsLoading] = useState(false);
 
     // Update languages if preselected values change
@@ -130,7 +132,8 @@ export function OnboardingModal({
             await saveOnboardingData(user.uid, {
                 abilityLevel,
                 inputLang,
-                targetLang
+                targetLang,
+                contentPreferences
             }, user); // Pass Firebase user for complete profile data
 
             // Check if user has any collections, create default if none
@@ -197,20 +200,28 @@ export function OnboardingModal({
                     <div className="px-8 pt-6">
                         <div className="flex items-center justify-between mb-8">
                             <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${currentStep === 'languages' ? 'bg-blue-600 text-white' :
-                                currentStep === 'ability' || currentStep === 'complete' ? 'bg-green-600 text-white' :
+                                ['ability', 'preferences', 'complete'].includes(currentStep) ? 'bg-green-600 text-white' :
                                     'bg-gray-200 text-gray-600'
                                 }`}>
                                 1
                             </div>
-                            <div className={`flex-1 h-2 mx-4 rounded ${currentStep === 'ability' || currentStep === 'complete' ? 'bg-green-600' : 'bg-gray-200'
+                            <div className={`flex-1 h-2 mx-2 rounded ${['ability', 'preferences', 'complete'].includes(currentStep) ? 'bg-green-600' : 'bg-gray-200'
                                 }`} />
                             <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${currentStep === 'ability' ? 'bg-blue-600 text-white' :
-                                currentStep === 'complete' ? 'bg-green-600 text-white' :
+                                ['preferences', 'complete'].includes(currentStep) ? 'bg-green-600 text-white' :
                                     'bg-gray-200 text-gray-600'
                                 }`}>
                                 2
                             </div>
-                            <div className={`flex-1 h-2 mx-4 rounded ${currentStep === 'complete' ? 'bg-green-600' : 'bg-gray-200'
+                            <div className={`flex-1 h-2 mx-2 rounded ${['preferences', 'complete'].includes(currentStep) ? 'bg-green-600' : 'bg-gray-200'
+                                }`} />
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${currentStep === 'preferences' ? 'bg-blue-600 text-white' :
+                                currentStep === 'complete' ? 'bg-green-600 text-white' :
+                                    'bg-gray-200 text-gray-600'
+                                }`}>
+                                3
+                            </div>
+                            <div className={`flex-1 h-2 mx-2 rounded ${currentStep === 'complete' ? 'bg-green-600' : 'bg-gray-200'
                                 }`} />
                             <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${currentStep === 'complete' ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-600'
                                 }`}>
@@ -284,8 +295,41 @@ export function OnboardingModal({
                                             Back
                                         </button>
                                         <button
-                                            onClick={handleComplete}
+                                            onClick={() => setCurrentStep('preferences')}
                                             disabled={isLoading}
+                                            className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 font-medium"
+                                        >
+                                            Continue
+                                        </button>
+                                    </div>
+                                </motion.div>
+                            )}
+
+                            {currentStep === 'preferences' && (
+                                <motion.div
+                                    key="preferences"
+                                    initial={{ opacity: 0, x: 20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    exit={{ opacity: 0, x: -20 }}
+                                    className="space-y-6"
+                                >
+                                    <OnboardingContentPreferences
+                                        selectedPreferences={contentPreferences}
+                                        onPreferencesChange={setContentPreferences}
+                                        disabled={isLoading}
+                                    />
+
+                                    <div className="flex gap-4">
+                                        <button
+                                            onClick={() => setCurrentStep('ability')}
+                                            disabled={isLoading}
+                                            className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors disabled:opacity-50"
+                                        >
+                                            Back
+                                        </button>
+                                        <button
+                                            onClick={handleComplete}
+                                            disabled={isLoading || contentPreferences.length < 3}
                                             className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 font-medium flex items-center justify-center"
                                         >
                                             {isLoading ? (

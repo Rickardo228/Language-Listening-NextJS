@@ -15,6 +15,7 @@ export interface UserProfile {
   abilityLevel: 'beginner' | 'elementary' | 'intermediate' | 'advanced' | 'native';
   preferredInputLang: string;
   preferredTargetLang: string;
+  contentPreferences?: string[];
   
   // Metadata
   createdAt: string;
@@ -103,6 +104,7 @@ export const saveOnboardingData = async (
     abilityLevel: string;
     inputLang: string;
     targetLang: string;
+    contentPreferences?: string[];
   },
   firebaseUser?: User // Optional Firebase user object for additional data
 ): Promise<void> => {
@@ -114,6 +116,7 @@ export const saveOnboardingData = async (
     abilityLevel: data.abilityLevel as UserProfile['abilityLevel'],
     preferredInputLang: data.inputLang,
     preferredTargetLang: data.targetLang,
+    contentPreferences: data.contentPreferences,
     onboardingCompleted: true,
     
     // Metadata (set current timestamp for activity)
