@@ -7,6 +7,9 @@ import { useUser } from '../contexts/UserContext';
 import { getPhraseRankTitle, getLanguageRankTitle } from '../utils/rankingSystem';
 import { SettingsModal } from './SettingsModal';
 
+// Import timezone utilities from userStats
+import { getUserLocalDateBoundary, getUserTimezone } from '../utils/userStats';
+
 /**
  * DEVELOPMENT ONLY: Personal Best Debug Mode
  * 
@@ -265,43 +268,58 @@ export function UserStatsModal({ isOpen, onClose, user }: UserStatsModalProps) {
         if (!isOpen || !user) return;
 
         const fetchStats = async () => {
+            console.log("🔍 Starting to fetch stats for user:", user.uid);
             try {
                 const firestore = getFirestore();
 
                 // Fetch main stats
                 const statsRef = doc(firestore, 'users', user.uid, 'stats', 'listening');
+                console.log("📊 Fetching main stats from:", statsRef.path);
                 const statsDoc = await getDoc(statsRef);
                 if (statsDoc.exists()) {
-                    setMainStats(statsDoc.data() as UserStats);
+                    const statsData = statsDoc.data() as UserStats;
+                    console.log("✅ Main stats found:", statsData);
+                    setMainStats(statsData);
+                } else {
+                    console.log("❌ Main stats document doesn't exist");
                 }
 
                 // Fetch daily stats for display (last 7 days) and personal best calculation (most efficient approach)
                 const dailyStatsRef = collection(firestore, 'users', user.uid, 'stats', 'listening', 'daily');
+                console.log("📅 Fetching daily stats from:", dailyStatsRef.path);
 
                 // Get the day with the highest count (personal best) - most efficient!
                 // Firestore does the heavy lifting: orderBy('count', 'desc') + limit(1) = single document with highest count
                 const personalBestQuery = query(dailyStatsRef, orderBy('count', 'desc'), limit(1));
                 const personalBestSnapshot = await getDocs(personalBestQuery);
                 const personalBestData = personalBestSnapshot.docs[0]?.data() as DailyStats | undefined;
+                console.log("🏆 Personal best data:", personalBestData);
 
                 // Get last 7 days for display
                 const last7DaysQuery = query(dailyStatsRef, orderBy('date', 'desc'), limit(7));
                 const last7DaysSnapshot = await getDocs(last7DaysQuery);
                 const last7DaysData = last7DaysSnapshot.docs.map(doc => doc.data() as DailyStats);
+                console.log("📈 Last 7 days data from database:", last7DaysData);
+
+                // Show what dates we're actually looking for
+                const userTimezone = getUserTimezone();
+                const todayLocal = getUserLocalDateBoundary(userTimezone);
+                console.log("🔍 Looking for today's date - Local:", todayLocal, "User timezone:", userTimezone);
+                console.log("🔍 Available dates in database:", last7DaysData.map(d => d.date));
 
                 // Fill in missing days with 0 counts to ensure we always show 7 days
                 const last7Days = [];
                 for (let i = 6; i >= 0; i--) {
                     const date = new Date();
                     date.setDate(date.getDate() - i);
-                    const dateString = date.toISOString().split('T')[0];
+                    const dateLocal = getUserLocalDateBoundary(userTimezone, date);
 
-                    const existingDay = last7DaysData.find(day => day.date === dateString);
+                    const existingDay = last7DaysData.find(day => day.date === dateLocal);
                     if (existingDay) {
                         last7Days.push(existingDay);
                     } else {
                         last7Days.push({
-                            date: dateString,
+                            date: dateLocal,
                             count: 0,
                             lastUpdated: date.toISOString()
                         });
@@ -324,6 +342,13 @@ export function UserStatsModal({ isOpen, onClose, user }: UserStatsModalProps) {
                 setCurrentStreak(currentStreak);
 
                 console.log(`🔥 Current streak from stats: ${currentStreak} days`);
+                console.log("🎯 Final stats state:", {
+                    mainStats: mainStats,
+                    todayCount: last7Days.find(day =>
+                        new Date(day.date).toDateString() === new Date().toDateString()
+                    )?.count || 0,
+                    currentStreak: currentStreak
+                });
             } catch (error) {
                 console.error('Error fetching user stats:', error);
             } finally {
@@ -336,18 +361,59 @@ export function UserStatsModal({ isOpen, onClose, user }: UserStatsModalProps) {
 
     if (!isOpen) return null;
 
-    // Get today's stats
-    const todayStats = dailyStats.find(day =>
-        new Date(day.date).toDateString() === new Date().toDateString()
-    );
+    // Get today's stats using user's timezone
+    const userTimezone = getUserTimezone();
+    const todayLocal = getUserLocalDateBoundary(userTimezone);
+
+    console.log("🕐 Timezone debugging (User timezone, Local date):", {
+        now: new Date().toISOString(),
+        todayLocal: todayLocal,
+        userTimezone: userTimezone
+    });
+
+    // Debug: Log the dailyStats structure
+    console.log("🔍 DailyStats structure:", dailyStats.map(day => ({
+        date: day.date,
+        timestamp: day.timestamp,
+        count: day.count
+    })));
+
+    const todayStats = dailyStats.find(day => {
+        // Since we're already calculating dates in the user's timezone when fetching,
+        // we can directly compare the stored date with today's date
+        const matches = day.date === todayLocal;
+
+        console.log("📅 Day comparison (simplified):", {
+            dayDate: day.date,
+            todayLocal: todayLocal,
+            matches: matches
+        });
+
+        return matches;
+    });
     const todayCount = todayStats?.count || 0;
 
-    // Get yesterday's stats for comparison
+    console.log("🎯 Today's stats found:", todayStats);
+    console.log("🎯 Today's count:", todayCount);
+
+    // Get yesterday's stats for comparison using user's timezone
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
-    const yesterdayStats = dailyStats.find(day =>
-        new Date(day.date).toDateString() === yesterday.toDateString()
-    );
+    const yesterdayFormatted = getUserLocalDateBoundary(userTimezone, yesterday);
+
+    const yesterdayStats = dailyStats.find(day => {
+        // Since we're already calculating dates in the user's timezone when fetching,
+        // we can directly compare the stored date with yesterday's date
+        const matches = day.date === yesterdayFormatted;
+
+        console.log("📅 Yesterday comparison (simplified):", {
+            dayDate: day.date,
+            yesterdayFormatted: yesterdayFormatted,
+            matches: matches
+        });
+
+        return matches;
+    });
     const yesterdayCount = yesterdayStats?.count || 0;
 
     // Calculate trend
@@ -401,8 +467,8 @@ export function UserStatsModal({ isOpen, onClose, user }: UserStatsModalProps) {
         console.warn("⚠️ This debug mode should ONLY be used in local development!");
     }
 
-    // Check if today is a personal best
-    const isTodayPersonalBest = personalBest && personalBest.date === new Date().toISOString().split('T')[0];
+    // Check if today is a personal best using user's timezone
+    const isTodayPersonalBest = personalBest && personalBest.date === todayLocal;
 
     return (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
