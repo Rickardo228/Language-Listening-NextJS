@@ -32,15 +32,19 @@ const ConfigFields: React.FC<ConfigFieldsProps> = ({
         const inputLangName = getLanguageName(inputLang);
         const targetLangName = getLanguageName(targetLang);
 
+        // Determine the first and second language based on order
+        const firstLang = config.enableOutputBeforeInput ? targetLangName : inputLangName;
+        const secondLang = config.enableOutputBeforeInput ? inputLangName : targetLangName;
+
         switch (key) {
             case 'enableInputPlayback':
                 return `Play ${inputLangName} Audio`;
             case 'enableInputDurationDelay':
-                return `Recall`;
+                return `Recall - Pause after ${firstLang}`;
             case 'enableOutputDurationDelay':
-                return `Shadow`;
+                return `Shadow - Pause after ${secondLang}`;
             case 'enableOutputBeforeInput':
-                return `Play ${targetLangName} Before ${inputLangName}`;
+                return `Reverse Order (${targetLangName} → ${inputLangName})`;
             case 'showAllPhrases':
                 return `Show ${inputLangName} & ${targetLangName}`;
             case 'inputPlaybackSpeed':
@@ -49,6 +53,37 @@ const ConfigFields: React.FC<ConfigFieldsProps> = ({
                 return `${targetLangName} Speed`;
             default:
                 return defaultLabel;
+        }
+    };
+
+    // Function to get dynamic descriptions based on current languages
+    const getDynamicDescription = (key: keyof PresentationConfig, defaultDescription?: string): string => {
+        if (!inputLang || !targetLang || !defaultDescription) return defaultDescription || '';
+
+        const inputLangName = getLanguageName(inputLang);
+        const targetLangName = getLanguageName(targetLang);
+
+        // Determine the first and second language based on order
+        const firstLang = config.enableOutputBeforeInput ? targetLangName : inputLangName;
+        const secondLang = config.enableOutputBeforeInput ? inputLangName : targetLangName;
+
+        switch (key) {
+            case 'enableInputPlayback':
+                return `Enable or disable playback of the ${inputLangName} audio for each phrase.`;
+            case 'enableInputDurationDelay':
+                return `Pause after ${firstLang} to test your memory by recalling the ${secondLang} translation.`;
+            case 'enableOutputDurationDelay':
+                return `Pause after ${secondLang} to practice your pronunciation by repeating it.`;
+            case 'enableOutputBeforeInput':
+                return `Play the ${targetLangName} audio before the ${inputLangName} audio for each phrase.`;
+            case 'showAllPhrases':
+                return `Display ${inputLangName}, ${targetLangName}, and romanization simultaneously with highlighting for the current phase.`;
+            case 'inputPlaybackSpeed':
+                return `Control the playback speed of ${inputLangName} audio.`;
+            case 'outputPlaybackSpeed':
+                return `Control the playback speed of ${targetLangName} audio.`;
+            default:
+                return defaultDescription;
         }
     };
 
@@ -93,6 +128,7 @@ const ConfigFields: React.FC<ConfigFieldsProps> = ({
                 const { key, label, inputType, description } = field;
                 const value = config[key];
                 const dynamicLabel = getDynamicLabel(key, label);
+                const dynamicDescription = getDynamicDescription(key, description);
 
                 // Render a file input if the field is for a file (e.g. background image).
                 if (inputType === "file") {
@@ -107,8 +143,8 @@ const ConfigFields: React.FC<ConfigFieldsProps> = ({
                                 onChange={handleImageUpload}
                                 className="w-full p-2 border border-gray-300 rounded"
                             />
-                            {description && (
-                                <p className="text-sm text-muted-foreground mt-1">{description}</p>
+                            {dynamicDescription && (
+                                <p className="text-sm text-muted-foreground mt-1">{dynamicDescription}</p>
                             )}
                         </div>
                     );
@@ -130,8 +166,8 @@ const ConfigFields: React.FC<ConfigFieldsProps> = ({
                                     {dynamicLabel}
                                 </label>
                             </div>
-                            {description && (
-                                <p className="text-sm text-muted-foreground mt-1 ml-6">{description}</p>
+                            {dynamicDescription && (
+                                <p className="text-sm text-muted-foreground mt-1 ml-6">{dynamicDescription}</p>
                             )}
                         </div>
                     );
@@ -151,8 +187,8 @@ const ConfigFields: React.FC<ConfigFieldsProps> = ({
                                 onChange={(e) => handleChange(key, Number(e.target.value))}
                                 className="w-full p-2 border border-gray-300 rounded"
                             />
-                            {description && (
-                                <p className="text-sm text-muted-foreground mt-1">{description}</p>
+                            {dynamicDescription && (
+                                <p className="text-sm text-muted-foreground mt-1">{dynamicDescription}</p>
                             )}
                         </div>
                     );
@@ -178,8 +214,8 @@ const ConfigFields: React.FC<ConfigFieldsProps> = ({
                                 </option>
                             ))}
                         </datalist>
-                        {description && (
-                            <p className="text-sm text-muted-foreground mt-1">{description}</p>
+                        {dynamicDescription && (
+                            <p className="text-sm text-muted-foreground mt-1">{dynamicDescription}</p>
                         )}
                     </div>
                 }
@@ -203,8 +239,8 @@ const ConfigFields: React.FC<ConfigFieldsProps> = ({
                                     </option>
                                 ))}
                             </select>
-                            {description && (
-                                <p className="text-sm text-muted-foreground mt-1">{description}</p>
+                            {dynamicDescription && (
+                                <p className="text-sm text-muted-foreground mt-1">{dynamicDescription}</p>
                             )}
                         </div>
                     );
@@ -223,8 +259,8 @@ const ConfigFields: React.FC<ConfigFieldsProps> = ({
                             onChange={(e) => handleChange(key, e.target.value)}
                             className="w-full p-2 border border-gray-300 rounded"
                         />
-                        {description && (
-                            <p className="text-sm text-muted-foreground mt-1">{description}</p>
+                        {dynamicDescription && (
+                            <p className="text-sm text-muted-foreground mt-1">{dynamicDescription}</p>
                         )}
                     </div>
                 );
