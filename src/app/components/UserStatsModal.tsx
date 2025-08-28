@@ -248,19 +248,22 @@ function LanguagePairSymbol({ lang1, lang2, inputCount, outputCount, userPreferr
     const isLang1Target = userPreferredLang === lang2 && lang1 !== userPreferredLang;
     const isLang2Target = userPreferredLang === lang1 && lang2 !== userPreferredLang;
 
+    // If neither language is the target, both should be XL
+    const isNeitherTarget = !isLang1Target && !isLang2Target;
+
     return (
         <div className="relative w-16 h-10 flex-shrink-0">
             <div className="flex w-full h-full">
                 {/* Left half - first language flag */}
                 <div className="w-1/2 h-full flex items-center justify-center relative">
-                    <span className={`transition-all duration-200 ${isLang1Target ? 'text-2xl' : 'text-lg'}`}>
+                    <span className={`transition-all duration-200 ${isLang1Target || isNeitherTarget ? 'text-2xl' : 'text-lg'}`}>
                         {getFlagEmoji(lang1)}
                     </span>
 
                 </div>
                 {/* Right half - second language flag */}
                 <div className="w-1/2 h-full flex items-center justify-center relative">
-                    <span className={`transition-all duration-200 ${isLang2Target ? 'text-2xl' : 'text-lg'}`}>
+                    <span className={`transition-all duration-200 ${isLang2Target || isNeitherTarget ? 'text-2xl' : 'text-lg'}`}>
                         {getFlagEmoji(lang2)}
                     </span>
 
