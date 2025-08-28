@@ -19,6 +19,7 @@ const basePresentationConfig: PresentationConfig = {
   enableOutputDurationDelay: true,
   enableInputDurationDelay: false,
   enableOutputBeforeInput: false,
+  enableInputPlayback: true,
   inputPlaybackSpeed: 1.0,
   outputPlaybackSpeed: 0.85,
   showAllPhrases: false,

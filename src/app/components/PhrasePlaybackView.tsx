@@ -45,7 +45,9 @@ export function PhrasePlaybackView({
 }: PhrasePlaybackViewProps) {
     const { updateUserStats, StatsUpdatePopup, StatsModal, showStatsUpdate } = useUpdateUserStats();
     const [currentPhraseIndex, setCurrentPhraseIndex] = useState(0);
-    const [currentPhase, setCurrentPhase] = useState<'input' | 'output'>('input');
+    const [currentPhase, setCurrentPhase] = useState<'input' | 'output'>(
+        presentationConfig.enableInputPlayback ? 'input' : 'output'
+    );
     const [paused, setPaused] = useState(true);
     const [fullscreen, setFullscreen] = useState(false);
     const [showTitle, setShowTitle] = useState(false);
@@ -159,6 +161,12 @@ export function PhrasePlaybackView({
         if (currentPhraseIndex <= 0) {
             handleReplay();
         } else if (audioRef.current) {
+            // Skip input audio if disabled and we're in input phase
+            if (currentPhase === 'input' && !presentationConfig.enableInputPlayback) {
+                setCurrentPhase('output');
+                return;
+            }
+
             if (!audioRef.current.src) {
                 audioRef.current.src = phrases[currentPhraseIndex]?.[currentPhase === "input" ? 'inputAudio' : 'outputAudio']?.audioUrl ?? ''
             }
@@ -186,15 +194,27 @@ export function PhrasePlaybackView({
     const handleReplay = async () => {
         clearAllTimeouts();
         setCurrentPhraseIndex(prev => prev < 0 ? prev - 1 : -1);
-        setCurrentPhase('input');
-        if (audioRef.current && phrases[0]?.inputAudio?.audioUrl) {
+
+        // Check if input playback is enabled, if not start with output phase
+        const startPhase = presentationConfig.enableInputPlayback ? 'input' : 'output';
+        setCurrentPhase(startPhase);
+
+        if (startPhase === 'input' && audioRef.current && phrases[0]?.inputAudio?.audioUrl) {
             audioRef.current.src = phrases[0].inputAudio?.audioUrl;
             // Set playback speed for input phase
             const speed = presentationConfig.inputPlaybackSpeed || 1.0;
             if (speed !== 1.0) {
                 audioRef.current.playbackRate = speed;
             }
+        } else if (startPhase === 'output' && audioRef.current && phrases[0]?.outputAudio?.audioUrl) {
+            audioRef.current.src = phrases[0].outputAudio?.audioUrl;
+            // Set playback speed for output phase
+            const speed = presentationConfig.outputPlaybackSpeed || 1.0;
+            if (speed !== 1.0) {
+                audioRef.current.playbackRate = speed;
+            }
         }
+
         setShowTitle(true);
         setPaused(false);
 
@@ -210,14 +230,21 @@ export function PhrasePlaybackView({
 
         // Track replay event
         if (phrases[0]) {
-            const speed = presentationConfig.inputPlaybackSpeed || 1.0;
-            trackPlaybackEvent('replay', `${collectionId || 'unknown'}-0`, 'input', 0, speed);
+            const speed = startPhase === 'input'
+                ? (presentationConfig.inputPlaybackSpeed || 1.0)
+                : (presentationConfig.outputPlaybackSpeed || 1.0);
+            trackPlaybackEvent('replay', `${collectionId || 'unknown'}-0`, startPhase, 0, speed);
         }
     };
 
     const handlePlayPhrase = (index: number, phase: 'input' | 'output') => {
         clearAllTimeouts();
         if (audioRef.current) {
+            // Skip input audio if disabled
+            if (phase === 'input' && !presentationConfig.enableInputPlayback) {
+                return;
+            }
+
             const isPaused = paused;
             audioRef.current.pause();
             audioRef.current.src = phrases[index][phase === 'input' ? 'inputAudio' : 'outputAudio']?.audioUrl || '';
@@ -259,53 +286,66 @@ export function PhrasePlaybackView({
         clearAllTimeouts();
         if (audioRef.current) {
             audioRef.current.pause();
-            let targetPhase = currentPhase;
+            let targetPhase: 'input' | 'output';
             let targetIndex = currentPhraseIndex;
 
+            // Determine the target phase and index
             if (presentationConfig.enableOutputBeforeInput) {
+                // In output-before-input mode
                 if (currentPhase === 'input') {
-                    audioRef.current.src = phrases[currentPhraseIndex].outputAudio?.audioUrl || '';
-                    setCurrentPhase('output');
+                    // From input phase, go to output phase of same phrase
                     targetPhase = 'output';
+                    targetIndex = currentPhraseIndex;
                 } else {
-                    // If we're at the first phrase and output phase, loop to last phrase input
+                    // From output phase, go to previous phrase
                     if (currentPhraseIndex === 0) {
+                        // Loop to last phrase
                         targetIndex = phrases.length - 1;
-                        audioRef.current.src = phrases[targetIndex].inputAudio?.audioUrl || '';
-                        setCurrentPhraseIndex(targetIndex);
-                        setCurrentPhase('input');
-                        targetPhase = 'input';
                     } else {
                         targetIndex = currentPhraseIndex - 1;
-                        audioRef.current.src = phrases[targetIndex].inputAudio?.audioUrl || '';
-                        setCurrentPhraseIndex(targetIndex);
-                        setCurrentPhase('input');
-                        targetPhase = 'input';
                     }
+                    // Determine phase based on input playback setting
+                    targetPhase = presentationConfig.enableInputPlayback ? 'input' : 'output';
                 }
             } else {
+                // In normal mode (input before output)
                 if (currentPhase === 'output') {
-                    audioRef.current.src = phrases[currentPhraseIndex].inputAudio?.audioUrl || '';
-                    setCurrentPhase('input');
-                    targetPhase = 'input';
-                } else {
-                    // If we're at the first phrase and input phase, loop to last phrase output
-                    if (currentPhraseIndex === 0) {
-                        targetIndex = phrases.length - 1;
-                        audioRef.current.src = phrases[targetIndex].outputAudio?.audioUrl || '';
-                        setCurrentPhraseIndex(targetIndex);
-                        setCurrentPhase('output');
-                        targetPhase = 'output';
+                    // From output phase, go to input phase of same phrase
+                    if (presentationConfig.enableInputPlayback) {
+                        targetPhase = 'input';
+                        targetIndex = currentPhraseIndex;
                     } else {
-                        targetIndex = currentPhraseIndex - 1;
-                        audioRef.current.src = phrases[targetIndex].outputAudio?.audioUrl || '';
-                        setCurrentPhraseIndex(targetIndex);
-                        setCurrentPhase('output');
+                        // Skip input phase, go to previous phrase output
+                        if (currentPhraseIndex === 0) {
+                            targetIndex = phrases.length - 1;
+                        } else {
+                            targetIndex = currentPhraseIndex - 1;
+                        }
                         targetPhase = 'output';
                     }
+                } else {
+                    // From input phase, go to previous phrase
+                    if (currentPhraseIndex === 0) {
+                        // Loop to last phrase
+                        targetIndex = phrases.length - 1;
+                    } else {
+                        targetIndex = currentPhraseIndex - 1;
+                    }
+                    // Determine phase based on input playback setting
+                    targetPhase = presentationConfig.enableInputPlayback ? 'input' : 'output';
                 }
             }
-            // Set playback speed based on target phase
+
+            // Update state
+            setCurrentPhraseIndex(targetIndex);
+            setCurrentPhase(targetPhase);
+
+            // Set audio source and playback speed
+            const audioUrl = targetPhase === 'input'
+                ? phrases[targetIndex].inputAudio?.audioUrl
+                : phrases[targetIndex].outputAudio?.audioUrl;
+            audioRef.current.src = audioUrl || '';
+
             const speed = targetPhase === 'input'
                 ? (presentationConfig.inputPlaybackSpeed || 1.0)
                 : (presentationConfig.outputPlaybackSpeed || 1.0);
@@ -324,53 +364,66 @@ export function PhrasePlaybackView({
         clearAllTimeouts();
         if (audioRef.current) {
             audioRef.current.pause();
-            let targetPhase = currentPhase;
+            let targetPhase: 'input' | 'output';
             let targetIndex = currentPhraseIndex;
 
+            // Determine the target phase and index
             if (presentationConfig.enableOutputBeforeInput) {
+                // In output-before-input mode
                 if (currentPhase === 'output') {
-                    audioRef.current.src = phrases[currentPhraseIndex].inputAudio?.audioUrl || '';
-                    setCurrentPhase('input');
-                    targetPhase = 'input';
-                } else {
-                    // If we're at the last phrase and input phase, loop to first phrase output
-                    if (currentPhraseIndex === phrases.length - 1) {
-                        targetIndex = 0;
-                        audioRef.current.src = phrases[targetIndex].outputAudio?.audioUrl || '';
-                        setCurrentPhraseIndex(targetIndex);
-                        setCurrentPhase('output');
-                        targetPhase = 'output';
+                    // From output phase, go to input phase of same phrase
+                    if (presentationConfig.enableInputPlayback) {
+                        targetPhase = 'input';
+                        targetIndex = currentPhraseIndex;
                     } else {
-                        targetIndex = currentPhraseIndex + 1;
-                        audioRef.current.src = phrases[targetIndex].outputAudio?.audioUrl || '';
-                        setCurrentPhraseIndex(targetIndex);
-                        setCurrentPhase('output');
+                        // Skip input phase, go to next phrase output
+                        if (currentPhraseIndex === phrases.length - 1) {
+                            targetIndex = 0;
+                        } else {
+                            targetIndex = currentPhraseIndex + 1;
+                        }
                         targetPhase = 'output';
                     }
+                } else {
+                    // From input phase, go to next phrase
+                    if (currentPhraseIndex === phrases.length - 1) {
+                        // Loop to first phrase
+                        targetIndex = 0;
+                    } else {
+                        targetIndex = currentPhraseIndex + 1;
+                    }
+                    // Determine phase based on input playback setting
+                    targetPhase = presentationConfig.enableInputPlayback ? 'input' : 'output';
                 }
             } else {
+                // In normal mode (input before output)
                 if (currentPhase === 'input') {
-                    audioRef.current.src = phrases[currentPhraseIndex].outputAudio?.audioUrl || '';
-                    setCurrentPhase('output');
+                    // From input phase, go to output phase of same phrase
                     targetPhase = 'output';
+                    targetIndex = currentPhraseIndex;
                 } else {
-                    // If we're at the last phrase and output phase, loop to first phrase input
+                    // From output phase, go to next phrase
                     if (currentPhraseIndex === phrases.length - 1) {
+                        // Loop to first phrase
                         targetIndex = 0;
-                        audioRef.current.src = phrases[targetIndex].inputAudio?.audioUrl || '';
-                        setCurrentPhraseIndex(targetIndex);
-                        setCurrentPhase('input');
-                        targetPhase = 'input';
                     } else {
                         targetIndex = currentPhraseIndex + 1;
-                        audioRef.current.src = phrases[targetIndex].inputAudio?.audioUrl || '';
-                        setCurrentPhraseIndex(targetIndex);
-                        setCurrentPhase('input');
-                        targetPhase = 'input';
                     }
+                    // Determine phase based on input playback setting
+                    targetPhase = presentationConfig.enableInputPlayback ? 'input' : 'output';
                 }
             }
-            // Set playback speed based on target phase
+
+            // Update state
+            setCurrentPhraseIndex(targetIndex);
+            setCurrentPhase(targetPhase);
+
+            // Set audio source and playback speed
+            const audioUrl = targetPhase === 'input'
+                ? phrases[targetIndex].inputAudio?.audioUrl
+                : phrases[targetIndex].outputAudio?.audioUrl;
+            audioRef.current.src = audioUrl || '';
+
             const speed = targetPhase === 'input'
                 ? (presentationConfig.inputPlaybackSpeed || 1.0)
                 : (presentationConfig.outputPlaybackSpeed || 1.0);
@@ -447,16 +500,44 @@ export function PhrasePlaybackView({
             const timeoutId = window.setTimeout(() => {
                 setShowProgressBar(false);
                 if (playOutputBeforeInput) {
-                    setCurrentPhase('input');
+                    // Check if input playback is enabled
+                    if (presentationConfig.enableInputPlayback) {
+                        setCurrentPhase('input');
+                    } else {
+                        // Skip input phase if disabled, go to next phrase output
+                        if (currentPhraseIndex < phrases.length - 1 && !paused) {
+                            setCurrentPhraseIndex(currentPhraseIndex + 1);
+                            setCurrentPhase('output');
+                        } else {
+                            if (presentationConfig.enableLoop) {
+                                // If looping is enabled, restart from beginning
+                                setCurrentPhraseIndex(0);
+                                setCurrentPhase('output');
+                            } else {
+                                showStatsUpdate(true)
+                                setPaused(true);
+                            }
+                        }
+                    }
                 } else {
                     if (currentPhraseIndex < phrases.length - 1 && !paused) {
                         setCurrentPhraseIndex(currentPhraseIndex + 1);
-                        setCurrentPhase('input');
+                        // Check if input playback is enabled
+                        if (presentationConfig.enableInputPlayback) {
+                            setCurrentPhase('input');
+                        } else {
+                            setCurrentPhase('output');
+                        }
                     } else {
                         if (presentationConfig.enableLoop) {
                             // If looping is enabled, restart from beginning
                             setCurrentPhraseIndex(0);
-                            setCurrentPhase('input');
+                            // Check if input playback is enabled
+                            if (presentationConfig.enableInputPlayback) {
+                                setCurrentPhase('input');
+                            } else {
+                                setCurrentPhase('output');
+                            }
                         } else {
                             showStatsUpdate(true)
                             setPaused(true);
@@ -487,6 +568,12 @@ export function PhrasePlaybackView({
 
         let src = '';
         if (currentPhase === 'input') {
+            // Skip input audio playback if disabled
+            if (!presentationConfig.enableInputPlayback) {
+                // Move to output phase immediately
+                setCurrentPhase('output');
+                return;
+            }
             src = currentInputAudioUrl;
         } else if (currentPhase === 'output') {
             src = currentOutputAudioUrl;
@@ -512,7 +599,7 @@ export function PhrasePlaybackView({
                 });
             }
         }
-    }, [currentPhraseIndex, currentPhase, paused, currentInputAudioUrl, currentOutputAudioUrl, presentationConfig.inputPlaybackSpeed, presentationConfig.outputPlaybackSpeed]);
+    }, [currentPhraseIndex, currentPhase, paused, currentInputAudioUrl, currentOutputAudioUrl, presentationConfig.inputPlaybackSpeed, presentationConfig.outputPlaybackSpeed, presentationConfig.enableInputPlayback]);
 
     if (methodsRef) methodsRef.current = {
         handleStop,
@@ -529,7 +616,7 @@ export function PhrasePlaybackView({
         <div className="flex-1 lg:overflow-y-auto lg:relative">
             {/* Stats Update Popup */}
             {StatsUpdatePopup}
-            
+
             {/* Stats Modal */}
             {StatsModal}
 
@@ -559,13 +646,22 @@ export function PhrasePlaybackView({
                                 onPhraseClick={(index) => {
                                     setCurrentPhraseIndex(index);
                                     clearAllTimeouts();
-                                    const targetPhase = presentationConfig.enableOutputBeforeInput ? 'output' : 'input';
+
+                                    // Determine target phase considering both enableOutputBeforeInput and enableInputPlayback
+                                    let targetPhase: 'input' | 'output';
+                                    if (presentationConfig.enableOutputBeforeInput) {
+                                        targetPhase = 'output';
+                                    } else {
+                                        // If input playback is disabled, start with output phase
+                                        targetPhase = presentationConfig.enableInputPlayback ? 'input' : 'output';
+                                    }
+
                                     setCurrentPhase(targetPhase);
                                     if (audioRef.current) {
                                         audioRef.current.pause();
-                                        const audioUrl = presentationConfig.enableOutputBeforeInput
-                                            ? phrases[index].outputAudio?.audioUrl
-                                            : phrases[index].inputAudio?.audioUrl;
+                                        const audioUrl = targetPhase === 'input'
+                                            ? phrases[index].inputAudio?.audioUrl
+                                            : phrases[index].outputAudio?.audioUrl;
                                         audioRef.current.src = audioUrl || '';
                                         // Set playback speed based on target phase
                                         const speed = targetPhase === 'input'

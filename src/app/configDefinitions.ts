@@ -29,6 +29,13 @@ export const presentationConfigDefinition: ConfigFieldDefinition[] = [
       "Automatically restart from the beginning when reaching the end of all phrases.",
   },
   {
+    key: "enableInputPlayback",
+    label: "Play Input Audio",
+    inputType: "checkbox",
+    description:
+      "Enable or disable playback of the input language audio for each phrase.",
+  },
+  {
     key: "enableOutputDurationDelay",
     label: "Shadow",
     inputType: "checkbox",

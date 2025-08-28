@@ -66,23 +66,23 @@ export default function CollectionPage() {
   useEffect(() => {
     const loadCollection = async () => {
       if (!user || !collectionId) return;
-      
+
       setLoading(true);
       try {
         const docRef = doc(firestore, 'users', user.uid, 'collections', collectionId);
         const docSnap = await getDoc(docRef);
-        
+
         if (docSnap.exists()) {
           const data = docSnap.data();
           const config: Config = {
             ...data,
             id: docSnap.id,
           } as Config;
-          
+
           setCollectionConfig(config);
           setPhrasesBase(config.phrases);
           setSelectedCollection(config.id);
-          
+
           // Set the addToCollection language states based on the first phrase
           if (config.phrases.length > 0) {
             const firstPhrase = config.phrases[0];
@@ -97,7 +97,14 @@ export default function CollectionPage() {
           if (playbackMethodsRef.current) {
             playbackMethodsRef.current.handleStop();
             playbackMethodsRef.current.setCurrentPhraseIndex(0);
-            playbackMethodsRef.current.setCurrentPhase(config?.presentationConfig?.enableOutputBeforeInput ? 'output' : 'input');
+            // Determine initial phase considering both enableOutputBeforeInput and enableInputPlayback
+            let initialPhase: 'input' | 'output';
+            if (config?.presentationConfig?.enableOutputBeforeInput) {
+              initialPhase = 'output';
+            } else {
+              initialPhase = config?.presentationConfig?.enableInputPlayback ? 'input' : 'output';
+            }
+            playbackMethodsRef.current.setCurrentPhase(initialPhase);
           }
         }
       } catch (err) {
