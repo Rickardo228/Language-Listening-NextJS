@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { User } from 'firebase/auth';
 import { getFirestore, doc, getDoc, collection, getDocs, query, orderBy, limit } from 'firebase/firestore';
 import { getFlagEmoji } from '../utils/languageUtils';
+import { useUser } from '../contexts/UserContext';
 
 interface UserStatsModalProps {
     isOpen: boolean;
@@ -70,7 +71,253 @@ function DailyStatsChart({ dailyStats }: { dailyStats: DailyStats[] }) {
     );
 }
 
+// Ranking system for total phrases - Based on dedication and effort, not ability
+function getPhraseRankTitle(totalPhrases: number): { title: string; color: string; nextMilestone: number; description: string } {
+    if (totalPhrases >= 100000) {
+        return {
+            title: "App Legend",
+            color: "text-amber-500",
+            nextMilestone: 0,
+            description: "You've achieved legendary status in using this app!"
+        };
+    } else if (totalPhrases >= 75000) {
+        return {
+            title: "Ultra Dedicated",
+            color: "text-purple-600",
+            nextMilestone: 100000,
+            description: "Your commitment to practice is extraordinary"
+        };
+    } else if (totalPhrases >= 50000) {
+        return {
+            title: "Practice Master",
+            color: "text-purple-600",
+            nextMilestone: 75000,
+            description: "You've mastered the art of consistent practice"
+        };
+    } else if (totalPhrases >= 35000) {
+        return {
+            title: "Highly Committed",
+            color: "text-blue-600",
+            nextMilestone: 50000,
+            description: "Your dedication to practice is impressive"
+        };
+    } else if (totalPhrases >= 25000) {
+        return {
+            title: "Very Dedicated",
+            color: "text-blue-600",
+            nextMilestone: 35000,
+            description: "You're showing exceptional commitment to practice"
+        };
+    } else if (totalPhrases >= 15000) {
+        return {
+            title: "Dedicated Practitioner",
+            color: "text-green-600",
+            nextMilestone: 25000,
+            description: "You're building excellent practice habits"
+        };
+    } else if (totalPhrases >= 10000) {
+        return {
+            title: "Consistent Practitioner",
+            color: "text-green-600",
+            nextMilestone: 15000,
+            description: "You're developing strong practice routines"
+        };
+    } else if (totalPhrases >= 5000) {
+        return {
+            title: "Regular User",
+            color: "text-yellow-600",
+            nextMilestone: 10000,
+            description: "You're building consistent practice habits"
+        };
+    } else if (totalPhrases >= 2500) {
+        return {
+            title: "Active Learner",
+            color: "text-yellow-500",
+            nextMilestone: 5000,
+            description: "You're actively engaging with the app"
+        };
+    } else if (totalPhrases >= 1000) {
+        return {
+            title: "Getting Into It",
+            color: "text-orange-600",
+            nextMilestone: 2500,
+            description: "You're developing a practice routine"
+        };
+    } else if (totalPhrases >= 500) {
+        return {
+            title: "New User",
+            color: "text-orange-500",
+            nextMilestone: 1000,
+            description: "Welcome to the app!"
+        };
+    } else {
+        return {
+            title: "Getting Started",
+            color: "text-gray-500",
+            nextMilestone: 500,
+            description: "Every practice session counts"
+        };
+    }
+}
+
+// Ranking system for individual language pairs - Based on practice time and effort
+function getLanguageRankTitle(count: number): { title: string; color: string; nextMilestone: number; description: string } {
+    if (count >= 15000) {
+        return {
+            title: "Extremely Dedicated",
+            color: "text-amber-500",
+            nextMilestone: 0,
+            description: "Your dedication to this language is extraordinary"
+        };
+    } else if (count >= 10000) {
+        return {
+            title: "Highly Dedicated",
+            color: "text-purple-600",
+            nextMilestone: 15000,
+            description: "You're deeply committed to practicing this language"
+        };
+    } else if (count >= 7500) {
+        return {
+            title: "Very Dedicated",
+            color: "text-blue-600",
+            nextMilestone: 10000,
+            description: "You're showing strong commitment to this language"
+        };
+    } else if (count >= 5000) {
+        return {
+            title: "Dedicated",
+            color: "text-green-600",
+            nextMilestone: 7500,
+            description: "You're building solid practice habits in this language"
+        };
+    } else if (count >= 3000) {
+        return {
+            title: "Consistent",
+            color: "text-green-500",
+            nextMilestone: 5000,
+            description: "You're developing consistent practice in this language"
+        };
+    } else if (count >= 1500) {
+        return {
+            title: "Regular",
+            color: "text-yellow-600",
+            nextMilestone: 3000,
+            description: "You're practicing this language regularly"
+        };
+    } else if (count >= 750) {
+        return {
+            title: "Active",
+            color: "text-yellow-500",
+            nextMilestone: 1500,
+            description: "You're actively practicing this language"
+        };
+    } else if (count >= 300) {
+        return {
+            title: "Getting Into It",
+            color: "text-orange-600",
+            nextMilestone: 750,
+            description: "You're developing interest in this language"
+        };
+    } else if (count >= 100) {
+        return {
+            title: "New to This",
+            color: "text-orange-500",
+            nextMilestone: 300,
+            description: "You're just starting to explore this language"
+        };
+    } else {
+        return {
+            title: "First Time",
+            color: "text-gray-600",
+            nextMilestone: 100,
+            description: "Your first steps with this language"
+        };
+    }
+}
+
+// Custom language pair symbol component - using flag emojis with target language prominence
+function LanguagePairSymbol({ lang1, lang2, inputCount, outputCount, userPreferredLang }: {
+    lang1: string;
+    lang2: string;
+    inputCount: number;
+    outputCount: number;
+    userPreferredLang?: string;
+}) {
+    // Determine which language is the target (learning) language
+    // If user has a preferred language, the other language is the target
+    const isLang1Target = userPreferredLang === lang2 && lang1 !== userPreferredLang;
+    const isLang2Target = userPreferredLang === lang1 && lang2 !== userPreferredLang;
+
+    return (
+        <div className="relative w-16 h-10 flex-shrink-0">
+            <div className="flex w-full h-full">
+                {/* Left half - first language flag */}
+                <div className="w-1/2 h-full flex items-center justify-center relative">
+                    <span className={`transition-all duration-200 ${isLang1Target ? 'text-2xl' : 'text-lg'}`}>
+                        {getFlagEmoji(lang1)}
+                    </span>
+
+                </div>
+                {/* Right half - second language flag */}
+                <div className="w-1/2 h-full flex items-center justify-center relative">
+                    <span className={`transition-all duration-200 ${isLang2Target ? 'text-2xl' : 'text-lg'}`}>
+                        {getFlagEmoji(lang2)}
+                    </span>
+
+                </div>
+            </div>
+            {/* Center line separator */}
+            <div className="absolute left-1/2 top-0 bottom-0 w-px bg-gray-400"></div>
+        </div>
+    );
+}
+
+// Function to combine bidirectional language pairs
+function combineLanguagePairs(languageStats: LanguageStats[]): Array<{
+    languages: string[];
+    totalCount: number;
+    firstListened: string;
+    inputCount: number;
+    outputCount: number;
+}> {
+    const combinedMap = new Map<string, {
+        languages: string[];
+        totalCount: number;
+        firstListened: string;
+        inputCount: number;
+        outputCount: number;
+    }>();
+
+    languageStats.forEach(stat => {
+        // Create a unique key for the language pair (sorted alphabetically)
+        const sortedLangs = [stat.inputLang, stat.targetLang].sort();
+        const key = sortedLangs.join('-');
+
+        if (combinedMap.has(key)) {
+            const existing = combinedMap.get(key)!;
+            existing.totalCount += stat.count;
+            existing.inputCount += stat.inputLang === sortedLangs[0] ? stat.count : 0;
+            existing.outputCount += stat.targetLang === sortedLangs[1] ? stat.count : 0;
+            // Keep the earliest first listened date
+            if (new Date(stat.firstListened) < new Date(existing.firstListened)) {
+                existing.firstListened = stat.firstListened;
+            }
+        } else {
+            combinedMap.set(key, {
+                languages: sortedLangs,
+                totalCount: stat.count,
+                firstListened: stat.firstListened,
+                inputCount: stat.inputLang === sortedLangs[0] ? stat.count : 0,
+                outputCount: stat.targetLang === sortedLangs[1] ? stat.count : 0
+            });
+        }
+    });
+
+    return Array.from(combinedMap.values()).sort((a, b) => b.totalCount - a.totalCount);
+}
+
 export function UserStatsModal({ isOpen, onClose, user }: UserStatsModalProps) {
+    const { userProfile } = useUser();
     const [mainStats, setMainStats] = useState<UserStats | null>(null);
     const [dailyStats, setDailyStats] = useState<DailyStats[]>([]);
     const [languageStats, setLanguageStats] = useState<LanguageStats[]>([]);
@@ -209,51 +456,102 @@ export function UserStatsModal({ isOpen, onClose, user }: UserStatsModalProps) {
                             </div>
                         )}
 
+                        {/* Total Phrases - Prominent display under chart */}
+                        <div className="bg-gradient-to-r from-secondary/10 to-primary/10 p-6 rounded-lg border border-secondary/20">
+                            <h3 className="text-lg font-semibold mb-3">Total Progress</h3>
+                            <div className="text-center">
+                                <div className="text-4xl font-bold text-primary mb-2">
+                                    {mainStats.phrasesListened.toLocaleString()}
+                                </div>
+                                <div className="text-lg font-medium mb-2">
+                                    <span className={getPhraseRankTitle(mainStats.phrasesListened).color}>
+                                        {getPhraseRankTitle(mainStats.phrasesListened).title}
+                                    </span>
+                                </div>
+                                <div className="text-sm text-foreground/70 mb-3 italic">
+                                    {getPhraseRankTitle(mainStats.phrasesListened).description}
+                                </div>
+
+                                {/* Polyglot recognition - only show if learning multiple languages */}
+                                {languageStats.length > 1 && (
+                                    <div className="bg-gradient-to-r from-purple-500/20 to-blue-500/20 p-3 rounded-lg border border-purple-300/30 mb-3">
+                                        <div className="text-sm font-medium text-purple-700 dark:text-purple-300 mb-1">
+                                            🌍 Polyglot Learner
+                                        </div>
+                                        <div className="text-xs text-foreground/70">
+                                            You're practicing {languageStats.length} different language pairs
+                                        </div>
+                                    </div>
+                                )}
+
+                                {getPhraseRankTitle(mainStats.phrasesListened).nextMilestone > 0 && (
+                                    <div className="text-sm text-foreground/60">
+                                        Next milestone: {getPhraseRankTitle(mainStats.phrasesListened).nextMilestone.toLocaleString()} phrases
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
                         {/* Language Pairs with Ranking */}
                         {languageStats.length > 0 && (
                             <div>
                                 <h3 className="font-semibold mb-3">Language Pairs</h3>
                                 <div className="space-y-2">
-                                    {languageStats
-                                        .sort((a, b) => b.count - a.count)
-                                        .map((data, index) => (
-                                            <div key={`${data.inputLang}-${data.targetLang}`} className="bg-secondary/20 p-3 rounded">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="flex-shrink-0 w-8 h-8 bg-primary/20 rounded-full flex items-center justify-center text-sm font-bold">
-                                                        #{index + 1}
-                                                    </div>
-                                                    <div className="flex-1">
-                                                        <div className="flex justify-between items-center">
-                                                            <span className="flex items-center gap-1">
-                                                                {getFlagEmoji(data.inputLang)} → {getFlagEmoji(data.targetLang)}
-                                                            </span>
-                                                            <span className="font-semibold">{data.count} phrases</span>
-                                                        </div>
-                                                        <div className="text-sm text-foreground/60 mt-1">
-                                                            First practiced: {new Date(data.firstListened).toLocaleDateString()}
+                                    {(() => {
+                                        const combinedPairs = combineLanguagePairs(languageStats);
+                                        return combinedPairs.map((pair, index) => {
+                                            const rankInfo = getLanguageRankTitle(pair.totalCount);
+                                            return (
+                                                <div key={pair.languages.join('-')} className="bg-secondary/20 p-3 rounded">
+                                                    <div className="flex items-center gap-3">
+                                                        <LanguagePairSymbol
+                                                            lang1={pair.languages[0]}
+                                                            lang2={pair.languages[1]}
+                                                            inputCount={pair.inputCount}
+                                                            outputCount={pair.outputCount}
+                                                            userPreferredLang={userProfile?.preferredInputLang}
+                                                        />
+                                                        <div className="flex-1">
+                                                            <div className="flex justify-between items-center">
+                                                                <span className="font-medium">
+                                                                    {pair.languages[0]} ↔ {pair.languages[1]}
+                                                                </span>
+                                                                <span className="font-semibold">{pair.totalCount.toLocaleString()} phrases</span>
+                                                            </div>
+                                                            <div className="flex justify-between items-center mt-1">
+                                                                <div className="text-sm text-foreground/60">
+                                                                    First practiced: {new Date(pair.firstListened).toLocaleDateString()}
+                                                                </div>
+                                                                <div className={`text-sm font-medium ${rankInfo.color}`}>
+                                                                    {rankInfo.title}
+                                                                </div>
+                                                            </div>
+                                                            <div className="text-xs text-foreground/50 mt-1 italic">
+                                                                {rankInfo.description}
+                                                            </div>
+                                                            {rankInfo.nextMilestone > 0 && (
+                                                                <div className="text-xs text-foreground/40 mt-1">
+                                                                    Next milestone: {rankInfo.nextMilestone.toLocaleString()} phrases
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     </div>
                                                 </div>
-                                            </div>
-                                        ))}
+                                            );
+                                        });
+                                    })()}
                                 </div>
                             </div>
                         )}
 
-                        {/* All-time Stats - Moved to bottom */}
+                        {/* Last Activity - Simple summary */}
                         <div className="pt-4 border-t border-secondary/30">
-                            <h3 className="font-semibold mb-3 text-foreground/60">All-Time Summary</h3>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="bg-secondary/10 p-4 rounded text-center">
-                                    <div className="text-2xl font-bold">{mainStats.phrasesListened}</div>
-                                    <div className="text-sm text-foreground/60">Total Phrases</div>
+                            <h3 className="font-semibold mb-3 text-foreground/60">Recent Activity</h3>
+                            <div className="text-center">
+                                <div className="text-lg">
+                                    {new Date(mainStats.lastListenedAt).toLocaleDateString()}
                                 </div>
-                                <div className="bg-secondary/10 p-4 rounded text-center">
-                                    <div className="text-lg">
-                                        {new Date(mainStats.lastListenedAt).toLocaleDateString()}
-                                    </div>
-                                    <div className="text-sm text-foreground/60">Last Activity</div>
-                                </div>
+                                <div className="text-sm text-foreground/60">Last Practice Session</div>
                             </div>
                         </div>
                     </div>
