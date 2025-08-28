@@ -614,7 +614,13 @@ export const useUpdateUserStats = () => {
             streakChanged = true;
             streakChangeReason = 'incremented';
             console.log(`🔥 Streak incremented: ${newStreak} days`);
-          } else if (lastActivityDate !== todayLocal) {
+          } else if (lastActivityDate === null) {
+            // First time user - start streak at 1
+            newStreak = 1;
+            streakChanged = true;
+            streakChangeReason = 'first_time';
+            console.log(`🌱 First time user - streak started: 1 day`);
+          } else {
             // Gap found - reset streak to 1
             newStreak = 1;
             streakChanged = true;
@@ -622,8 +628,17 @@ export const useUpdateUserStats = () => {
             console.log(`🔄 Streak reset: New streak started (1 day)`);
           }
         } else {
-          // Same day - streak continues unchanged
-          console.log(`📅 Same day activity - streak maintained: ${newStreak} days`);
+          // Same day - check if this is first time or maintain streak
+          if (newStreak === 0 && lastActivityDate === todayLocal) {
+            // First time user on their first day - start streak at 1
+            newStreak = 1;
+            streakChanged = true;
+            streakChangeReason = 'first_time_same_day';
+            console.log(`🌱 First time user on first day - streak started: 1 day`);
+          } else {
+            // Same day - streak continues unchanged
+            console.log(`📅 Same day activity - streak maintained: ${newStreak} days`);
+          }
         }
 
         // Only update streak data if it actually changed

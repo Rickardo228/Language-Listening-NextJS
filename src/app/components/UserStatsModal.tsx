@@ -336,7 +336,7 @@ export function UserStatsModal({ isOpen, onClose, user }: UserStatsModalProps) {
                 const languageSnapshot = await getDocs(languageStatsRef);
                 const languageData = languageSnapshot.docs.map(doc => doc.data() as LanguageStats);
                 setLanguageStats(languageData);
-
+                console.log("Main stats:", mainStats);
                 // Get current streak from stored stats (calculated incrementally in userStats.tsx)
                 const currentStreak = mainStats?.currentStreak || 0;
                 setCurrentStreak(currentStreak);
