@@ -12,141 +12,15 @@ import { useUser } from "../contexts/UserContext";
 import { motion, AnimatePresence } from "framer-motion";
 import { UserStatsModal } from "../components/UserStatsModal";
 import { trackPhrasesListenedPopup } from "../../lib/mixpanelClient";
-
-// Import the ranking functions from UserStatsModal
-function getPhraseRankTitle(totalPhrases: number): { title: string; color: string; nextMilestone: number; description: string } {
-  // Debug mode: use simplified thresholds for easy testing
-  if (DEBUG_MILESTONE_MODE) {
-    const titles = [
-      { title: "Getting Started", color: "text-gray-500", description: "Every practice session counts" },
-      { title: "First Step", color: "text-gray-600", description: "You're taking your first steps" },
-      { title: "Early Learner", color: "text-orange-500", description: "Building momentum" },
-      { title: "Getting Into It", color: "text-orange-600", description: "You're developing interest" },
-      { title: "Active Learner", color: "text-yellow-500", description: "You're actively engaging" },
-      { title: "Regular User", color: "text-yellow-600", description: "Building consistent habits" },
-      { title: "Consistent", color: "text-green-500", description: "Developing consistency" },
-      { title: "Dedicated", color: "text-green-600", description: "Building solid habits" },
-      { title: "Very Dedicated", color: "text-blue-600", description: "Strong commitment" },
-      { title: "Highly Committed", color: "text-blue-600", description: "Impressive dedication" },
-      { title: "Practice Master", color: "text-purple-600", description: "Mastered consistent practice" },
-      { title: "Ultra Dedicated", color: "text-purple-600", description: "Extraordinary commitment" },
-      { title: "App Legend", color: "text-amber-500", description: "Legendary status achieved!" },
-      { title: "Ultimate Master", color: "text-amber-500", description: "You've transcended!" },
-      { title: "Phrase God", color: "text-amber-500", description: "Beyond legendary!" }
-    ];
-
-    for (let i = DEBUG_MILESTONES.length - 1; i >= 0; i--) {
-      if (totalPhrases >= DEBUG_MILESTONES[i]) {
-        return {
-          ...titles[i],
-          nextMilestone: i < DEBUG_MILESTONES.length - 1 ? DEBUG_MILESTONES[i + 1] : 0
-        };
-      }
-    }
-
-    return {
-      title: "Getting Started",
-      color: "text-gray-500",
-      nextMilestone: DEBUG_MILESTONES[0],
-      description: "Every practice session counts"
-    };
-  }
-
-  // Production mode: use real thresholds
-  if (totalPhrases >= 100000) {
-    return {
-      title: "App Legend",
-      color: "text-amber-500",
-      nextMilestone: 0,
-      description: "You've achieved legendary status in using this app!"
-    };
-  } else if (totalPhrases >= 75000) {
-    return {
-      title: "Ultra Dedicated",
-      color: "text-purple-600",
-      nextMilestone: 100000,
-      description: "Your commitment to practice is extraordinary"
-    };
-  } else if (totalPhrases >= 50000) {
-    return {
-      title: "Practice Master",
-      color: "text-purple-600",
-      nextMilestone: 75000,
-      description: "You've mastered the art of consistent practice"
-    };
-  } else if (totalPhrases >= 35000) {
-    return {
-      title: "Highly Committed",
-      color: "text-blue-600",
-      nextMilestone: 50000,
-      description: "Your dedication to practice is impressive"
-    };
-  } else if (totalPhrases >= 25000) {
-    return {
-      title: "Very Dedicated",
-      color: "text-blue-600",
-      nextMilestone: 35000,
-      description: "You're showing exceptional commitment to practice"
-    };
-  } else if (totalPhrases >= 15000) {
-    return {
-      title: "Dedicated Practitioner",
-      color: "text-green-600",
-      nextMilestone: 25000,
-      description: "You're building excellent practice habits"
-    };
-  } else if (totalPhrases >= 10000) {
-    return {
-      title: "Consistent Practitioner",
-      color: "text-green-600",
-      nextMilestone: 15000,
-      description: "You're developing strong practice routines"
-    };
-  } else if (totalPhrases >= 5000) {
-    return {
-      title: "Regular User",
-      color: "text-yellow-600",
-      nextMilestone: 10000,
-      description: "You're building consistent practice habits"
-    };
-  } else if (totalPhrases >= 2500) {
-    return {
-      title: "Active Learner",
-      color: "text-yellow-500",
-      nextMilestone: 5000,
-      description: "You're actively engaging with the app"
-    };
-  } else if (totalPhrases >= 1000) {
-    return {
-      title: "Getting Into It",
-      color: "text-orange-600",
-      nextMilestone: 2500,
-      description: "You're developing a practice routine"
-    };
-  } else if (totalPhrases >= 500) {
-    return {
-      title: "New User",
-      color: "text-orange-500",
-      nextMilestone: 1000,
-      description: "Welcome to the app!"
-    };
-  } else {
-    return {
-      title: "Getting Started",
-      color: "text-gray-500",
-      nextMilestone: 500,
-      description: "Every practice session counts"
-    };
-  }
-}
+import { getPhraseRankTitle, DEBUG_MILESTONE_THRESHOLDS } from "./rankingSystem";
 
 const firestore = getFirestore();
 
 // Debug mode for testing milestones - set to true to use debug thresholds
 const DEBUG_MILESTONE_MODE = true;
 
-// Debug milestone thresholds (much lower for easy testing)
-const DEBUG_MILESTONES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
+// Use the shared debug milestone thresholds
+const DEBUG_MILESTONES = DEBUG_MILESTONE_THRESHOLDS;
 
 // Function to get appropriate background style based on rank color - solid and readable
 function getMilestoneBackgroundStyle(color: string): string {
@@ -207,7 +81,7 @@ export const useUpdateUserStats = () => {
         const statsRef = doc(firestore, "users", user.uid, "stats", "listening");
         const { getDoc } = await import("firebase/firestore");
         const statsDoc = await getDoc(statsRef);
-        
+
         if (statsDoc.exists()) {
           const data = statsDoc.data();
           const total = data.phrasesListened || 0;
@@ -246,13 +120,13 @@ export const useUpdateUserStats = () => {
   // Smart sync function - only fetches when needed
   const syncTotalIfNeeded = async (force: boolean = false): Promise<void> => {
     if (!user) return;
-    
+
     // Skip syncing in debug mode to avoid overwriting debug counts
     if (DEBUG_MILESTONE_MODE) {
       console.log("🐛 DEBUG MODE: Skipping sync to preserve debug milestone testing");
       return;
     }
-    
+
     // Only sync if forced or we've heard enough phrases since last sync
     if (!force && phraseCountSinceLastSync.current < SYNC_AFTER_PHRASES) {
       return;
@@ -262,18 +136,18 @@ export const useUpdateUserStats = () => {
       const statsRef = doc(firestore, "users", user.uid, "stats", "listening");
       const { getDoc } = await import("firebase/firestore");
       const statsDoc = await getDoc(statsRef);
-      
+
       if (statsDoc.exists()) {
         const data = statsDoc.data();
         const dbTotal = data.phrasesListened || 0;
-        
+
         // If database has more than our local count, update our local count
         // This handles cases where user used app on another device
         if (dbTotal > totalPhrasesRef.current) {
           console.log(`Syncing total: local=${totalPhrasesRef.current}, db=${dbTotal}`);
           totalPhrasesRef.current = dbTotal;
         }
-        
+
         phraseCountSinceLastSync.current = 0;
       }
     } catch (error) {
@@ -301,8 +175,8 @@ export const useUpdateUserStats = () => {
     const newTotal = currentTotal + 1;
 
     // Check for milestone achievement
-    const currentRank = getPhraseRankTitle(currentTotal);
-    const newRank = getPhraseRankTitle(newTotal);
+    const currentRank = getPhraseRankTitle(currentTotal, DEBUG_MILESTONE_MODE);
+    const newRank = getPhraseRankTitle(newTotal, DEBUG_MILESTONE_MODE);
     console.log("Milestone check:", { currentTotal, newTotal, currentRank: currentRank.title, newRank: newRank.title });
     const milestoneReached = currentRank.title !== newRank.title;
     console.log("Milestone reached?", milestoneReached);
@@ -320,9 +194,8 @@ export const useUpdateUserStats = () => {
       setMilestoneInfo(milestoneData);
       setRecentMilestones(prev => [milestoneData, ...prev.slice(0, 4)]); // Keep only last 5 milestones
 
-      // Show instant celebration for longer
+      // Show instant celebration - requires user interaction to dismiss
       setShowMilestoneCelebration(true);
-      setTimeout(() => setShowMilestoneCelebration(false), 5000); // 5 seconds instead of 3
     }
 
     // Update total phrases ref
@@ -582,29 +455,75 @@ export const useUpdateUserStats = () => {
               {/* Show recent milestones in the persistent popup */}
               {persistUntilInteraction && recentMilestones.length > 0 && (
                 <motion.div
-                  className="mt-3 p-3 bg-yellow-600 rounded-lg border border-yellow-400"
+                  className="mt-3 p-4 bg-gradient-to-r from-purple-500/20 to-blue-500/20 rounded-lg border border-purple-300/30"
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: "auto" }}
                   transition={{ delay: 0.3, duration: 0.3 }}
                 >
-                  <div className="text-sm font-semibold mb-2 flex items-center">
-                    <span className="mr-2">🎉</span>
-                    Recent Milestone{recentMilestones.length > 1 ? 's' : ''}!
-                  </div>
-                  {recentMilestones.slice(0, 2).map((milestone, index) => (
-                    <motion.div
-                      key={index}
-                      className="text-sm mb-1 last:mb-0"
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.4 + index * 0.1 }}
+                  <motion.div 
+                    className="text-sm font-bold mb-3 flex items-center text-white"
+                    initial={{ scale: 0.9 }}
+                    animate={{ scale: 1 }}
+                    transition={{ delay: 0.4, type: "spring", stiffness: 200 }}
+                  >
+                    <motion.span 
+                      className="mr-2 text-base"
+                      animate={{ rotate: [0, 10, -10, 0] }}
+                      transition={{ delay: 0.5, duration: 0.8, repeat: 1 }}
                     >
-                      <span className="font-medium">{milestone.title}</span>
-                      <span className="ml-2 opacity-90">
-                        ({milestone.count.toLocaleString()} total)
-                      </span>
-                    </motion.div>
-                  ))}
+                      🏆
+                    </motion.span>
+                    Recent Milestone{recentMilestones.length > 1 ? 's' : ''} Achieved!
+                  </motion.div>
+                  <div className="space-y-2">
+                    {recentMilestones.slice(0, 2).map((milestone, index) => (
+                      <motion.div
+                        key={index}
+                        className={`p-3 rounded-lg border ${getMilestoneBackgroundStyle(milestone.color)} shadow-sm`}
+                        initial={{ opacity: 0, x: -20, scale: 0.9 }}
+                        animate={{ opacity: 1, x: 0, scale: 1 }}
+                        transition={{ 
+                          delay: 0.5 + index * 0.1, 
+                          type: "spring",
+                          stiffness: 300,
+                          damping: 20
+                        }}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-2">
+                            <motion.div
+                              className={`w-3 h-3 rounded-full ${milestone.color.replace('text-', 'bg-')}`}
+                              animate={{ scale: [1, 1.2, 1] }}
+                              transition={{ 
+                                delay: 0.7 + index * 0.1, 
+                                duration: 0.6,
+                                repeat: 1 
+                              }}
+                            />
+                            <span className={`font-bold text-sm ${milestone.color}`}>
+                              {milestone.title}
+                            </span>
+                          </div>
+                          <motion.span 
+                            className="text-xs font-medium text-foreground/70 px-2 py-1 bg-white/50 dark:bg-black/20 rounded-full"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ delay: 0.8 + index * 0.1 }}
+                          >
+                            {milestone.count.toLocaleString()} phrases
+                          </motion.span>
+                        </div>
+                        <motion.div 
+                          className="text-xs text-foreground/60 mt-1 italic"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          transition={{ delay: 0.9 + index * 0.1 }}
+                        >
+                          {milestone.description}
+                        </motion.div>
+                      </motion.div>
+                    ))}
+                  </div>
                 </motion.div>
               )}
               {persistUntilInteraction && (
@@ -704,8 +623,8 @@ export const useUpdateUserStats = () => {
                 transition={{ delay: 0.4, type: "spring" }}
                 className="space-y-2"
               >
-                <motion.div 
-                  className={`text-3xl font-bold ${milestoneInfo.color}`}
+                <motion.div
+                  className={`text-3xl font-bold text-white px-4 py-2 rounded-lg border-2 ${milestoneInfo.color.replace('text-', 'border-')} bg-gradient-to-r ${milestoneInfo.color.replace('text-', 'from-')}/20 ${milestoneInfo.color.replace('text-', 'to-')}/10`}
                   animate={{ scale: [1, 1.05, 1] }}
                   transition={{ delay: 0.6, duration: 0.4, repeat: 1 }}
                 >
@@ -743,6 +662,18 @@ export const useUpdateUserStats = () => {
                   </motion.span>
                 ))}
               </motion.div>
+
+              <motion.button
+                className="mt-6 bg-primary hover:bg-primary/90 text-white font-bold py-3 px-6 rounded-lg transition-colors duration-200"
+                onClick={() => setShowMilestoneCelebration(false)}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 1.2 }}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                Continue
+              </motion.button>
             </div>
           </motion.div>
         </motion.div>
