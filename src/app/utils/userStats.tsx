@@ -657,7 +657,8 @@ export const useUpdateUserStats = () => {
             currentStreak: newStreak,
             lastStreakCalculation: now.toISOString(),
             longestStreak: Math.max(newStreak, currentStats.longestStreak || 0),
-            streakStartDate: newStreak === 1 ? todayLocal : (currentStats.streakStartDate || todayLocal)
+            streakStartDate: newStreak === 1 ? todayLocal : (currentStats.streakStartDate || todayLocal),
+            streakChangeReason
           });
 
           // Update UI state for streak increment animation
