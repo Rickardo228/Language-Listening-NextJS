@@ -158,7 +158,7 @@ export function PresentationView({
       ...(containerBg && { backgroundColor: containerBg })
     };
 
-  console.log(textBg)
+
 
   const content = (
     <>

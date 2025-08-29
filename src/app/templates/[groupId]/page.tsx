@@ -148,7 +148,6 @@ export default function TemplateDetailPage() {
                 const allTemplatesQuery = query(templatesRef, where('groupId', '==', groupId));
                 const allTemplatesSnapshot = await getDocs(allTemplatesQuery);
                 const languages = allTemplatesSnapshot.docs.map(doc => doc.data().lang);
-                console.log('languages', languages);
                 setAvailableLanguages(languages);
 
             } catch (err) {

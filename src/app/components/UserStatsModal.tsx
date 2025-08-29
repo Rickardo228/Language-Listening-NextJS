@@ -5,7 +5,7 @@ import { Settings } from 'lucide-react';
 import { getFlagEmoji, getLanguageName } from '../utils/languageUtils';
 import { useUser } from '../contexts/UserContext';
 import { getPhraseRankTitle, getLanguageRankTitle } from '../utils/rankingSystem';
-import { SettingsModal } from './SettingsModal';
+import { StatsSettingsModal } from './StatsSettingsModal';
 
 // Import timezone utilities from userStats
 import { getUserLocalDateBoundary, getUserTimezone } from '../utils/userStats';
@@ -251,13 +251,12 @@ export function UserStatsModal({ isOpen, onClose, user }: UserStatsModalProps) {
     // Debug mode for testing personal best functionality
     // Multiple safety checks to ensure this is NEVER enabled in production
     const DEBUG_PERSONAL_BEST_MODE = (
-        process.env.NODE_ENV === 'development' &&
         process.env.NODE_ENV !== 'production' &&
         typeof window !== 'undefined' &&
         window.location.hostname !== 'languageshadowing.com' &&
         false // TEMPORARILY ENABLED FOR TESTING - REMEMBER TO SET BACK TO FALSE!
     );
-    console.log(DEBUG_PERSONAL_BEST_MODE)
+
     // Build-time safety check - this will cause a compilation error if enabled in production
     if (process.env.NODE_ENV === 'production' && DEBUG_PERSONAL_BEST_MODE) {
         throw new Error("🚨 CRITICAL: Debug mode cannot be enabled in production!");
@@ -267,44 +266,34 @@ export function UserStatsModal({ isOpen, onClose, user }: UserStatsModalProps) {
         if (!user || !isOpen) return;
 
         const fetchStats = async () => {
-            console.log("🔍 Starting to fetch stats for user:", user.uid);
             try {
                 const firestore = getFirestore();
 
                 // Fetch main stats
                 const statsRef = doc(firestore, 'users', user.uid, 'stats', 'listening');
-                console.log("📊 Fetching main stats from:", statsRef.path);
                 const statsDoc = await getDoc(statsRef);
                 if (statsDoc.exists()) {
                     const statsData = statsDoc.data() as UserStats;
-                    console.log("✅ Main stats found:", statsData);
                     setMainStats(statsData);
-                } else {
-                    console.log("❌ Main stats document doesn't exist");
                 }
 
                 // Fetch daily stats for display (last 7 days) and personal best calculation (most efficient approach)
                 const dailyStatsRef = collection(firestore, 'users', user.uid, 'stats', 'listening', 'daily');
-                console.log("📅 Fetching daily stats from:", dailyStatsRef.path);
 
                 // Get the day with the highest count (personal best) - most efficient!
                 // Firestore does the heavy lifting: orderBy('count', 'desc') + limit(1) = single document with highest count
                 const personalBestQuery = query(dailyStatsRef, orderBy('count', 'desc'), limit(1));
                 const personalBestSnapshot = await getDocs(personalBestQuery);
                 const personalBestData = personalBestSnapshot.docs[0]?.data() as DailyStats | undefined;
-                console.log("🏆 Personal best data:", personalBestData);
 
                 // Get last 7 days for display
                 const last7DaysQuery = query(dailyStatsRef, orderBy('date', 'desc'), limit(7));
                 const last7DaysSnapshot = await getDocs(last7DaysQuery);
                 const last7DaysData = last7DaysSnapshot.docs.map(doc => doc.data() as DailyStats);
-                console.log("📈 Last 7 days data from database:", last7DaysData);
 
                 // Show what dates we're actually looking for
                 const userTimezone = getUserTimezone();
                 const todayLocal = getUserLocalDateBoundary(userTimezone);
-                console.log("🔍 Looking for today's date - Local:", todayLocal, "User timezone:", userTimezone);
-                console.log("🔍 Available dates in database:", last7DaysData.map(d => d.date));
 
                 // Fill in missing days with 0 counts to ensure we always show 7 days
                 const last7Days = [];
@@ -355,36 +344,16 @@ export function UserStatsModal({ isOpen, onClose, user }: UserStatsModalProps) {
     const userTimezone = getUserTimezone();
     const todayLocal = getUserLocalDateBoundary(userTimezone);
 
-    console.log("🕐 Timezone debugging (User timezone, Local date):", {
-        now: new Date().toISOString(),
-        todayLocal: todayLocal,
-        userTimezone: userTimezone
-    });
 
-    // Debug: Log the dailyStats structure
-    console.log("🔍 DailyStats structure:", dailyStats.map(day => ({
-        date: day.date,
-        timestamp: day.timestamp,
-        count: day.count
-    })));
 
     const todayStats = dailyStats.find(day => {
         // Since we're already calculating dates in the user's timezone when fetching,
         // we can directly compare the stored date with today's date
         const matches = day.date === todayLocal;
 
-        console.log("📅 Day comparison (simplified):", {
-            dayDate: day.date,
-            todayLocal: todayLocal,
-            matches: matches
-        });
-
         return matches;
     });
     const todayCount = todayStats?.count || 0;
-
-    console.log("🎯 Today's stats found:", todayStats);
-    console.log("🎯 Today's count:", todayCount);
 
     // Get yesterday's stats for comparison using user's timezone
     const yesterday = new Date();
@@ -395,12 +364,6 @@ export function UserStatsModal({ isOpen, onClose, user }: UserStatsModalProps) {
         // Since we're already calculating dates in the user's timezone when fetching,
         // we can directly compare the stored date with yesterday's date
         const matches = day.date === yesterdayFormatted;
-
-        console.log("📅 Yesterday comparison (simplified):", {
-            dayDate: day.date,
-            yesterdayFormatted: yesterdayFormatted,
-            matches: matches
-        });
 
         return matches;
     });
@@ -416,11 +379,7 @@ export function UserStatsModal({ isOpen, onClose, user }: UserStatsModalProps) {
         achievedAt: personalBestData.lastUpdated
     } : null;
 
-    // Log personal best details
-    if (personalBest && personalBest.count > 0) {
-        console.log(`🏆 Personal Best: ${personalBest.count} phrases on ${personalBest.date}`);
-        console.log(`📅 Achieved: ${new Date(personalBest.achievedAt).toLocaleDateString()}`);
-    }
+    // Personal best details available
 
     // Debug mode: Override personal best for testing
     // Additional runtime safety checks
@@ -442,8 +401,6 @@ export function UserStatsModal({ isOpen, onClose, user }: UserStatsModalProps) {
         );
 
         if (isProductionLike) {
-            console.error("🚨 SECURITY WARNING: Debug mode attempted in production-like environment!");
-            console.error("Debug mode has been disabled for security reasons.");
             return;
         }
 
@@ -453,8 +410,6 @@ export function UserStatsModal({ isOpen, onClose, user }: UserStatsModalProps) {
             date: today,
             achievedAt: new Date().toISOString()
         };
-        console.log("🐛 DEBUG MODE: Overriding personal best for testing:", personalBest);
-        console.warn("⚠️ This debug mode should ONLY be used in local development!");
     }
 
     // Check if today is a personal best using user's timezone
@@ -701,7 +656,7 @@ export function UserStatsModal({ isOpen, onClose, user }: UserStatsModalProps) {
             </div>
 
             {/* Settings Modal */}
-            <SettingsModal
+            <StatsSettingsModal
                 isOpen={settingsModalOpen}
                 onClose={() => setSettingsModalOpen(false)}
                 user={user}

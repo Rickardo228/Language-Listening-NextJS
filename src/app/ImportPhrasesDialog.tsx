@@ -69,10 +69,6 @@ export function ImportPhrasesDialog({
             const processInputLang = isSwapped ? targetLang : inputLang;
             const processTargetLang = isSwapped ? inputLang : targetLang;
 
-            console.log('isSwapped', isSwapped);
-            console.log('processInputLang', processInputLang);
-            console.log('processTargetLang', processTargetLang);
-
             const response = await fetch(`${API_BASE_URL}/generate-phrases`, {
                 method: 'POST',
                 headers: {

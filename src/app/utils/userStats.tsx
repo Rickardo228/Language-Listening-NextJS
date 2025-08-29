@@ -218,7 +218,6 @@ export const useUpdateUserStats = () => {
       Object.keys(sessionStorage).forEach(key => {
         if (key.startsWith('streakCalculated_') && !key.includes(today)) {
           sessionStorage.removeItem(key);
-          console.log(`🧹 Cleaned up old streak session: ${key}`);
         }
       });
     };
@@ -240,7 +239,6 @@ export const useUpdateUserStats = () => {
         // In debug mode, start from 0 regardless of database
         totalPhrasesRef.current = 0;
         phraseCountSinceLastSync.current = 0;
-        console.log("🔄 DEBUG MODE: Starting from 0 phrases");
         return;
       }
 
@@ -254,7 +252,6 @@ export const useUpdateUserStats = () => {
           const total = data.phrasesListened || 0;
           totalPhrasesRef.current = total;
           phraseCountSinceLastSync.current = 0;
-          console.log("🔄 Initial total phrases loaded:", total);
         } else {
           totalPhrasesRef.current = 0;
           phraseCountSinceLastSync.current = 0;
@@ -359,7 +356,6 @@ export const useUpdateUserStats = () => {
 
     // Skip syncing in debug mode to avoid overwriting debug counts
     if (DEBUG_MILESTONE_MODE) {
-      console.log("🐛 DEBUG MODE: Skipping sync to preserve debug milestone testing");
       return;
     }
 
@@ -380,7 +376,6 @@ export const useUpdateUserStats = () => {
         // If database has more than our local count, update our local count
         // This handles cases where user used app on another device
         if (dbTotal > totalPhrasesRef.current) {
-          console.log(`Syncing total: local=${totalPhrasesRef.current}, db=${dbTotal}`);
           totalPhrasesRef.current = dbTotal;
         }
 
@@ -395,15 +390,7 @@ export const useUpdateUserStats = () => {
     phrases: Phrase[],
     currentPhraseIndex: number
   ) => {
-    console.log("🚀 updateUserStats called with:", {
-      phrasesListenedRef: phrasesListenedRef.current,
-      currentPhraseIndex,
-      user: user?.uid,
-      phrasesLength: phrases.length
-    });
-
     if (!user) {
-      console.log("❌ No user found, returning early");
       return;
     }
 
@@ -414,17 +401,12 @@ export const useUpdateUserStats = () => {
     const currentTotal = totalPhrasesRef.current;
     const newTotal = currentTotal + 1;
 
-    console.log("📊 Stats update:", { currentTotal, newTotal });
-
     // Check for milestone achievement
     const currentRank = getPhraseRankTitle(currentTotal, DEBUG_MILESTONE_MODE);
     const newRank = getPhraseRankTitle(newTotal, DEBUG_MILESTONE_MODE);
-    console.log("Milestone check:", { currentTotal, newTotal, currentRank: currentRank.title, newRank: newRank.title });
     const milestoneReached = currentRank.title !== newRank.title;
-    console.log("Milestone reached?", milestoneReached);
 
     if (milestoneReached) {
-      console.log("🎯 MILESTONE TRIGGERED!", newRank.title);
       // Store milestone info for celebration
       const milestoneData = {
         title: newRank.title,
@@ -455,34 +437,21 @@ export const useUpdateUserStats = () => {
     // Store the user's local date boundary for accurate timezone handling
     const todayLocalAsUTC = todayLocal; // Keep as local date for consistency
 
-    console.log("📅 Date handling (User timezone, Local date):", {
-      now: now.toISOString(),
-      todayLocal: todayLocal,
-      userTimezone: userTimezone,
-      localTime: now.toLocaleString()
-    });
-
     // Get current phrase's languages
     const currentPhrase = phrases[currentPhraseIndex];
     if (!currentPhrase) {
-      console.log("❌ No current phrase found");
       return;
     }
     const { inputLang, targetLang } = currentPhrase;
 
-    console.log("🌍 Language pair:", { inputLang, targetLang });
-
     try {
-      console.log("💾 Updating main stats document...");
       // Update the main stats document
       const statsRef = doc(firestore, "users", user.uid, "stats", "listening");
       await updateDoc(statsRef, {
         phrasesListened: increment(1),
         lastListenedAt: now.toISOString(),
       });
-      console.log("✅ Main stats updated successfully");
 
-      console.log("📊 Updating daily stats document...");
       // Update the daily stats - store with full timestamp for timezone accuracy
       const dailyStatsRef = doc(
         firestore,
@@ -505,7 +474,6 @@ export const useUpdateUserStats = () => {
           "code" in err &&
           err.code === "not-found"
         ) {
-          console.log("📄 Daily stats document doesn't exist, creating new one...");
           await setDoc(dailyStatsRef, {
             count: 1,
             lastUpdated: now.toISOString(),
@@ -513,14 +481,11 @@ export const useUpdateUserStats = () => {
             dateLocal: todayLocal, // Store local date for reference
             timestamp: now.toISOString(), // Store full timestamp for timezone accuracy
           });
-          console.log("✅ Daily stats document created successfully");
         } else {
           console.error("❌ Error updating daily stats:", err);
         }
       });
-      console.log("✅ Daily stats updated successfully");
 
-      console.log("🌍 Updating language stats document...");
       // Update language stats
       const languageStatsRef = doc(
         firestore,
@@ -544,7 +509,6 @@ export const useUpdateUserStats = () => {
           "code" in err &&
           err.code === "not-found"
         ) {
-          console.log("📄 Language stats document doesn't exist, creating new one...");
           await setDoc(languageStatsRef, {
             count: 1,
             lastUpdated: now.toISOString(),
@@ -552,12 +516,10 @@ export const useUpdateUserStats = () => {
             targetLang,
             firstListened: now.toISOString(),
           });
-          console.log("✅ Language stats document created successfully");
         } else {
           console.error("❌ Error updating language stats:", err);
         }
       });
-      console.log("✅ Language stats updated successfully");
 
     } catch (err: unknown) {
       console.error("❌ Error in main stats update:", err);
@@ -568,7 +530,6 @@ export const useUpdateUserStats = () => {
         "code" in err &&
         err.code === "not-found"
       ) {
-        console.log("📄 Main stats document doesn't exist, creating new one...");
         const statsRef = doc(
           firestore,
           "users",
@@ -614,13 +575,12 @@ export const useUpdateUserStats = () => {
           targetLang,
           firstListened: now.toISOString(),
         });
-        console.log("✅ All stats documents created successfully");
       } else {
         console.error("❌ Error updating user stats:", err);
       }
     }
 
-    console.log("🔥 Starting streak calculation...");
+    // Smart incremental streak calculation - only update when streak actually changes
     // Smart incremental streak calculation - only update when streak actually changes
     try {
       // Use Firestore transaction to prevent race conditions and double increments
@@ -629,7 +589,6 @@ export const useUpdateUserStats = () => {
       // Check if we already calculated the streak for today in this session
       const todayKey = `streakCalculated_${todayLocal}`;
       if (sessionStorage.getItem(todayKey)) {
-        console.log(`📅 Streak already calculated for today in this session`);
         return;
       }
 
@@ -638,15 +597,12 @@ export const useUpdateUserStats = () => {
         const statsDoc = await transaction.get(statsRef);
         const currentStats = statsDoc.exists() ? statsDoc.data() : {};
 
-        console.log("📊 Current stats from transaction:", currentStats);
-
         // Check if streak was already calculated today by another process
         const lastCalculation = currentStats.lastStreakCalculation;
         const lastCalculationDate = lastCalculation ?
           getUserLocalDateBoundary(userTimezone, new Date(lastCalculation)) : null;
 
         if (lastCalculationDate === todayLocal) {
-          console.log(`📅 Streak already calculated today by another process`);
           return; // Exit transaction early
         }
 
@@ -657,12 +613,7 @@ export const useUpdateUserStats = () => {
         const lastActivityDate = currentStats.lastListenedAt ?
           getUserLocalDateBoundary(userTimezone, new Date(currentStats.lastListenedAt)) : null;
 
-        console.log("📅 Streak calculation:", {
-          lastActivityDate,
-          todayLocal,
-          currentStreak: currentStats.currentStreak,
-          newStreak
-        });
+
 
         if (lastActivityDate !== todayLocal) {
           // Check if yesterday had activity
@@ -675,19 +626,16 @@ export const useUpdateUserStats = () => {
             newStreak++;
             streakChanged = true;
             streakChangeReason = 'incremented';
-            console.log(`🔥 Streak incremented: ${newStreak} days`);
           } else if (lastActivityDate === null) {
             // First time user - start streak at 1
             newStreak = 1;
             streakChanged = true;
             streakChangeReason = 'first_time';
-            console.log(`🌱 First time user - streak started: 1 day`);
           } else {
             // Gap found - reset streak to 1
             newStreak = 1;
             streakChanged = true;
             streakChangeReason = 'reset';
-            console.log(`🔄 Streak reset: New streak started (1 day)`);
           }
         } else {
           // Same day - check if this is first time or maintain streak
@@ -696,16 +644,13 @@ export const useUpdateUserStats = () => {
             newStreak = 1;
             streakChanged = true;
             streakChangeReason = 'first_time_same_day';
-            console.log(`🌱 First time user on first day - streak started: 1 day`);
           } else {
             // Same day - streak continues unchanged
-            console.log(`📅 Same day activity - streak maintained: ${newStreak} days`);
           }
         }
 
         // Only update streak data if it actually changed
         if (streakChanged) {
-          console.log(`💾 Updating streak data: ${streakChangeReason} to ${newStreak} days`);
 
           // Update main stats with new streak and metadata
           transaction.update(statsRef, {
@@ -726,21 +671,15 @@ export const useUpdateUserStats = () => {
 
         // Mark that we've calculated the streak for today in this session
         sessionStorage.setItem(todayKey, 'true');
-
-        console.log(`📊 Current streak: ${newStreak} days`);
-        if (streakChanged) {
-          console.log(`🏆 Longest streak: ${Math.max(newStreak, currentStats.longestStreak || 0)} days`);
-          console.log(`📅 Streak start date: ${newStreak === 1 ? todayLocal : (currentStats.streakStartDate || todayLocal)}`);
-        }
       });
 
-      console.log("✅ Streak calculation completed successfully");
+      // Streak calculation completed successfully
 
     } catch (error) {
       console.error("❌ Error calculating streak:", error);
     }
 
-    console.log("🎉 Stats update completed successfully!");
+    // Stats update completed successfully
   };
 
   const StatsPopups = mounted ? createPortal(

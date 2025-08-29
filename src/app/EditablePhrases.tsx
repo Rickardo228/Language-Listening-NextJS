@@ -396,7 +396,6 @@ export function EditablePhrases({ phrases, setPhrases, currentPhraseIndex, curre
     };
 
     const handleCheckChange = (index: number, checked: boolean) => {
-        console.log('handleCheckChange', index, checked);
         setSelectedPhrases(prev => {
             const next = new Set(prev);
             if (checked) {
@@ -408,7 +407,6 @@ export function EditablePhrases({ phrases, setPhrases, currentPhraseIndex, curre
             if (next.size === 0) {
                 setIsMultiSelectMode(false);
             }
-            console.log('next', next);
             return next;
         });
     };

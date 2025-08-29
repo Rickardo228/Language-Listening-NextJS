@@ -44,7 +44,6 @@ export function CollectionHeader({
                 const sharedRef = collection(getFirestore(), 'published_collections');
                 const q = query(sharedRef, where('shared_from_list', '==', collectionId));
                 const querySnapshot = await getDocs(q);
-                console.log(querySnapshot.docs);
                 setIsPublished(!querySnapshot.empty);
                 if (!querySnapshot.empty) {
                     setPublishedId(querySnapshot.docs[0].id);

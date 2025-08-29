@@ -60,15 +60,11 @@ export const UserContextProvider: React.FC<UserContextProviderProps> = ({ childr
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-            console.log("onAuthStateChanged", firebaseUser);
-            console.log("hasInitialisedForUser", hasInitialisedForUser?.current);
-
             if (firebaseUser) {
                 // Extract custom claims from ID token
                 try {
                     const idTokenResult = await firebaseUser.getIdTokenResult();
                     const claims = idTokenResult.claims as UserClaims;
-                    console.log("Custom claims:", claims);
                     setUserClaims(claims);
                 } catch (error) {
                     console.error("Error getting custom claims:", error);
@@ -85,7 +81,6 @@ export const UserContextProvider: React.FC<UserContextProviderProps> = ({ childr
                 }
 
                 if (!hasInitialisedForUser.current) {
-                    console.log("onAuthStateChanged 2", firebaseUser);
                     hasInitialisedForUser.current = true;
 
                     // Identify user in Clarity

@@ -4,22 +4,15 @@ const MIXPANEL_TOKEN = process.env.NEXT_PUBLIC_MIXPANEL_TOKEN;
 let isInitialized = false;
 
 export const initMixpanel = () => {
-  console.log("Initializing Mixpanel...");
-  console.log("MIXPANEL_TOKEN available:", !!MIXPANEL_TOKEN);
-  console.log("Environment:", process.env.NODE_ENV);
-
   if (!MIXPANEL_TOKEN) {
-    console.warn("Mixpanel token is missing! Check your .env file.");
     return;
   }
 
-  console.log("Mixpanel token found, initializing...");
   mixpanel.init(MIXPANEL_TOKEN, { autocapture: true });
 
   // Set environment information
   setEnvironmentInfo();
   isInitialized = true;
-  console.log("Mixpanel initialized successfully!");
 };
 
 export const setEnvironmentInfo = () => {
@@ -205,10 +198,12 @@ export const trackPlaybackEvent = (
   playbackSpeed: number
 ) => {
   if (!MIXPANEL_TOKEN || !isInitialized) return;
-  
+
   // Create specific event name by capitalizing and appending eventType
-  const eventName = `Playback ${eventType.charAt(0).toUpperCase() + eventType.slice(1)}`;
-  
+  const eventName = `Playback ${
+    eventType.charAt(0).toUpperCase() + eventType.slice(1)
+  }`;
+
   mixpanel.track(eventName, {
     phraseId,
     phase,
@@ -225,7 +220,7 @@ export const trackPhrasesListenedPopup = (
   sessionEndType?: "natural" | "manual"
 ) => {
   if (!MIXPANEL_TOKEN || !isInitialized) return;
-  
+
   // Create specific event name by transforming action
   let eventName = "Phrases Popup ";
   switch (action) {
@@ -242,7 +237,7 @@ export const trackPhrasesListenedPopup = (
       eventName += "Dismissed";
       break;
   }
-  
+
   mixpanel.track(eventName, {
     phrasesCount,
     isPersistent,
