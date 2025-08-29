@@ -207,7 +207,7 @@ export const useUpdateUserStats = () => {
   const phraseCountSinceLastSync = useRef(0);
   const SYNC_AFTER_PHRASES = 10; // Re-sync every 10 phrases
   const [currentStreak, setCurrentStreak] = useState(0);
-  const [previousStreak, setPreviousStreak] = useState(0);
+  const [, setPreviousStreak] = useState(0);
   const [showStreakIncrement, setShowStreakIncrement] = useState(false);
 
   useEffect(() => {
