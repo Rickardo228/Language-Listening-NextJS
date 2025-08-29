@@ -293,7 +293,6 @@ export function UserStatsModal({ isOpen, onClose, user }: UserStatsModalProps) {
 
                 // Show what dates we're actually looking for
                 const userTimezone = getUserTimezone();
-                const todayLocal = getUserLocalDateBoundary(userTimezone);
 
                 // Fill in missing days with 0 counts to ensure we always show 7 days
                 const last7Days = [];
