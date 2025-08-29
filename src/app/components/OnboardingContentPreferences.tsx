@@ -52,7 +52,7 @@ export function OnboardingContentPreferences({
                     What interests you?
                 </h3>
                 <p className="text-gray-600 dark:text-gray-400">
-                    Choose three or more topics you'd like to learn about
+                    Choose three or more topics you&apos;d like to learn about
                 </p>
                 <div className="mt-2">
                     <span className={`text-sm ${isMinimumSelected ? 'text-green-600 dark:text-green-400' : 'text-gray-500'}`}>

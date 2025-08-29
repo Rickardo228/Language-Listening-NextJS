@@ -349,7 +349,9 @@ export function UserStatsModal({ isOpen, onClose, user }: UserStatsModalProps) {
 
     if (!isOpen) return null;
 
-    // Get today's and yesterday's stats using user's timezone
+    const currentStreak = mainStats?.currentStreak || 0;
+
+    // Get today's stats using user's timezone
     const userTimezone = getUserTimezone();
     const todayLocal = getUserLocalDateBoundary(userTimezone);
 
@@ -362,7 +364,7 @@ export function UserStatsModal({ isOpen, onClose, user }: UserStatsModalProps) {
     // Debug: Log the dailyStats structure
     console.log("🔍 DailyStats structure:", dailyStats.map(day => ({
         date: day.date,
-        lastUpdated: day.lastUpdated,
+        timestamp: day.timestamp,
         count: day.count
     })));
 
@@ -403,42 +405,6 @@ export function UserStatsModal({ isOpen, onClose, user }: UserStatsModalProps) {
         return matches;
     });
     const yesterdayCount = yesterdayStats?.count || 0;
-
-    // Validate and potentially recalculate the current streak
-    let currentStreak = mainStats?.currentStreak || 0;
-
-    // Check if the streak calculation is stale and needs recalculation
-    if (mainStats?.lastStreakCalculation) {
-        const lastCalculation = new Date(mainStats.lastStreakCalculation);
-        const todayDate = new Date(todayLocal);
-
-        // If the last calculation was before today, the streak might be stale
-        if (lastCalculation < todayDate) {
-            console.log("⚠️ Streak calculation is stale, last calculated:", lastCalculation.toISOString());
-            console.log("⚠️ Today's date:", todayDate.toISOString());
-
-            // Check if user actually listened today to maintain streak
-            if (todayCount === 0) {
-                // No listening today, streak should be 0
-                currentStreak = 0;
-                console.log("❌ No listening today, resetting streak to 0");
-            } else {
-                // User listened today, but we need to check if they missed yesterday
-                if (yesterdayCount === 0) {
-                    // Missed yesterday, streak should be 1 (just today)
-                    currentStreak = 1;
-                    console.log("⚠️ Missed yesterday, setting streak to 1");
-                } else {
-                    // Both today and yesterday, streak should continue
-                    console.log("✅ Streak continues, keeping current value:", currentStreak);
-                }
-            }
-        } else {
-            console.log("✅ Streak calculation is current, using stored value:", currentStreak);
-        }
-    } else {
-        console.log("⚠️ No lastStreakCalculation timestamp, streak may be stale");
-    }
 
     // Calculate trend
     const trend = todayCount > yesterdayCount ? 'up' : todayCount < yesterdayCount ? 'down' : 'same';

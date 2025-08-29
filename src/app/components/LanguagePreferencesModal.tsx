@@ -6,7 +6,7 @@ import { User } from 'firebase/auth';
 import { languageOptions } from '../types';
 import { createOrUpdateUserProfile } from '../utils/userPreferences';
 import { useUser } from '../contexts/UserContext';
-import { getFlagEmoji } from '../utils/languageUtils';
+
 
 interface LanguagePreferencesModalProps {
     isOpen: boolean;

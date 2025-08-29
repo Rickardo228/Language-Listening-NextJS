@@ -7,7 +7,7 @@ import {
   runTransaction,
 } from "firebase/firestore";
 import { Phrase } from "../types";
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { useUser } from "../contexts/UserContext";
 import { motion, AnimatePresence } from "framer-motion";
@@ -49,9 +49,6 @@ export function getUserTimezone(): string {
 
 // Debug mode for testing milestones - ONLY for development, never in production
 const DEBUG_MILESTONE_MODE = process.env.NODE_ENV === 'development' && false;
-
-// Debug mode for testing streaks - ONLY for development, never in production
-const DEBUG_STREAK_MODE = process.env.NODE_ENV === 'development' && false;
 
 // Use the shared debug milestone thresholds (unused in this file but kept for potential future use)
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -148,6 +145,7 @@ function getMilestoneBackgroundStyle(color: string): string {
 }
 
 // Function to calculate current streak from daily stats
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function calculateStreak(userId: string): Promise<number> {
   try {
     const { collection, query, orderBy, limit, getDocs } = await import("firebase/firestore");
@@ -163,7 +161,7 @@ async function calculateStreak(userId: string): Promise<number> {
     let streak = 0;
     const userTimezone = getUserTimezone();
     const today = getUserLocalDateBoundary(userTimezone);
-    let checkDate = new Date();
+    const checkDate = new Date();
 
     for (let i = 0; i < 90; i++) {
       const dateStr = getUserLocalDateBoundary(userTimezone, checkDate);
@@ -270,6 +268,75 @@ export const useUpdateUserStats = () => {
     fetchInitialTotal();
   }, [user]);
 
+  // Force sync on collection/session changes
+  const forceSyncTotal = () => {
+    syncTotalIfNeeded(true);
+  };
+
+  const showStatsUpdate = (shouldPersistUntilInteraction: boolean = false) => {
+    if (phrasesListenedRef.current > 0) {
+      const phrasesCount = phrasesListenedRef.current;
+      setShowPopup(true);
+      setCountToShow(phrasesCount);
+      setPersistUntilInteraction(shouldPersistUntilInteraction);
+
+      // Track popup show event
+      trackPhrasesListenedPopup(
+        "show",
+        phrasesCount,
+        shouldPersistUntilInteraction,
+        shouldPersistUntilInteraction ? "natural" : "manual"
+      );
+
+      phrasesListenedRef.current = 0;
+    }
+
+    if (!shouldPersistUntilInteraction) {
+      setTimeout(() => {
+        setShowPopup(false);
+        setPersistUntilInteraction(false);
+        setShowStreakIncrement(false); // Hide streak when popup auto-hides
+      }, 2000);
+    }
+  };
+
+  const closeStatsPopup = useCallback((source: "continue" | "escape" = "continue") => {
+    // Track close action before closing
+    if (showPopup) {
+      trackPhrasesListenedPopup(
+        source === "continue" ? "continue" : "escape_dismiss",
+        countToShow,
+        persistUntilInteraction
+      );
+    }
+
+    setShowPopup(false);
+    setPersistUntilInteraction(false);
+    // Clear recent milestones when user dismisses the popup
+    setRecentMilestones([]);
+    // Also hide streak increment when popup is closed
+    setShowStreakIncrement(false);
+  }, [showPopup, countToShow, persistUntilInteraction]);
+
+  const openStatsModal = () => {
+    // Track view stats action before closing popup
+    if (showPopup) {
+      trackPhrasesListenedPopup(
+        "view_stats",
+        countToShow,
+        persistUntilInteraction
+      );
+    }
+
+    setShowStatsModal(true);
+    setShowPopup(false);
+    setPersistUntilInteraction(false);
+    // Clear recent milestones when user opens stats modal
+    setRecentMilestones([]);
+    // Also hide streak increment when opening stats modal
+    setShowStreakIncrement(false);
+  };
+
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape' && showPopup && persistUntilInteraction) {
@@ -284,7 +351,7 @@ export const useUpdateUserStats = () => {
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [showPopup, persistUntilInteraction]);
+  }, [showPopup, persistUntilInteraction, closeStatsPopup]);
 
   // Smart sync function - only fetches when needed
   const syncTotalIfNeeded = async (force: boolean = false): Promise<void> => {
@@ -322,11 +389,6 @@ export const useUpdateUserStats = () => {
     } catch (error) {
       console.error("Error syncing total:", error);
     }
-  };
-
-  // Force sync on collection/session changes
-  const forceSyncTotal = () => {
-    syncTotalIfNeeded(true);
   };
 
   const updateUserStats = async (
@@ -681,71 +743,8 @@ export const useUpdateUserStats = () => {
     console.log("🎉 Stats update completed successfully!");
   };
 
-  const showStatsUpdate = (shouldPersistUntilInteraction: boolean = false) => {
-    if (phrasesListenedRef.current > 0) {
-      const phrasesCount = phrasesListenedRef.current;
-      setShowPopup(true);
-      setCountToShow(phrasesCount);
-      setPersistUntilInteraction(shouldPersistUntilInteraction);
-
-      // Track popup show event
-      trackPhrasesListenedPopup(
-        "show",
-        phrasesCount,
-        shouldPersistUntilInteraction,
-        shouldPersistUntilInteraction ? "natural" : "manual"
-      );
-
-      phrasesListenedRef.current = 0;
-    }
-
-    if (!shouldPersistUntilInteraction) {
-      setTimeout(() => {
-        setShowPopup(false);
-        setPersistUntilInteraction(false);
-        setShowStreakIncrement(false); // Hide streak when popup auto-hides
-      }, 2000);
-    }
-  };
-
-  const closeStatsPopup = (source: "continue" | "escape" = "continue") => {
-    // Track close action before closing
-    if (showPopup) {
-      trackPhrasesListenedPopup(
-        source === "continue" ? "continue" : "escape_dismiss",
-        countToShow,
-        persistUntilInteraction
-      );
-    }
-
-    setShowPopup(false);
-    setPersistUntilInteraction(false);
-    // Clear recent milestones when user dismisses the popup
-    setRecentMilestones([]);
-    // Also hide streak increment when popup is closed
-    setShowStreakIncrement(false);
-  };
-
-  const openStatsModal = () => {
-    // Track view stats action before closing popup
-    if (showPopup) {
-      trackPhrasesListenedPopup(
-        "view_stats",
-        countToShow,
-        persistUntilInteraction
-      );
-    }
-
-    setShowStatsModal(true);
-    setShowPopup(false);
-    setPersistUntilInteraction(false);
-    // Clear recent milestones when user opens stats modal
-    setRecentMilestones([]);
-    // Also hide streak increment when opening stats modal
-    setShowStreakIncrement(false);
-  };
   const StatsPopups = mounted ? createPortal(
-    <AnimatePresence mode="multiple">
+    <AnimatePresence mode="wait">
       {/* Pause Stats Popup */}
       {showPopup && (
         <motion.div

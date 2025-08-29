@@ -120,7 +120,7 @@ export function ContentPreferencesModal({ isOpen, onClose, user }: ContentPrefer
                             </button>
                         </div>
                         <p className="text-gray-600 dark:text-gray-400 mt-1">
-                            Choose topics you're interested in to personalize your learning content
+                            Choose topics you&apos;re interested in to personalize your learning content
                         </p>
                     </div>
 
@@ -128,7 +128,7 @@ export function ContentPreferencesModal({ isOpen, onClose, user }: ContentPrefer
                     <div className="p-6 space-y-6">
                         <div className="text-center">
                             <p className="text-gray-600 dark:text-gray-400 mb-2">
-                                Select at least three topics you'd like to learn about
+                                Select at least three topics you&apos;d like to learn about
                             </p>
                             <div className="mt-2">
                                 <span className={`text-sm ${isMinimumSelected ? 'text-green-600 dark:text-green-400' : 'text-gray-500'}`}>

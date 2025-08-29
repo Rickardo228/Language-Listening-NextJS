@@ -6,7 +6,7 @@ export type ConfigFieldDefinition = {
   label: string;
   inputType: "text" | "number" | "checkbox" | "file" | "color" | "select";
   description?: string;
-  decorator?: () => JSX.Element;
+  decorator?: () => React.ReactElement;
   options?: { value: number; label: string }[];
 };
 
@@ -69,7 +69,7 @@ export const presentationConfigDefinition: ConfigFieldDefinition[] = [
   },
   {
     key: "showAllPhrases",
-    label: "Show All Phrases",
+    label: "Show English & Italian",
     inputType: "checkbox",
     description:
       "Display input, translation, and romanization simultaneously with highlighting for the current phase.",
