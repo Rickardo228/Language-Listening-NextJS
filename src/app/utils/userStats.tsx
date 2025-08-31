@@ -210,20 +210,6 @@ export const useUpdateUserStats = () => {
 
   useEffect(() => {
     setMounted(true);
-
-    // Clean up old session storage entries for streak calculation
-    const cleanupOldStreakSessions = () => {
-      const userTimezone = getUserTimezone();
-      const today = getUserLocalDateBoundary(userTimezone);
-      Object.keys(sessionStorage).forEach(key => {
-        if (key.startsWith('streakCalculated_') && !key.includes(today)) {
-          sessionStorage.removeItem(key);
-        }
-      });
-    };
-
-    cleanupOldStreakSessions();
-
     return () => setMounted(false);
   }, []);
 
@@ -580,33 +566,28 @@ export const useUpdateUserStats = () => {
       }
     }
 
-    // Smart incremental streak calculation - only update when streak actually changes
-    // Smart incremental streak calculation - only update when streak actually changes
+    // Database-driven streak calculation - no session storage dependency
     try {
-      // Use Firestore transaction to prevent race conditions and double increments
       const statsRef = doc(firestore, "users", user.uid, "stats", "listening");
-
-      // Check if we already calculated the streak for today in this session
-      const todayKey = `streakCalculated_${todayLocal}`;
-      if (sessionStorage.getItem(todayKey)) {
-        return;
-      }
 
       // Use a transaction to ensure atomic streak updates
       await runTransaction(firestore, async (transaction) => {
         const statsDoc = await transaction.get(statsRef);
         const currentStats = statsDoc.exists() ? statsDoc.data() : {};
 
-        // Check if streak was already calculated today by another process
+        // Check if streak was already calculated today by checking lastStreakCalculation
         const lastCalculation = currentStats.lastStreakCalculation;
         const lastCalculationDate = lastCalculation ?
           getUserLocalDateBoundary(userTimezone, new Date(lastCalculation)) : null;
 
+        // Only recalculate if we haven't calculated for today yet
         if (lastCalculationDate === todayLocal) {
-          return; // Exit transaction early
+          // Already calculated today - just update UI state
+          setCurrentStreak(currentStats.currentStreak || 0);
+          return;
         }
 
-        // Simple streak calculation using running counter
+        // Calculate streak based on database state
         let newStreak = currentStats.currentStreak || 0;
         let streakChanged = false;
         let streakChangeReason = '';
@@ -656,32 +637,20 @@ export const useUpdateUserStats = () => {
           }
         }
 
-        // Only update streak data if it actually changed
-        if (streakChanged) {
+        // Update streak data and lastStreakCalculation
+        transaction.update(statsRef, {
+          currentStreak: newStreak,
+          lastStreakCalculation: now.toISOString(),
+          longestStreak: Math.max(newStreak, currentStats.longestStreak || 0),
+          streakStartDate: newStreakStartDate,
+          streakChangeReason
+        });
 
-          // Update main stats with new streak and metadata
-          transaction.update(statsRef, {
-            currentStreak: newStreak,
-            lastStreakCalculation: now.toISOString(),
-            longestStreak: Math.max(newStreak, currentStats.longestStreak || 0),
-            streakStartDate: newStreakStartDate,
-            streakChangeReason
-          });
-
-          // Update UI state for streak increment animation
-          setPreviousStreak(currentStats.currentStreak || 0);
-          setCurrentStreak(newStreak);
-          setShowStreakIncrement(newStreak > (currentStats.currentStreak || 0));
-        } else {
-          // Streak unchanged - just update local state
-          setCurrentStreak(newStreak);
-        }
-
-        // Mark that we've calculated the streak for today in this session
-        sessionStorage.setItem(todayKey, 'true');
+        // Update UI state for streak display and animation
+        setPreviousStreak(currentStats.currentStreak || 0);
+        setCurrentStreak(newStreak);
+        setShowStreakIncrement(streakChanged && newStreak > (currentStats.currentStreak || 0));
       });
-
-      // Streak calculation completed successfully
 
     } catch (error) {
       console.error("❌ Error calculating streak:", error);
