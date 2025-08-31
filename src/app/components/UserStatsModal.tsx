@@ -112,7 +112,6 @@ interface UserStats {
     lastListenedAt: string;
     currentStreak?: number;
     lastStreakCalculation?: string;
-    longestStreak?: number;
     streakStartDate?: string;
 }
 
@@ -473,11 +472,6 @@ export function UserStatsModal({ isOpen, onClose, user }: UserStatsModalProps) {
                                                     <span className="text-2xl animate-pulse">{streakData.emoji}</span>
                                                 </div>
                                                 <div className="text-xs font-semibold text-gray-300 uppercase tracking-wide">Day Streak</div>
-                                                {mainStats?.longestStreak && mainStats.longestStreak > currentStreak && (
-                                                    <div className="text-xs text-gray-400 mt-1">
-                                                        Best: {mainStats.longestStreak} days
-                                                    </div>
-                                                )}
                                             </div>
                                         );
                                     })() : (

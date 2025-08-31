@@ -641,7 +641,6 @@ export const useUpdateUserStats = () => {
         transaction.update(statsRef, {
           currentStreak: newStreak,
           lastStreakCalculation: now.toISOString(),
-          longestStreak: Math.max(newStreak, currentStats.longestStreak || 0),
           streakStartDate: newStreakStartDate,
           streakChangeReason
         });
