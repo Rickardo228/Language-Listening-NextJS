@@ -14,6 +14,7 @@ import {
     Title,
     Tooltip,
     Legend,
+    ChartOptions,
 } from 'chart.js';
 import { Bar } from 'react-chartjs-2';
 
@@ -153,7 +154,7 @@ function DailyStatsChart({ dailyStats, personalBest }: { dailyStats: DailyStats[
     if (dailyStats.length === 0) return null;
 
     // Prepare data for Chart.js
-    const labels = dailyStats.map(day => 
+    const labels = dailyStats.map(day =>
         new Date(day.date).toLocaleDateString('en-US', {
             month: 'short',
             day: 'numeric'
@@ -163,7 +164,7 @@ function DailyStatsChart({ dailyStats, personalBest }: { dailyStats: DailyStats[
     const backgroundColors = dailyStats.map(day => {
         const isToday = new Date(day.date).toDateString() === new Date().toDateString();
         const isPersonalBest = personalBest && personalBest.date === day.date;
-        
+
         if (isPersonalBest) return 'rgb(245, 158, 11)'; // amber-500 for personal best
         if (isToday) return 'rgb(59, 130, 246)'; // blue-500 for today (primary-like)
         return 'rgba(156, 163, 175, 0.4)'; // gray-400 with opacity for regular days
@@ -188,7 +189,7 @@ function DailyStatsChart({ dailyStats, personalBest }: { dailyStats: DailyStats[
         ],
     };
 
-    const options = {
+    const options: ChartOptions<'bar'> = {
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
@@ -203,7 +204,7 @@ function DailyStatsChart({ dailyStats, personalBest }: { dailyStats: DailyStats[
                 borderWidth: 1,
                 cornerRadius: 8,
                 callbacks: {
-                    title: (context: any) => {
+                    title: (context) => {
                         const index = context[0].dataIndex;
                         const day = dailyStats[index];
                         const date = new Date(day.date);
@@ -213,12 +214,12 @@ function DailyStatsChart({ dailyStats, personalBest }: { dailyStats: DailyStats[
                             day: 'numeric'
                         });
                     },
-                    label: (context: any) => {
+                    label: (context) => {
                         const count = context.parsed.y;
                         const index = context.dataIndex;
                         const day = dailyStats[index];
                         const isPersonalBest = personalBest && personalBest.date === day.date;
-                        
+
                         let label = `${count} phrase${count !== 1 ? 's' : ''}`;
                         if (isPersonalBest) {
                             label += ' 👑 Personal Best!';
@@ -523,78 +524,24 @@ export function UserStatsModal({ isOpen, onClose, user }: UserStatsModalProps) {
                     <div className="text-center py-4">Loading stats...</div>
                 ) : mainStats ? (
                     <div className="space-y-6">
-                        {/* Today's Focus - Prominent Display */}
-                        <div className="bg-gradient-to-r from-primary/10 to-secondary/10 p-6 rounded-lg border border-primary/20">
-                            <h3 className="text-lg font-semibold mb-3">Today&apos;s Progress</h3>
-                            <div className="grid grid-cols-3 gap-4">
-                                <div className="text-center relative">
-                                    <div className="text-3xl font-bold text-primary">{todayCount}</div>
-                                    <div className="text-sm text-foreground/60">Phrases Today</div>
-                                    {/* Personal Best Flag */}
-                                    {isTodayPersonalBest && (
-                                        <div className="absolute -top-2 -right-2">
-                                            <div className="bg-amber-500 text-white text-xs px-2 py-1 rounded-full font-bold shadow-lg border-2 border-amber-600 animate-pulse">
-                                                🏆 PB
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                                <div className="text-center">
-                                    {currentStreak > 0 ? (() => {
-                                        const streakData = getStreakMessage(currentStreak);
-                                        return (
-                                            <div className="bg-gray-800 dark:bg-gray-900 p-3 rounded-xl border-2 border-gray-600 shadow-md">
-                                                <div className="flex items-center justify-center mb-1">
-                                                    <span className="text-2xl font-bold text-white mr-2">{currentStreak}</span>
-                                                    <span className="text-2xl animate-pulse">{streakData.emoji}</span>
-                                                </div>
-                                                <div className="text-xs font-semibold text-gray-300 uppercase tracking-wide">Day Streak</div>
-                                            </div>
-                                        );
-                                    })() : (
-                                        <>
-                                            <div className="text-2xl font-bold text-gray-400">0</div>
-                                            <div className="text-sm text-foreground/60">Day Streak</div>
-                                        </>
-                                    )}
-                                </div>
-                                <div className="text-center">
-                                    <div className="text-lg font-semibold">
-                                        {trend === 'up' && (
-                                            <svg className="w-6 h-6 text-green-500 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                                            </svg>
-                                        )}
-                                        {trend === 'down' && (
-                                            <svg className="w-6 h-6 text-red-500 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
-                                            </svg>
-                                        )}
-                                        {trend === 'same' && (
-                                            <svg className="w-6 h-6 text-gray-500 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14" />
-                                            </svg>
-                                        )}
-                                    </div>
-                                    <div className="text-sm text-foreground/60">
-                                        vs Yesterday ({todayCount - yesterdayCount >= 0 ? '+' : ''}{todayCount - yesterdayCount})
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Weekly Chart */}
-                        {dailyStats.length > 0 && (
-                            <div>
-                                <h3 className="font-semibold mb-4">Last 7 Days</h3>
-                                <DailyStatsChart dailyStats={dailyStats} personalBest={personalBest} />
-                            </div>
-                        )}
-
-                        {/* Total Phrases - Prominent display under chart */}
+                        {/* Total Phrases - Prominent display at top */}
                         <div className="bg-gradient-to-r from-secondary/10 to-primary/10 p-6 rounded-lg border border-secondary/20">
                             <h3 className="text-lg font-semibold mb-3">Total Progress</h3>
                             <div className="text-center">
+                                {/* Streak count above total */}
+                                {currentStreak > 0 && (() => {
+                                    const streakData = getStreakMessage(currentStreak);
+                                    return (
+                                        <div className="bg-gray-800 dark:bg-gray-900 p-3 rounded-xl border-2 border-gray-600 shadow-md mb-4 inline-block">
+                                            <div className="flex items-center justify-center mb-1">
+                                                <span className="text-2xl font-bold text-white mr-2">{currentStreak}</span>
+                                                <span className="text-2xl animate-pulse">{streakData.emoji}</span>
+                                            </div>
+                                            <div className="text-xs font-semibold text-gray-300 uppercase tracking-wide">Day Streak</div>
+                                        </div>
+                                    );
+                                })()}
+
                                 <div className="text-4xl font-bold text-primary mb-2">
                                     {mainStats.phrasesListened.toLocaleString()}
                                 </div>
@@ -629,6 +576,84 @@ export function UserStatsModal({ isOpen, onClose, user }: UserStatsModalProps) {
                                 )}
                             </div>
                         </div>
+
+                        {/* Today's Focus - Prominent Display */}
+                        <div className="bg-gradient-to-r from-primary/10 to-secondary/10 p-6 rounded-lg border border-primary/20">
+                            <h3 className="text-lg font-semibold mb-3">Today&apos;s Progress</h3>
+                            <div className="grid grid-cols-2 gap-6">
+                                <div className="text-center relative">
+                                    <div className="flex items-center justify-center gap-2 mb-2">
+                                        {trend === 'up' && (() => {
+                                            // Get most listened to non-native language
+                                            const aggregatedLanguages = aggregateLanguageStats(languageStats, userProfile?.nativeLanguage || userProfile?.preferredInputLang);
+                                            const topLanguage = aggregatedLanguages[0]; // Already sorted by count descending
+
+                                            if (topLanguage) {
+                                                return (
+                                                    <div className="text-2xl" title={getLanguageName(topLanguage.language)}>
+                                                        {getFlagEmoji(topLanguage.language)}
+                                                    </div>
+                                                );
+                                            }
+                                            return null;
+                                        })()}
+                                        <div className="text-3xl font-bold text-primary">{todayCount}</div>
+                                    </div>
+                                    <div className="text-sm text-foreground/60">Phrases Today</div>
+                                    {/* Personal Best Flag */}
+                                    {isTodayPersonalBest && (
+                                        <div className="absolute -top-2 -right-2">
+                                            <div className="bg-amber-500 text-white text-xs px-2 py-1 rounded-full font-bold shadow-lg border-2 border-amber-600 animate-pulse">
+                                                🏆 PB
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                                {trend === 'up' && (
+                                    <div className="text-center">
+                                        <div className="text-lg font-semibold">
+                                            <svg className="w-6 h-6 text-green-500 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                                            </svg>
+                                        </div>
+                                        <div className="text-sm text-foreground/60">
+                                            vs Yesterday (+{todayCount - yesterdayCount})
+                                        </div>
+                                        <div className="text-xs text-green-600 font-medium mt-1">
+                                            {`You're accelerating! 🚀`}
+                                        </div>
+                                    </div>
+                                )}
+                                {trend !== 'up' && (() => {
+                                    // Show flag when not accelerating (on the right side)
+                                    const aggregatedLanguages = aggregateLanguageStats(languageStats, userProfile?.nativeLanguage || userProfile?.preferredInputLang);
+                                    const topLanguage = aggregatedLanguages[0]; // Already sorted by count descending
+
+                                    if (topLanguage) {
+                                        return (
+                                            <div className="text-center">
+                                                <div className="text-4xl mb-2" title={getLanguageName(topLanguage.language)}>
+                                                    {getFlagEmoji(topLanguage.language)}
+                                                </div>
+                                                <div className="text-sm text-foreground/60">
+                                                    {getLanguageName(topLanguage.language)}
+                                                </div>
+                                            </div>
+                                        );
+                                    }
+                                    return null;
+                                })()}
+                            </div>
+                        </div>
+
+                        {/* Weekly Chart */}
+                        {dailyStats.length > 0 && (
+                            <div>
+                                <h3 className="font-semibold mb-4">Last 7 Days</h3>
+                                <DailyStatsChart dailyStats={dailyStats} personalBest={personalBest} />
+                            </div>
+                        )}
+
 
                         {/* Personal Best Section */}
                         {personalBest && personalBest.count > 0 && (
