@@ -445,8 +445,10 @@ export function UserStatsModal({ isOpen, onClose, user }: UserStatsModalProps) {
     });
     const yesterdayCount = yesterdayStats?.count || 0;
 
-    // Calculate trend
-    const trend = todayCount > yesterdayCount ? 'up' : todayCount < yesterdayCount ? 'down' : 'same';
+    // Calculate trend with 20% buffer for steady progress
+    const trendBuffer = Math.max(1, Math.round(yesterdayCount * 0.2)); // 20% of yesterday's count, minimum 1
+    const difference = todayCount - yesterdayCount;
+    const trend = difference > trendBuffer ? 'up' : difference < -trendBuffer ? 'down' : 'same';
 
     // Use the fetched personal best data directly
     let personalBest = personalBestData ? {
@@ -580,17 +582,17 @@ export function UserStatsModal({ isOpen, onClose, user }: UserStatsModalProps) {
                         {/* Today's Focus - Prominent Display */}
                         <div className="bg-gradient-to-r from-primary/10 to-secondary/10 p-6 rounded-lg border border-primary/20">
                             <h3 className="text-lg font-semibold mb-3">Today&apos;s Progress</h3>
-                            <div className="grid grid-cols-2 gap-6">
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-6">
                                 <div className="text-center relative">
                                     <div className="flex items-center justify-center gap-2 mb-2">
-                                        {trend === 'up' && (() => {
-                                            // Get most listened to non-native language
+                                        {(() => {
+                                            // Show flag with phrases only on mobile when accelerating
                                             const aggregatedLanguages = aggregateLanguageStats(languageStats, userProfile?.nativeLanguage || userProfile?.preferredInputLang);
-                                            const topLanguage = aggregatedLanguages[0]; // Already sorted by count descending
+                                            const topLanguage = aggregatedLanguages[0];
 
-                                            if (topLanguage) {
+                                            if (topLanguage && trend === 'up') {
                                                 return (
-                                                    <div className="text-2xl" title={getLanguageName(topLanguage.language)}>
+                                                    <div className="text-2xl sm:hidden" title={getLanguageName(topLanguage.language)}>
                                                         {getFlagEmoji(topLanguage.language)}
                                                     </div>
                                                 );
@@ -609,29 +611,14 @@ export function UserStatsModal({ isOpen, onClose, user }: UserStatsModalProps) {
                                         </div>
                                     )}
                                 </div>
-                                {trend === 'up' && (
-                                    <div className="text-center">
-                                        <div className="text-lg font-semibold">
-                                            <svg className="w-6 h-6 text-green-500 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                                            </svg>
-                                        </div>
-                                        <div className="text-sm text-foreground/60">
-                                            vs Yesterday (+{todayCount - yesterdayCount})
-                                        </div>
-                                        <div className="text-xs text-green-600 font-medium mt-1">
-                                            {`You're accelerating! 🚀`}
-                                        </div>
-                                    </div>
-                                )}
-                                {trend !== 'up' && (() => {
-                                    // Show flag when not accelerating (on the right side)
+                                {/* Flag column - only visible on desktop */}
+                                {(() => {
                                     const aggregatedLanguages = aggregateLanguageStats(languageStats, userProfile?.nativeLanguage || userProfile?.preferredInputLang);
-                                    const topLanguage = aggregatedLanguages[0]; // Already sorted by count descending
+                                    const topLanguage = aggregatedLanguages[0];
 
                                     if (topLanguage) {
                                         return (
-                                            <div className="text-center">
+                                            <div className="text-center hidden sm:block">
                                                 <div className="text-4xl mb-2" title={getLanguageName(topLanguage.language)}>
                                                     {getFlagEmoji(topLanguage.language)}
                                                 </div>
@@ -643,6 +630,51 @@ export function UserStatsModal({ isOpen, onClose, user }: UserStatsModalProps) {
                                     }
                                     return null;
                                 })()}
+                                {trend === 'up' && (
+                                    <div className="text-center">
+                                        <div className="text-lg font-semibold">
+                                            <svg className="w-6 h-6 text-green-500 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                                            </svg>
+                                        </div>
+                                        <div className="text-sm text-foreground/60">
+                                            vs Yesterday (+{difference})
+                                        </div>
+                                        <div className="text-xs text-green-600 font-medium mt-1">
+                                            {`You're accelerating! 🚀`}
+                                        </div>
+                                    </div>
+                                )}
+                                {trend === 'down' && (
+                                    <div className="text-center hidden sm:block">
+                                        <div className="text-lg font-semibold">
+                                            <svg className="w-6 h-6 text-red-500 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 17h8m0 0v-8m0 8l-8-8-4 4-6-6" />
+                                            </svg>
+                                        </div>
+                                        <div className="text-sm text-foreground/60">
+                                            vs Yesterday ({difference})
+                                        </div>
+                                        <div className="text-xs text-red-600 font-medium mt-1">
+                                            {`Slower pace today 📉`}
+                                        </div>
+                                    </div>
+                                )}
+                                {trend === 'same' && (
+                                    <div className="text-center hidden sm:block">
+                                        <div className="text-lg font-semibold">
+                                            <svg className="w-6 h-6 text-blue-500 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14" />
+                                            </svg>
+                                        </div>
+                                        <div className="text-sm text-foreground/60">
+                                            vs Yesterday ({difference >= 0 ? '+' : ''}{difference})
+                                        </div>
+                                        <div className="text-xs text-blue-600 font-medium mt-1">
+                                            {`Steady progress 📊`}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </div>
 
