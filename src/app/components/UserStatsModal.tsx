@@ -203,9 +203,29 @@ function DailyStatsChart({ dailyStats, personalBest }: { dailyStats: DailyStats[
                 borderColor: 'rgba(255, 255, 255, 0.1)',
                 borderWidth: 1,
                 cornerRadius: 8,
+                titleFont: {
+                    size: 16,
+                    weight: 700
+                },
+                bodyFont: {
+                    size: 12,
+                    weight: 400
+                },
                 callbacks: {
                     title: (context) => {
                         const index = context[0].dataIndex;
+                        const day = dailyStats[index];
+                        const count = context[0].parsed.y;
+                        const isPersonalBest = personalBest && personalBest.date === day.date;
+
+                        let title = `${count} phrase${count !== 1 ? 's' : ''}`;
+                        if (isPersonalBest) {
+                            title += ' 👑';
+                        }
+                        return title;
+                    },
+                    label: (context) => {
+                        const index = context.dataIndex;
                         const day = dailyStats[index];
                         const date = new Date(day.date);
                         return date.toLocaleDateString('en-US', {
@@ -213,18 +233,6 @@ function DailyStatsChart({ dailyStats, personalBest }: { dailyStats: DailyStats[
                             month: 'short',
                             day: 'numeric'
                         });
-                    },
-                    label: (context) => {
-                        const count = context.parsed.y;
-                        const index = context.dataIndex;
-                        const day = dailyStats[index];
-                        const isPersonalBest = personalBest && personalBest.date === day.date;
-
-                        let label = `${count} phrase${count !== 1 ? 's' : ''}`;
-                        if (isPersonalBest) {
-                            label += ' 👑 Personal Best!';
-                        }
-                        return label;
                     },
                 },
                 // Remove the dataset label to avoid [] brackets
@@ -556,20 +564,6 @@ export function UserStatsModal({ isOpen, onClose, user }: UserStatsModalProps) {
                                     {getPhraseRankTitle(mainStats.phrasesListened).description}
                                 </div>
 
-                                {/* Polyglot recognition - only show if learning multiple languages */}
-                                {(() => {
-                                    const aggregatedLanguages = aggregateLanguageStats(languageStats, userProfile?.nativeLanguage || userProfile?.preferredInputLang);
-                                    return aggregatedLanguages.length > 1 ? (
-                                        <div className="bg-gradient-to-r from-purple-500/20 to-blue-500/20 p-3 rounded-lg border border-purple-300/30 mb-3">
-                                            <div className="text-sm font-medium text-purple-700 dark:text-purple-300 mb-1">
-                                                🌍 Polyglot Learner
-                                            </div>
-                                            <div className="text-xs text-foreground/70">
-                                                You&apos;re practicing {aggregatedLanguages.length} different languages
-                                            </div>
-                                        </div>
-                                    ) : null;
-                                })()}
 
                                 {getPhraseRankTitle(mainStats.phrasesListened).nextMilestone > 0 && (
                                     <div className="text-sm text-foreground/60">
@@ -586,11 +580,11 @@ export function UserStatsModal({ isOpen, onClose, user }: UserStatsModalProps) {
                                 <div className="text-center relative">
                                     <div className="flex items-center justify-center gap-2 mb-2">
                                         {(() => {
-                                            // Show flag with phrases only on mobile when accelerating
+                                            // Show flag with phrases on mobile always
                                             const aggregatedLanguages = aggregateLanguageStats(languageStats, userProfile?.nativeLanguage || userProfile?.preferredInputLang);
                                             const topLanguage = aggregatedLanguages[0];
 
-                                            if (topLanguage && trend === 'up') {
+                                            if (topLanguage) {
                                                 return (
                                                     <div className="text-2xl sm:hidden" title={getLanguageName(topLanguage.language)}>
                                                         {getFlagEmoji(topLanguage.language)}
@@ -646,7 +640,7 @@ export function UserStatsModal({ isOpen, onClose, user }: UserStatsModalProps) {
                                     </div>
                                 )}
                                 {trend === 'down' && (
-                                    <div className="text-center hidden sm:block">
+                                    <div className="text-center">
                                         <div className="text-lg font-semibold">
                                             <svg className="w-6 h-6 text-red-500 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 17h8m0 0v-8m0 8l-8-8-4 4-6-6" />
@@ -661,7 +655,7 @@ export function UserStatsModal({ isOpen, onClose, user }: UserStatsModalProps) {
                                     </div>
                                 )}
                                 {trend === 'same' && (
-                                    <div className="text-center hidden sm:block">
+                                    <div className="text-center">
                                         <div className="text-lg font-semibold">
                                             <svg className="w-6 h-6 text-blue-500 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14" />
@@ -721,6 +715,20 @@ export function UserStatsModal({ isOpen, onClose, user }: UserStatsModalProps) {
                         {languageStats.length > 0 && (
                             <div>
                                 <h3 className="font-semibold mb-3">Languages You&apos;re Learning</h3>
+                                {/* Polyglot recognition - only show if learning multiple languages */}
+                                {(() => {
+                                    const aggregatedLanguages = aggregateLanguageStats(languageStats, userProfile?.nativeLanguage || userProfile?.preferredInputLang);
+                                    return aggregatedLanguages.length > 1 ? (
+                                        <div className="bg-gradient-to-r from-purple-500/20 to-blue-500/20 p-3 rounded-lg border border-purple-300/30 mb-4">
+                                            <div className="text-sm font-medium text-purple-700 dark:text-purple-300 mb-1">
+                                                🌍 Polyglot Learner
+                                            </div>
+                                            <div className="text-xs text-foreground/70">
+                                                You&apos;re practicing {aggregatedLanguages.length} different languages
+                                            </div>
+                                        </div>
+                                    ) : null;
+                                })()}
                                 <div className="space-y-2">
                                     {(() => {
                                         const aggregatedLanguages = aggregateLanguageStats(languageStats, userProfile?.nativeLanguage || userProfile?.preferredInputLang);
