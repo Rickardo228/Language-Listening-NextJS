@@ -591,36 +591,6 @@ export function UserStatsModal({ isOpen, onClose, user }: UserStatsModalProps) {
                             </div>
                         )}
 
-                        {/* Personal Best Section */}
-                        {personalBest && personalBest.count > 0 && (
-                            <div className="bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-900/20 dark:to-yellow-900/20 p-6 rounded-lg border border-amber-200 dark:border-amber-700">
-                                <h3 className="text-lg font-semibold mb-4 flex items-center">
-                                    <span className="mr-2">🏆</span>
-                                    Personal Best
-                                </h3>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="text-center">
-                                        <div className="text-2xl font-bold text-amber-600 dark:text-amber-400">
-                                            {personalBest.count}
-                                        </div>
-                                        <div className="text-sm text-foreground/60">Phrases in One Day</div>
-                                    </div>
-                                    <div className="text-center">
-                                        <div className="text-sm text-foreground/60">
-                                            Achieved on
-                                        </div>
-                                        <div className="text-sm font-medium">
-                                            {new Date(personalBest.achievedAt).toLocaleDateString('en-US', {
-                                                weekday: 'long',
-                                                month: 'short',
-                                                day: 'numeric'
-                                            })}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
                         {/* Total Phrases - Prominent display under chart */}
                         <div className="bg-gradient-to-r from-secondary/10 to-primary/10 p-6 rounded-lg border border-secondary/20">
                             <h3 className="text-lg font-semibold mb-3">Total Progress</h3>
@@ -659,6 +629,36 @@ export function UserStatsModal({ isOpen, onClose, user }: UserStatsModalProps) {
                                 )}
                             </div>
                         </div>
+
+                        {/* Personal Best Section */}
+                        {personalBest && personalBest.count > 0 && (
+                            <div className="bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-900/20 dark:to-yellow-900/20 p-6 rounded-lg border border-amber-200 dark:border-amber-700">
+                                <h3 className="text-lg font-semibold mb-4 flex items-center">
+                                    <span className="mr-2">🏆</span>
+                                    Personal Best
+                                </h3>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="text-center">
+                                        <div className="text-2xl font-bold text-amber-600 dark:text-amber-400">
+                                            {personalBest.count}
+                                        </div>
+                                        <div className="text-sm text-foreground/60">Phrases in One Day</div>
+                                    </div>
+                                    <div className="text-center">
+                                        <div className="text-sm text-foreground/60">
+                                            Achieved on
+                                        </div>
+                                        <div className="text-sm font-medium">
+                                            {new Date(personalBest.achievedAt).toLocaleDateString('en-US', {
+                                                weekday: 'long',
+                                                month: 'short',
+                                                day: 'numeric'
+                                            })}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
 
                         {/* Languages with Ranking */}
                         {languageStats.length > 0 && (
