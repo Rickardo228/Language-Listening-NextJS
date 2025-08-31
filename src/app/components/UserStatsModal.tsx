@@ -6,6 +6,25 @@ import { getFlagEmoji, getLanguageName } from '../utils/languageUtils';
 import { useUser } from '../contexts/UserContext';
 import { getPhraseRankTitle, getLanguageRankTitle } from '../utils/rankingSystem';
 import { StatsSettingsModal } from './StatsSettingsModal';
+import {
+    Chart as ChartJS,
+    CategoryScale,
+    LinearScale,
+    BarElement,
+    Title,
+    Tooltip,
+    Legend,
+} from 'chart.js';
+import { Bar } from 'react-chartjs-2';
+
+ChartJS.register(
+    CategoryScale,
+    LinearScale,
+    BarElement,
+    Title,
+    Tooltip,
+    Legend
+);
 
 // Import timezone utilities from userStats
 import { getUserLocalDateBoundary, getUserTimezone } from '../utils/userStats';
@@ -129,55 +148,113 @@ interface LanguageStats {
     firstListened: string;
 }
 
-// Simple bar chart component
+// Chart.js-based bar chart component
 function DailyStatsChart({ dailyStats, personalBest }: { dailyStats: DailyStats[], personalBest: { count: number; date: string; achievedAt: string } | null }) {
     if (dailyStats.length === 0) return null;
 
-    const maxCount = Math.max(...dailyStats.map(d => d.count));
-    const chartHeight = 120;
+    // Prepare data for Chart.js
+    const labels = dailyStats.map(day => 
+        new Date(day.date).toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric'
+        })
+    );
+
+    const backgroundColors = dailyStats.map(day => {
+        const isToday = new Date(day.date).toDateString() === new Date().toDateString();
+        const isPersonalBest = personalBest && personalBest.date === day.date;
+        
+        if (isPersonalBest) return 'rgb(245, 158, 11)'; // amber-500 for personal best
+        if (isToday) return 'rgb(59, 130, 246)'; // blue-500 for today (primary-like)
+        return 'rgba(156, 163, 175, 0.4)'; // gray-400 with opacity for regular days
+    });
+
+    const data = {
+        labels,
+        datasets: [
+            {
+                data: dailyStats.map(day => day.count),
+                backgroundColor: backgroundColors,
+                borderColor: backgroundColors,
+                borderWidth: 1,
+                borderRadius: {
+                    topLeft: 8,
+                    topRight: 8,
+                    bottomLeft: 0,
+                    bottomRight: 0,
+                },
+                borderSkipped: false,
+            },
+        ],
+    };
+
+    const options = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                display: false,
+            },
+            tooltip: {
+                backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                titleColor: 'white',
+                bodyColor: 'white',
+                borderColor: 'rgba(255, 255, 255, 0.1)',
+                borderWidth: 1,
+                cornerRadius: 8,
+                callbacks: {
+                    title: (context: any) => {
+                        const index = context[0].dataIndex;
+                        const day = dailyStats[index];
+                        const date = new Date(day.date);
+                        return date.toLocaleDateString('en-US', {
+                            weekday: 'long',
+                            month: 'short',
+                            day: 'numeric'
+                        });
+                    },
+                    label: (context: any) => {
+                        const count = context.parsed.y;
+                        const index = context.dataIndex;
+                        const day = dailyStats[index];
+                        const isPersonalBest = personalBest && personalBest.date === day.date;
+                        
+                        let label = `${count} phrase${count !== 1 ? 's' : ''}`;
+                        if (isPersonalBest) {
+                            label += ' 👑 Personal Best!';
+                        }
+                        return label;
+                    },
+                },
+                // Remove the dataset label to avoid [] brackets
+                displayColors: false,
+            },
+        },
+        scales: {
+            x: {
+                display: true,
+                grid: {
+                    display: false,
+                },
+                border: {
+                    display: false,
+                },
+                ticks: {
+                    color: 'hsl(var(--foreground))',
+                    font: {
+                        size: 12,
+                    },
+                },
+            },
+            y: {
+                display: false,
+            },
+        },
+    };
 
     return (
-        <div className="mt-2">
-            <div className="flex items-end justify-between h-[120px] gap-1">
-                {dailyStats.map((day) => {
-                    const height = maxCount > 0 ? (day.count / maxCount) * chartHeight : 0;
-                    const minHeight = 4; // Minimum height for 0 values to be visible
-                    const finalHeight = Math.max(height, minHeight);
-                    const isToday = new Date(day.date).toDateString() === new Date().toDateString();
-                    const isPersonalBest = personalBest && personalBest.date === day.date;
-
-                    return (
-                        <div key={day.date} className="flex flex-col items-center flex-1 relative">
-                            <div
-                                className={`w-full rounded-t transition-all duration-300 ${isPersonalBest
-                                    ? 'bg-gradient-to-t from-amber-500 to-yellow-400 border-2 border-amber-600'
-                                    : isToday
-                                        ? 'bg-primary'
-                                        : 'bg-secondary/40 hover:bg-secondary/60'
-                                    }`}
-                                style={{ height: `${finalHeight}px` }}
-                            />
-
-                            {/* Personal Best Crown */}
-                            {isPersonalBest && (
-                                <div className="absolute -top-6 left-1/2 transform -translate-x-1/2">
-                                    <div className="text-amber-500 text-lg drop-shadow-lg animate-bounce">👑</div>
-                                </div>
-                            )}
-
-                            <div className="text-xs text-foreground/60 mt-2 text-center">
-                                {new Date(day.date).toLocaleDateString('en-US', {
-                                    month: 'short',
-                                    day: 'numeric'
-                                })}
-                            </div>
-                            <div className="text-xs font-medium mt-1">
-                                {day.count}
-                            </div>
-                        </div>
-                    );
-                })}
-            </div>
+        <div className="mt-2 h-[160px]">
+            <Bar data={data} options={options} />
         </div>
     );
 }
