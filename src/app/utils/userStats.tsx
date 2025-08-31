@@ -606,46 +606,53 @@ export const useUpdateUserStats = () => {
           return; // Exit transaction early
         }
 
+        // Simple streak calculation using running counter
         let newStreak = currentStats.currentStreak || 0;
         let streakChanged = false;
         let streakChangeReason = '';
+        let newStreakStartDate = currentStats.streakStartDate || todayLocal;
 
+        // Get the last activity date to determine if we should increment
         const lastActivityDate = currentStats.lastListenedAt ?
           getUserLocalDateBoundary(userTimezone, new Date(currentStats.lastListenedAt)) : null;
 
-
-
         if (lastActivityDate !== todayLocal) {
-          // Check if yesterday had activity
+          // Activity on a new day
           const yesterday = new Date();
           yesterday.setDate(yesterday.getDate() - 1);
           const yesterdayStr = getUserLocalDateBoundary(userTimezone, yesterday);
 
           if (lastActivityDate === yesterdayStr) {
             // Consecutive day - increment streak
-            newStreak++;
+            newStreak = (currentStats.currentStreak || 0) + 1;
             streakChanged = true;
             streakChangeReason = 'incremented';
+            // Keep existing streak start date
+            newStreakStartDate = currentStats.streakStartDate || todayLocal;
           } else if (lastActivityDate === null) {
             // First time user - start streak at 1
             newStreak = 1;
             streakChanged = true;
             streakChangeReason = 'first_time';
+            newStreakStartDate = todayLocal;
           } else {
             // Gap found - reset streak to 1
             newStreak = 1;
             streakChanged = true;
             streakChangeReason = 'reset';
+            newStreakStartDate = todayLocal;
           }
         } else {
-          // Same day - check if this is first time or maintain streak
-          if (newStreak === 0 && lastActivityDate === todayLocal) {
+          // Same day activity - check if this is first time today
+          if ((currentStats.currentStreak || 0) === 0) {
             // First time user on their first day - start streak at 1
             newStreak = 1;
             streakChanged = true;
             streakChangeReason = 'first_time_same_day';
+            newStreakStartDate = todayLocal;
           } else {
             // Same day - streak continues unchanged
+            newStreak = currentStats.currentStreak || 0;
           }
         }
 
@@ -657,14 +664,14 @@ export const useUpdateUserStats = () => {
             currentStreak: newStreak,
             lastStreakCalculation: now.toISOString(),
             longestStreak: Math.max(newStreak, currentStats.longestStreak || 0),
-            streakStartDate: newStreak === 1 ? todayLocal : (currentStats.streakStartDate || todayLocal),
+            streakStartDate: newStreakStartDate,
             streakChangeReason
           });
 
           // Update UI state for streak increment animation
-          setPreviousStreak(currentStreak);
+          setPreviousStreak(currentStats.currentStreak || 0);
           setCurrentStreak(newStreak);
-          setShowStreakIncrement(true);
+          setShowStreakIncrement(newStreak > (currentStats.currentStreak || 0));
         } else {
           // Streak unchanged - just update local state
           setCurrentStreak(newStreak);
