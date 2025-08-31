@@ -4,7 +4,7 @@ import { getFirestore, doc, getDoc, collection, getDocs, query, orderBy, limit }
 import { Settings } from 'lucide-react';
 import { getFlagEmoji, getLanguageName } from '../utils/languageUtils';
 import { useUser } from '../contexts/UserContext';
-import { getPhraseRankTitle, getLanguageRankTitle } from '../utils/rankingSystem';
+import { getPhraseRankTitle, getLanguageRankTitle, PRODUCTION_PHRASE_RANKS } from '../utils/rankingSystem';
 import { StatsSettingsModal } from './StatsSettingsModal';
 import {
     Chart as ChartJS,
@@ -566,10 +566,50 @@ export function UserStatsModal({ isOpen, onClose, user }: UserStatsModalProps) {
 
 
                                 {getPhraseRankTitle(mainStats.phrasesListened).nextMilestone > 0 && (
-                                    <div className="text-sm text-foreground/60">
-                                        Next milestone: {getPhraseRankTitle(mainStats.phrasesListened).nextMilestone.toLocaleString()} phrases
+                                    <div className="text-sm text-foreground/60 mb-4">
+                                        🎯 Next milestone: {getPhraseRankTitle(mainStats.phrasesListened).nextMilestone.toLocaleString()} phrases
                                     </div>
                                 )}
+
+                                {/* Progress bar from last milestone to next */}
+                                {(() => {
+                                    const rankInfo = getPhraseRankTitle(mainStats.phrasesListened);
+                                    if (rankInfo.nextMilestone > 0) {
+                                        const currentPhrases = mainStats.phrasesListened;
+                                        const nextMilestone = rankInfo.nextMilestone;
+                                        
+                                        // Find the last milestone we passed using PRODUCTION_PHRASE_RANKS
+                                        let lastMilestone = 0;
+                                        for (const rank of PRODUCTION_PHRASE_RANKS) {
+                                            if (rank.threshold <= currentPhrases && rank.threshold > lastMilestone) {
+                                                lastMilestone = rank.threshold;
+                                            }
+                                        }
+                                        
+                                        const progressRange = nextMilestone - lastMilestone;
+                                        const currentProgress = currentPhrases - lastMilestone;
+                                        const progressPercentage = (currentProgress / progressRange) * 100;
+                                        
+                                        return (
+                                            <div className="mt-3">
+                                                <div className="flex justify-between text-xs text-foreground/60 mb-1">
+                                                    <span>{lastMilestone.toLocaleString()}</span>
+                                                    <span>{nextMilestone.toLocaleString()}</span>
+                                                </div>
+                                                <div className="w-full bg-secondary/50 rounded-full h-2">
+                                                    <div 
+                                                        className="bg-primary h-2 rounded-full transition-all duration-500"
+                                                        style={{ width: `${Math.min(100, Math.max(0, progressPercentage))}%` }}
+                                                    ></div>
+                                                </div>
+                                                <div className="text-xs text-center text-foreground/50 mt-1">
+                                                    {currentProgress.toLocaleString()} of {progressRange.toLocaleString()} to next milestone
+                                                </div>
+                                            </div>
+                                        );
+                                    }
+                                    return null;
+                                })()}
                             </div>
                         </div>
 
