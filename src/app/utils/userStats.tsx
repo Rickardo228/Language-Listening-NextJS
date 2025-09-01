@@ -430,15 +430,118 @@ export const useUpdateUserStats = () => {
     }
     const { inputLang, targetLang } = currentPhrase;
 
+    // Database-driven streak calculation BEFORE updating stats - no session storage dependency
     try {
-      // Update the main stats document
       const statsRef = doc(firestore, "users", user.uid, "stats", "listening");
-      await updateDoc(statsRef, {
-        phrasesListened: increment(1),
-        lastListenedAt: now.toISOString(),
-      });
 
-      // Update the daily stats - store with full timestamp for timezone accuracy
+      // Use a transaction to ensure atomic streak updates
+      await runTransaction(firestore, async (transaction) => {
+        const statsDoc = await transaction.get(statsRef);
+        const currentStats = statsDoc.exists() ? statsDoc.data() : {};
+
+        // Check if streak was already calculated today by checking lastStreakCalculation
+        const lastCalculation = currentStats.lastStreakCalculation;
+        const lastCalculationDate = lastCalculation ?
+          getUserLocalDateBoundary(userTimezone, new Date(lastCalculation)) : null;
+
+        // Get the PREVIOUS activity date before we update it
+        const lastActivityDate = currentStats.lastListenedAt ?
+          getUserLocalDateBoundary(userTimezone, new Date(currentStats.lastListenedAt)) : null;
+
+        // Calculate streak based on database state
+        let newStreak = currentStats.currentStreak || 0;
+        let streakChanged = false;
+        let streakChangeReason = '';
+        let newStreakStartDate = currentStats.streakStartDate || todayLocal;
+
+        // Only recalculate streak if we haven't calculated for today yet
+        if (lastCalculationDate !== todayLocal) {
+          if (lastActivityDate !== todayLocal) {
+            // Activity on a new day
+            const yesterday = new Date();
+            yesterday.setDate(yesterday.getDate() - 1);
+            const yesterdayStr = getUserLocalDateBoundary(userTimezone, yesterday);
+
+            if (lastActivityDate === yesterdayStr) {
+              // Consecutive day - increment streak
+              newStreak = (currentStats.currentStreak || 0) + 1;
+              streakChanged = true;
+              streakChangeReason = 'incremented';
+              // Keep existing streak start date
+              newStreakStartDate = currentStats.streakStartDate || todayLocal;
+            } else if (lastActivityDate === null) {
+              // First time user - start streak at 1
+              newStreak = 1;
+              streakChanged = true;
+              streakChangeReason = 'first_time';
+              newStreakStartDate = todayLocal;
+            } else {
+              // Gap found - reset streak to 1
+              newStreak = 1;
+              streakChanged = true;
+              streakChangeReason = 'reset';
+              newStreakStartDate = todayLocal;
+            }
+          } else {
+            // Same day activity - check if this is first time today
+            if ((currentStats.currentStreak || 0) === 0) {
+              // First time user on their first day - start streak at 1
+              newStreak = 1;
+              streakChanged = true;
+              streakChangeReason = 'first_time_same_day';
+              newStreakStartDate = todayLocal;
+            } else {
+              // Same day - streak continues unchanged
+              newStreak = currentStats.currentStreak || 0;
+            }
+          }
+        }
+
+        // Update both stats and streak data in one transaction
+        transaction.update(statsRef, {
+          phrasesListened: increment(1),
+          lastListenedAt: now.toISOString(),
+          currentStreak: newStreak,
+          lastStreakCalculation: now.toISOString(),
+          streakStartDate: newStreakStartDate,
+          streakChangeReason
+        });
+
+        // Update UI state for streak display and animation
+        setPreviousStreak(currentStats.currentStreak || 0);
+        setCurrentStreak(newStreak);
+        setShowStreakIncrement(streakChanged && newStreak > (currentStats.currentStreak || 0));
+      });
+    } catch (err: unknown) {
+      console.error("❌ Error updating user stats:", err);
+      // If the main stats document doesn't exist, create it
+      if (
+        err &&
+        typeof err === "object" &&
+        "code" in err &&
+        err.code === "not-found"
+      ) {
+        const statsRef = doc(
+          firestore,
+          "users",
+          user.uid,
+          "stats",
+          "listening"
+        );
+        await setDoc(statsRef, {
+          phrasesListened: 1,
+          lastListenedAt: now.toISOString(),
+          currentStreak: 1,
+          streakStartDate: todayLocal,
+          lastStreakCalculation: now.toISOString(),
+        });
+        setCurrentStreak(1);
+        setShowStreakIncrement(true);
+      }
+    }
+
+    // Update the daily stats - store with full timestamp for timezone accuracy
+    try {
       const dailyStatsRef = doc(
         firestore,
         "users",
@@ -564,95 +667,6 @@ export const useUpdateUserStats = () => {
       } else {
         console.error("❌ Error updating user stats:", err);
       }
-    }
-
-    // Database-driven streak calculation - no session storage dependency
-    try {
-      const statsRef = doc(firestore, "users", user.uid, "stats", "listening");
-
-      // Use a transaction to ensure atomic streak updates
-      await runTransaction(firestore, async (transaction) => {
-        const statsDoc = await transaction.get(statsRef);
-        const currentStats = statsDoc.exists() ? statsDoc.data() : {};
-
-        // Check if streak was already calculated today by checking lastStreakCalculation
-        const lastCalculation = currentStats.lastStreakCalculation;
-        const lastCalculationDate = lastCalculation ?
-          getUserLocalDateBoundary(userTimezone, new Date(lastCalculation)) : null;
-
-        // Only recalculate if we haven't calculated for today yet
-        if (lastCalculationDate === todayLocal) {
-          // Already calculated today - just update UI state
-          setCurrentStreak(currentStats.currentStreak || 0);
-          return;
-        }
-
-        // Calculate streak based on database state
-        let newStreak = currentStats.currentStreak || 0;
-        let streakChanged = false;
-        let streakChangeReason = '';
-        let newStreakStartDate = currentStats.streakStartDate || todayLocal;
-
-        // Get the last activity date to determine if we should increment
-        const lastActivityDate = currentStats.lastListenedAt ?
-          getUserLocalDateBoundary(userTimezone, new Date(currentStats.lastListenedAt)) : null;
-
-        if (lastActivityDate !== todayLocal) {
-          // Activity on a new day
-          const yesterday = new Date();
-          yesterday.setDate(yesterday.getDate() - 1);
-          const yesterdayStr = getUserLocalDateBoundary(userTimezone, yesterday);
-
-          if (lastActivityDate === yesterdayStr) {
-            // Consecutive day - increment streak
-            newStreak = (currentStats.currentStreak || 0) + 1;
-            streakChanged = true;
-            streakChangeReason = 'incremented';
-            // Keep existing streak start date
-            newStreakStartDate = currentStats.streakStartDate || todayLocal;
-          } else if (lastActivityDate === null) {
-            // First time user - start streak at 1
-            newStreak = 1;
-            streakChanged = true;
-            streakChangeReason = 'first_time';
-            newStreakStartDate = todayLocal;
-          } else {
-            // Gap found - reset streak to 1
-            newStreak = 1;
-            streakChanged = true;
-            streakChangeReason = 'reset';
-            newStreakStartDate = todayLocal;
-          }
-        } else {
-          // Same day activity - check if this is first time today
-          if ((currentStats.currentStreak || 0) === 0) {
-            // First time user on their first day - start streak at 1
-            newStreak = 1;
-            streakChanged = true;
-            streakChangeReason = 'first_time_same_day';
-            newStreakStartDate = todayLocal;
-          } else {
-            // Same day - streak continues unchanged
-            newStreak = currentStats.currentStreak || 0;
-          }
-        }
-
-        // Update streak data and lastStreakCalculation
-        transaction.update(statsRef, {
-          currentStreak: newStreak,
-          lastStreakCalculation: now.toISOString(),
-          streakStartDate: newStreakStartDate,
-          streakChangeReason
-        });
-
-        // Update UI state for streak display and animation
-        setPreviousStreak(currentStats.currentStreak || 0);
-        setCurrentStreak(newStreak);
-        setShowStreakIncrement(streakChanged && newStreak > (currentStats.currentStreak || 0));
-      });
-
-    } catch (error) {
-      console.error("❌ Error calculating streak:", error);
     }
 
     // Stats update completed successfully
