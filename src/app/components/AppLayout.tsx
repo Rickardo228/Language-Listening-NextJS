@@ -53,7 +53,6 @@ export function AppLayout({ children }: AppLayoutProps) {
       setNewCollectionTargetLang(userProfile.preferredTargetLang);
     }
   }, [userProfile?.preferredInputLang, userProfile?.preferredTargetLang]);
-  const [avatarDialogOpen, setAvatarDialogOpen] = useState(false);
   const [loading, setLoading] = useState<boolean>(false);
 
   // Don't show sidebar for certain routes
@@ -355,8 +354,6 @@ export function AppLayout({ children }: AppLayoutProps) {
             {user && (
               <UserAvatar
                 user={user}
-                avatarDialogOpen={avatarDialogOpen}
-                setAvatarDialogOpen={setAvatarDialogOpen}
               />
             )}
           </div>
