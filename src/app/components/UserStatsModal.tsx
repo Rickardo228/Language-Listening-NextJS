@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { User } from 'firebase/auth';
 import { getFirestore, doc, getDoc, collection, getDocs, query, orderBy, limit } from 'firebase/firestore';
 import { Settings } from 'lucide-react';
+import { Dialog } from '@headlessui/react';
 import { getFlagEmoji, getLanguageName } from '../utils/languageUtils';
 import { useUser } from '../contexts/UserContext';
 import { getPhraseRankTitle, getLanguageRankTitle, PRODUCTION_PHRASE_RANKS } from '../utils/rankingSystem';
@@ -502,8 +503,10 @@ export function UserStatsModal({ isOpen, onClose, user }: UserStatsModalProps) {
     const isTodayPersonalBest = personalBest && personalBest.date === todayLocal;
 
     return (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <div className="bg-background p-6 rounded-lg shadow-lg max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+        <Dialog open={isOpen} onClose={onClose} className="relative z-50">
+            <div className="fixed inset-0 bg-black/50" />
+            <div className="fixed inset-0 flex items-center justify-center">
+                <Dialog.Panel className="bg-background p-6 rounded-lg shadow-lg max-w-2xl w-full max-h-[80vh] overflow-y-auto">
                 <div className="flex justify-between items-center mb-6">
                     <div className="flex items-center gap-3">
                         <h2 className="text-xl font-bold">Your Stats</h2>
@@ -828,6 +831,7 @@ export function UserStatsModal({ isOpen, onClose, user }: UserStatsModalProps) {
                 ) : (
                     <div className="text-center py-4">No stats available yet</div>
                 )}
+                </Dialog.Panel>
             </div>
 
             {/* Settings Modal */}
@@ -836,6 +840,6 @@ export function UserStatsModal({ isOpen, onClose, user }: UserStatsModalProps) {
                 onClose={() => setSettingsModalOpen(false)}
                 user={user}
             />
-        </div>
+        </Dialog>
     );
 }
