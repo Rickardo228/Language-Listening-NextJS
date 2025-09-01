@@ -445,8 +445,11 @@ export const useUpdateUserStats = () => {
           getUserLocalDateBoundary(userTimezone, new Date(lastCalculation)) : null;
 
         // Get the PREVIOUS activity date before we update it
-        const lastActivityDate = currentStats.lastListenedAt ?
-          getUserLocalDateBoundary(userTimezone, new Date(currentStats.lastListenedAt)) : null;
+        // CRITICAL: Use lastStreakCalculation instead of lastListenedAt for streak logic
+        // because lastListenedAt gets updated multiple times per day, but lastStreakCalculation
+        // only gets updated once per day when we actually calculate the streak
+        const lastActivityDate = currentStats.lastStreakCalculation ?
+          getUserLocalDateBoundary(userTimezone, new Date(currentStats.lastStreakCalculation)) : null;
 
         // Calculate streak based on database state
         let newStreak = currentStats.currentStreak || 0;
@@ -467,20 +470,27 @@ export const useUpdateUserStats = () => {
               newStreak = (currentStats.currentStreak || 0) + 1;
               streakChanged = true;
               streakChangeReason = 'incremented';
-              // Keep existing streak start date
-              newStreakStartDate = currentStats.streakStartDate || todayLocal;
+              // Keep existing streak start date (don't change it for consecutive days)
+              // If somehow streakStartDate is missing, estimate yesterday's timestamp
+              if (!currentStats.streakStartDate) {
+                const yesterdayTimestamp = new Date(now);
+                yesterdayTimestamp.setDate(yesterdayTimestamp.getDate() - 1);
+                newStreakStartDate = yesterdayTimestamp.toISOString();
+              } else {
+                newStreakStartDate = currentStats.streakStartDate;
+              }
             } else if (lastActivityDate === null) {
               // First time user - start streak at 1
               newStreak = 1;
               streakChanged = true;
               streakChangeReason = 'first_time';
-              newStreakStartDate = todayLocal;
+              newStreakStartDate = now.toISOString();
             } else {
               // Gap found - reset streak to 1
               newStreak = 1;
               streakChanged = true;
               streakChangeReason = 'reset';
-              newStreakStartDate = todayLocal;
+              newStreakStartDate = now.toISOString();
             }
           } else {
             // Same day activity - check if this is first time today
@@ -489,7 +499,7 @@ export const useUpdateUserStats = () => {
               newStreak = 1;
               streakChanged = true;
               streakChangeReason = 'first_time_same_day';
-              newStreakStartDate = todayLocal;
+              newStreakStartDate = now.toISOString();
             } else {
               // Same day - streak continues unchanged
               newStreak = currentStats.currentStreak || 0;
@@ -532,8 +542,9 @@ export const useUpdateUserStats = () => {
           phrasesListened: 1,
           lastListenedAt: now.toISOString(),
           currentStreak: 1,
-          streakStartDate: todayLocal,
+          streakStartDate: now.toISOString(),
           lastStreakCalculation: now.toISOString(),
+          streakChangeReason: 'initial_document_creation'
         });
         setCurrentStreak(1);
         setShowStreakIncrement(true);
