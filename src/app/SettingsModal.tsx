@@ -2,8 +2,7 @@ import { X } from 'lucide-react';
 import { PresentationConfig } from './types';
 import ConfigFields from './ConfigFields';
 import { presentationConfigDefinition } from './configDefinitions';
-import { useEffect, useState } from 'react';
-import { createPortal } from 'react-dom';
+import { Dialog } from '@headlessui/react';
 
 interface SettingsModalProps {
     isOpen: boolean;
@@ -30,17 +29,11 @@ export function SettingsModal({
     inputLang,
     targetLang
 }: SettingsModalProps) {
-    const [mounted, setMounted] = useState(false);
-    useEffect(() => {
-        setMounted(true);
-        return () => setMounted(false);
-    }, []);
-
-    if (!isOpen || !mounted) return null;
-
-    return createPortal(
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 font-sans">
-            <div className="bg-background text-foreground p-4 rounded-lg shadow-lg w-96 max-h-[90vh] flex flex-col">
+    return (
+        <Dialog open={isOpen} onClose={onClose} className="relative z-50 font-sans">
+            <div className="fixed inset-0 bg-black/50" />
+            <div className="fixed inset-0 flex items-center justify-center">
+                <Dialog.Panel className="bg-background text-foreground p-4 rounded-lg shadow-lg w-96 max-h-[90vh] flex flex-col">
                 <div className="flex justify-between items-center mb-4">
                     <h2 className="text-xl font-bold">Settings</h2>
                     <button
@@ -78,8 +71,8 @@ export function SettingsModal({
                     </button>
                 </div> */}
                 {/* <SavedConfigs onDeleteConfig={} onLoadConfig={}  /> */}
+                </Dialog.Panel>
             </div>
-        </div>,
-        document.body
+        </Dialog>
     );
 } 

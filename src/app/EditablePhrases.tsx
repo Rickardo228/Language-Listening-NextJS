@@ -1,6 +1,6 @@
 import { Phrase } from './types';
-import { useState, useRef, useEffect } from 'react';
-import { SpeakerWaveIcon, MicrophoneIcon, EllipsisVerticalIcon, TrashIcon } from '@heroicons/react/24/solid';
+import { useState, useEffect, useRef } from 'react';
+import { SpeakerWaveIcon, MicrophoneIcon, EllipsisVerticalIcon } from '@heroicons/react/24/solid';
 import { Menu } from './Menu';
 import { generateAudio } from './utils/audioUtils';
 // import { ClipboardIcon, ClipboardDocumentCheckIcon } from '@heroicons/react/24/outline';
@@ -40,8 +40,6 @@ function PhraseComponent({ phrase, phrases, isSelected, currentPhase, onPhraseCl
     const [inputLoading, setInputLoading] = useState(false);
     const [outputLoading, setOutputLoading] = useState(false);
     const [romanizedLoading, setRomanizedLoading] = useState(false);
-    const [isMenuOpen, setIsMenuOpen] = useState(false);
-    const menuTriggerRef = useRef<HTMLButtonElement>(null);
     const [prevInput, setPrevInput] = useState(phrase.input);
     const [prevTranslated, setPrevTranslated] = useState(phrase.translated);
     const [prevRomanized, setPrevRomanized] = useState(phrase.romanized);
@@ -152,17 +150,35 @@ function PhraseComponent({ phrase, phrases, isSelected, currentPhase, onPhraseCl
             )
         )
     }
-    const menuButton = (<button
-        ref={menuTriggerRef}
-        onClick={(e) => {
-            e.stopPropagation();
-            setIsMenuOpen(!isMenuOpen);
-        }}
-        className="px-2 py-1 text-sm hover:bg-secondary rounded text-gray-700 dark:text-white transition-colors w-8"
-        title="More options"
-    >
-        <EllipsisVerticalIcon className="w-4 h-4" />
-    </button>)
+    const menuButton = (
+        <Menu
+            trigger={
+                <button
+                    className="px-2 py-1 text-sm hover:bg-secondary rounded text-gray-700 dark:text-white transition-colors w-8"
+                    title="More options"
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    <EllipsisVerticalIcon className="w-4 h-4" />
+                </button>
+            }
+            items={[
+                {
+                    label: 'Select',
+                    onClick: (e) => {
+                        e.stopPropagation();
+                        setIsMultiSelectMode(true);
+                        onCheckChange(true);
+                    },
+                    className: 'text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/20'
+                },
+                {
+                    label: 'Delete phrase',
+                    onClick: onDelete,
+                    className: 'text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20'
+                }
+            ]}
+        />
+    )
 
     const renderInputs = () => {
         const inputField = (
@@ -277,28 +293,6 @@ function PhraseComponent({ phrase, phrases, isSelected, currentPhase, onPhraseCl
             ref={ref}
         >
             {renderInputs()}
-            <Menu
-                isOpen={isMenuOpen}
-                onClose={() => setIsMenuOpen(false)}
-                triggerRef={menuTriggerRef}
-                items={[
-                    {
-                        label: 'Select',
-                        onClick: (e) => {
-                            e.stopPropagation();
-                            setIsMultiSelectMode(true);
-                            onCheckChange(true);
-                        },
-                        className: 'text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/20'
-                    },
-                    {
-                        label: 'Delete phrase',
-                        onClick: onDelete,
-                        className: 'text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20'
-                    },
-
-                ]}
-            />
             {phrase.romanized && <div className="mt-2 mb-2 flex items-center gap-2">
                 <label className="block font-medium mb-1 text-gray-700 dark:text-gray-200">Romanized:</label>
                 <input
@@ -435,8 +429,7 @@ export function EditablePhrases({ phrases, setPhrases, currentPhraseIndex, curre
                                 onClick={handleDeleteSelected}
                                 className="px-3 py-1 text-sm bg-red-500 hover:bg-red-600 text-white rounded flex items-center gap-1"
                             >
-                                <TrashIcon className="w-4 h-4" />
-                                Delete Selected
+                                                                Delete Selected
                             </button>
                             <button
                                 onClick={() => {

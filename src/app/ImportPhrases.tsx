@@ -2,7 +2,7 @@ import { ImportPhrasesDialog, ImportPhrasesDialogProps } from './ImportPhrasesDi
 import { useState } from 'react';
 import { Plus } from 'lucide-react';
 
-export type ImportPhrasesProps = Omit<ImportPhrasesDialogProps, 'onClose'> & {
+export type ImportPhrasesProps = Omit<ImportPhrasesDialogProps, 'onClose' | 'isOpen'> & {
     className?: string;
 };
 
@@ -37,7 +37,8 @@ export function ImportPhrases({
                     </span>
                 </div>
             </button>
-            {isOpen && <ImportPhrasesDialog
+            <ImportPhrasesDialog
+                isOpen={isOpen}
                 onClose={() => setIsOpen(false)}
                 inputLang={inputLang}
                 setInputLang={setInputLang}
@@ -48,7 +49,7 @@ export function ImportPhrases({
                 loading={loading}
                 onProcess={onProcess}
                 onAddToCollection={onAddToCollection}
-            />}
+            />
         </>
     );
 } 

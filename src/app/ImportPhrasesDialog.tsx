@@ -1,14 +1,15 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { languageOptions, CollectionType } from './types'
 import { X, Plus } from 'lucide-react'
 import { API_BASE_URL } from './consts'
-import { createPortal } from 'react-dom'
+import { Dialog } from '@headlessui/react'
 import { LanguageFlags } from './components/LanguageFlags'
 import { trackGeneratePhrases } from '../lib/mixpanelClient'
 
 export interface ImportPhrasesDialogProps {
+    isOpen: boolean
     onClose: () => void
     inputLang: string
     setInputLang: (lang: string) => void
@@ -22,6 +23,7 @@ export interface ImportPhrasesDialogProps {
 }
 
 export function ImportPhrasesDialog({
+    isOpen,
     onClose,
     inputLang,
     setInputLang,
@@ -35,30 +37,9 @@ export function ImportPhrasesDialog({
 }: ImportPhrasesDialogProps) {
     const [prompt, setPrompt] = useState('')
     const [generatingPhrases, setGeneratingPhrases] = useState(false)
-    const [portalContainer, setPortalContainer] = useState<HTMLElement | null>(null)
     const [collectionType, setCollectionType] = useState<CollectionType>('phrases')
     const [isSwapped, setIsSwapped] = useState(false)
     const inputLangLabel = (languageOptions.find(lang => lang.code === (isSwapped ? targetLang : inputLang))?.label || inputLang).split(' (')[0];
-
-    useEffect(() => {
-        // Create portal container if it doesn't exist
-        let container = document.getElementById('portal-container')
-        if (!container) {
-            container = document.createElement('div')
-            container.id = 'portal-container'
-            // Add the same font classes as the html element
-            container.className = 'font-sans antialiased'
-            document.body.appendChild(container)
-        }
-        setPortalContainer(container)
-
-        // Cleanup
-        return () => {
-            if (container && !container.hasChildNodes()) {
-                container.remove()
-            }
-        }
-    }, [])
 
     const handleGeneratePhrases = async () => {
         if (!prompt.trim()) return;
@@ -103,11 +84,11 @@ export function ImportPhrasesDialog({
         }
     };
 
-    if (!portalContainer) return null
-
-    return createPortal(
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <div className="bg-background text-foreground p-4 rounded-lg shadow-lg w-[500px] max-w-[90vw] overflow-auto max-h-[90vh] border">
+    return (
+        <Dialog open={isOpen} onClose={onClose} className="relative z-50">
+            <div className="fixed inset-0 bg-black/50" />
+            <div className="fixed inset-0 flex items-center justify-center">
+                <Dialog.Panel className="bg-background text-foreground p-4 rounded-lg shadow-lg w-[500px] max-w-[90vw] overflow-auto max-h-[90vh] border">
                 <div className="flex justify-between items-center mb-4">
                     <h2 className="text-xl font-bold">
                         {onAddToCollection ? 'Add Phrases' : 'Create New List'}
@@ -305,8 +286,8 @@ export function ImportPhrasesDialog({
                         </div>
                     </div>
                 </div>
+                </Dialog.Panel>
             </div>
-        </div>,
-        portalContainer
+        </Dialog>
     )
 } 

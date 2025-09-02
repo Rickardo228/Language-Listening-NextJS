@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { createPortal } from 'react-dom';
 import { API_BASE_URL } from './consts';
 import { Phrase } from './types';
+import { Dialog } from '@headlessui/react';
 
 interface Voice {
     name: string;
@@ -10,6 +10,7 @@ interface Voice {
 }
 
 interface VoiceSelectionModalProps {
+    isOpen: boolean;
     onClose: () => void;
     inputLang: string;
     targetLang: string;
@@ -17,7 +18,7 @@ interface VoiceSelectionModalProps {
     phrases?: Phrase[];
 }
 
-export function VoiceSelectionModal({ onClose, inputLang, targetLang, onSave, phrases }: VoiceSelectionModalProps) {
+export function VoiceSelectionModal({ isOpen, onClose, inputLang, targetLang, onSave, phrases }: VoiceSelectionModalProps) {
     const [inputVoices, setInputVoices] = useState<Voice[]>([]);
     const [targetVoices, setTargetVoices] = useState<Voice[]>([]);
     const [selectedInputVoice, setSelectedInputVoice] = useState<string>('');
@@ -88,9 +89,11 @@ export function VoiceSelectionModal({ onClose, inputLang, targetLang, onSave, ph
     };
 
 
-    return createPortal(
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 font-sans">
-            <div className="bg-background rounded-lg p-6 w-96">
+    return (
+        <Dialog open={isOpen} onClose={onClose} className="relative z-50 font-sans">
+            <div className="fixed inset-0 bg-black/50" />
+            <div className="fixed inset-0 flex items-center justify-center">
+                <Dialog.Panel className="bg-background rounded-lg p-6 w-96">
                 <h2 className="text-xl font-semibold mb-4">Select Voices</h2>
 
                 {isLoading ? (
@@ -165,8 +168,8 @@ export function VoiceSelectionModal({ onClose, inputLang, targetLang, onSave, ph
                         </div>
                     </>
                 )}
+                </Dialog.Panel>
             </div>
-        </div>,
-        document.body
+        </Dialog>
     );
 } 
