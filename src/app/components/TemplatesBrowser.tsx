@@ -29,6 +29,7 @@ interface Template {
     complexity: string;
     phraseCount: number;
     name?: string;
+    tags?: string[];
 }
 
 interface TemplatesBrowserProps {
@@ -36,6 +37,9 @@ interface TemplatesBrowserProps {
     initialTargetLang?: string;
     showHeader?: boolean;
     className?: string;
+    tags?: string[];
+    title?: string;
+    noTemplatesComponent?: React.ReactNode;
 }
 
 export function TemplatesBrowser({
@@ -43,6 +47,9 @@ export function TemplatesBrowser({
     initialTargetLang = 'it-IT',
     showHeader = true,
     className,
+    tags = [],
+    title,
+    noTemplatesComponent,
 }: TemplatesBrowserProps) {
     const router = useRouter();
     const { userProfile } = useUser();
@@ -137,6 +144,15 @@ export function TemplatesBrowser({
                 .filter((groupTemplates) => {
                     const hasInput = groupTemplates.some((t) => t.lang === inputLangToUse);
                     const hasTarget = groupTemplates.some((t) => t.lang === targetLangToUse);
+                    
+                    // If tags are provided, check if any template in the group has matching tags
+                    if (tags.length > 0) {
+                        const hasMatchingTags = groupTemplates.some((t) => 
+                            t.tags && tags.some(tag => t.tags!.includes(tag))
+                        );
+                        return hasInput && hasTarget && hasMatchingTags;
+                    }
+                    
                     return hasInput && hasTarget;
                 })
                 .map((groupTemplates) => groupTemplates.find((t) => t.lang === inputLangToUse) || groupTemplates[0]);
@@ -223,12 +239,14 @@ export function TemplatesBrowser({
                 )}
 
                 {templates.length === 0 && !loading ? (
-                    <div className="text-center py-12">
-                        <h2 className="text-xl font-semibold mb-2">No templates found</h2>
-                        <p className="text-muted-foreground">
-                            No templates are available for {getLanguageLabel(inputLang)} to {getLanguageLabel(targetLang)} translation.
-                        </p>
-                    </div>
+                    noTemplatesComponent !== undefined ? noTemplatesComponent : (
+                        <div className="text-center py-12">
+                            <h2 className="text-xl font-semibold mb-2">No templates found</h2>
+                            <p className="text-muted-foreground">
+                                No templates are available for {getLanguageLabel(inputLang)} to {getLanguageLabel(targetLang)} translation.
+                            </p>
+                        </div>
+                    )
                 ) : (
                     (() => {
                         const templateByGroup = new Map<string, Template>();
@@ -241,7 +259,7 @@ export function TemplatesBrowser({
                         }));
                         return (
                             <CollectionList
-                                title={'Featured'}
+                                title={title || 'Featured'}
                                 showAllButton={!isShowingAll}
                                 itemVariant="card"
                                 layout="horizontal"
