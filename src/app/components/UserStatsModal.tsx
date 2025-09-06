@@ -157,6 +157,7 @@ interface LanguageStats {
 // Chart.js-based bar chart component
 function DailyStatsChart({ dailyStats, personalBest }: { dailyStats: DailyStats[], personalBest: { count: number; date: string; achievedAt: string } | null }) {
     if (dailyStats.length === 0) return null;
+    const getDayTotal = (day: DailyStats) => day.totalCount && day.totalCount > day.count ? day.totalCount : (day.count + (day.countViewed || 0));
 
     // Prepare data for Chart.js
     const labels = dailyStats.map(day =>
@@ -168,8 +169,7 @@ function DailyStatsChart({ dailyStats, personalBest }: { dailyStats: DailyStats[
 
     const backgroundColors = dailyStats.map(day => {
         const isToday = new Date(day.date).toDateString() === new Date().toDateString();
-        const dayTotal = day.totalCount || (day.count + (day.countViewed || 0));
-        const isPersonalBest = personalBest && personalBest.date === day.date && dayTotal === personalBest.count;
+        const isPersonalBest = personalBest && personalBest.date === day.date && getDayTotal(day) === personalBest.count;
 
         if (isPersonalBest) return 'rgb(245, 158, 11)'; // amber-500 for personal best
         if (isToday) return 'rgb(59, 130, 246)'; // blue-500 for today (primary-like)
@@ -180,7 +180,7 @@ function DailyStatsChart({ dailyStats, personalBest }: { dailyStats: DailyStats[
         labels,
         datasets: [
             {
-                data: dailyStats.map(day => day.totalCount || (day.count + (day.countViewed || 0))),
+                data: dailyStats.map(day => getDayTotal(day)),
                 backgroundColor: backgroundColors,
                 borderColor: backgroundColors,
                 borderWidth: 1,
@@ -221,7 +221,7 @@ function DailyStatsChart({ dailyStats, personalBest }: { dailyStats: DailyStats[
                     title: (context) => {
                         const index = context[0].dataIndex;
                         const day = dailyStats[index];
-                        const totalCount = day.totalCount || (day.count + (day.countViewed || 0));
+                        const totalCount = getDayTotal(day);
                         const isPersonalBest = personalBest && personalBest.date === day.date && totalCount === personalBest.count;
 
                         let title = `${totalCount} phrase${totalCount !== 1 ? 's' : ''}`;
@@ -445,7 +445,7 @@ export function UserStatsModal({ isOpen, onClose, user }: UserStatsModalProps) {
 
         return matches;
     });
-    const todayCount = todayStats ? (todayStats.totalCount || (todayStats.count + (todayStats.countViewed || 0))) : 0;
+    const todayCount = todayStats ? (todayStats.count + (todayStats.countViewed || 0)) : 0;
 
     // Get yesterday's stats for comparison using user's timezone
     const yesterday = new Date();
