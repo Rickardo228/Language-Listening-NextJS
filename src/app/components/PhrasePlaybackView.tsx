@@ -52,7 +52,7 @@ export function PhrasePlaybackView({
     const [fullscreen, setFullscreen] = useState(false);
     const [showTitle, setShowTitle] = useState(false);
     const [configName, setConfigName] = useState('Default');
-    
+
     // Viewed phrases snackbar
     const [showViewedSnackbar, setShowViewedSnackbar] = useState(false);
     const [viewedCount, setViewedCount] = useState(0);
@@ -63,7 +63,7 @@ export function PhrasePlaybackView({
         dailyViewedRef.current += 1;
         setViewedCount(dailyViewedRef.current);
         setShowViewedSnackbar(true);
-        
+
         // Auto-hide after 2 seconds
         setTimeout(() => {
             setShowViewedSnackbar(false);
@@ -374,10 +374,14 @@ export function PhrasePlaybackView({
             // Update user stats for phrase viewed (only once per phrase pair - when target language is reached)
             if (targetIndex >= 0 && phrases[targetIndex] && targetPhase === 'output') {
                 updateUserStats(phrases, targetIndex, 'viewed');
-                showViewedUpdate();
 
                 // Track previous navigation (existing)
                 trackPlaybackEvent('previous', `${collectionId || 'unknown'}-${targetIndex}`, targetPhase, targetIndex, speed);
+            }
+
+            // Show viewed snackbar when going from output to input phase
+            if (currentPhase === 'output' && targetPhase === 'input') {
+                showViewedUpdate();
             }
         }
     };
@@ -456,10 +460,14 @@ export function PhrasePlaybackView({
             // Update user stats for phrase viewed (only once per phrase pair - when target language is reached)
             if (targetIndex >= 0 && phrases[targetIndex] && targetPhase === 'output') {
                 updateUserStats(phrases, targetIndex, 'viewed');
-                showViewedUpdate();
 
                 // Track next navigation (existing)
                 trackPlaybackEvent('next', `${collectionId || 'unknown'}-${targetIndex}`, targetPhase, targetIndex, speed);
+            }
+
+            // Show viewed snackbar when going from output to input phase
+            if (currentPhase === 'output' && targetPhase === 'input') {
+                showViewedUpdate();
             }
         }
     };
@@ -654,7 +662,7 @@ export function PhrasePlaybackView({
                             <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                         </svg>
                         <span className="font-medium">
-                            👀 {viewedCount} phrase{viewedCount !== 1 ? 's' : ''} reviewed today
+                            👀 {viewedCount} phrase{viewedCount !== 1 ? 's' : ''} viewed
                         </span>
                     </div>
                 </div>
