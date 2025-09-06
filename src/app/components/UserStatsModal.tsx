@@ -7,6 +7,7 @@ import { getFlagEmoji, getLanguageName } from '../utils/languageUtils';
 import { useUser } from '../contexts/UserContext';
 import { getPhraseRankTitle, getLanguageRankTitle, PRODUCTION_PHRASE_RANKS } from '../utils/rankingSystem';
 import { StatsSettingsModal } from './StatsSettingsModal';
+import { track } from '../../lib/mixpanelClient';
 import {
     Chart as ChartJS,
     CategoryScale,
@@ -518,7 +519,10 @@ export function UserStatsModal({ isOpen, onClose, user }: UserStatsModalProps) {
                     </div>
                     <div className="flex items-center gap-2">
                         <button
-                            onClick={() => setSettingsModalOpen(true)}
+                            onClick={() => {
+                                track('Stats Settings Opened');
+                                setSettingsModalOpen(true);
+                            }}
                             className="text-foreground/60 hover:text-foreground p-1 rounded"
                             title="Settings"
                         >

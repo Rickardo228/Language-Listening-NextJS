@@ -4,6 +4,7 @@ import { PresentationConfig } from './types';
 import { useState } from 'react';
 import { getFlagEmoji } from './utils/languageUtils';
 import { playbackSpeedOptions } from './configDefinitions';
+import { track } from '../lib/mixpanelClient';
 
 interface PresentationControlsProps {
     recordScreen: boolean;
@@ -171,7 +172,10 @@ export function PresentationControls({
                     </button>
                 }
                 <button
-                    onClick={() => setSettingsOpen(true)}
+                    onClick={() => {
+                        track('Presentation Settings Opened');
+                        setSettingsOpen(true);
+                    }}
                     className="p-2 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 dark:hover:bg-gray-600"
                     title="Settings"
                 >

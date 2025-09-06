@@ -6,6 +6,7 @@ import { Menu } from '@headlessui/react';
 import { UserStatsModal } from './UserStatsModal';
 import { LanguagePreferencesModal } from './LanguagePreferencesModal';
 import { ContentPreferencesModal } from './ContentPreferencesModal';
+import { track } from '../../lib/mixpanelClient';
 
 interface UserAvatarProps {
     user: User | null;
@@ -41,7 +42,10 @@ export function UserAvatar({ user }: UserAvatarProps) {
                             {({ active }) => (
                                 <button
                                     className={`w-full text-left px-4 py-2 flex items-center gap-2 ${active ? 'bg-secondary' : ''}`}
-                                    onClick={() => setStatsModalOpen(true)}
+                                    onClick={() => {
+                                        track('User Stats Clicked');
+                                        setStatsModalOpen(true);
+                                    }}
                                 >
                                     <BarChart3 className="w-4 h-4" />
                                     View Stats
@@ -53,7 +57,10 @@ export function UserAvatar({ user }: UserAvatarProps) {
                             {({ active }) => (
                                 <button
                                     className={`w-full text-left px-4 py-2 flex items-center gap-2 ${active ? 'bg-secondary' : ''}`}
-                                    onClick={() => setLanguagePrefsModalOpen(true)}
+                                    onClick={() => {
+                                        track('Language Preferences Clicked');
+                                        setLanguagePrefsModalOpen(true);
+                                    }}
                                 >
                                     <Languages className="w-4 h-4" />
                                     Languages
@@ -65,7 +72,10 @@ export function UserAvatar({ user }: UserAvatarProps) {
                             {({ active }) => (
                                 <button
                                     className={`w-full text-left px-4 py-2 flex items-center gap-2 ${active ? 'bg-secondary' : ''}`}
-                                    onClick={() => setContentPrefsModalOpen(true)}
+                                    onClick={() => {
+                                        track('Content Preferences Clicked');
+                                        setContentPrefsModalOpen(true);
+                                    }}
                                 >
                                     <Heart className="w-4 h-4" />
                                     Content Interests
@@ -78,6 +88,7 @@ export function UserAvatar({ user }: UserAvatarProps) {
                                 <a
                                     href="mailto:hello@lingopaper.com?subject=Feedback for LingoPaper"
                                     className={`block w-full text-left px-4 py-2 flex items-center gap-2 ${active ? 'bg-secondary' : ''}`}
+                                    onClick={() => track('Send Feedback Clicked')}
                                 >
                                     <MessageSquare className="w-4 h-4" />
                                     Send Feedback
@@ -89,7 +100,10 @@ export function UserAvatar({ user }: UserAvatarProps) {
                             {({ active }) => (
                                 <button
                                     className={`w-full text-left px-4 py-2 flex items-center gap-2 ${active ? 'bg-secondary' : ''}`}
-                                    onClick={() => signOut(auth)}
+                                    onClick={() => {
+                                        track('Sign Out Clicked');
+                                        signOut(auth);
+                                    }}
                                 >
                                     <LogOut className="w-4 h-4" />
                                     Sign Out

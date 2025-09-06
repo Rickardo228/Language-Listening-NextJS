@@ -3,6 +3,7 @@ import { User } from 'firebase/auth';
 import { getFlagEmoji, getLanguageName } from '../utils/languageUtils';
 import { useUser } from '../contexts/UserContext';
 import { createOrUpdateUserProfile } from '../utils/userPreferences';
+import { track } from '../../lib/mixpanelClient';
 
 interface StatsSettingsModalProps {
     isOpen: boolean;
@@ -36,8 +37,16 @@ export function StatsSettingsModal({ isOpen, onClose, user }: StatsSettingsModal
 
         setIsLoading(true);
         try {
+            const previousLanguage = userProfile?.nativeLanguage;
             await createOrUpdateUserProfile(user.uid, {
                 nativeLanguage: selectedNativeLanguage
+            });
+
+            // Track the settings change
+            track('Native Language Setting Changed', {
+                previousLanguage: previousLanguage || 'none',
+                newLanguage: selectedNativeLanguage,
+                wasFirstTime: !previousLanguage
             });
 
             // Refresh user profile to get updated data

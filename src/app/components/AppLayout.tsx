@@ -13,7 +13,7 @@ import { UserAvatar } from './UserAvatar';
 import { defaultPresentationConfig, defaultPresentationConfigs } from '../defaultConfig';
 import { useUser } from '../contexts/UserContext';
 import { useSidebar } from '../contexts/SidebarContext';
-import { trackCreateList, trackSelectList, trackCreatePhrase } from '../../lib/mixpanelClient';
+import { trackCreateList, trackSelectList, trackCreatePhrase, track } from '../../lib/mixpanelClient';
 import { TemplatesBrowser } from './TemplatesBrowser';
 import { SignInPage } from '../SignInPage';
 import { OnboardingGuard } from './OnboardingGuard';
@@ -290,6 +290,7 @@ export function AppLayout({ children }: AppLayoutProps) {
 
 
   const handleHome = () => {
+    track('Home Button Clicked', { source: 'header' });
     router.push('/');
   };
 
@@ -337,7 +338,10 @@ export function AppLayout({ children }: AppLayoutProps) {
 
           <div className="flex items-center gap-4">
             <button
-              onClick={toggleTheme}
+              onClick={() => {
+                track('Theme Toggle Clicked', { newTheme: theme === 'light' ? 'dark' : 'light' });
+                toggleTheme();
+              }}
               className="p-2 rounded-lg bg-secondary hover:bg-secondary/80"
               title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
             >
@@ -394,7 +398,10 @@ export function AppLayout({ children }: AppLayoutProps) {
                     title={
                       <div className="flex items-center">
                         <button
-                          onClick={() => setIsCollapsed(true)}
+                          onClick={() => {
+                            track('Sidebar Collapsed');
+                            setIsCollapsed(true);
+                          }}
                           className="hidden lg:block p-1 rounded-lg bg-secondary hover:bg-secondary/80 transition-all duration-200 opacity-0 group-hover:opacity-100 w-0 group-hover:w-6 overflow-hidden group-hover:mr-2"
                           title="Collapse"
                         >
@@ -417,6 +424,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                     }
                     onShowAllClick={async () => {
                       if (!user) return;
+                      track('Show All Collections Clicked');
                       setCollectionsLoading(true);
                       const colRef = collection(firestore, 'users', user.uid, 'collections');
                       const q = query(colRef, orderBy('created_at', 'desc'));
@@ -441,7 +449,10 @@ export function AppLayout({ children }: AppLayoutProps) {
               {isCollapsed && (
                 <div className="flex flex-col items-center pt-2 px-2">
                   <button
-                    onClick={() => setIsCollapsed(false)}
+                    onClick={() => {
+                      track('Sidebar Expanded');
+                      setIsCollapsed(false);
+                    }}
                     className="p-2 rounded-lg bg-secondary hover:bg-secondary/80 transition-colors"
                     title="Open Library"
                   >

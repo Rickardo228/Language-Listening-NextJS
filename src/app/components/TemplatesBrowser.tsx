@@ -7,6 +7,7 @@ import { languageOptions, Config } from '../types';
 import { CollectionList } from '../CollectionList';
 import { OnboardingLanguageSelect } from './OnboardingLanguageSelect';
 import { useUser } from '../contexts/UserContext';
+import { track } from '../../lib/mixpanelClient';
 
 const firestore = getFirestore();
 
@@ -208,7 +209,10 @@ export function TemplatesBrowser({
                         <div className="flex items-center justify-between mb-4">
                             <h1 className="text-3xl font-bold">Templates</h1>
                             <button
-                                onClick={() => router.push('/')}
+                                onClick={() => {
+                                    track('Back to Home From Templates Browser Clicked');
+                                    router.push('/');
+                                }}
                                 className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-primary hover:text-primary/80 transition-colors"
                             >
                                 <svg
@@ -269,17 +273,38 @@ export function TemplatesBrowser({
                                 loading={loading}
                                 getPhraseCount={(c) => templateByGroup.get(c.id)?.phraseCount || 0}
                                 getLanguagePair={() => ({ inputLang, targetLang })}
-                                onLoadCollection={(c) =>
-                                    router.push(`/templates/${c.id}?inputLang=${inputLang}&targetLang=${targetLang}`)
-                                }
-                                onPlayClick={(c) =>
+                                onLoadCollection={(c) => {
+                                    const template = templateByGroup.get(c.id);
+                                    track('Template Collection Selected', { 
+                                        templateId: c.id, 
+                                        templateName: template?.name || c.name,
+                                        templateTags: template?.tags || [],
+                                        complexity: template?.complexity,
+                                        phraseCount: template?.phraseCount,
+                                        inputLang, 
+                                        targetLang 
+                                    });
+                                    router.push(`/templates/${c.id}?inputLang=${inputLang}&targetLang=${targetLang}`);
+                                }}
+                                onPlayClick={(c) => {
+                                    const template = templateByGroup.get(c.id);
+                                    track('Template Play Clicked', { 
+                                        templateId: c.id, 
+                                        templateName: template?.name || c.name,
+                                        templateTags: template?.tags || [],
+                                        complexity: template?.complexity,
+                                        phraseCount: template?.phraseCount,
+                                        inputLang, 
+                                        targetLang 
+                                    });
                                     router.push(
                                         `/templates/${c.id}?inputLang=${inputLang}&targetLang=${targetLang}&autoplay=1`
-                                    )
-                                }
+                                    );
+                                }}
                                 hideScrollbar
                                 enableCarouselControls
                                 onShowAllClick={async () => {
+                                    track('Show All Templates Clicked');
                                     setIsShowingAll(true);
                                     await fetchTemplates(undefined, undefined, { fetchAll: true });
                                 }}

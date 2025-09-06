@@ -3,6 +3,7 @@ import React from "react";
 import { PresentationConfig } from "./types";
 import { ConfigFieldDefinition } from "./configDefinitions";
 import bgColorOptions from "./utils/bgColorOptions";
+import { track } from "../lib/mixpanelClient";
 
 interface ConfigFieldsProps {
     definition: ConfigFieldDefinition[];
@@ -22,6 +23,16 @@ const ConfigFields: React.FC<ConfigFieldsProps> = ({
     targetLang,
 }) => {
     const handleChange = (key: keyof PresentationConfig, value: boolean | string | number) => {
+        const previousValue = config[key];
+        
+        // Track the setting change
+        track('Presentation Setting Changed', {
+            settingKey: key,
+            previousValue: previousValue,
+            newValue: value,
+            valueType: typeof value
+        });
+        
         setConfig({ [key]: value });
     };
 
