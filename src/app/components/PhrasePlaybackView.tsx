@@ -6,7 +6,7 @@ import { Phrase, PresentationConfig } from '../types';
 import { generateAudio } from '../utils/audioUtils';
 import { BLEED_START_DELAY, DELAY_AFTER_INPUT_PHRASES_MULTIPLIER, DELAY_AFTER_OUTPUT_PHRASES_MULTIPLIER, } from '../consts';
 import { useUpdateUserStats } from '../utils/userStats';
-import { trackAudioEnded, trackPlaybackEvent } from '../../lib/mixpanelClient';
+import { track, trackAudioEnded, trackPlaybackEvent } from '../../lib/mixpanelClient';
 
 // Extract the methods ref type into a reusable type
 export type PhrasePlaybackMethods = {
@@ -49,7 +49,12 @@ export function PhrasePlaybackView({
         presentationConfig.enableInputPlayback ? 'input' : 'output'
     );
     const [paused, setPaused] = useState(true);
-    const [fullscreen, setFullscreen] = useState(false);
+    const [fullscreen, setFullscreenBase] = useState(false);
+    const setFullscreen = (value: boolean | ((prevState: boolean) => boolean)) => {
+        const newVal = typeof value === 'function' ? value(fullscreen) : value
+        track(`Fullscreen ${newVal ? 'Enabled' : 'Disabled'}`);
+        setFullscreenBase(value);
+    };
     const [showTitle, setShowTitle] = useState(false);
     const [configName, setConfigName] = useState('Default');
 
