@@ -193,7 +193,9 @@ export const useUpdateUserStats = () => {
   const [countToShow, setCountToShow] = useState(0);
   const [persistUntilInteraction, setPersistUntilInteraction] = useState(false);
   const [showStatsModal, setShowStatsModal] = useState(false);
+  
   const phrasesListenedRef = useRef(0);
+  const phrasesViewedRef = useRef(0);
   const [mounted, setMounted] = useState(false);
   const { user } = useUser();
 
@@ -284,6 +286,7 @@ export const useUpdateUserStats = () => {
       }, 2000);
     }
   };
+
 
   const closeStatsPopup = useCallback((source: "continue" | "escape" = "continue") => {
     // Track close action before closing
@@ -419,8 +422,12 @@ export const useUpdateUserStats = () => {
     // Track phrases since last sync for smart syncing
     phraseCountSinceLastSync.current += 1;
 
-    // Increment the session ref counter
-    phrasesListenedRef.current += 1;
+    // Increment the session ref counter based on event type
+    if (eventType === 'listened') {
+      phrasesListenedRef.current += 1;
+    } else if (eventType === 'viewed') {
+      phrasesViewedRef.current += 1;
+    }
 
     const now = new Date();
     const userTimezone = getUserTimezone();

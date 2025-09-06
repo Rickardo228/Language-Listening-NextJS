@@ -52,6 +52,23 @@ export function PhrasePlaybackView({
     const [fullscreen, setFullscreen] = useState(false);
     const [showTitle, setShowTitle] = useState(false);
     const [configName, setConfigName] = useState('Default');
+    
+    // Viewed phrases snackbar
+    const [showViewedSnackbar, setShowViewedSnackbar] = useState(false);
+    const [viewedCount, setViewedCount] = useState(0);
+    const dailyViewedRef = useRef(0);
+
+    // Function to show viewed snackbar
+    const showViewedUpdate = () => {
+        dailyViewedRef.current += 1;
+        setViewedCount(dailyViewedRef.current);
+        setShowViewedSnackbar(true);
+        
+        // Auto-hide after 2 seconds
+        setTimeout(() => {
+            setShowViewedSnackbar(false);
+        }, 2000);
+    };
 
     const [showProgressBar, setShowProgressBar] = useState(false);
     const [progressDuration, setProgressDuration] = useState(0);
@@ -357,6 +374,7 @@ export function PhrasePlaybackView({
             // Update user stats for phrase viewed (only once per phrase pair - when target language is reached)
             if (targetIndex >= 0 && phrases[targetIndex] && targetPhase === 'output') {
                 updateUserStats(phrases, targetIndex, 'viewed');
+                showViewedUpdate();
 
                 // Track previous navigation (existing)
                 trackPlaybackEvent('previous', `${collectionId || 'unknown'}-${targetIndex}`, targetPhase, targetIndex, speed);
@@ -438,6 +456,7 @@ export function PhrasePlaybackView({
             // Update user stats for phrase viewed (only once per phrase pair - when target language is reached)
             if (targetIndex >= 0 && phrases[targetIndex] && targetPhase === 'output') {
                 updateUserStats(phrases, targetIndex, 'viewed');
+                showViewedUpdate();
 
                 // Track next navigation (existing)
                 trackPlaybackEvent('next', `${collectionId || 'unknown'}-${targetIndex}`, targetPhase, targetIndex, speed);
@@ -626,6 +645,20 @@ export function PhrasePlaybackView({
 
             {/* Stats Modal */}
             {StatsModal}
+
+            {/* Viewed Phrases Snackbar */}
+            {showViewedSnackbar && (
+                <div className="fixed top-4 right-4 z-50">
+                    <div className="bg-blue-500 text-white px-4 py-2 rounded-lg shadow-lg flex items-center space-x-2 animate-fade-in">
+                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                        </svg>
+                        <span className="font-medium">
+                            👀 {viewedCount} phrase{viewedCount !== 1 ? 's' : ''} reviewed today
+                        </span>
+                    </div>
+                </div>
+            )}
 
             {/* Audio Element */}
             <audio ref={audioRef} onEnded={handleAudioEnded} controls hidden />

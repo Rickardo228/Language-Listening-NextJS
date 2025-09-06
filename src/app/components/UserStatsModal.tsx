@@ -544,6 +544,93 @@ export function UserStatsModal({ isOpen, onClose, user }: UserStatsModalProps) {
                         <div className="text-center py-4">Loading stats...</div>
                     ) : mainStats ? (
                         <div className="space-y-6">
+                            {/* Total Phrases - Prominent display at top */}
+                            <div className="bg-gradient-to-r from-secondary/10 to-primary/10 p-6 rounded-lg border border-secondary/20">
+                                <h3 className="text-lg font-semibold mb-3">Total Progress</h3>
+                                <div className="text-center">
+
+                                    <>
+                                        {/* Streak count above total */}
+                                        {currentStreak > 0 && (() => {
+                                            const streakData = getStreakMessage(currentStreak);
+                                            return (
+                                                <div className="bg-gray-800 dark:bg-gray-900 p-3 rounded-xl border-2 border-gray-600 shadow-md mb-4 inline-block">
+                                                    <div className="flex items-center justify-center mb-1">
+                                                        <span className="text-2xl font-bold text-white mr-2">{currentStreak}</span>
+                                                        <span className="text-2xl animate-pulse">{streakData.emoji}</span>
+                                                    </div>
+                                                    <div className="text-xs font-semibold text-gray-300 uppercase tracking-wide">Day Streak</div>
+                                                </div>
+                                            );
+                                        })()}
+
+                                        <div className="text-4xl font-bold text-primary mb-2">
+                                            {totalPhrases.toLocaleString()}
+                                        </div>
+                                        <div className="text-sm text-foreground/60 mb-3">
+                                            🎧 {mainStats.phrasesListened.toLocaleString()} listened • 👀 {(mainStats.phrasesViewed || 0).toLocaleString()} reviewed
+                                        </div>
+                                        <div className="text-lg font-medium mb-2">
+                                            <span className={getPhraseRankTitle(totalPhrases).color}>
+                                                {getPhraseRankTitle(totalPhrases).title}
+                                            </span>
+                                        </div>
+                                        <div className="text-sm text-foreground/70 mb-3 italic">
+                                            {getPhraseRankTitle(totalPhrases).description}
+                                        </div>
+
+
+                                        {getPhraseRankTitle(totalPhrases).nextMilestone > 0 && (
+                                            <div className="text-sm text-foreground/60 mb-4">
+                                                🎯 Next milestone: {getPhraseRankTitle(totalPhrases).nextMilestone.toLocaleString()} phrases
+                                            </div>
+                                        )}
+
+                                        {/* Progress bar from last milestone to next */}
+                                        {(() => {
+                                            const rankInfo = getPhraseRankTitle(totalPhrases);
+                                            if (rankInfo.nextMilestone > 0) {
+                                                const currentPhrases = totalPhrases;
+                                                const nextMilestone = rankInfo.nextMilestone;
+
+                                                // Find the last milestone we passed using PRODUCTION_PHRASE_RANKS
+                                                let lastMilestone = 0;
+                                                for (const rank of PRODUCTION_PHRASE_RANKS) {
+                                                    if (rank.threshold <= currentPhrases && rank.threshold > lastMilestone) {
+                                                        lastMilestone = rank.threshold;
+                                                    }
+                                                }
+
+                                                const progressRange = nextMilestone - lastMilestone;
+                                                const currentProgress = currentPhrases - lastMilestone;
+                                                const progressPercentage = (currentProgress / progressRange) * 100;
+
+                                                return (
+                                                    <div className="mt-3">
+                                                        <div className="flex justify-between text-xs text-foreground/60 mb-1">
+                                                            <span>{lastMilestone.toLocaleString()}</span>
+                                                            <span>{nextMilestone.toLocaleString()}</span>
+                                                        </div>
+                                                        <div className="w-full bg-secondary/50 rounded-full h-2">
+                                                            <div
+                                                                className="bg-primary h-2 rounded-full transition-all duration-500"
+                                                                style={{ width: `${Math.min(100, Math.max(0, progressPercentage))}%` }}
+                                                            ></div>
+                                                        </div>
+                                                        <div className="text-xs text-center text-foreground/50 mt-1">
+                                                            {currentProgress.toLocaleString()} of {progressRange.toLocaleString()} to next milestone
+                                                        </div>
+                                                    </div>
+                                                );
+                                            }
+                                            return null;
+                                        })()}
+                                    </>
+
+
+                                </div>
+                            </div>
+
                             {/* Today's Focus - Prominent Display */}
                             <div className="bg-gradient-to-r from-primary/10 to-secondary/10 p-6 rounded-lg border border-primary/20">
                                 <h3 className="text-lg font-semibold mb-3">Today&apos;s Progress</h3>
@@ -640,93 +727,6 @@ export function UserStatsModal({ isOpen, onClose, user }: UserStatsModalProps) {
                                             </div>
                                         </div>
                                     )}
-                                </div>
-                            </div>
-
-                            {/* Total Phrases - Prominent display */}
-                            <div className="bg-gradient-to-r from-secondary/10 to-primary/10 p-6 rounded-lg border border-secondary/20">
-                                <h3 className="text-lg font-semibold mb-3">Total Progress</h3>
-                                <div className="text-center">
-
-                                    <>
-                                        {/* Streak count above total */}
-                                        {currentStreak > 0 && (() => {
-                                            const streakData = getStreakMessage(currentStreak);
-                                            return (
-                                                <div className="bg-gray-800 dark:bg-gray-900 p-3 rounded-xl border-2 border-gray-600 shadow-md mb-4 inline-block">
-                                                    <div className="flex items-center justify-center mb-1">
-                                                        <span className="text-2xl font-bold text-white mr-2">{currentStreak}</span>
-                                                        <span className="text-2xl animate-pulse">{streakData.emoji}</span>
-                                                    </div>
-                                                    <div className="text-xs font-semibold text-gray-300 uppercase tracking-wide">Day Streak</div>
-                                                </div>
-                                            );
-                                        })()}
-
-                                        <div className="text-4xl font-bold text-primary mb-2">
-                                            {totalPhrases.toLocaleString()}
-                                        </div>
-                                        <div className="text-sm text-foreground/60 mb-3">
-                                            🎧 {mainStats.phrasesListened.toLocaleString()} listened + 👀 {(mainStats.phrasesViewed || 0).toLocaleString()} read
-                                        </div>
-                                        <div className="text-lg font-medium mb-2">
-                                            <span className={getPhraseRankTitle(totalPhrases).color}>
-                                                {getPhraseRankTitle(totalPhrases).title}
-                                            </span>
-                                        </div>
-                                        <div className="text-sm text-foreground/70 mb-3 italic">
-                                            {getPhraseRankTitle(totalPhrases).description}
-                                        </div>
-
-
-                                        {getPhraseRankTitle(totalPhrases).nextMilestone > 0 && (
-                                            <div className="text-sm text-foreground/60 mb-4">
-                                                🎯 Next milestone: {getPhraseRankTitle(totalPhrases).nextMilestone.toLocaleString()} phrases
-                                            </div>
-                                        )}
-
-                                        {/* Progress bar from last milestone to next */}
-                                        {(() => {
-                                            const rankInfo = getPhraseRankTitle(totalPhrases);
-                                            if (rankInfo.nextMilestone > 0) {
-                                                const currentPhrases = totalPhrases;
-                                                const nextMilestone = rankInfo.nextMilestone;
-
-                                                // Find the last milestone we passed using PRODUCTION_PHRASE_RANKS
-                                                let lastMilestone = 0;
-                                                for (const rank of PRODUCTION_PHRASE_RANKS) {
-                                                    if (rank.threshold <= currentPhrases && rank.threshold > lastMilestone) {
-                                                        lastMilestone = rank.threshold;
-                                                    }
-                                                }
-
-                                                const progressRange = nextMilestone - lastMilestone;
-                                                const currentProgress = currentPhrases - lastMilestone;
-                                                const progressPercentage = (currentProgress / progressRange) * 100;
-
-                                                return (
-                                                    <div className="mt-3">
-                                                        <div className="flex justify-between text-xs text-foreground/60 mb-1">
-                                                            <span>{lastMilestone.toLocaleString()}</span>
-                                                            <span>{nextMilestone.toLocaleString()}</span>
-                                                        </div>
-                                                        <div className="w-full bg-secondary/50 rounded-full h-2">
-                                                            <div
-                                                                className="bg-primary h-2 rounded-full transition-all duration-500"
-                                                                style={{ width: `${Math.min(100, Math.max(0, progressPercentage))}%` }}
-                                                            ></div>
-                                                        </div>
-                                                        <div className="text-xs text-center text-foreground/50 mt-1">
-                                                            {currentProgress.toLocaleString()} of {progressRange.toLocaleString()} to next milestone
-                                                        </div>
-                                                    </div>
-                                                );
-                                            }
-                                            return null;
-                                        })()}
-                                    </>
-
-
                                 </div>
                             </div>
 
