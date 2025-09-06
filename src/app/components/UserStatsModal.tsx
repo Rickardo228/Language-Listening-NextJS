@@ -140,6 +140,7 @@ interface UserStats {
 
 interface DailyStats {
     count: number;
+    countViewed?: number;
     lastUpdated: string;
     date: string;
 }
@@ -166,7 +167,8 @@ function DailyStatsChart({ dailyStats, personalBest }: { dailyStats: DailyStats[
 
     const backgroundColors = dailyStats.map(day => {
         const isToday = new Date(day.date).toDateString() === new Date().toDateString();
-        const isPersonalBest = personalBest && personalBest.date === day.date;
+        const dayTotal = day.count + (day.countViewed || 0);
+        const isPersonalBest = personalBest && personalBest.date === day.date && dayTotal === personalBest.count;
 
         if (isPersonalBest) return 'rgb(245, 158, 11)'; // amber-500 for personal best
         if (isToday) return 'rgb(59, 130, 246)'; // blue-500 for today (primary-like)
@@ -177,7 +179,7 @@ function DailyStatsChart({ dailyStats, personalBest }: { dailyStats: DailyStats[
         labels,
         datasets: [
             {
-                data: dailyStats.map(day => day.count),
+                data: dailyStats.map(day => day.count + (day.countViewed || 0)),
                 backgroundColor: backgroundColors,
                 borderColor: backgroundColors,
                 borderWidth: 1,
@@ -218,10 +220,10 @@ function DailyStatsChart({ dailyStats, personalBest }: { dailyStats: DailyStats[
                     title: (context) => {
                         const index = context[0].dataIndex;
                         const day = dailyStats[index];
-                        const count = context[0].parsed.y;
-                        const isPersonalBest = personalBest && personalBest.date === day.date;
+                        const totalCount = day.count + (day.countViewed || 0);
+                        const isPersonalBest = personalBest && personalBest.date === day.date && totalCount === personalBest.count;
 
-                        let title = `${count} phrase${count !== 1 ? 's' : ''}`;
+                        let title = `${totalCount} phrase${totalCount !== 1 ? 's' : ''}`;
                         if (isPersonalBest) {
                             title += ' 👑';
                         }
@@ -396,6 +398,7 @@ export function UserStatsModal({ isOpen, onClose, user }: UserStatsModalProps) {
                         last7Days.push({
                             date: dateLocal,
                             count: 0,
+                            countViewed: 0,
                             lastUpdated: date.toISOString()
                         });
                     }
@@ -440,7 +443,7 @@ export function UserStatsModal({ isOpen, onClose, user }: UserStatsModalProps) {
 
         return matches;
     });
-    const todayCount = todayStats?.count || 0;
+    const todayCount = todayStats ? (todayStats.count + (todayStats.countViewed || 0)) : 0;
 
     // Get yesterday's stats for comparison using user's timezone
     const yesterday = new Date();
@@ -454,7 +457,7 @@ export function UserStatsModal({ isOpen, onClose, user }: UserStatsModalProps) {
 
         return matches;
     });
-    const yesterdayCount = yesterdayStats?.count || 0;
+    const yesterdayCount = yesterdayStats ? (yesterdayStats.count + (yesterdayStats.countViewed || 0)) : 0;
 
     // Calculate trend with 20% buffer for steady progress
     const trendBuffer = Math.max(1, Math.round(yesterdayCount * 0.2)); // 20% of yesterday's count, minimum 1
@@ -463,7 +466,7 @@ export function UserStatsModal({ isOpen, onClose, user }: UserStatsModalProps) {
 
     // Use the fetched personal best data directly
     let personalBest = personalBestData ? {
-        count: personalBestData.count,
+        count: personalBestData.count + (personalBestData.countViewed || 0),
         date: personalBestData.date,
         achievedAt: personalBestData.lastUpdated
     } : null;
