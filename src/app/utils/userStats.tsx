@@ -374,7 +374,8 @@ export const useUpdateUserStats = () => {
 
   const updateUserStats = async (
     phrases: Phrase[],
-    currentPhraseIndex: number
+    currentPhraseIndex: number,
+    eventType: 'listened' | 'viewed' = 'listened'
   ) => {
     if (!user) {
       return;
@@ -509,12 +510,18 @@ export const useUpdateUserStats = () => {
 
         // Update both stats and streak data in one transaction
         transaction.update(statsRef, {
-          phrasesListened: increment(1),
-          lastListenedAt: now.toISOString(),
           currentStreak: newStreak,
           lastStreakCalculation: now.toISOString(),
           streakStartDate: newStreakStartDate,
-          streakChangeReason
+          streakChangeReason,
+          ...(eventType === 'listened' && {
+            phrasesListened: increment(1),
+            lastListenedAt: now.toISOString()
+          }),
+          ...(eventType === 'viewed' && {
+            phrasesViewed: increment(1),
+            lastViewedAt: now.toISOString()
+          })
         });
 
         // Update UI state for streak display and animation
@@ -539,12 +546,18 @@ export const useUpdateUserStats = () => {
           "listening"
         );
         await setDoc(statsRef, {
-          phrasesListened: 1,
-          lastListenedAt: now.toISOString(),
           currentStreak: 1,
           streakStartDate: now.toISOString(),
           lastStreakCalculation: now.toISOString(),
-          streakChangeReason: 'initial_document_creation'
+          streakChangeReason: 'initial_document_creation',
+          ...(eventType === 'listened' && {
+            phrasesListened: 1,
+            lastListenedAt: now.toISOString()
+          }),
+          ...(eventType === 'viewed' && {
+            phrasesViewed: 1,
+            lastViewedAt: now.toISOString()
+          })
         });
         setCurrentStreak(1);
         setShowStreakIncrement(true);
@@ -563,9 +576,15 @@ export const useUpdateUserStats = () => {
         todayLocalAsUTC
       );
       await updateDoc(dailyStatsRef, {
-        count: increment(1),
         lastUpdated: now.toISOString(),
         timestamp: now.toISOString(), // Store full timestamp for timezone accuracy
+        ...(eventType === 'listened' && {
+          count: increment(1), // Main field for listened events
+          countListened: increment(1) // Duplicate for future migration
+        }),
+        ...(eventType === 'viewed' && {
+          countViewed: increment(1)
+        })
       }).catch(async (err: unknown) => {
         // If the daily document doesn't exist, create it
         if (
@@ -575,11 +594,13 @@ export const useUpdateUserStats = () => {
           err.code === "not-found"
         ) {
           await setDoc(dailyStatsRef, {
-            count: 1,
+            count: eventType === 'listened' ? 1 : 0, // Main field for listened events
             lastUpdated: now.toISOString(),
             date: todayLocalAsUTC, // Store UTC date (converted from local)
             dateLocal: todayLocal, // Store local date for reference
             timestamp: now.toISOString(), // Store full timestamp for timezone accuracy
+            countListened: eventType === 'listened' ? 1 : 0, // Duplicate for future migration
+            countViewed: eventType === 'viewed' ? 1 : 0
           });
         } else {
           console.error("❌ Error updating daily stats:", err);

@@ -185,7 +185,6 @@ export function PhrasePlaybackView({
 
             // Track play event
             if (currentPhraseIndex >= 0 && phrases[currentPhraseIndex]) {
-
                 trackPlaybackEvent('play', `${collectionId || 'unknown'}-${currentPhraseIndex}`, currentPhase, currentPhraseIndex, speed);
             }
         }
@@ -233,6 +232,8 @@ export function PhrasePlaybackView({
             const speed = startPhase === 'input'
                 ? (presentationConfig.inputPlaybackSpeed || 1.0)
                 : (presentationConfig.outputPlaybackSpeed || 1.0);
+
+
             trackPlaybackEvent('replay', `${collectionId || 'unknown'}-0`, startPhase, 0, speed);
         }
     };
@@ -353,8 +354,11 @@ export function PhrasePlaybackView({
                 audioRef.current.playbackRate = speed;
             }
 
-            // Track previous navigation
-            if (targetIndex >= 0 && phrases[targetIndex]) {
+            // Update user stats for phrase viewed (only once per phrase pair - when target language is reached)
+            if (targetIndex >= 0 && phrases[targetIndex] && targetPhase === 'output') {
+                updateUserStats(phrases, targetIndex, 'viewed');
+
+                // Track previous navigation (existing)
                 trackPlaybackEvent('previous', `${collectionId || 'unknown'}-${targetIndex}`, targetPhase, targetIndex, speed);
             }
         }
@@ -431,8 +435,11 @@ export function PhrasePlaybackView({
                 audioRef.current.playbackRate = speed;
             }
 
-            // Track next navigation
-            if (targetIndex >= 0 && phrases[targetIndex]) {
+            // Update user stats for phrase viewed (only once per phrase pair - when target language is reached)
+            if (targetIndex >= 0 && phrases[targetIndex] && targetPhase === 'output') {
+                updateUserStats(phrases, targetIndex, 'viewed');
+
+                // Track next navigation (existing)
                 trackPlaybackEvent('next', `${collectionId || 'unknown'}-${targetIndex}`, targetPhase, targetIndex, speed);
             }
         }
