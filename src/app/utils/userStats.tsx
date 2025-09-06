@@ -193,7 +193,7 @@ export const useUpdateUserStats = () => {
   const [countToShow, setCountToShow] = useState(0);
   const [persistUntilInteraction, setPersistUntilInteraction] = useState(false);
   const [showStatsModal, setShowStatsModal] = useState(false);
-  
+
   const phrasesListenedRef = useRef(0);
   const phrasesViewedRef = useRef(0);
   const [mounted, setMounted] = useState(false);
@@ -589,6 +589,7 @@ export const useUpdateUserStats = () => {
       await updateDoc(dailyStatsRef, {
         lastUpdated: now.toISOString(),
         timestamp: now.toISOString(), // Store full timestamp for timezone accuracy
+        totalCount: increment(1), // Denormalized field: total of listened + viewed
         ...(eventType === 'listened' && {
           count: increment(1), // Main field for listened events
           countListened: increment(1) // Duplicate for future migration
@@ -606,6 +607,7 @@ export const useUpdateUserStats = () => {
         ) {
           await setDoc(dailyStatsRef, {
             count: eventType === 'listened' ? 1 : 0, // Main field for listened events
+            totalCount: 1, // Denormalized field: total of listened + viewed
             lastUpdated: now.toISOString(),
             date: todayLocalAsUTC, // Store UTC date (converted from local)
             dateLocal: todayLocal, // Store local date for reference
@@ -686,6 +688,7 @@ export const useUpdateUserStats = () => {
         );
         await setDoc(dailyStatsRef, {
           count: 1,
+          totalCount: 1, // Denormalized field: total of listened + viewed
           lastUpdated: now.toISOString(),
           date: todayLocalAsUTC,
         });

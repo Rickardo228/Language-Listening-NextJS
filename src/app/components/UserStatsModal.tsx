@@ -141,6 +141,7 @@ interface UserStats {
 interface DailyStats {
     count: number;
     countViewed?: number;
+    totalCount?: number; // Denormalized field: total of listened + viewed
     lastUpdated: string;
     date: string;
 }
@@ -167,7 +168,7 @@ function DailyStatsChart({ dailyStats, personalBest }: { dailyStats: DailyStats[
 
     const backgroundColors = dailyStats.map(day => {
         const isToday = new Date(day.date).toDateString() === new Date().toDateString();
-        const dayTotal = day.count + (day.countViewed || 0);
+        const dayTotal = day.totalCount || (day.count + (day.countViewed || 0));
         const isPersonalBest = personalBest && personalBest.date === day.date && dayTotal === personalBest.count;
 
         if (isPersonalBest) return 'rgb(245, 158, 11)'; // amber-500 for personal best
@@ -179,7 +180,7 @@ function DailyStatsChart({ dailyStats, personalBest }: { dailyStats: DailyStats[
         labels,
         datasets: [
             {
-                data: dailyStats.map(day => day.count + (day.countViewed || 0)),
+                data: dailyStats.map(day => day.totalCount || (day.count + (day.countViewed || 0))),
                 backgroundColor: backgroundColors,
                 borderColor: backgroundColors,
                 borderWidth: 1,
@@ -220,7 +221,7 @@ function DailyStatsChart({ dailyStats, personalBest }: { dailyStats: DailyStats[
                     title: (context) => {
                         const index = context[0].dataIndex;
                         const day = dailyStats[index];
-                        const totalCount = day.count + (day.countViewed || 0);
+                        const totalCount = day.totalCount || (day.count + (day.countViewed || 0));
                         const isPersonalBest = personalBest && personalBest.date === day.date && totalCount === personalBest.count;
 
                         let title = `${totalCount} phrase${totalCount !== 1 ? 's' : ''}`;
@@ -370,9 +371,9 @@ export function UserStatsModal({ isOpen, onClose, user }: UserStatsModalProps) {
                 // Fetch daily stats for display (last 7 days) and personal best calculation (most efficient approach)
                 const dailyStatsRef = collection(firestore, 'users', user.uid, 'stats', 'listening', 'daily');
 
-                // Get the day with the highest count (personal best) - most efficient!
-                // Firestore does the heavy lifting: orderBy('count', 'desc') + limit(1) = single document with highest count
-                const personalBestQuery = query(dailyStatsRef, orderBy('count', 'desc'), limit(1));
+                // Get the day with the highest totalCount (personal best) - most efficient!
+                // Firestore does the heavy lifting: orderBy('totalCount', 'desc') + limit(1) = single document with highest totalCount
+                const personalBestQuery = query(dailyStatsRef, orderBy('totalCount', 'desc'), limit(1));
                 const personalBestSnapshot = await getDocs(personalBestQuery);
                 const personalBestData = personalBestSnapshot.docs[0]?.data() as DailyStats | undefined;
 
@@ -399,6 +400,7 @@ export function UserStatsModal({ isOpen, onClose, user }: UserStatsModalProps) {
                             date: dateLocal,
                             count: 0,
                             countViewed: 0,
+                            totalCount: 0,
                             lastUpdated: date.toISOString()
                         });
                     }
@@ -443,7 +445,7 @@ export function UserStatsModal({ isOpen, onClose, user }: UserStatsModalProps) {
 
         return matches;
     });
-    const todayCount = todayStats ? (todayStats.count + (todayStats.countViewed || 0)) : 0;
+    const todayCount = todayStats ? (todayStats.totalCount || (todayStats.count + (todayStats.countViewed || 0))) : 0;
 
     // Get yesterday's stats for comparison using user's timezone
     const yesterday = new Date();
@@ -457,7 +459,7 @@ export function UserStatsModal({ isOpen, onClose, user }: UserStatsModalProps) {
 
         return matches;
     });
-    const yesterdayCount = yesterdayStats ? (yesterdayStats.count + (yesterdayStats.countViewed || 0)) : 0;
+    const yesterdayCount = yesterdayStats ? (yesterdayStats.totalCount || (yesterdayStats.count + (yesterdayStats.countViewed || 0))) : 0;
 
     // Calculate trend with 20% buffer for steady progress
     const trendBuffer = Math.max(1, Math.round(yesterdayCount * 0.2)); // 20% of yesterday's count, minimum 1
@@ -466,7 +468,7 @@ export function UserStatsModal({ isOpen, onClose, user }: UserStatsModalProps) {
 
     // Use the fetched personal best data directly
     let personalBest = personalBestData ? {
-        count: personalBestData.count + (personalBestData.countViewed || 0),
+        count: personalBestData.totalCount || (personalBestData.count + (personalBestData.countViewed || 0)),
         date: personalBestData.date,
         achievedAt: personalBestData.lastUpdated
     } : null;
@@ -571,7 +573,7 @@ export function UserStatsModal({ isOpen, onClose, user }: UserStatsModalProps) {
                                             {totalPhrases.toLocaleString()}
                                         </div>
                                         <div className="text-sm text-foreground/60 mb-3">
-                                            🎧 {mainStats.phrasesListened.toLocaleString()} listened • 👀 {(mainStats.phrasesViewed || 0).toLocaleString()} reviewed
+                                            🎧 {mainStats.phrasesListened.toLocaleString()} listened • 👀 {(mainStats.phrasesViewed || 0).toLocaleString()} viewed
                                         </div>
                                         <div className="text-lg font-medium mb-2">
                                             <span className={getPhraseRankTitle(totalPhrases).color}>
