@@ -235,7 +235,9 @@ export const useUpdateUserStats = () => {
 
         if (statsDoc.exists()) {
           const data = statsDoc.data();
-          const total = data.phrasesListened || 0;
+          const listened = data.phrasesListened || 0;
+          const viewed = data.phrasesViewed || 0;
+          const total = listened + viewed;
           totalPhrasesRef.current = total;
           phraseCountSinceLastSync.current = 0;
         } else {
@@ -357,7 +359,9 @@ export const useUpdateUserStats = () => {
 
       if (statsDoc.exists()) {
         const data = statsDoc.data();
-        const dbTotal = data.phrasesListened || 0;
+        const listened = data.phrasesListened || 0;
+        const viewed = data.phrasesViewed || 0;
+        const dbTotal = listened + viewed;
 
         // If database has more than our local count, update our local count
         // This handles cases where user used app on another device

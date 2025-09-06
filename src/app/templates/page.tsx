@@ -5,7 +5,7 @@ import { auth } from '../firebase';
 import { User as FirebaseUser } from 'firebase/auth';
 import { TemplatesBrowser } from '../components/TemplatesBrowser';
 import { useRouter } from 'next/navigation';
-import { track } from '../lib/mixpanelClient';
+import { track } from '../../lib/mixpanelClient';
 
 export default function TemplatesPage() {
     const router = useRouter();
