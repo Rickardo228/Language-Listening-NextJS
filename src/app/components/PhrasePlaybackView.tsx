@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo } from 'react';
+import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { PresentationView } from '../PresentationView';
 import { PresentationControls } from '../PresentationControls';
 import { EditablePhrases } from '../EditablePhrases';
@@ -63,8 +63,19 @@ export function PhrasePlaybackView({
     const [viewedCount, setViewedCount] = useState(0);
     const dailyViewedRef = useRef(0);
 
-    // Function to show viewed snackbar
-    const showViewedUpdate = () => {
+    // Throttling refs for spam prevention
+    const updateUserStatsLastCall = useRef<number>(0);
+    const showViewedUpdateLastCall = useRef<number>(0);
+    const THROTTLE_DELAY = 300; // 300ms throttle
+
+    // Throttled function to show viewed snackbar
+    const showViewedUpdate = useCallback(() => {
+        const now = Date.now();
+        if (now - showViewedUpdateLastCall.current < THROTTLE_DELAY) {
+            return; // Skip if called too recently
+        }
+        showViewedUpdateLastCall.current = now;
+
         dailyViewedRef.current += 1;
         setViewedCount(dailyViewedRef.current);
         setShowViewedSnackbar(true);
@@ -73,7 +84,18 @@ export function PhrasePlaybackView({
         setTimeout(() => {
             setShowViewedSnackbar(false);
         }, 2000);
-    };
+    }, [THROTTLE_DELAY]);
+
+    // Throttled wrapper for updateUserStats
+    const throttledUpdateUserStats = useCallback((phrases: Phrase[], currentPhraseIndex: number, eventType: 'listened' | 'viewed' = 'listened') => {
+        const now = Date.now();
+        if (now - updateUserStatsLastCall.current < THROTTLE_DELAY) {
+            return; // Skip if called too recently
+        }
+        updateUserStatsLastCall.current = now;
+
+        updateUserStats(phrases, currentPhraseIndex, eventType);
+    }, [updateUserStats, THROTTLE_DELAY]);
 
     const [showProgressBar, setShowProgressBar] = useState(false);
     const [progressDuration, setProgressDuration] = useState(0);
@@ -378,14 +400,14 @@ export function PhrasePlaybackView({
 
             // Update user stats for phrase viewed (only once per phrase pair - when target language is reached)
             if (targetIndex >= 0 && phrases[targetIndex] && targetPhase === 'output') {
-                updateUserStats(phrases, targetIndex, 'viewed');
+                throttledUpdateUserStats(phrases, targetIndex, 'viewed');
 
                 // Track previous navigation (existing)
                 trackPlaybackEvent('previous', `${collectionId || 'unknown'}-${targetIndex}`, targetPhase, targetIndex, speed);
             }
 
             // Show viewed snackbar when going from output to input phase
-            if (currentPhase === 'output' && targetPhase === 'input') {
+            if (currentPhase === 'output') {
                 showViewedUpdate();
             }
         }
@@ -464,14 +486,14 @@ export function PhrasePlaybackView({
 
             // Update user stats for phrase viewed (only once per phrase pair - when target language is reached)
             if (targetIndex >= 0 && phrases[targetIndex] && targetPhase === 'output') {
-                updateUserStats(phrases, targetIndex, 'viewed');
+                throttledUpdateUserStats(phrases, targetIndex, 'viewed');
 
                 // Track next navigation (existing)
                 trackPlaybackEvent('next', `${collectionId || 'unknown'}-${targetIndex}`, targetPhase, targetIndex, speed);
             }
 
             // Show viewed snackbar when going from output to input phase
-            if (currentPhase === 'output' && targetPhase === 'input') {
+            if (currentPhase === 'output') {
                 showViewedUpdate();
             }
         }
@@ -502,7 +524,7 @@ export function PhrasePlaybackView({
 
         if (currentPhase === 'input') {
             if (playOutputBeforeInput) {
-                updateUserStats(phrases, currentPhraseIndex);
+                throttledUpdateUserStats(phrases, currentPhraseIndex);
             }
 
             const timeoutId = window.setTimeout(() => {
@@ -527,7 +549,7 @@ export function PhrasePlaybackView({
         } else {
             // Update user stats before phrase ends
             if (!playOutputBeforeInput) {
-                updateUserStats(phrases, currentPhraseIndex);
+                throttledUpdateUserStats(phrases, currentPhraseIndex);
             }
 
             // Set progress bar for shadow (output duration delay)
