@@ -43,7 +43,7 @@ export function PhrasePlaybackView({
     stickyHeaderContent,
     methodsRef,
 }: PhrasePlaybackViewProps) {
-    const { updateUserStats, StatsPopups, StatsModal, showStatsUpdate } = useUpdateUserStats();
+    const { updateUserStats, StatsPopups, StatsModal, showStatsUpdate, showViewedPhrases } = useUpdateUserStats();
     const [currentPhraseIndex, setCurrentPhraseIndex] = useState(0);
     const [currentPhase, setCurrentPhase] = useState<'input' | 'output'>(
         presentationConfig.enableInputPlayback ? 'input' : 'output'
@@ -58,43 +58,19 @@ export function PhrasePlaybackView({
     const [showTitle, setShowTitle] = useState(false);
     const [configName, setConfigName] = useState('Default');
 
-    // Viewed phrases snackbar
-    const [showViewedSnackbar, setShowViewedSnackbar] = useState(false);
-    const [viewedCount, setViewedCount] = useState(0);
-    const dailyViewedRef = useRef(0);
-
     // Throttling refs for spam prevention
     const updateUserStatsLastCall = useRef<number>(0);
-    const showViewedUpdateLastCall = useRef<number>(0);
-    const THROTTLE_DELAY = 300; // 300ms throttle
-
-    // Throttled function to show viewed snackbar
-    const showViewedUpdate = useCallback(() => {
-        const now = Date.now();
-        if (now - showViewedUpdateLastCall.current < THROTTLE_DELAY) {
-            return; // Skip if called too recently
-        }
-        showViewedUpdateLastCall.current = now;
-
-        dailyViewedRef.current += 1;
-        setViewedCount(dailyViewedRef.current);
-        setShowViewedSnackbar(true);
-
-        // Auto-hide after 2 seconds
-        setTimeout(() => {
-            setShowViewedSnackbar(false);
-        }, 2000);
-    }, [THROTTLE_DELAY]);
+    const THROTTLE_DELAY = 1000; // 300ms throttle
 
     // Throttled wrapper for updateUserStats
-    const throttledUpdateUserStats = useCallback((phrases: Phrase[], currentPhraseIndex: number, eventType: 'listened' | 'viewed' = 'listened') => {
+    const throttledUpdateUserStats = useCallback(async (phrases: Phrase[], currentPhraseIndex: number, eventType: 'listened' | 'viewed' = 'listened') => {
         const now = Date.now();
         if (now - updateUserStatsLastCall.current < THROTTLE_DELAY) {
             return; // Skip if called too recently
         }
         updateUserStatsLastCall.current = now;
 
-        updateUserStats(phrases, currentPhraseIndex, eventType);
+        await updateUserStats(phrases, currentPhraseIndex, eventType);
     }, [updateUserStats, THROTTLE_DELAY]);
 
     const [showProgressBar, setShowProgressBar] = useState(false);
@@ -327,7 +303,7 @@ export function PhrasePlaybackView({
     };
 
     // Shared navigation handlers
-    const handlePrevious = () => {
+    const handlePrevious = async () => {
         clearAllTimeouts();
         if (audioRef.current) {
             audioRef.current.pause();
@@ -400,20 +376,19 @@ export function PhrasePlaybackView({
 
             // Update user stats for phrase viewed (only once per phrase pair - when target language is reached)
             if (targetIndex >= 0 && phrases[targetIndex] && targetPhase === 'output') {
-                throttledUpdateUserStats(phrases, targetIndex, 'viewed');
-
                 // Track previous navigation (existing)
                 trackPlaybackEvent('previous', `${collectionId || 'unknown'}-${targetIndex}`, targetPhase, targetIndex, speed);
+                await throttledUpdateUserStats(phrases, targetIndex, 'viewed');
             }
 
-            // Show viewed snackbar when going from output to input phase
+            // Increment viewed phrases when navigating from output phase
             if (currentPhase === 'output') {
-                showViewedUpdate();
+                showViewedPhrases();
             }
         }
     };
 
-    const handleNext = () => {
+    const handleNext = async () => {
         clearAllTimeouts();
         if (audioRef.current) {
             audioRef.current.pause();
@@ -486,15 +461,15 @@ export function PhrasePlaybackView({
 
             // Update user stats for phrase viewed (only once per phrase pair - when target language is reached)
             if (targetIndex >= 0 && phrases[targetIndex] && targetPhase === 'output') {
-                throttledUpdateUserStats(phrases, targetIndex, 'viewed');
-
                 // Track next navigation (existing)
                 trackPlaybackEvent('next', `${collectionId || 'unknown'}-${targetIndex}`, targetPhase, targetIndex, speed);
+
+                await throttledUpdateUserStats(phrases, targetIndex, 'viewed');
             }
 
-            // Show viewed snackbar when going from output to input phase
+            // Increment viewed phrases when navigating from output phase
             if (currentPhase === 'output') {
-                showViewedUpdate();
+                showViewedPhrases();
             }
         }
     };
@@ -681,19 +656,6 @@ export function PhrasePlaybackView({
             {/* Stats Modal */}
             {StatsModal}
 
-            {/* Viewed Phrases Snackbar */}
-            {showViewedSnackbar && (
-                <div className="fixed top-4 right-4 z-50">
-                    <div className="bg-blue-500 text-white px-4 py-2 rounded-lg shadow-lg flex items-center space-x-2 animate-fade-in">
-                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                        </svg>
-                        <span className="font-medium">
-                            👀 {viewedCount} phrase{viewedCount !== 1 ? 's' : ''} viewed
-                        </span>
-                    </div>
-                </div>
-            )}
 
             {/* Audio Element */}
             <audio ref={audioRef} onEnded={handleAudioEnded} controls hidden />

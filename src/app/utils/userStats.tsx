@@ -193,6 +193,7 @@ export const useUpdateUserStats = () => {
   const [countToShow, setCountToShow] = useState(0);
   const [persistUntilInteraction, setPersistUntilInteraction] = useState(false);
   const [showStatsModal, setShowStatsModal] = useState(false);
+  const [popupEventType, setPopupEventType] = useState<'listened' | 'viewed'>('listened');
 
   const phrasesListenedRef = useRef(0);
   const phrasesViewedRef = useRef(0);
@@ -260,22 +261,64 @@ export const useUpdateUserStats = () => {
     syncTotalIfNeeded(true);
   };
 
-  const showStatsUpdate = (shouldPersistUntilInteraction: boolean = false) => {
-    if (phrasesListenedRef.current > 0) {
-      const phrasesCount = phrasesListenedRef.current;
+  // Function to increment viewed phrases and show popup after threshold
+  const showViewedPhrases = (threshold: number = 5) => {
+    console.log('try show viewed', JSON.stringify(phrasesViewedRef.current));
+    // Show popup on exact multiples of threshold (5, 10, 15, etc.)
+    if (phrasesViewedRef.current % threshold === 0) {
+      console.log('show viewed', JSON.stringify(phrasesViewedRef.current));
+      showStatsUpdate(true, 'viewed');
+    }
+  };
+
+  const showStatsUpdate = (shouldPersistUntilInteraction: boolean = false, eventType: 'listened' | 'viewed' | 'both' = 'listened') => {
+    const listenedCount = phrasesListenedRef.current;
+    const viewedCount = phrasesViewedRef.current;
+
+    let shouldShowPopup = false;
+    let displayCount = 0;
+    let displayType = '';
+
+    if (eventType === 'listened' && listenedCount > 0) {
+      shouldShowPopup = true;
+      displayCount = listenedCount;
+      displayType = 'listened';
+      phrasesListenedRef.current = 0;
+    } else if (eventType === 'viewed' && viewedCount > 0) {
+      shouldShowPopup = true;
+      displayCount = viewedCount;
+      displayType = 'viewed';
+      // Don't reset viewed count - keep accumulating
+    } else if (eventType === 'both' && (listenedCount > 0 || viewedCount > 0)) {
+      shouldShowPopup = true;
+      if (listenedCount > 0) {
+        displayCount = listenedCount;
+        displayType = 'listened';
+        phrasesListenedRef.current = 0;
+      } else {
+        displayCount = viewedCount;
+        displayType = 'viewed';
+        // Don't reset viewed count - keep accumulating
+      }
+    }
+
+    if (shouldShowPopup) {
       setShowPopup(true);
-      setCountToShow(phrasesCount);
+      setCountToShow(displayCount);
       setPersistUntilInteraction(shouldPersistUntilInteraction);
 
-      // Track popup show event
-      trackPhrasesListenedPopup(
-        "show",
-        phrasesCount,
-        shouldPersistUntilInteraction,
-        shouldPersistUntilInteraction ? "natural" : "manual"
-      );
+      // Store the event type for display purposes
+      setPopupEventType(displayType as 'listened' | 'viewed');
 
-      phrasesListenedRef.current = 0;
+      // Track popup show event (keep existing tracking for listened events)
+      if (displayType === 'listened') {
+        trackPhrasesListenedPopup(
+          "show",
+          displayCount,
+          shouldPersistUntilInteraction,
+          shouldPersistUntilInteraction ? "natural" : "manual"
+        );
+      }
     }
 
     if (!shouldPersistUntilInteraction) {
@@ -426,6 +469,7 @@ export const useUpdateUserStats = () => {
     if (eventType === 'listened') {
       phrasesListenedRef.current += 1;
     } else if (eventType === 'viewed') {
+      console.log('update viewed', JSON.stringify(phrasesViewedRef.current));
       phrasesViewedRef.current += 1;
     }
 
@@ -731,7 +775,7 @@ export const useUpdateUserStats = () => {
           transition={{ duration: 0.2 }}
         >
           <motion.div
-            className="bg-yellow-500 text-white px-6 py-4 rounded-lg shadow-lg max-w-sm mx-4 sm:mx-0"
+            className={`${popupEventType === 'viewed' ? 'bg-blue-500' : 'bg-yellow-500'} text-white px-6 py-4 rounded-lg shadow-lg max-w-sm mx-4 sm:mx-0`}
             initial={{ scale: 0.8, opacity: 0, y: 20 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.8, opacity: 0, y: -20 }}
@@ -761,7 +805,7 @@ export const useUpdateUserStats = () => {
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.2, duration: 0.3 }}
                 >
-                  {countToShow} phrase{countToShow !== 1 ? 's' : ''} listened!
+                  {popupEventType === 'viewed' ? '👀' : ''} {countToShow} phrase{countToShow !== 1 ? 's' : ''} {popupEventType}!
                 </motion.span>
               </div>
 
@@ -938,14 +982,14 @@ export const useUpdateUserStats = () => {
                 >
                   {user && (
                     <button
-                      className="w-full px-4 py-2 bg-yellow-800 hover:bg-yellow-900 text-white rounded text-sm font-medium transition-colors"
+                      className={`w-full px-4 py-2 ${popupEventType === 'viewed' ? 'bg-blue-800 hover:bg-blue-900' : 'bg-yellow-800 hover:bg-yellow-900'} text-white rounded text-sm font-medium transition-colors`}
                       onClick={openStatsModal}
                     >
                       View Stats
                     </button>
                   )}
                   <button
-                    className="w-full px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded text-sm font-medium transition-colors shadow-md"
+                    className={`w-full px-4 py-2 ${popupEventType === 'viewed' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-yellow-600 hover:bg-yellow-700'} text-white rounded text-sm font-medium transition-colors shadow-md`}
                     onClick={() => closeStatsPopup("continue")}
                   >
                     Continue
@@ -1100,7 +1144,9 @@ export const useUpdateUserStats = () => {
     showStatsUpdate,
     closeStatsPopup,
     forceSyncTotal,
+    showViewedPhrases,
     phrasesListened: phrasesListenedRef.current,
+    phrasesViewed: phrasesViewedRef.current,
     currentStreak,
   };
 };
