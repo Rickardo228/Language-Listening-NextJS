@@ -58,20 +58,22 @@ export function PhrasePlaybackView({
     const [showTitle, setShowTitle] = useState(false);
     const [configName, setConfigName] = useState('Default');
 
-    // Throttling refs for spam prevention
-    const updateUserStatsLastCall = useRef<number>(0);
-    const THROTTLE_DELAY = 1000; // 300ms throttle
+    // Debouncing refs for spam prevention
+    const updateUserStatsTimeout = useRef<NodeJS.Timeout | null>(null);
+    const DEBOUNCE_DELAY = 800; // 1000ms debounce
 
-    // Throttled wrapper for updateUserStats
-    const throttledUpdateUserStats = useCallback(async (phrases: Phrase[], currentPhraseIndex: number, eventType: 'listened' | 'viewed' = 'listened') => {
-        const now = Date.now();
-        if (now - updateUserStatsLastCall.current < THROTTLE_DELAY) {
-            return; // Skip if called too recently
+    // Debounced wrapper for updateUserStats
+    const debouncedUpdateUserStats = useCallback(async (phrases: Phrase[], currentPhraseIndex: number, eventType: 'listened' | 'viewed' = 'listened') => {
+        // Clear existing timeout
+        if (updateUserStatsTimeout.current) {
+            clearTimeout(updateUserStatsTimeout.current);
         }
-        updateUserStatsLastCall.current = now;
 
-        await updateUserStats(phrases, currentPhraseIndex, eventType);
-    }, [updateUserStats, THROTTLE_DELAY]);
+        // Set new timeout
+        updateUserStatsTimeout.current = setTimeout(async () => {
+            await updateUserStats(phrases, currentPhraseIndex, eventType);
+        }, DEBOUNCE_DELAY);
+    }, [updateUserStats, DEBOUNCE_DELAY]);
 
     const [showProgressBar, setShowProgressBar] = useState(false);
     const [progressDuration, setProgressDuration] = useState(0);
@@ -378,7 +380,7 @@ export function PhrasePlaybackView({
             if (targetIndex >= 0 && phrases[targetIndex] && targetPhase === 'output') {
                 // Track previous navigation (existing)
                 trackPlaybackEvent('previous', `${collectionId || 'unknown'}-${targetIndex}`, targetPhase, targetIndex, speed);
-                await throttledUpdateUserStats(phrases, targetIndex, 'viewed');
+                await debouncedUpdateUserStats(phrases, targetIndex, 'viewed');
             }
 
             // Increment viewed phrases when navigating from output phase
@@ -464,7 +466,7 @@ export function PhrasePlaybackView({
                 // Track next navigation (existing)
                 trackPlaybackEvent('next', `${collectionId || 'unknown'}-${targetIndex}`, targetPhase, targetIndex, speed);
 
-                await throttledUpdateUserStats(phrases, targetIndex, 'viewed');
+                await debouncedUpdateUserStats(phrases, targetIndex, 'viewed');
             }
 
             // Increment viewed phrases when navigating from output phase
@@ -499,7 +501,7 @@ export function PhrasePlaybackView({
 
         if (currentPhase === 'input') {
             if (playOutputBeforeInput) {
-                throttledUpdateUserStats(phrases, currentPhraseIndex);
+                debouncedUpdateUserStats(phrases, currentPhraseIndex);
             }
 
             const timeoutId = window.setTimeout(() => {
@@ -524,7 +526,7 @@ export function PhrasePlaybackView({
         } else {
             // Update user stats before phrase ends
             if (!playOutputBeforeInput) {
-                throttledUpdateUserStats(phrases, currentPhraseIndex);
+                debouncedUpdateUserStats(phrases, currentPhraseIndex);
             }
 
             // Set progress bar for shadow (output duration delay)
