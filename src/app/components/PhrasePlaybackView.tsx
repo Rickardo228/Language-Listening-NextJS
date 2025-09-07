@@ -380,11 +380,11 @@ export function PhrasePlaybackView({
             if (targetIndex >= 0 && phrases[targetIndex] && targetPhase === 'output') {
                 // Track previous navigation (existing)
                 trackPlaybackEvent('previous', `${collectionId || 'unknown'}-${targetIndex}`, targetPhase, targetIndex, speed);
-                await debouncedUpdateUserStats(phrases, targetIndex, 'viewed');
+                if (paused) await debouncedUpdateUserStats(phrases, targetIndex, 'viewed');
             }
 
             // Increment viewed phrases when navigating from output phase
-            if (currentPhase === 'output') {
+            if (currentPhase === 'output' && paused) {
                 showViewedPhrases();
             }
         }
@@ -465,12 +465,12 @@ export function PhrasePlaybackView({
             if (targetIndex >= 0 && phrases[targetIndex] && targetPhase === 'output') {
                 // Track next navigation (existing)
                 trackPlaybackEvent('next', `${collectionId || 'unknown'}-${targetIndex}`, targetPhase, targetIndex, speed);
-
-                await debouncedUpdateUserStats(phrases, targetIndex, 'viewed');
+                // TODO - should we also increment viewed phrases when autoplaying (via use effect)?
+                if (paused) await debouncedUpdateUserStats(phrases, targetIndex, 'viewed');
             }
 
             // Increment viewed phrases when navigating from output phase
-            if (currentPhase === 'output') {
+            if (currentPhase === 'output' && paused) {
                 showViewedPhrases();
             }
         }
