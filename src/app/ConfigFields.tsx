@@ -28,7 +28,7 @@ const ConfigFields: React.FC<ConfigFieldsProps> = ({
         // Track the setting change
         track('Presentation Setting Changed', {
             settingKey: key,
-            previousValue: previousValue,
+            previousValue: previousValue ?? null,
             newValue: value,
             valueType: typeof value
         });

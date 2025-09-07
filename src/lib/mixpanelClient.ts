@@ -249,7 +249,7 @@ export const trackPhrasesListenedPopup = (
 // Generic tracking function for other events
 export const track = (
   eventName: string,
-  properties?: Record<string, string | number | boolean>
+  properties?: Record<string, string | number | boolean | string[] | null>
 ) => {
   if (!MIXPANEL_TOKEN || !isInitialized) return;
   mixpanel.track(eventName, {

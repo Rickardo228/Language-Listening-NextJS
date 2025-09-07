@@ -57,7 +57,7 @@ export function TemplatesBrowser({
     const [templates, setTemplates] = useState<Template[]>([]);
     const [loading, setLoading] = useState(true);
     const [isShowingAll, setIsShowingAll] = useState(false);
-    
+
     // Use user preferences if available, otherwise fall back to props
     const [inputLang, setInputLang] = useState(
         userProfile?.preferredInputLang || initialInputLang
@@ -72,12 +72,12 @@ export function TemplatesBrowser({
         if (userProfile?.preferredInputLang && userProfile?.preferredTargetLang) {
             const newInputLang = userProfile.preferredInputLang;
             const newTargetLang = userProfile.preferredTargetLang;
-            
+
             // Only update if different to avoid infinite loops
             if (inputLang !== newInputLang || targetLang !== newTargetLang) {
                 setInputLang(newInputLang);
                 setTargetLang(newTargetLang);
-                
+
                 // Refetch templates with new languages
                 fetchTemplates(newInputLang, newTargetLang);
             }
@@ -145,15 +145,15 @@ export function TemplatesBrowser({
                 .filter((groupTemplates) => {
                     const hasInput = groupTemplates.some((t) => t.lang === inputLangToUse);
                     const hasTarget = groupTemplates.some((t) => t.lang === targetLangToUse);
-                    
+
                     // If tags are provided, check if any template in the group has matching tags
                     if (tags.length > 0) {
-                        const hasMatchingTags = groupTemplates.some((t) => 
+                        const hasMatchingTags = groupTemplates.some((t) =>
                             t.tags && tags.some(tag => t.tags!.includes(tag))
                         );
                         return hasInput && hasTarget && hasMatchingTags;
                     }
-                    
+
                     return hasInput && hasTarget;
                 })
                 .map((groupTemplates) => groupTemplates.find((t) => t.lang === inputLangToUse) || groupTemplates[0]);
@@ -275,27 +275,27 @@ export function TemplatesBrowser({
                                 getLanguagePair={() => ({ inputLang, targetLang })}
                                 onLoadCollection={(c) => {
                                     const template = templateByGroup.get(c.id);
-                                    track('Template Collection Selected', { 
-                                        templateId: c.id, 
+                                    track('Template Collection Selected', {
+                                        templateId: c.id,
                                         templateName: template?.name || c.name,
                                         templateTags: template?.tags || [],
-                                        complexity: template?.complexity,
-                                        phraseCount: template?.phraseCount,
-                                        inputLang, 
-                                        targetLang 
+                                        complexity: template?.complexity || null,
+                                        phraseCount: template?.phraseCount || null,
+                                        inputLang,
+                                        targetLang
                                     });
                                     router.push(`/templates/${c.id}?inputLang=${inputLang}&targetLang=${targetLang}`);
                                 }}
                                 onPlayClick={(c) => {
                                     const template = templateByGroup.get(c.id);
-                                    track('Template Play Clicked', { 
-                                        templateId: c.id, 
+                                    track('Template Play Clicked', {
+                                        templateId: c.id,
                                         templateName: template?.name || c.name,
                                         templateTags: template?.tags || [],
-                                        complexity: template?.complexity,
-                                        phraseCount: template?.phraseCount,
-                                        inputLang, 
-                                        targetLang 
+                                        complexity: template?.complexity || null,
+                                        phraseCount: template?.phraseCount || null,
+                                        inputLang,
+                                        targetLang
                                     });
                                     router.push(
                                         `/templates/${c.id}?inputLang=${inputLang}&targetLang=${targetLang}&autoplay=1`
