@@ -154,10 +154,14 @@ interface LanguageStats {
     firstListened: string;
 }
 
+// Helper function to consistently calculate day totals
+function getDayTotal(day: DailyStats): number {
+    return day.totalCount && day.totalCount > day.count + (day.countViewed || 0) ? day.totalCount : (day.count + (day.countViewed || 0));
+}
+
 // Chart.js-based bar chart component
 function DailyStatsChart({ dailyStats, personalBest }: { dailyStats: DailyStats[], personalBest: { count: number; date: string; achievedAt: string } | null }) {
     if (dailyStats.length === 0) return null;
-    const getDayTotal = (day: DailyStats) => day.totalCount && day.totalCount > day.count ? day.totalCount : (day.count + (day.countViewed || 0));
 
     // Prepare data for Chart.js
     const labels = dailyStats.map(day =>
@@ -445,7 +449,7 @@ export function UserStatsModal({ isOpen, onClose, user }: UserStatsModalProps) {
 
         return matches;
     });
-    const todayCount = todayStats ? (todayStats.count + (todayStats.countViewed || 0)) : 0;
+    const todayCount = todayStats ? getDayTotal(todayStats) : 0;
 
     // Get yesterday's stats for comparison using user's timezone
     const yesterday = new Date();
@@ -459,7 +463,7 @@ export function UserStatsModal({ isOpen, onClose, user }: UserStatsModalProps) {
 
         return matches;
     });
-    const yesterdayCount = yesterdayStats ? (yesterdayStats.totalCount || (yesterdayStats.count + (yesterdayStats.countViewed || 0))) : 0;
+    const yesterdayCount = yesterdayStats ? getDayTotal(yesterdayStats) : 0;
 
     // Calculate trend with 20% buffer for steady progress
     const trendBuffer = Math.max(1, Math.round(yesterdayCount * 0.2)); // 20% of yesterday's count, minimum 1
@@ -468,7 +472,7 @@ export function UserStatsModal({ isOpen, onClose, user }: UserStatsModalProps) {
 
     // Use the fetched personal best data directly
     let personalBest = personalBestData ? {
-        count: personalBestData.totalCount || (personalBestData.count + (personalBestData.countViewed || 0)),
+        count: getDayTotal(personalBestData),
         date: personalBestData.date,
         achievedAt: personalBestData.lastUpdated
     } : null;
