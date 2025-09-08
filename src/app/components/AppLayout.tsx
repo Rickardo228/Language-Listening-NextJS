@@ -322,8 +322,8 @@ export function AppLayout({ children }: AppLayoutProps) {
               title="Home"
             >
               <img
-                src={theme === 'light' ? '/logo-black.png' : '/logo-thick-white.png'}
-                alt="Language Shadowing Logo"
+                src={theme === 'light' ? '/language-shadowing-logo-dark.png' : '/language-shadowing-logo-white.png'}
+                alt="Language Shadowing Logo - Learn Languages Through Audio Practice"
                 className="w-8 h-8 sm:ml-2 sm:mt-0.5"
               />
               <h1 className="hidden sm:block">Language Shadowing</h1>
