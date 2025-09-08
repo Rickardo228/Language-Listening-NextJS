@@ -364,8 +364,6 @@ export const useUpdateUserStats = () => {
     setPersistUntilInteraction(false);
     // Clear recent milestones when user opens stats modal
     setRecentMilestones([]);
-    // Also hide streak increment when opening stats modal
-    setShowStreakIncrement(false);
   };
 
   useEffect(() => {
