@@ -3,6 +3,7 @@ import { User } from 'firebase/auth';
 import { getFlagEmoji, getLanguageName } from '../utils/languageUtils';
 import { useUser } from '../contexts/UserContext';
 import { createOrUpdateUserProfile } from '../utils/userPreferences';
+import { languageOptions } from '../types';
 
 interface StatsSettingsModalProps {
     isOpen: boolean;
@@ -10,13 +11,7 @@ interface StatsSettingsModalProps {
     user: User;
 }
 
-const SUPPORTED_LANGUAGES = [
-    'en-GB', 'en-US', 'es-ES', 'es-MX', 'fr-FR', 'de-DE', 'it-IT', 'pt-BR', 'pt-PT',
-    'ru-RU', 'ja-JP', 'ko-KR', 'zh-CN', 'zh-TW', 'ar-SA', 'hi-IN', 'tr-TR', 'pl-PL',
-    'nl-NL', 'sv-SE', 'da-DK', 'no-NO', 'fi-FI', 'cs-CZ', 'hu-HU', 'ro-RO', 'el-GR',
-    'he-IL', 'th-TH', 'vi-VN', 'id-ID', 'ms-MY', 'tl-PH', 'uk-UA', 'bg-BG', 'hr-HR',
-    'sk-SK', 'sl-SI', 'et-EE', 'lv-LV', 'lt-LT', 'mt-MT', 'cy-GB', 'ga-IE', 'is-IS'
-];
+const SUPPORTED_LANGUAGES = languageOptions.map(lang => lang.code);
 
 export function StatsSettingsModal({ isOpen, onClose, user }: StatsSettingsModalProps) {
     const { userProfile, refreshUserProfile } = useUser();
