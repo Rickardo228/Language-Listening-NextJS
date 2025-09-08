@@ -316,13 +316,18 @@ export function AppLayout({ children }: AppLayoutProps) {
         {/* Nav */}
         <div className="flex items-center justify-between shadow-md lg:mb-0 p-3 sticky top-0 bg-background border-b z-50">
           <div className="flex items-center gap-4">
-            <h1
-              className="text-2xl font-bold cursor-pointer hover:opacity-80 transition-opacity hidden sm:block"
+            <div
+              className="flex items-center gap-3 text-2xl cursor-pointer hover:opacity-80 transition-opacity"
               onClick={handleHome}
               title="Home"
             >
-              Language Shadowing
-            </h1>
+              <img
+                src={theme === 'light' ? '/logo-black.png' : '/logo-thick-white.png'}
+                alt="Language Shadowing Logo"
+                className="w-8 h-8 sm:ml-2 sm:mt-0.5"
+              />
+              <h1 className="hidden sm:block">Language Shadowing</h1>
+            </div>
             {!hideSidebar && (
               <button
                 onClick={handleHome}
