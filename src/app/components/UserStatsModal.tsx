@@ -334,6 +334,55 @@ function aggregateLanguageStats(languageStats: LanguageStats[], userPreferredLan
     return Array.from(languageMap.values()).sort((a, b) => b.totalCount - a.totalCount);
 }
 
+// Function to get the most recently practiced language (for "today's" language)
+function getMostRecentLanguage(languageStats: LanguageStats[], userPreferredLang?: string): {
+    language: string;
+    totalCount: number;
+    firstListened: string;
+} | null {
+    const languageMap = new Map<string, {
+        language: string;
+        totalCount: number;
+        firstListened: string;
+        lastUpdated: string;
+    }>();
+
+    languageStats.forEach(stat => {
+        const targetLang = stat.targetLang;
+
+        // Skip if this is the user's native language
+        if (targetLang === userPreferredLang) {
+            return;
+        }
+
+        if (languageMap.has(targetLang)) {
+            const existing = languageMap.get(targetLang)!;
+            existing.totalCount += stat.count;
+            // Keep the most recent lastUpdated date
+            if (new Date(stat.lastUpdated) > new Date(existing.lastUpdated)) {
+                existing.lastUpdated = stat.lastUpdated;
+            }
+            // Keep the earliest first listened date
+            if (new Date(stat.firstListened) < new Date(existing.firstListened)) {
+                existing.firstListened = stat.firstListened;
+            }
+        } else {
+            languageMap.set(targetLang, {
+                language: targetLang,
+                totalCount: stat.count,
+                firstListened: stat.firstListened,
+                lastUpdated: stat.lastUpdated
+            });
+        }
+    });
+
+    const languages = Array.from(languageMap.values());
+    if (languages.length === 0) return null;
+
+    // Sort by most recent lastUpdated date
+    return languages.sort((a, b) => new Date(b.lastUpdated).getTime() - new Date(a.lastUpdated).getTime())[0];
+}
+
 export function UserStatsModal({ isOpen, onClose, user }: UserStatsModalProps) {
     const { userProfile } = useUser();
     const [mainStats, setMainStats] = useState<UserStats | null>(null);
@@ -647,14 +696,13 @@ export function UserStatsModal({ isOpen, onClose, user }: UserStatsModalProps) {
                                     <div className="text-center relative">
                                         <div className="flex items-center justify-center gap-2 mb-2">
                                             {(() => {
-                                                // Show flag with phrases on mobile always
-                                                const aggregatedLanguages = aggregateLanguageStats(languageStats, userProfile?.nativeLanguage || userProfile?.preferredInputLang);
-                                                const topLanguage = aggregatedLanguages[0];
+                                                // Show flag with phrases on mobile always - use most recent language for "today's" focus
+                                                const mostRecentLanguage = getMostRecentLanguage(languageStats, userProfile?.nativeLanguage || userProfile?.preferredInputLang);
 
-                                                if (topLanguage) {
+                                                if (mostRecentLanguage) {
                                                     return (
-                                                        <div className="text-2xl sm:hidden" title={getLanguageName(topLanguage.language)}>
-                                                            {getFlagEmoji(topLanguage.language)}
+                                                        <div className="text-2xl sm:hidden" title={getLanguageName(mostRecentLanguage.language)}>
+                                                            {getFlagEmoji(mostRecentLanguage.language)}
                                                         </div>
                                                     );
                                                 }
@@ -674,17 +722,16 @@ export function UserStatsModal({ isOpen, onClose, user }: UserStatsModalProps) {
                                     </div>
                                     {/* Flag column - only visible on desktop */}
                                     {(() => {
-                                        const aggregatedLanguages = aggregateLanguageStats(languageStats, userProfile?.nativeLanguage || userProfile?.preferredInputLang);
-                                        const topLanguage = aggregatedLanguages[0];
+                                        const mostRecentLanguage = getMostRecentLanguage(languageStats, userProfile?.nativeLanguage || userProfile?.preferredInputLang);
 
-                                        if (topLanguage) {
+                                        if (mostRecentLanguage) {
                                             return (
                                                 <div className="text-center hidden sm:block">
-                                                    <div className="text-4xl mb-2" title={getLanguageName(topLanguage.language)}>
-                                                        {getFlagEmoji(topLanguage.language)}
+                                                    <div className="text-4xl mb-2" title={getLanguageName(mostRecentLanguage.language)}>
+                                                        {getFlagEmoji(mostRecentLanguage.language)}
                                                     </div>
                                                     <div className="text-sm text-foreground/60">
-                                                        {getLanguageName(topLanguage.language)}
+                                                        {getLanguageName(mostRecentLanguage.language)}
                                                     </div>
                                                 </div>
                                             );
