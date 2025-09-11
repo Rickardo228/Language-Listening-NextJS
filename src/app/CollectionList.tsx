@@ -104,13 +104,6 @@ export function CollectionList({
         'bg-gradient-to-b from-[#1ED760] to-[#6D28D9]'
     ];
 
-    // Sort collections by created_at in descending order (most recent first)
-    const sortedCollections = [...savedCollections].sort((a, b) => {
-        const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
-        const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
-        return dateB - dateA;
-    });
-
     return (
         <div className="space-y-4">
             <div className="flex items-center justify-between">
@@ -191,7 +184,7 @@ export function CollectionList({
                                 : 'space-y-2'
                         }
                     >
-                        {sortedCollections.map((collection) => {
+                        {savedCollections.map((collection) => {
                             // Determine phrase count and languages
                             const phraseCount = getPhraseCount ? getPhraseCount(collection) : collection.phrases.length;
                             const languages = getLanguagePair ? getLanguagePair(collection) : (collection.phrases[0]

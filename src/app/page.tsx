@@ -16,6 +16,13 @@ export default function Home() {
         className="mt-8"
         noTemplatesComponent={<></>}
       />
+      <TemplatesBrowser
+        pathId="beginner_path"
+        showHeader={false}
+        title="Beginner Learning Path"
+        className="mt-8"
+        noTemplatesComponent={<></>}
+      />
     </div>
   );
 }

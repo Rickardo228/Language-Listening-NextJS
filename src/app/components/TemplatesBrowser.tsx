@@ -31,6 +31,8 @@ interface Template {
     phraseCount: number;
     name?: string;
     tags?: string[];
+    pathId?: string;
+    pathIndex?: number;
 }
 
 interface TemplatesBrowserProps {
@@ -41,6 +43,7 @@ interface TemplatesBrowserProps {
     tags?: string[];
     title?: string;
     noTemplatesComponent?: React.ReactNode;
+    pathId?: string;
 }
 
 export function TemplatesBrowser({
@@ -51,6 +54,7 @@ export function TemplatesBrowser({
     tags = [],
     title,
     noTemplatesComponent,
+    pathId,
 }: TemplatesBrowserProps) {
     const router = useRouter();
     const { userProfile } = useUser();
@@ -99,18 +103,24 @@ export function TemplatesBrowser({
             const templatesRef = collection(firestore, 'templates');
 
             const FETCH_LIMIT = options?.limitCount || 10;
-            const query1 = query(
-                templatesRef,
+
+            // Build base query conditions
+            const baseConditions1 = [
                 where('lang', '==', inputLangToUse),
-                orderBy('createdAt', 'desc'),
+                ...(pathId ? [where('pathId', '==', pathId)] : []),
+                orderBy(pathId ? 'pathIndex' : 'createdAt', pathId ? 'asc' : 'desc'),
                 ...(options?.fetchAll ? [] as [] : [limit(FETCH_LIMIT)])
-            );
-            const query2 = query(
-                templatesRef,
+            ];
+
+            const baseConditions2 = [
                 where('lang', '==', targetLangToUse),
-                orderBy('createdAt', 'desc'),
+                ...(pathId ? [where('pathId', '==', pathId)] : []),
+                orderBy(pathId ? 'pathIndex' : 'createdAt', pathId ? 'asc' : 'desc'),
                 ...(options?.fetchAll ? [] as [] : [limit(FETCH_LIMIT)])
-            );
+            ];
+
+            const query1 = query(templatesRef, ...baseConditions1);
+            const query2 = query(templatesRef, ...baseConditions2);
 
             const [querySnapshot1, querySnapshot2] = await Promise.all([
                 getDocs(query1),
@@ -121,6 +131,7 @@ export function TemplatesBrowser({
             const seenIds = new Set<string>();
 
             querySnapshot1.forEach((doc) => {
+                console.log(doc.id);
                 if (!seenIds.has(doc.id)) {
                     seenIds.add(doc.id);
                     templatesData.push({ id: doc.id, ...doc.data() } as Template);
@@ -132,7 +143,7 @@ export function TemplatesBrowser({
                     templatesData.push({ id: doc.id, ...doc.data() } as Template);
                 }
             });
-
+            console.log(templatesData);
             const templatesByGroup = templatesData.reduce((acc, template) => {
                 if (!acc[template.groupId]) {
                     acc[template.groupId] = [] as Template[];
@@ -140,7 +151,8 @@ export function TemplatesBrowser({
                 (acc[template.groupId] as Template[]).push(template);
                 return acc;
             }, {} as Record<string, Template[]>);
-
+            console.log(tags);
+            console.log(templatesByGroup);
             const uniqueTemplates = Object.values(templatesByGroup)
                 .filter((groupTemplates) => {
                     const hasInput = groupTemplates.some((t) => t.lang === inputLangToUse);
@@ -157,15 +169,15 @@ export function TemplatesBrowser({
                     return hasInput && hasTarget;
                 })
                 .map((groupTemplates) => groupTemplates.find((t) => t.lang === inputLangToUse) || groupTemplates[0]);
-
-            const sortedTemplates = uniqueTemplates.sort((a, b) => {
-                const dateA = a.createdAt?.toDate?.() || new Date(0);
-                const dateB = b.createdAt?.toDate?.() || new Date(0);
-                return dateB.getTime() - dateA.getTime();
-            });
+            console.log(uniqueTemplates);
+            // const sortedTemplates = uniqueTemplates.sort((a, b) => {
+            //     const dateA = a.createdAt?.toDate?.() || new Date(0);
+            //     const dateB = b.createdAt?.toDate?.() || new Date(0);
+            //     return dateB.getTime() - dateA.getTime();
+            // });
 
             // Limit visible to 10 unless fetching all
-            setTemplates(options?.fetchAll ? sortedTemplates : sortedTemplates.slice(0, FETCH_LIMIT));
+            setTemplates(options?.fetchAll ? uniqueTemplates : uniqueTemplates.slice(0, FETCH_LIMIT));
         } catch (err) {
             console.error('Error fetching templates:', err);
             setTemplates([]);
@@ -179,7 +191,7 @@ export function TemplatesBrowser({
             hasInitialFetch.current = true;
             fetchTemplates(undefined, undefined, { fetchAll: false, limitCount: 10 });
         }
-    }, []);
+    }, [pathId]);
 
     const handleInputLangChange = (lang: string) => {
         setTemplates([]);
@@ -261,6 +273,7 @@ export function TemplatesBrowser({
                             phrases: [],
                             created_at: t.createdAt?.toDate?.()?.toISOString(),
                         }));
+                        console.log(mapped);
                         return (
                             <CollectionList
                                 title={title || 'Featured'}
@@ -281,6 +294,7 @@ export function TemplatesBrowser({
                                         templateTags: template?.tags || [],
                                         complexity: template?.complexity || null,
                                         phraseCount: template?.phraseCount || null,
+                                        pathId: pathId || null,
                                         inputLang,
                                         targetLang
                                     });
@@ -294,6 +308,7 @@ export function TemplatesBrowser({
                                         templateTags: template?.tags || [],
                                         complexity: template?.complexity || null,
                                         phraseCount: template?.phraseCount || null,
+                                        pathId: pathId || null,
                                         inputLang,
                                         targetLang
                                     });
@@ -304,7 +319,7 @@ export function TemplatesBrowser({
                                 hideScrollbar
                                 enableCarouselControls
                                 onShowAllClick={async () => {
-                                    track('Show All Templates Clicked');
+                                    track('Show All Templates Clicked', { pathId: pathId || null });
                                     setIsShowingAll(true);
                                     await fetchTemplates(undefined, undefined, { fetchAll: true });
                                 }}
