@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { getFirestore, collection, query, where, getDocs, Timestamp, orderBy, limit } from 'firebase/firestore';
+import { getFirestore, collection, query, where, getDocs, Timestamp, orderBy, limit, QuerySnapshot, DocumentSnapshot, } from 'firebase/firestore';
 import { languageOptions, Config } from '../types';
 import { CollectionList } from '../CollectionList';
 import { OnboardingLanguageSelect } from './OnboardingLanguageSelect';
@@ -33,6 +33,7 @@ interface Template {
     tags?: string[];
     pathId?: string;
     pathIndex?: number;
+    is_path?: boolean;
 }
 
 interface TemplatesBrowserProps {
@@ -101,20 +102,95 @@ export function TemplatesBrowser({
 
         try {
             const templatesRef = collection(firestore, 'templates');
-
             const FETCH_LIMIT = options?.limitCount || 10;
 
             // Build base query conditions
+            const getPathConditions = () => {
+                if (pathId) {
+                    return [where('pathId', '==', pathId)];
+                } else {
+                    return [where('is_path', '!=', true)];
+                }
+            };
+
+            const pathConditions = getPathConditions();
+
+            // If tags are provided, make multiple queries (one per tag)
+            if (tags.length > 0) {
+                const allQueries: Promise<QuerySnapshot>[] = [];
+
+                // Create queries for each tag
+                for (const tag of tags) {
+                    const query1 = query(
+                        templatesRef,
+                        where('lang', '==', inputLangToUse),
+                        where('tags', 'array-contains', tag),
+                        ...pathConditions,
+                        orderBy(pathId ? 'pathIndex' : 'createdAt', pathId ? 'asc' : 'desc'),
+                        ...(options?.fetchAll ? [] as [] : [limit(FETCH_LIMIT)])
+                    );
+
+                    const query2 = query(
+                        templatesRef,
+                        where('lang', '==', targetLangToUse),
+                        where('tags', 'array-contains', tag),
+                        ...pathConditions,
+                        orderBy(pathId ? 'pathIndex' : 'createdAt', pathId ? 'asc' : 'desc'),
+                        ...(options?.fetchAll ? [] as [] : [limit(FETCH_LIMIT)])
+                    );
+
+                    allQueries.push(getDocs(query1), getDocs(query2));
+                }
+
+                // Execute all queries in parallel
+                const querySnapshots = await Promise.all(allQueries);
+
+                // Process all results
+                const templatesData: Template[] = [];
+                const seenIds = new Set<string>();
+
+                querySnapshots.forEach((querySnapshot: QuerySnapshot) => {
+                    querySnapshot.forEach((doc: DocumentSnapshot) => {
+                        if (!seenIds.has(doc.id)) {
+                            seenIds.add(doc.id);
+                            templatesData.push({ id: doc.id, ...doc.data() } as Template);
+                        }
+                    });
+                });
+
+                // Process the results (same as before)
+                const templatesByGroup = templatesData.reduce((acc, template) => {
+                    if (!acc[template.groupId]) {
+                        acc[template.groupId] = [] as Template[];
+                    }
+                    (acc[template.groupId] as Template[]).push(template);
+                    return acc;
+                }, {} as Record<string, Template[]>);
+
+                const uniqueTemplates = Object.values(templatesByGroup)
+                    .filter((groupTemplates) => {
+                        const hasInput = groupTemplates.some((t) => t.lang === inputLangToUse);
+                        const hasTarget = groupTemplates.some((t) => t.lang === targetLangToUse);
+                        return hasInput && hasTarget;
+                    })
+                    .map((groupTemplates) => groupTemplates.find((t) => t.lang === inputLangToUse) || groupTemplates[0]);
+
+
+                setTemplates(options?.fetchAll ? uniqueTemplates : uniqueTemplates.slice(0, FETCH_LIMIT));
+                return;
+            }
+
+            // Original logic for when no tags are provided
             const baseConditions1 = [
                 where('lang', '==', inputLangToUse),
-                ...(pathId ? [where('pathId', '==', pathId)] : []),
+                ...pathConditions,
                 orderBy(pathId ? 'pathIndex' : 'createdAt', pathId ? 'asc' : 'desc'),
                 ...(options?.fetchAll ? [] as [] : [limit(FETCH_LIMIT)])
             ];
 
             const baseConditions2 = [
                 where('lang', '==', targetLangToUse),
-                ...(pathId ? [where('pathId', '==', pathId)] : []),
+                ...pathConditions,
                 orderBy(pathId ? 'pathIndex' : 'createdAt', pathId ? 'asc' : 'desc'),
                 ...(options?.fetchAll ? [] as [] : [limit(FETCH_LIMIT)])
             ];
@@ -130,20 +206,19 @@ export function TemplatesBrowser({
             const templatesData: Template[] = [];
             const seenIds = new Set<string>();
 
-            querySnapshot1.forEach((doc) => {
-                console.log(doc.id);
+            querySnapshot1.forEach((doc: DocumentSnapshot) => {
                 if (!seenIds.has(doc.id)) {
                     seenIds.add(doc.id);
                     templatesData.push({ id: doc.id, ...doc.data() } as Template);
                 }
             });
-            querySnapshot2.forEach((doc) => {
+            querySnapshot2.forEach((doc: DocumentSnapshot) => {
                 if (!seenIds.has(doc.id)) {
                     seenIds.add(doc.id);
                     templatesData.push({ id: doc.id, ...doc.data() } as Template);
                 }
             });
-            console.log(templatesData);
+
             const templatesByGroup = templatesData.reduce((acc, template) => {
                 if (!acc[template.groupId]) {
                     acc[template.groupId] = [] as Template[];
@@ -151,33 +226,29 @@ export function TemplatesBrowser({
                 (acc[template.groupId] as Template[]).push(template);
                 return acc;
             }, {} as Record<string, Template[]>);
-            console.log(tags);
-            console.log(templatesByGroup);
+
             const uniqueTemplates = Object.values(templatesByGroup)
                 .filter((groupTemplates) => {
                     const hasInput = groupTemplates.some((t) => t.lang === inputLangToUse);
                     const hasTarget = groupTemplates.some((t) => t.lang === targetLangToUse);
-
-                    // If tags are provided, check if any template in the group has matching tags
-                    if (tags.length > 0) {
-                        const hasMatchingTags = groupTemplates.some((t) =>
-                            t.tags && tags.some(tag => t.tags!.includes(tag))
-                        );
-                        return hasInput && hasTarget && hasMatchingTags;
-                    }
-
                     return hasInput && hasTarget;
                 })
                 .map((groupTemplates) => groupTemplates.find((t) => t.lang === inputLangToUse) || groupTemplates[0]);
-            console.log(uniqueTemplates);
-            // const sortedTemplates = uniqueTemplates.sort((a, b) => {
-            //     const dateA = a.createdAt?.toDate?.() || new Date(0);
-            //     const dateB = b.createdAt?.toDate?.() || new Date(0);
-            //     return dateB.getTime() - dateA.getTime();
-            // });
 
-            // Limit visible to 10 unless fetching all
-            setTemplates(options?.fetchAll ? uniqueTemplates : uniqueTemplates.slice(0, FETCH_LIMIT));
+            // Sort by pathIndex or createdAt
+            const sortedTemplates = uniqueTemplates.sort((a, b) => {
+                if (pathId) {
+                    const indexA = a.pathIndex || 0;
+                    const indexB = b.pathIndex || 0;
+                    return indexA - indexB;
+                } else {
+                    const dateA = a.createdAt?.toDate?.() || new Date(0);
+                    const dateB = b.createdAt?.toDate?.() || new Date(0);
+                    return dateB.getTime() - dateA.getTime();
+                }
+            });
+
+            setTemplates(options?.fetchAll ? sortedTemplates : sortedTemplates.slice(0, FETCH_LIMIT));
         } catch (err) {
             console.error('Error fetching templates:', err);
             setTemplates([]);
@@ -273,7 +344,7 @@ export function TemplatesBrowser({
                             phrases: [],
                             created_at: t.createdAt?.toDate?.()?.toISOString(),
                         }));
-                        console.log(mapped);
+
                         return (
                             <CollectionList
                                 title={title || 'Featured'}

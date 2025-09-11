@@ -8,7 +8,10 @@ export default function Home() {
 
   return (
     <div className="hidden lg:block p-3 flex-grow space-y-8">
-      <TemplatesBrowser showHeader={false} />
+      <TemplatesBrowser
+        showHeader={false}
+        title="General Templates"
+      />
       <TemplatesBrowser
         showHeader={false}
         title="Recommended for You"
