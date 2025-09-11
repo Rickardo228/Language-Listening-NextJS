@@ -45,6 +45,7 @@ interface TemplatesBrowserProps {
     title?: string;
     noTemplatesComponent?: React.ReactNode;
     pathId?: string;
+    showAllOverride?: boolean;
 }
 
 export function TemplatesBrowser({
@@ -56,6 +57,7 @@ export function TemplatesBrowser({
     title,
     noTemplatesComponent,
     pathId,
+    showAllOverride = false,
 }: TemplatesBrowserProps) {
     const router = useRouter();
     const { userProfile } = useUser();
@@ -391,8 +393,12 @@ export function TemplatesBrowser({
                                 enableCarouselControls
                                 onShowAllClick={async () => {
                                     track('Show All Templates Clicked', { pathId: pathId || null });
-                                    setIsShowingAll(true);
-                                    await fetchTemplates(undefined, undefined, { fetchAll: true });
+                                    if (showAllOverride) {
+                                        router.push('/templates');
+                                    } else {
+                                        setIsShowingAll(true);
+                                        await fetchTemplates(undefined, undefined, { fetchAll: true });
+                                    }
                                 }}
                             />
                         );

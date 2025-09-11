@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { auth } from '../firebase';
 import { User as FirebaseUser } from 'firebase/auth';
-import { TemplatesBrowser } from '../components/TemplatesBrowser';
+import { TemplateBrowserStack } from '../components/TemplateBrowserStack';
 import { useRouter } from 'next/navigation';
 import { track } from '../../lib/mixpanelClient';
 
@@ -38,5 +38,7 @@ export default function TemplatesPage() {
         );
     }
 
-    return <TemplatesBrowser />;
+    return <div className="p-3">
+        <TemplateBrowserStack showAllOverride={false} />
+    </div>;
 }
