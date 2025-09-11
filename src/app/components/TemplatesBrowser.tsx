@@ -368,6 +368,7 @@ export function TemplatesBrowser({
                                         complexity: template?.complexity || null,
                                         phraseCount: template?.phraseCount || null,
                                         pathId: pathId || null,
+                                        is_path: template?.is_path || false,
                                         inputLang,
                                         targetLang
                                     });
@@ -382,6 +383,7 @@ export function TemplatesBrowser({
                                         complexity: template?.complexity || null,
                                         phraseCount: template?.phraseCount || null,
                                         pathId: pathId || null,
+                                        is_path: template?.is_path || false,
                                         inputLang,
                                         targetLang
                                     });
