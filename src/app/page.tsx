@@ -8,6 +8,7 @@ export default function Home() {
 
   return (
     <div className="hidden lg:block p-3 flex-grow space-y-8 max-h-full overflow-y-auto">
+      {/* TODO - Refactor these 3 into a single component and render this on mobile too */}
       <TemplatesBrowser
         pathId="beginner_path"
         showHeader={false}
