@@ -30,10 +30,57 @@ interface Template {
     name: string;
 }
 
-// Helper function to get language label from code
+// Helper function to get language label from code using Intl.DisplayNames
 const getLanguageLabel = (code: string): string => {
-    const option = languageOptions.find(opt => opt.code === code);
-    return option ? option.label : code;
+    try {
+        // Extract the language code from BCP47 language tags (e.g., 'en-US' -> 'en')
+        const langCode = code.split('-')[0];
+        const displayNames = new Intl.DisplayNames(['en'], { type: 'language' });
+        const languageName = displayNames.of(langCode);
+
+        // If we got a display name, combine it with region info if present
+        if (languageName && code.includes('-')) {
+            const [, region] = code.split('-');
+            if (region) {
+                try {
+                    const regionNames = new Intl.DisplayNames(['en'], { type: 'region' });
+                    const regionName = regionNames.of(region);
+                    return regionName ? `${languageName} (${regionName})` : languageName;
+                } catch {
+                    return languageName;
+                }
+            }
+        }
+
+        return languageName || code;
+    } catch {
+        // Fallback to the original approach if Intl.DisplayNames fails
+        const option = languageOptions.find(opt => opt.code === code);
+        return option ? option.label : code;
+    }
+};
+
+// Helper function to get language name in a specific language context
+const getLanguageNameInContext = (languageCode: string, contextLanguage: string): string => {
+    try {
+        // Extract the language code from BCP47 language tags (e.g., 'en-US' -> 'en')
+        const langCode = languageCode.split('-')[0];
+
+        // Use the context language locale for DisplayNames to get the name in that language
+        const displayNames = new Intl.DisplayNames([contextLanguage], { type: 'language' });
+        const languageName = displayNames.of(langCode);
+
+        return languageName || languageCode;
+    } catch {
+        // Fallback to English DisplayNames if context language fails
+        try {
+            const langCode = languageCode.split('-')[0];
+            const displayNames = new Intl.DisplayNames(['en'], { type: 'language' });
+            return displayNames.of(langCode) || languageCode;
+        } catch {
+            return languageCode;
+        }
+    }
 };
 
 export default function TemplateDetailPage() {
@@ -116,9 +163,19 @@ export default function TemplateDetailPage() {
                         const inputPhrase = inputPhrases[phraseKey];
                         const targetPhrase = targetPhrases[phraseKey];
 
+                        // Replace placeholders in input text (use input language context)
+                        const inputText = (inputPhrase?.translated || '')
+                            .replace(/\{targetLangName\}/g, getLanguageNameInContext(targetTemplateData.lang, inputTemplateData.lang))
+                            .replace(/\{inputLangName\}/g, getLanguageNameInContext(inputTemplateData.lang, inputTemplateData.lang));
+
+                        // Replace placeholders in translated text (use target language context)
+                        const translatedText = (targetPhrase?.translated || '')
+                            .replace(/\{targetLangName\}/g, getLanguageNameInContext(targetTemplateData.lang, targetTemplateData.lang))
+                            .replace(/\{inputLangName\}/g, getLanguageNameInContext(inputTemplateData.lang, targetTemplateData.lang));
+
                         return {
-                            input: inputPhrase?.translated || '',
-                            translated: targetPhrase?.translated || '',
+                            input: inputText,
+                            translated: translatedText,
                             inputAudio: inputPhrase ? {
                                 audioUrl: inputPhrase.audioUrl || '',
                                 duration: inputPhrase.duration || 0
