@@ -94,18 +94,21 @@ export function PhrasePlaybackView({
     };
 
     const handleAudioError = async (phase: 'input' | 'output', autoPlay?: boolean) => {
+        console.log('handleAudioError', phase, autoPlay);
         if (!audioRef.current || currentPhraseIndex < 0 || !setPhrases) return;
-
+        console.log('phrases', phrases);
         const phrase = phrases[currentPhraseIndex];
         if (!phrase) return;
-
+        console.log('phrase', phrase);
         try {
             const text = phase === 'input' ? phrase.input : phrase.translated;
             const language = phase === 'input' ? phrase.inputLang : phrase.targetLang;
             const voice = phase === 'input' ? phrase.inputVoice : phrase.targetVoice;
-
+            console.log('text', text);
+            console.log('language', language);
+            console.log('voice', voice);
             if (!text || !language || !voice) return;
-
+            console.log('generating audio', text, language, voice);
             const { audioUrl, duration } = await generateAudio(text, language, voice);
 
             // Update the phrase with new audio
