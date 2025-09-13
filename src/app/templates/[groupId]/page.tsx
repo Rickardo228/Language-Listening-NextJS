@@ -83,6 +83,39 @@ const getLanguageNameInContext = (languageCode: string, contextLanguage: string)
     }
 };
 
+// Helper function to get region name in a specific language context
+const getRegionNameInContext = (languageCode: string, contextLanguage: string): string => {
+    try {
+        // Extract the region code from BCP47 language tags (e.g., 'en-GB' -> 'GB')
+        const parts = languageCode.split('-');
+        if (parts.length < 2) {
+            return languageCode; // No region code available
+        }
+
+        const regionCode = parts[1];
+
+        // Use the context language locale for DisplayNames to get the region name in that language
+        const displayNames = new Intl.DisplayNames([contextLanguage], { type: 'region' });
+        const regionName = displayNames.of(regionCode);
+
+        return regionName || regionCode;
+    } catch {
+        // Fallback to English DisplayNames if context language fails
+        try {
+            const parts = languageCode.split('-');
+            if (parts.length < 2) {
+                return languageCode;
+            }
+
+            const regionCode = parts[1];
+            const displayNames = new Intl.DisplayNames(['en'], { type: 'region' });
+            return displayNames.of(regionCode) || regionCode;
+        } catch {
+            return languageCode;
+        }
+    }
+};
+
 export default function TemplateDetailPage() {
     const { groupId: rawGroupId } = useParams();
     // Decode the URL-encoded groupId to handle spaces and special characters
@@ -166,12 +199,16 @@ export default function TemplateDetailPage() {
                         // Replace placeholders in input text (use input language context)
                         const inputText = (inputPhrase?.translated || '')
                             .replace(/\{targetLangName\}/g, getLanguageNameInContext(targetTemplateData.lang, inputTemplateData.lang))
-                            .replace(/\{inputLangName\}/g, getLanguageNameInContext(inputTemplateData.lang, inputTemplateData.lang));
+                            .replace(/\{inputLangName\}/g, getLanguageNameInContext(inputTemplateData.lang, inputTemplateData.lang))
+                            .replace(/\{targetLangRegion\}/g, getRegionNameInContext(targetTemplateData.lang, inputTemplateData.lang))
+                            .replace(/\{inputLangRegion\}/g, getRegionNameInContext(inputTemplateData.lang, inputTemplateData.lang));
 
                         // Replace placeholders in translated text (use target language context)
                         const translatedText = (targetPhrase?.translated || '')
                             .replace(/\{targetLangName\}/g, getLanguageNameInContext(targetTemplateData.lang, targetTemplateData.lang))
-                            .replace(/\{inputLangName\}/g, getLanguageNameInContext(inputTemplateData.lang, targetTemplateData.lang));
+                            .replace(/\{inputLangName\}/g, getLanguageNameInContext(inputTemplateData.lang, targetTemplateData.lang))
+                            .replace(/\{targetLangRegion\}/g, getRegionNameInContext(targetTemplateData.lang, targetTemplateData.lang))
+                            .replace(/\{inputLangRegion\}/g, getRegionNameInContext(inputTemplateData.lang, targetTemplateData.lang));
 
                         return {
                             input: inputText,
