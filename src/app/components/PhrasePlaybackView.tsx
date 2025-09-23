@@ -465,7 +465,6 @@ export function PhrasePlaybackView({
             }
 
             const isPaused = paused;
-            audioRef.current.pause();
             setSrcSafely(phrases[index][phase === 'input' ? 'inputAudio' : 'outputAudio']?.audioUrl || '');
             // Set playback speed based on phase
             const speed = phase === 'input'
@@ -504,7 +503,6 @@ export function PhrasePlaybackView({
     const handlePrevious = async () => {
         clearAllTimeouts();
         if (audioRef.current) {
-            audioRef.current.pause();
             let targetPhase: 'input' | 'output';
             let targetIndex = currentPhraseIndex;
 
@@ -589,7 +587,6 @@ export function PhrasePlaybackView({
     const handleNext = async () => {
         clearAllTimeouts();
         if (audioRef.current) {
-            audioRef.current.pause();
             let targetPhase: 'input' | 'output';
             let targetIndex = currentPhraseIndex;
 
@@ -937,7 +934,6 @@ export function PhrasePlaybackView({
 
                                     setCurrentPhase(targetPhase);
                                     if (audioRef.current) {
-                                        audioRef.current.pause();
                                         const audioUrl = targetPhase === 'input'
                                             ? phrases[index].inputAudio?.audioUrl
                                             : phrases[index].outputAudio?.audioUrl;
