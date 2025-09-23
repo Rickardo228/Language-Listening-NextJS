@@ -7,6 +7,8 @@ import { generateAudio } from '../utils/audioUtils';
 import { BLEED_START_DELAY, DELAY_AFTER_INPUT_PHRASES_MULTIPLIER, DELAY_AFTER_OUTPUT_PHRASES_MULTIPLIER, } from '../consts';
 import { useUpdateUserStats } from '../utils/userStats';
 import { track, trackAudioEnded, trackPlaybackEvent } from '../../lib/mixpanelClient';
+import { WebMediaSessionTransport } from '../../transport/webMediaSessionTransport';
+import { useVirtualDelay } from '../../transport/useVirtualDelay';
 
 // Extract the methods ref type into a reusable type
 export type PhrasePlaybackMethods = {
@@ -80,6 +82,26 @@ export function PhrasePlaybackView({
     const [progressDelay, setProgressDelay] = useState(0);
     const audioRef = useRef<HTMLAudioElement>(null);
     const timeoutIds = useRef<number[]>([]);
+    const transportRef = useRef<WebMediaSessionTransport | null>(null);
+    const delay = useVirtualDelay();
+    const delayRafCleanupRef = useRef<(() => void) | null>(null);
+    const wasPlayingRef = useRef(false);          // becomes true after first successful play
+    const programmaticPauseRef = useRef(false);   // set when *we* call pause() or swap src
+
+    // Refs for state used in timers to prevent stale closures
+    const pausedRef = useRef(paused);
+    const phaseRef = useRef(currentPhase);
+    const indexRef = useRef(currentPhraseIndex);
+
+    // Delay context tracking
+    type DelayContext = { kind: 'after-input' | 'after-output' };
+    const delayCtxRef = useRef<DelayContext | null>(null);
+
+    // Keep refs in sync with state
+    useEffect(() => { pausedRef.current = paused; }, [paused]);
+    useEffect(() => { phaseRef.current = currentPhase; }, [currentPhase]);
+    useEffect(() => { indexRef.current = currentPhraseIndex; }, [currentPhraseIndex]);
+
     const currentInputAudioUrl = useMemo(() => {
         if (currentPhraseIndex < 0) return '';
         return phrases[currentPhraseIndex]?.inputAudio?.audioUrl || '';
@@ -91,6 +113,82 @@ export function PhrasePlaybackView({
     const clearAllTimeouts = () => {
         timeoutIds.current.forEach((id) => clearTimeout(id));
         timeoutIds.current = [];
+    };
+
+    // Transport helper functions
+    const pushMetadataToTransport = useCallback(() => {
+        console.log('pushMetadataToTransport');
+        const t = transportRef.current;
+        if (!t) return;
+
+        const phrase = phrases[currentPhraseIndex];
+        const title =
+            phrase ? (currentPhase === 'input' ? (phrase.input || '') : (phrase.translated || '')) : '';
+        t.setMetadata({
+            title,
+            artist: collectionName || 'Session',
+            album: configName,
+            artworkUrl: presentationConfig.bgImage,
+        });
+    }, [phrases, currentPhraseIndex, currentPhase, collectionName, configName, presentationConfig.bgImage]);
+
+    const startDelayWindow = useCallback((totalMs: number) => {
+        const t = transportRef.current;
+        delay.start(totalMs);
+
+        // Immediately push a position snapshot (rate depends on paused)
+        t?.setPosition({
+            durationSec: delay.getDurationSec(),
+            positionSec: delay.getPositionSec(),
+            rate: pausedRef.current ? 0 : 1,
+        });
+
+        // Lightweight rAF ticker during delay (only while not paused)
+        let raf = 0;
+        const tick = () => {
+            if (!delay.isActive()) return;
+            t?.setPosition({
+                durationSec: delay.getDurationSec(),
+                positionSec: delay.getPositionSec(),
+                rate: pausedRef.current ? 0 : 1,
+            });
+            if (!pausedRef.current) raf = requestAnimationFrame(tick);
+        };
+        if (!pausedRef.current) raf = requestAnimationFrame(tick);
+
+        // Return a cleanup to stop ticking
+        return () => {
+            if (raf) cancelAnimationFrame(raf);
+        };
+    }, [delay]);
+
+    const pushPausedPosition = useCallback(() => {
+        const t = transportRef.current;
+        if (!t) return;
+        if (delay.isActive()) {
+            t.setPosition({
+                durationSec: delay.getDurationSec(),
+                positionSec: delay.getPositionSec(),
+                rate: 0,
+            });
+        }
+    }, [delay]);
+
+    const clearDelayWindow = useCallback(() => {
+        if (delayRafCleanupRef.current) {
+            delayRafCleanupRef.current();
+            delayRafCleanupRef.current = null;
+        }
+        delay.clear();
+    }, [delay]);
+
+    // Helper to safely set src without triggering system pause
+    const setSrcSafely = (url: string) => {
+        const el = audioRef.current;
+        if (!el) return;
+        programmaticPauseRef.current = true;
+        try { el.src = url; }
+        finally { setTimeout(() => { programmaticPauseRef.current = false; }, 0); }
     };
 
     const handleAudioError = async (phase: 'input' | 'output', autoPlay?: boolean) => {
@@ -121,7 +219,7 @@ export function PhrasePlaybackView({
 
             // Update audio source and play
             if (audioRef.current && autoPlay) {
-                audioRef.current.src = audioUrl;
+                setSrcSafely(audioUrl);
                 // Set playback speed based on phase
                 const speed = phase === 'input'
                     ? (presentationConfig.inputPlaybackSpeed || 1.0)
@@ -136,7 +234,7 @@ export function PhrasePlaybackView({
             // If regeneration fails, stop playback
             if (audioRef.current) {
                 audioRef.current.pause();
-                audioRef.current.src = '';
+                setSrcSafely('');
             }
             setPaused(true);
         }
@@ -144,45 +242,140 @@ export function PhrasePlaybackView({
 
     // Playback control handlers
     const handlePause = () => {
-        clearAllTimeouts();
-        setShowProgressBar(false);
-        if (audioRef.current) {
-            audioRef.current.pause();
-        }
-        setPaused(true);
-        showStatsUpdate(true);
+        console.log('handlePause');
+        programmaticPauseRef.current = true;
+        try {
+            clearAllTimeouts();
+            clearDelayWindow();
+            setShowProgressBar(false);
+            audioRef.current?.pause();
+            setPaused(true);
+            pushPausedPosition();
+            showStatsUpdate(true);
 
-        // Track pause event
-        if (currentPhraseIndex >= 0 && phrases[currentPhraseIndex]) {
-            const speed = currentPhase === 'input'
-                ? (presentationConfig.inputPlaybackSpeed || 1.0)
-                : (presentationConfig.outputPlaybackSpeed || 1.0);
-            trackPlaybackEvent('pause', `${collectionId || 'unknown'}-${currentPhraseIndex}`, currentPhase, currentPhraseIndex, speed);
+            // Track pause event
+            if (currentPhraseIndex >= 0 && phrases[currentPhraseIndex]) {
+                const speed = currentPhase === 'input'
+                    ? (presentationConfig.inputPlaybackSpeed || 1.0)
+                    : (presentationConfig.outputPlaybackSpeed || 1.0);
+                trackPlaybackEvent('pause', `${collectionId || 'unknown'}-${currentPhraseIndex}`, currentPhase, currentPhraseIndex, speed);
+            }
+        } finally {
+            setTimeout(() => { programmaticPauseRef.current = false; }, 0);
         }
     };
 
     const handleStop = () => {
-        clearAllTimeouts();
-        setShowProgressBar(false);
-        if (audioRef.current) {
-            audioRef.current.pause();
-            audioRef.current.src = '';
-        }
-        setPaused(true);
-        showStatsUpdate();
+        programmaticPauseRef.current = true;
+        try {
+            clearAllTimeouts();
+            clearDelayWindow();
+            setShowProgressBar(false);
+            if (audioRef.current) {
+                audioRef.current.pause();
+                setSrcSafely('');
+            }
+            setPaused(true);
+            showStatsUpdate();
 
-        // Track stop event
-        if (currentPhraseIndex >= 0 && phrases[currentPhraseIndex]) {
-
-            const speed = currentPhase === 'input'
-                ? (presentationConfig.inputPlaybackSpeed || 1.0)
-                : (presentationConfig.outputPlaybackSpeed || 1.0);
-            trackPlaybackEvent('stop', `${collectionId || 'unknown'}-${currentPhraseIndex}`, currentPhase, currentPhraseIndex, speed);
+            // Track stop event
+            if (currentPhraseIndex >= 0 && phrases[currentPhraseIndex]) {
+                const speed = currentPhase === 'input'
+                    ? (presentationConfig.inputPlaybackSpeed || 1.0)
+                    : (presentationConfig.outputPlaybackSpeed || 1.0);
+                trackPlaybackEvent('stop', `${collectionId || 'unknown'}-${currentPhraseIndex}`, currentPhase, currentPhraseIndex, speed);
+            }
+        } finally {
+            setTimeout(() => { programmaticPauseRef.current = false; }, 0);
         }
     };
 
     const handlePlay = () => {
         setPaused(false);
+
+        // If resuming during a delay, re-schedule the remaining timeout
+        if (delay.isActive()) {
+            const remaining = delay.getRemainingMs();
+            const kind = delayCtxRef.current?.kind;
+            if (remaining > 0 && kind) {
+                // restart ticking
+                if (delayRafCleanupRef.current) delayRafCleanupRef.current();
+                delayRafCleanupRef.current = startDelayWindow(remaining);
+
+                // Recreate the timeout that would fire at delay end
+                const timeoutId = window.setTimeout(() => {
+                    // Check if still not paused before proceeding
+                    if (pausedRef.current) return;
+
+                    // Clear delay window and context
+                    clearDelayWindow();
+                    delayCtxRef.current = null;
+
+                    const playOutputBeforeInput = presentationConfig.enableOutputBeforeInput;
+
+                    if (kind === 'after-input') {
+                        setCurrentPhase('output');
+                        setShowProgressBar(false);
+                        if (playOutputBeforeInput) {
+                            if (indexRef.current < phrases.length - 1 && !pausedRef.current) {
+                                setCurrentPhraseIndex(indexRef.current + 1);
+                            } else {
+                                if (presentationConfig.enableLoop) {
+                                    setCurrentPhraseIndex(0);
+                                } else {
+                                    showStatsUpdate(true);
+                                    setPaused(true);
+                                }
+                            }
+                        }
+                    } else { // after-output
+                        setShowProgressBar(false);
+                        if (playOutputBeforeInput) {
+                            if (presentationConfig.enableInputPlayback) {
+                                setCurrentPhase('input');
+                            } else {
+                                if (indexRef.current < phrases.length - 1 && !pausedRef.current) {
+                                    setCurrentPhraseIndex(indexRef.current + 1);
+                                    setCurrentPhase('output');
+                                } else {
+                                    if (presentationConfig.enableLoop) {
+                                        setCurrentPhraseIndex(0);
+                                        setCurrentPhase('output');
+                                    } else {
+                                        showStatsUpdate(true);
+                                        setPaused(true);
+                                    }
+                                }
+                            }
+                        } else {
+                            if (indexRef.current < phrases.length - 1 && !pausedRef.current) {
+                                setCurrentPhraseIndex(indexRef.current + 1);
+                                if (presentationConfig.enableInputPlayback) {
+                                    setCurrentPhase('input');
+                                } else {
+                                    setCurrentPhase('output');
+                                }
+                            } else {
+                                if (presentationConfig.enableLoop) {
+                                    setCurrentPhraseIndex(0);
+                                    if (presentationConfig.enableInputPlayback) {
+                                        setCurrentPhase('input');
+                                    } else {
+                                        setCurrentPhase('output');
+                                    }
+                                } else {
+                                    showStatsUpdate(true);
+                                    setPaused(true);
+                                }
+                            }
+                        }
+                    }
+                }, remaining);
+                timeoutIds.current.push(timeoutId);
+            }
+            return;
+        }
+
         if (currentPhraseIndex <= 0) {
             handleReplay();
         } else if (audioRef.current) {
@@ -193,7 +386,7 @@ export function PhrasePlaybackView({
             }
 
             if (!audioRef.current.src) {
-                audioRef.current.src = phrases[currentPhraseIndex]?.[currentPhase === "input" ? 'inputAudio' : 'outputAudio']?.audioUrl ?? ''
+                setSrcSafely(phrases[currentPhraseIndex]?.[currentPhase === "input" ? 'inputAudio' : 'outputAudio']?.audioUrl ?? '')
             }
             // Set playback speed based on current phase
             const speed = currentPhase === 'input'
@@ -224,14 +417,14 @@ export function PhrasePlaybackView({
         setCurrentPhase(startPhase);
 
         if (startPhase === 'input' && audioRef.current && phrases[0]?.inputAudio?.audioUrl) {
-            audioRef.current.src = phrases[0].inputAudio?.audioUrl;
+            setSrcSafely(phrases[0].inputAudio?.audioUrl || '');
             // Set playback speed for input phase
             const speed = presentationConfig.inputPlaybackSpeed || 1.0;
             if (speed !== 1.0) {
                 audioRef.current.playbackRate = speed;
             }
         } else if (startPhase === 'output' && audioRef.current && phrases[0]?.outputAudio?.audioUrl) {
-            audioRef.current.src = phrases[0].outputAudio?.audioUrl;
+            setSrcSafely(phrases[0].outputAudio?.audioUrl || '');
             // Set playback speed for output phase
             const speed = presentationConfig.outputPlaybackSpeed || 1.0;
             if (speed !== 1.0) {
@@ -273,7 +466,7 @@ export function PhrasePlaybackView({
 
             const isPaused = paused;
             audioRef.current.pause();
-            audioRef.current.src = phrases[index][phase === 'input' ? 'inputAudio' : 'outputAudio']?.audioUrl || '';
+            setSrcSafely(phrases[index][phase === 'input' ? 'inputAudio' : 'outputAudio']?.audioUrl || '');
             // Set playback speed based on phase
             const speed = phase === 'input'
                 ? (presentationConfig.inputPlaybackSpeed || 1.0)
@@ -370,7 +563,7 @@ export function PhrasePlaybackView({
             const audioUrl = targetPhase === 'input'
                 ? phrases[targetIndex].inputAudio?.audioUrl
                 : phrases[targetIndex].outputAudio?.audioUrl;
-            audioRef.current.src = audioUrl || '';
+            setSrcSafely(audioUrl || '');
 
             const speed = targetPhase === 'input'
                 ? (presentationConfig.inputPlaybackSpeed || 1.0)
@@ -455,7 +648,7 @@ export function PhrasePlaybackView({
             const audioUrl = targetPhase === 'input'
                 ? phrases[targetIndex].inputAudio?.audioUrl
                 : phrases[targetIndex].outputAudio?.audioUrl;
-            audioRef.current.src = audioUrl || '';
+            setSrcSafely(audioUrl || '');
 
             const speed = targetPhase === 'input'
                 ? (presentationConfig.inputPlaybackSpeed || 1.0)
@@ -479,6 +672,20 @@ export function PhrasePlaybackView({
         }
     };
 
+    // Initialize transport callback ref
+    const initTransport = useCallback((el: HTMLAudioElement | null) => {
+        audioRef.current = el;
+        if (!el || transportRef.current) return;
+
+        const transport = new WebMediaSessionTransport(el);
+        transportRef.current = transport;
+        transport.setCapabilities({ canPlayPause: true, canNextPrev: true, canSeek: false });
+        transport.onPlay(handlePlay);
+        transport.onPause(handlePause);
+        transport.onNext(handleNext);
+        transport.onPrevious(handlePrevious);
+    }, [handlePlay, handlePause, handleNext, handlePrevious]);
+
     const handleAudioEnded = () => {
         if (paused) return;
 
@@ -499,7 +706,8 @@ export function PhrasePlaybackView({
 
         // Set progress bar for recall (input duration delay)
         setShowProgressBar(true);
-        setProgressDuration(playOutputBeforeInput ? outputDuration + 1000 : inputDuration + presentationConfig.delayBetweenPhrases);
+        const totalDelayMs = playOutputBeforeInput ? outputDuration + 1000 : inputDuration + presentationConfig.delayBetweenPhrases;
+        setProgressDuration(totalDelayMs);
         setProgressDelay(0);
 
         if (currentPhase === 'input') {
@@ -507,13 +715,27 @@ export function PhrasePlaybackView({
                 debouncedUpdateUserStats(phrases, currentPhraseIndex);
             }
 
+            // Start delay window tracking
+            if (delayRafCleanupRef.current) delayRafCleanupRef.current();
+            delayRafCleanupRef.current = startDelayWindow(totalDelayMs);
+
+            // Set delay context
+            delayCtxRef.current = { kind: 'after-input' };
+
             const timeoutId = window.setTimeout(() => {
+                // Check if still not paused before proceeding
+                if (pausedRef.current) return;
+
+                // Clear delay window and context
+                clearDelayWindow();
+                delayCtxRef.current = null;
+
                 setCurrentPhase('output');
                 setShowProgressBar(false);
 
                 if (playOutputBeforeInput) {
-                    if (currentPhraseIndex < phrases.length - 1 && !paused) {
-                        setCurrentPhraseIndex(currentPhraseIndex + 1);
+                    if (indexRef.current < phrases.length - 1 && !pausedRef.current) {
+                        setCurrentPhraseIndex(indexRef.current + 1);
                     } else {
                         if (presentationConfig.enableLoop) {
                             // If looping is enabled, restart from beginning
@@ -524,7 +746,7 @@ export function PhrasePlaybackView({
                         }
                     }
                 }
-            }, playOutputBeforeInput ? outputDuration + 1000 : inputDuration + presentationConfig.delayBetweenPhrases);
+            }, totalDelayMs);
             timeoutIds.current.push(timeoutId);
         } else {
             // Update user stats before phrase ends
@@ -534,11 +756,25 @@ export function PhrasePlaybackView({
 
             // Set progress bar for shadow (output duration delay)
             setShowProgressBar(true);
-            setProgressDuration(playOutputBeforeInput ? inputDuration + 1000 : (outputDuration * DELAY_AFTER_OUTPUT_PHRASES_MULTIPLIER) + presentationConfig.delayBetweenPhrases);
+            const totalOutputDelayMs = playOutputBeforeInput ? inputDuration + 1000 : (outputDuration * DELAY_AFTER_OUTPUT_PHRASES_MULTIPLIER) + presentationConfig.delayBetweenPhrases;
+            setProgressDuration(totalOutputDelayMs);
             setProgressDelay(0);
 
+            // Start delay window tracking
+            if (delayRafCleanupRef.current) delayRafCleanupRef.current();
+            delayRafCleanupRef.current = startDelayWindow(totalOutputDelayMs);
+
+            // Set delay context
+            delayCtxRef.current = { kind: 'after-output' };
 
             const timeoutId = window.setTimeout(() => {
+                // Check if still not paused before proceeding
+                if (pausedRef.current) return;
+
+                // Clear delay window and context
+                clearDelayWindow();
+                delayCtxRef.current = null;
+
                 setShowProgressBar(false);
                 if (playOutputBeforeInput) {
                     // Check if input playback is enabled
@@ -546,8 +782,8 @@ export function PhrasePlaybackView({
                         setCurrentPhase('input');
                     } else {
                         // Skip input phase if disabled, go to next phrase output
-                        if (currentPhraseIndex < phrases.length - 1 && !paused) {
-                            setCurrentPhraseIndex(currentPhraseIndex + 1);
+                        if (indexRef.current < phrases.length - 1 && !pausedRef.current) {
+                            setCurrentPhraseIndex(indexRef.current + 1);
                             setCurrentPhase('output');
                         } else {
                             if (presentationConfig.enableLoop) {
@@ -561,8 +797,8 @@ export function PhrasePlaybackView({
                         }
                     }
                 } else {
-                    if (currentPhraseIndex < phrases.length - 1 && !paused) {
-                        setCurrentPhraseIndex(currentPhraseIndex + 1);
+                    if (indexRef.current < phrases.length - 1 && !pausedRef.current) {
+                        setCurrentPhraseIndex(indexRef.current + 1);
                         // Check if input playback is enabled
                         if (presentationConfig.enableInputPlayback) {
                             setCurrentPhase('input');
@@ -585,23 +821,17 @@ export function PhrasePlaybackView({
                         }
                     }
                 }
-            }, playOutputBeforeInput ? inputDuration + 1000 : (outputDuration * DELAY_AFTER_OUTPUT_PHRASES_MULTIPLIER) + presentationConfig.delayBetweenPhrases);
+            }, totalOutputDelayMs);
             timeoutIds.current.push(timeoutId);
         }
     };
 
-    // Close fullscreen on Esc key press
+    // Push metadata whenever phrase/phase changes
     useEffect(() => {
-        const handleKeyDown = (event: KeyboardEvent) => {
-            if (event.key === "Escape") {
-                setFullscreen(false);
-            }
-        };
-        window.addEventListener("keydown", handleKeyDown);
-        return () => {
-            window.removeEventListener("keydown", handleKeyDown);
-        };
-    }, []);
+        pushMetadataToTransport();
+    }, [pushMetadataToTransport]);
+
+    // oh
 
     // Audio playback effect
     useEffect(() => {
@@ -625,7 +855,7 @@ export function PhrasePlaybackView({
                 // If no source exists, generate it
                 handleAudioError(currentPhase);
             } else {
-                audioRef.current.src = src;
+                setSrcSafely(src);
                 // Set playback speed based on current phase
                 const speed = currentPhase === 'input'
                     ? (presentationConfig.inputPlaybackSpeed || 1.0)
@@ -663,7 +893,14 @@ export function PhrasePlaybackView({
 
 
             {/* Audio Element */}
-            <audio ref={audioRef} onEnded={handleAudioEnded} controls hidden />
+            <audio
+                ref={initTransport}
+                onEnded={handleAudioEnded}
+                controls
+                hidden
+                playsInline
+                preload="metadata"
+            />
 
             {/* Main content */}
             <div className="flex lg:flex-row flex-col-reverse w-full lg:h-[92vh]">
@@ -704,7 +941,7 @@ export function PhrasePlaybackView({
                                         const audioUrl = targetPhase === 'input'
                                             ? phrases[index].inputAudio?.audioUrl
                                             : phrases[index].outputAudio?.audioUrl;
-                                        audioRef.current.src = audioUrl || '';
+                                        setSrcSafely(audioUrl || '');
                                         // Set playback speed based on target phase
                                         const speed = targetPhase === 'input'
                                             ? (presentationConfig.inputPlaybackSpeed || 1.0)

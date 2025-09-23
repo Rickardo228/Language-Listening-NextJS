@@ -16,7 +16,7 @@ const playpenSans = Playpen_Sans({
   weight: ["400", "700"],
   variable: "--font-playpen-sans",
   display: "swap",
-  preload: true,
+  preload: false,
   fallback: ["system-ui", "arial"],
 });
 
@@ -25,7 +25,7 @@ const mPlusRounded1c = M_PLUS_Rounded_1c({
   weight: ["400", "700"],
   variable: "--font-mplus-rounded",
   display: "swap",
-  preload: true,
+  preload: false,
   fallback: ["system-ui", "arial"],
 });
 
