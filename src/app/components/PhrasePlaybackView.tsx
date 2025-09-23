@@ -10,6 +10,8 @@ import { track, trackAudioEnded, trackPlaybackEvent } from '../../lib/mixpanelCl
 import { WebMediaSessionTransport } from '../../transport/webMediaSessionTransport';
 import { useVirtualDelay } from '../../transport/useVirtualDelay';
 
+type PauseSource = 'local' | 'external';
+
 // Extract the methods ref type into a reusable type
 export type PhrasePlaybackMethods = {
     handleStop: () => void;
@@ -87,6 +89,8 @@ export function PhrasePlaybackView({
     const delayRafCleanupRef = useRef<(() => void) | null>(null);
     const wasPlayingRef = useRef(false);          // becomes true after first successful play
     const programmaticPauseRef = useRef(false);   // set when *we* call pause() or swap src
+    const playSeqRef = useRef(0);                 // increments on every new "play intent"
+    const srcSwapRef = useRef(false);             // true while we're swapping src (navigation)
 
     // Refs for state used in timers to prevent stale closures
     const pausedRef = useRef(paused);
@@ -132,18 +136,44 @@ export function PhrasePlaybackView({
         });
     }, [phrases, currentPhraseIndex, currentPhase, collectionName, configName, presentationConfig.bgImage]);
 
+    const setMSState = (state: 'none' | 'paused' | 'playing') => {
+        try { if ('mediaSession' in navigator) (navigator as any).mediaSession.playbackState = state; } catch {}
+    };
+
+    // call this *whenever* you want to start playback
+    const safePlay = async (reason: string) => {
+        const el = audioRef.current;
+        if (!el) return;
+        const mySeq = ++playSeqRef.current; // claim this play intent
+        try {
+            const p = el.play();
+            await p;
+            // if another play intent happened meanwhile, bail
+            if (mySeq !== playSeqRef.current) return;
+        } catch (e: any) {
+            if (e?.name === 'AbortError') {
+                // benign: a pause/src change raced our play
+                return;
+            }
+            console.error('play failed:', reason, e);
+        }
+    };
+
     const startDelayWindow = useCallback((totalMs: number) => {
         const t = transportRef.current;
         delay.start(totalMs);
 
-        // Immediately push a position snapshot (rate depends on paused)
+        // Make OS think we're "playing" during silence
+        setMSState('playing');
+
+        // Push a position snapshot immediately (critical for very short clips)
         t?.setPosition({
             durationSec: delay.getDurationSec(),
-            positionSec: delay.getPositionSec(),
+            positionSec: delay.getPositionSec(), // ~0 at start
             rate: pausedRef.current ? 0 : 1,
         });
 
-        // Lightweight rAF ticker during delay (only while not paused)
+        // rAF ticker while not paused
         let raf = 0;
         const tick = () => {
             if (!delay.isActive()) return;
@@ -180,6 +210,7 @@ export function PhrasePlaybackView({
             delayRafCleanupRef.current = null;
         }
         delay.clear();
+        setMSState('paused');
     }, [delay]);
 
     // Helper to safely set src without triggering system pause
@@ -187,8 +218,17 @@ export function PhrasePlaybackView({
         const el = audioRef.current;
         if (!el) return;
         programmaticPauseRef.current = true;
+        srcSwapRef.current = true;
+        // cancel any current play intent
+        ++playSeqRef.current;
         try { el.src = url; }
-        finally { setTimeout(() => { programmaticPauseRef.current = false; }, 0); }
+        finally {
+            // let the microtask queue flush before clearing flags
+            setTimeout(() => {
+                programmaticPauseRef.current = false;
+                srcSwapRef.current = false;
+            }, 0);
+        }
     };
 
     const handleAudioError = async (phase: 'input' | 'output', autoPlay?: boolean) => {
@@ -227,7 +267,7 @@ export function PhrasePlaybackView({
                 if (speed !== 1.0) {
                     audioRef.current.playbackRate = speed;
                 }
-                audioRef.current.play().catch((err) => console.error('Auto-play error:', err));
+                safePlay('handleAudioError-autoPlay');
             }
         } catch (err) {
             console.error('Error regenerating audio:', err);
@@ -241,19 +281,26 @@ export function PhrasePlaybackView({
     };
 
     // Playback control handlers
-    const handlePause = () => {
-        console.log('handlePause');
-        programmaticPauseRef.current = true;
+    const handlePause = (source: PauseSource = 'local') => {
+        console.log('handlePause', source);
+        const el = audioRef.current;
+        if (!el) return;
+
+        // cancel any current play intent so a pending play() won't re-start
+        ++playSeqRef.current;
+
+        const markProgrammatic = source === 'local';
+        if (markProgrammatic) programmaticPauseRef.current = true;
+
         try {
             clearAllTimeouts();
             clearDelayWindow();
             setShowProgressBar(false);
-            audioRef.current?.pause();
+            el.pause();
             setPaused(true);
             pushPausedPosition();
             showStatsUpdate(true);
 
-            // Track pause event
             if (currentPhraseIndex >= 0 && phrases[currentPhraseIndex]) {
                 const speed = currentPhase === 'input'
                     ? (presentationConfig.inputPlaybackSpeed || 1.0)
@@ -261,11 +308,14 @@ export function PhrasePlaybackView({
                 trackPlaybackEvent('pause', `${collectionId || 'unknown'}-${currentPhraseIndex}`, currentPhase, currentPhraseIndex, speed);
             }
         } finally {
-            setTimeout(() => { programmaticPauseRef.current = false; }, 0);
+            if (markProgrammatic) setTimeout(() => { programmaticPauseRef.current = false; }, 0);
         }
     };
 
     const handleStop = () => {
+        // cancel any current play intent
+        ++playSeqRef.current;
+
         programmaticPauseRef.current = true;
         try {
             clearAllTimeouts();
@@ -395,11 +445,7 @@ export function PhrasePlaybackView({
             if (speed !== 1.0) {
                 audioRef.current.playbackRate = speed;
             }
-            audioRef.current.play().catch((err) => {
-                console.error('Auto-play error:', err);
-                // If playback fails, try to regenerate the audio
-                handleAudioError(currentPhase, true);
-            });
+            safePlay('handlePlay');
 
             // Track play event
             if (currentPhraseIndex >= 0 && phrases[currentPhraseIndex]) {
@@ -410,6 +456,7 @@ export function PhrasePlaybackView({
 
     const handleReplay = async () => {
         clearAllTimeouts();
+        clearDelayWindow();
         setCurrentPhraseIndex(prev => prev < 0 ? prev - 1 : -1);
 
         // Check if input playback is enabled, if not start with output phase
@@ -458,6 +505,7 @@ export function PhrasePlaybackView({
 
     const handlePlayPhrase = (index: number, phase: 'input' | 'output') => {
         clearAllTimeouts();
+        clearDelayWindow();
         if (audioRef.current) {
             // Skip input audio if disabled
             if (phase === 'input' && !presentationConfig.enableInputPlayback) {
@@ -477,19 +525,11 @@ export function PhrasePlaybackView({
             setCurrentPhase(phase);
             if (isPaused) {
                 // If paused, play in isolation without changing state
-                audioRef.current.play().catch((err) => {
-                    console.error('Auto-play error:', err);
-                    // If playback fails, try to regenerate the audio
-                    handleAudioError(currentPhase);
-                });
+                safePlay('handlePlayPhrase-paused');
             } else {
                 // If not paused, update state and play through main audio element
                 setPaused(false);
-                audioRef.current.play().catch((err) => {
-                    console.error('Auto-play error:', err);
-                    // If playback fails, try to regenerate the audio
-                    handleAudioError(currentPhase, true);
-                });
+                safePlay('handlePlayPhrase-active');
             }
 
             // Track play phrase event
@@ -502,6 +542,7 @@ export function PhrasePlaybackView({
     // Shared navigation handlers
     const handlePrevious = async () => {
         clearAllTimeouts();
+        clearDelayWindow();
         if (audioRef.current) {
             let targetPhase: 'input' | 'output';
             let targetIndex = currentPhraseIndex;
@@ -581,11 +622,19 @@ export function PhrasePlaybackView({
             if (currentPhase === 'output' && paused) {
                 showViewedPhrases();
             }
+
+            // Actually start playback if we weren't paused
+            if (!paused) {
+                setPaused(false);
+                setMSState('playing');        // keep OS transport "playing" between clips
+                safePlay('nav-prev');         // actually start the new audio
+            }
         }
     };
 
     const handleNext = async () => {
         clearAllTimeouts();
+        clearDelayWindow();
         if (audioRef.current) {
             let targetPhase: 'input' | 'output';
             let targetIndex = currentPhraseIndex;
@@ -666,7 +715,39 @@ export function PhrasePlaybackView({
             if (currentPhase === 'output' && paused) {
                 showViewedPhrases();
             }
+
+            // Actually start playback if we weren't paused
+            if (!paused) {
+                setPaused(false);
+                setMSState('playing');        // keep OS transport "playing" between clips
+                safePlay('nav-next');         // actually start the new audio
+            }
         }
+    };
+
+    const attachAudioGuards = (el: HTMLAudioElement) => {
+        const maybeExternalPause = () => {
+            const inDelay = delay.isActive();
+            if (srcSwapRef.current) return;             // ignore during programmatic src change
+            if (programmaticPauseRef.current) return;    // ignore our own pause/src swaps
+            // During delay we DO want to treat this as external pause:
+            if (!inDelay && el.ended) return;           // natural end outside delay → ignore here
+            handlePause('external');
+        };
+
+        const onPlay = () => { programmaticPauseRef.current = false; };
+        const onPlaying = () => { programmaticPauseRef.current = false; };
+
+        el.addEventListener('play', onPlay);
+        el.addEventListener('playing', onPlaying);
+        el.addEventListener('pause', maybeExternalPause);
+        el.addEventListener('emptied', maybeExternalPause); // strong on Safari unplug
+
+        // optional, guarded:
+        // el.addEventListener('stalled', maybeExternalPause);
+        // el.addEventListener('suspend', maybeExternalPause);
+
+        // store a cleanup somewhere if you need to detach later
     };
 
     // Initialize transport callback ref
@@ -678,9 +759,12 @@ export function PhrasePlaybackView({
         transportRef.current = transport;
         transport.setCapabilities({ canPlayPause: true, canNextPrev: true, canSeek: false });
         transport.onPlay(handlePlay);
-        transport.onPause(handlePause);
+        transport.onPause(() => handlePause('external'));
         transport.onNext(handleNext);
         transport.onPrevious(handlePrevious);
+
+        // also attach audio-element fallbacks
+        attachAudioGuards(el);
     }, [handlePlay, handlePause, handleNext, handlePrevious]);
 
     const handleAudioEnded = () => {
@@ -860,11 +944,7 @@ export function PhrasePlaybackView({
                 if (speed !== 1.0) {
                     audioRef.current.playbackRate = speed;
                 }
-                audioRef.current.play().catch((err) => {
-                    console.error('Auto-play error:', err);
-                    // If playback fails, try to regenerate the audio
-                    handleAudioError(currentPhase, true);
-                });
+                safePlay('autoplay-effect');
             }
         }
     }, [currentPhraseIndex, currentPhase, paused, currentInputAudioUrl, currentOutputAudioUrl, presentationConfig.inputPlaybackSpeed, presentationConfig.outputPlaybackSpeed, presentationConfig.enableInputPlayback]);
@@ -922,6 +1002,7 @@ export function PhrasePlaybackView({
                                 onPhraseClick={(index) => {
                                     setCurrentPhraseIndex(index);
                                     clearAllTimeouts();
+                                    clearDelayWindow();
 
                                     // Determine target phase considering both enableOutputBeforeInput and enableInputPlayback
                                     let targetPhase: 'input' | 'output';
@@ -944,6 +1025,13 @@ export function PhrasePlaybackView({
                                             : (presentationConfig.outputPlaybackSpeed || 1.0);
                                         if (speed !== 1.0) {
                                             audioRef.current.playbackRate = speed;
+                                        }
+
+                                        // If already playing, then actually play the new clip
+                                        if (!paused) {
+                                            setPaused(false);
+                                            setMSState('playing');
+                                            safePlay('phrase-click-active');
                                         }
                                     }
                                 }}
