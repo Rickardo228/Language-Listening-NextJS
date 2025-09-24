@@ -51,7 +51,7 @@ export function PhrasePlaybackView({
     stickyHeaderContent,
     methodsRef,
 }: PhrasePlaybackViewProps) {
-    const { updateUserStats, StatsPopups, StatsModal, showStatsUpdate } = useUpdateUserStats();
+    const { updateUserStats, StatsPopups, StatsModal, showStatsUpdate, showViewedPhrases } = useUpdateUserStats();
     const [currentPhraseIndex, setCurrentPhraseIndex] = useState(0);
     const [currentPhase, setCurrentPhase] = useState<'input' | 'output'>(
         presentationConfig.enableInputPlayback ? 'input' : 'output'
@@ -285,6 +285,8 @@ export function PhrasePlaybackView({
             // Update user stats when navigating while paused (phrase viewed)
             if (!wasPlaying) {
                 await debouncedUpdateUserStats(phrases, targetIndex, 'viewed');
+                // Show popup for viewed phrases milestones (5, 10, 15, etc.)
+                showViewedPhrases(5);
             }
         }
 
