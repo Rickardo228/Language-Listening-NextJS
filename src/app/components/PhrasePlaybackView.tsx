@@ -325,9 +325,6 @@ export function PhrasePlaybackView({
             setPaused(true);
             setMSState('paused');
         }
-
-        // update OS metadata
-        pushMetadataToTransport();
     };
 
 
@@ -713,7 +710,7 @@ export function PhrasePlaybackView({
     // Push metadata whenever phrase/phase changes
     useEffect(() => {
         pushMetadataToTransport();
-    }, [pushMetadataToTransport]);
+    }, [pushMetadataToTransport, currentPhraseIndex, currentPhase]);
 
     // Preload next/prev clips for smoother continuous skip
     useEffect(() => {
