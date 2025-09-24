@@ -151,8 +151,7 @@ export function PhrasePlaybackView({
             artworkUrl: presentationConfig.bgImage || '/language-shadowing-logo-dark.png',
         });
 
-        // Reapply handlers after metadata changes (critical for iOS)
-        t.reapplyHandlers();
+        // Handlers will be reapplied on 'playing' event
     }, [phrases, currentPhraseIndex, currentPhase, collectionName, configName, presentationConfig.bgImage]);
 
     const setMSState = (state: 'none' | 'paused' | 'playing') => {
@@ -172,8 +171,7 @@ export function PhrasePlaybackView({
             // - Sequence check prevents wasted work after successful play() if another call happened
             if (mySeq !== playSeqRef.current) return;
 
-            // Reapply handlers after successful playback start
-            transportRef.current?.reapplyHandlers();
+            // Handlers will be reapplied on 'playing' event
         } catch (e: unknown) {
             if (e instanceof Error && e.name === 'AbortError') {
                 // benign: a pause/src change raced our play - this IS the sequence logic in action
@@ -278,9 +276,9 @@ export function PhrasePlaybackView({
                     // O -> I (same phrase)
                     targetPhase = 'input';
                 } else {
-                    // (I) or (O & no input phase) -> previous phrase (I if enabled else O)
+                    // (I) or (O & no input phase) -> previous phrase O (not I as before)
                     targetIndex = (targetIndex - 1 + phrases.length) % phrases.length;
-                    targetPhase = enableInput ? 'input' : 'output';
+                    targetPhase = 'output'; // Always go to output of previous phrase when going back
                 }
             }
         }
@@ -324,12 +322,6 @@ export function PhrasePlaybackView({
         } else {
             setPaused(true);
             setMSState('paused');
-            // reflect paused position to Media Session
-            // transportRef.current?.setPosition({
-            //     durationSec: audioRef.current?.duration || 0,
-            //     positionSec: audioRef.current?.currentTime || 0,
-            //     rate: 0,
-            // });
         }
 
         // update OS metadata
@@ -747,28 +739,7 @@ export function PhrasePlaybackView({
         }
     };*/
 
-    const attachAudioGuards = (el: HTMLAudioElement) => {
-        const maybeExternalPause = () => {
-            if (srcSwapRef.current) return;             // ignore during programmatic src change
-            if (programmaticPauseRef.current) return;    // ignore our own pause/src swaps
-            if (el.ended) return;                       // natural end → ignore here
-            handlePause('external');
-        };
-
-        const onPlay = () => { programmaticPauseRef.current = false; };
-        const onPlaying = () => { programmaticPauseRef.current = false; };
-
-        el.addEventListener('play', onPlay);
-        el.addEventListener('playing', onPlaying);
-        el.addEventListener('pause', maybeExternalPause);
-        el.addEventListener('emptied', maybeExternalPause); // strong on Safari unplug
-
-        // optional, guarded:
-        // el.addEventListener('stalled', maybeExternalPause);
-        // el.addEventListener('suspend', maybeExternalPause);
-
-        // store a cleanup somewhere if you need to detach later
-    };
+    // Removed attachAudioGuards - redundant with WebMediaSessionTransport handling
 
     // Initialize transport callback ref
     const initTransport = useCallback((el: HTMLAudioElement | null) => {
@@ -788,8 +759,7 @@ export function PhrasePlaybackView({
             transport.reapplyHandlers();
         });
 
-        // also attach audio-element fallbacks
-        attachAudioGuards(el);
+        // Removed audio guards - using transport for media session handling
     }, [handlePlay, handlePause]);
 
     const handleAudioEnded = () => {
@@ -928,11 +898,11 @@ export function PhrasePlaybackView({
     // Preload next/prev clips for smoother continuous skip
     useEffect(() => {
         const i = indexRef.current;
-        const neigh = [
+        const neighbouringPhrases = [
             phrases[(i + 1) % phrases.length],
             phrases[(i - 1 + phrases.length) % phrases.length],
         ];
-        neigh.forEach(p => {
+        neighbouringPhrases.forEach(p => {
             const url = (phaseRef.current === 'input' && presentationConfig.enableInputPlayback)
                 ? p.inputAudio?.audioUrl
                 : p.outputAudio?.audioUrl;
