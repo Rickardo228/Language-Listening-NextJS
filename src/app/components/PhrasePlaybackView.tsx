@@ -168,28 +168,28 @@ export function PhrasePlaybackView({
     };
 
     const startDelayWindow = useCallback((totalMs: number) => {
-        const t = transportRef.current;
+        // const t = transportRef.current;
         delay.start(totalMs);
 
         // Make OS think we're "playing" during silence
         setMSState('playing');
 
         // Push a position snapshot immediately (critical for very short clips)
-        t?.setPosition({
-            durationSec: delay.getDurationSec(),
-            positionSec: delay.getPositionSec(), // ~0 at start
-            rate: pausedRef.current ? 0 : 1,
-        });
+        // t?.setPosition({
+        //     durationSec: delay.getDurationSec(),
+        //     positionSec: delay.getPositionSec(), // ~0 at start
+        //     rate: pausedRef.current ? 0 : 1,
+        // });
 
         // rAF ticker while not paused
         let raf = 0;
         const tick = () => {
             if (!delay.isActive()) return;
-            t?.setPosition({
-                durationSec: delay.getDurationSec(),
-                positionSec: delay.getPositionSec(),
-                rate: pausedRef.current ? 0 : 1,
-            });
+            // t?.setPosition({
+            //     durationSec: delay.getDurationSec(),
+            //     positionSec: delay.getPositionSec(),
+            //     rate: pausedRef.current ? 0 : 1,
+            // });
             if (!pausedRef.current) raf = requestAnimationFrame(tick);
         };
         if (!pausedRef.current) raf = requestAnimationFrame(tick);
@@ -204,11 +204,11 @@ export function PhrasePlaybackView({
         const t = transportRef.current;
         if (!t) return;
         if (delay.isActive()) {
-            t.setPosition({
-                durationSec: delay.getDurationSec(),
-                positionSec: delay.getPositionSec(),
-                rate: 0,
-            });
+            // t.setPosition({
+            //     durationSec: delay.getDurationSec(),
+            //     positionSec: delay.getPositionSec(),
+            //     rate: 0,
+            // });
         }
     }, [delay]);
 
@@ -350,11 +350,11 @@ export function PhrasePlaybackView({
             setPaused(true);
             setMSState('paused');
             // reflect paused position to Media Session
-            transportRef.current?.setPosition({
-                durationSec: audioRef.current?.duration || 0,
-                positionSec: audioRef.current?.currentTime || 0,
-                rate: 0,
-            });
+            // transportRef.current?.setPosition({
+            //     durationSec: audioRef.current?.duration || 0,
+            //     positionSec: audioRef.current?.currentTime || 0,
+            //     rate: 0,
+            // });
         }
 
         // update OS metadata
