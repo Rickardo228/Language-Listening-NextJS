@@ -90,7 +90,7 @@ export function PhrasePlaybackView({
     const timeoutIds = useRef<number[]>([]);
     const transportRef = useRef<WebMediaSessionTransport | null>(null);
     // Removed complex virtual delay system - using simpler setTimeout approach
-    const programmaticPauseRef = useRef(false);   // set when *we* call pause() or swap src
+    // Removed programmaticPauseRef - was only set, never read after removing attachAudioGuards
     // Play sequence counter prevents errors when trying to play an audio element that's already
     // in the process of starting playback. Without this, rapid play() calls cause browser errors
     // like "AbortError: The play() request was interrupted" when one play() cancels another.
@@ -99,15 +99,7 @@ export function PhrasePlaybackView({
     const playSeqRef = useRef(0);                 // increments on every new "play intent"
     const srcSwapRef = useRef(false);             // true while we're swapping src (navigation)
 
-    // Skip pump system - NOT related to user stats throttling (that's handled separately above).
-    // This system prevents audio glitches when users rapidly click next/prev buttons by:
-    // 1. Queuing all skip requests instead of executing them immediately
-    // 2. Processing them sequentially with a small delay between each skip
-    // 3. Preventing multiple concurrent skip operations that could cause audio stuttering
-    // The user stats throttling (updateUserStatsTimeout above) is completely separate.
-    const pendingSkipsRef = useRef(0);            // +N = next; -N = prev
-    const pumpingRef = useRef(false);             // prevents concurrent pump execution
-    const SKIP_THROTTLE_MS = 80;                  // minimum delay between skip operations
+    // Removed skip pump system - using direct navigation instead
 
     // Refs for state used in timers to prevent stale closures
     const pausedRef = useRef(paused);
@@ -178,6 +170,10 @@ export function PhrasePlaybackView({
                 return;
             }
             console.error('play failed:', reason, e);
+            // If playback fails, try to regenerate the audio (restored lost functionality)
+            if (currentPhraseIndex >= 0) {
+                handleAudioError(currentPhase);
+            }
         }
     };
 
@@ -187,7 +183,6 @@ export function PhrasePlaybackView({
     const setSrcSafely = (url: string) => {
         const el = audioRef.current;
         if (!el) return;
-        programmaticPauseRef.current = true;
         srcSwapRef.current = true;
         // cancel any current play intent
         ++playSeqRef.current;
@@ -195,34 +190,12 @@ export function PhrasePlaybackView({
         finally {
             // let the microtask queue flush before clearing flags
             setTimeout(() => {
-                programmaticPauseRef.current = false;
                 srcSwapRef.current = false;
             }, 0);
         }
     };
 
-    // Skip pump functions for coalescing rapid next/prev presses
-    const queueSkip = (delta: number) => {
-        pendingSkipsRef.current += delta;
-        pumpSkips();
-    };
-
-    const pumpSkips = async () => {
-        if (pumpingRef.current) return;
-        pumpingRef.current = true;
-        try {
-            while (pendingSkipsRef.current !== 0) {
-                const delta = Math.sign(pendingSkipsRef.current);
-                pendingSkipsRef.current -= delta;
-
-                await atomicAdvance(delta as 1 | -1);
-
-                await new Promise(r => setTimeout(r, SKIP_THROTTLE_MS));
-            }
-        } finally {
-            pumpingRef.current = false;
-        }
-    };
+    // Removed pump functions - using direct navigation
 
     const atomicAdvance = async (delta: 1 | -1) => {
         // Clear any existing timers
@@ -387,25 +360,18 @@ export function PhrasePlaybackView({
         // cancel any current play intent so a pending play() won't re-start
         ++playSeqRef.current;
 
-        const markProgrammatic = source === 'local';
-        if (markProgrammatic) programmaticPauseRef.current = true;
+        clearAllTimeouts();
+        setShowProgressBar(false);
+        el.pause();
+        setPaused(true);
+        setMSState('paused');
+        showStatsUpdate(true);
 
-        try {
-            clearAllTimeouts();
-            setShowProgressBar(false);
-            el.pause();
-            setPaused(true);
-            setMSState('paused');
-            showStatsUpdate(true);
-
-            if (currentPhraseIndex >= 0 && phrases[currentPhraseIndex]) {
-                const speed = currentPhase === 'input'
-                    ? (presentationConfig.inputPlaybackSpeed || 1.0)
-                    : (presentationConfig.outputPlaybackSpeed || 1.0);
-                trackPlaybackEvent('pause', `${collectionId || 'unknown'}-${currentPhraseIndex}`, currentPhase, currentPhraseIndex, speed);
-            }
-        } finally {
-            if (markProgrammatic) setTimeout(() => { programmaticPauseRef.current = false; }, 0);
+        if (currentPhraseIndex >= 0 && phrases[currentPhraseIndex]) {
+            const speed = currentPhase === 'input'
+                ? (presentationConfig.inputPlaybackSpeed || 1.0)
+                : (presentationConfig.outputPlaybackSpeed || 1.0);
+            trackPlaybackEvent('pause', `${collectionId || 'unknown'}-${currentPhraseIndex}`, currentPhase, currentPhraseIndex, speed);
         }
     };
 
@@ -413,27 +379,22 @@ export function PhrasePlaybackView({
         // cancel any current play intent
         ++playSeqRef.current;
 
-        programmaticPauseRef.current = true;
-        try {
-            clearAllTimeouts();
-            setShowProgressBar(false);
-            if (audioRef.current) {
-                audioRef.current.pause();
-                setSrcSafely('');
-            }
-            setPaused(true);
-            setMSState('paused');
-            showStatsUpdate();
+        clearAllTimeouts();
+        setShowProgressBar(false);
+        if (audioRef.current) {
+            audioRef.current.pause();
+            setSrcSafely('');
+        }
+        setPaused(true);
+        setMSState('paused');
+        showStatsUpdate();
 
-            // Track stop event
-            if (currentPhraseIndex >= 0 && phrases[currentPhraseIndex]) {
-                const speed = currentPhase === 'input'
-                    ? (presentationConfig.inputPlaybackSpeed || 1.0)
-                    : (presentationConfig.outputPlaybackSpeed || 1.0);
-                trackPlaybackEvent('stop', `${collectionId || 'unknown'}-${currentPhraseIndex}`, currentPhase, currentPhraseIndex, speed);
-            }
-        } finally {
-            setTimeout(() => { programmaticPauseRef.current = false; }, 0);
+        // Track stop event
+        if (currentPhraseIndex >= 0 && phrases[currentPhraseIndex]) {
+            const speed = currentPhase === 'input'
+                ? (presentationConfig.inputPlaybackSpeed || 1.0)
+                : (presentationConfig.outputPlaybackSpeed || 1.0);
+            trackPlaybackEvent('stop', `${collectionId || 'unknown'}-${currentPhraseIndex}`, currentPhase, currentPhraseIndex, speed);
         }
     };
 
@@ -553,191 +514,9 @@ export function PhrasePlaybackView({
         }
     };
 
-    // Shared navigation handlers (commented out as unused)
-    /*const handlePrevious = async () => {
-        clearAllTimeouts();
-        clearDelayWindow();
-        if (audioRef.current) {
-            let targetPhase: 'input' | 'output';
-            let targetIndex = currentPhraseIndex;
+    // Removed large commented handlePrevious function - replaced with atomicAdvance
 
-            // Determine the target phase and index
-            if (presentationConfig.enableOutputBeforeInput) {
-                // In output-before-input mode
-                if (currentPhase === 'input') {
-                    // From input phase, go to output phase of same phrase
-                    targetPhase = 'output';
-                    targetIndex = currentPhraseIndex;
-                } else {
-                    // From output phase, go to previous phrase
-                    if (currentPhraseIndex === 0) {
-                        // Loop to last phrase
-                        targetIndex = phrases.length - 1;
-                    } else {
-                        targetIndex = currentPhraseIndex - 1;
-                    }
-                    // Determine phase based on input playback setting
-                    targetPhase = presentationConfig.enableInputPlayback ? 'input' : 'output';
-                }
-            } else {
-                // In normal mode (input before output)
-                if (currentPhase === 'output') {
-                    // From output phase, go to input phase of same phrase
-                    if (presentationConfig.enableInputPlayback) {
-                        targetPhase = 'input';
-                        targetIndex = currentPhraseIndex;
-                    } else {
-                        // Skip input phase, go to previous phrase output
-                        if (currentPhraseIndex === 0) {
-                            targetIndex = phrases.length - 1;
-                        } else {
-                            targetIndex = currentPhraseIndex - 1;
-                        }
-                        targetPhase = 'output';
-                    }
-                } else {
-                    // From input phase, go to previous phrase
-                    if (currentPhraseIndex === 0) {
-                        // Loop to last phrase
-                        targetIndex = phrases.length - 1;
-                    } else {
-                        targetIndex = currentPhraseIndex - 1;
-                    }
-                    // Determine phase based on input playback setting
-                    targetPhase = presentationConfig.enableInputPlayback ? 'input' : 'output';
-                }
-            }
-
-            // Update state
-            setCurrentPhraseIndex(targetIndex);
-            setCurrentPhase(targetPhase);
-
-            // Set audio source and playback speed
-            const audioUrl = targetPhase === 'input'
-                ? phrases[targetIndex].inputAudio?.audioUrl
-                : phrases[targetIndex].outputAudio?.audioUrl;
-            setSrcSafely(audioUrl || '');
-
-            const speed = targetPhase === 'input'
-                ? (presentationConfig.inputPlaybackSpeed || 1.0)
-                : (presentationConfig.outputPlaybackSpeed || 1.0);
-            if (speed !== 1.0) {
-                audioRef.current.playbackRate = speed;
-            }
-
-            // Update user stats for phrase viewed (only once per phrase pair - when target language is reached)
-            if (targetIndex >= 0 && phrases[targetIndex] && targetPhase === 'output') {
-                // Track previous navigation (existing)
-                trackPlaybackEvent('previous', `${collectionId || 'unknown'}-${targetIndex}`, targetPhase, targetIndex, speed);
-                if (paused) await debouncedUpdateUserStats(phrases, targetIndex, 'viewed');
-            }
-
-            // Increment viewed phrases when navigating from output phase
-            if (currentPhase === 'output' && paused) {
-                showViewedPhrases();
-            }
-
-            // Actually start playback if we weren't paused
-            if (!paused) {
-                setPaused(false);
-                setMSState('playing');        // keep OS transport "playing" between clips
-                safePlay('nav-prev');         // actually start the new audio
-            }
-        }
-    };*/
-
-    /*const handleNext = async () => {
-        clearAllTimeouts();
-        clearDelayWindow();
-        if (audioRef.current) {
-            let targetPhase: 'input' | 'output';
-            let targetIndex = currentPhraseIndex;
-
-            // Determine the target phase and index
-            if (presentationConfig.enableOutputBeforeInput) {
-                // In output-before-input mode
-                if (currentPhase === 'output') {
-                    // From output phase, go to input phase of same phrase
-                    if (presentationConfig.enableInputPlayback) {
-                        targetPhase = 'input';
-                        targetIndex = currentPhraseIndex;
-                    } else {
-                        // Skip input phase, go to next phrase output
-                        if (currentPhraseIndex === phrases.length - 1) {
-                            targetIndex = 0;
-                        } else {
-                            targetIndex = currentPhraseIndex + 1;
-                        }
-                        targetPhase = 'output';
-                    }
-                } else {
-                    // From input phase, go to next phrase
-                    if (currentPhraseIndex === phrases.length - 1) {
-                        // Loop to first phrase
-                        targetIndex = 0;
-                    } else {
-                        targetIndex = currentPhraseIndex + 1;
-                    }
-                    // Determine phase based on input playback setting
-                    targetPhase = presentationConfig.enableInputPlayback ? 'input' : 'output';
-                }
-            } else {
-                // In normal mode (input before output)
-                if (currentPhase === 'input') {
-                    // From input phase, go to output phase of same phrase
-                    targetPhase = 'output';
-                    targetIndex = currentPhraseIndex;
-                } else {
-                    // From output phase, go to next phrase
-                    if (currentPhraseIndex === phrases.length - 1) {
-                        // Loop to first phrase
-                        targetIndex = 0;
-                    } else {
-                        targetIndex = currentPhraseIndex + 1;
-                    }
-                    // Determine phase based on input playback setting
-                    targetPhase = presentationConfig.enableInputPlayback ? 'input' : 'output';
-                }
-            }
-
-            // Update state
-            setCurrentPhraseIndex(targetIndex);
-            setCurrentPhase(targetPhase);
-
-            // Set audio source and playback speed
-            const audioUrl = targetPhase === 'input'
-                ? phrases[targetIndex].inputAudio?.audioUrl
-                : phrases[targetIndex].outputAudio?.audioUrl;
-            setSrcSafely(audioUrl || '');
-
-            const speed = targetPhase === 'input'
-                ? (presentationConfig.inputPlaybackSpeed || 1.0)
-                : (presentationConfig.outputPlaybackSpeed || 1.0);
-            if (speed !== 1.0) {
-                audioRef.current.playbackRate = speed;
-            }
-
-            // Update user stats for phrase viewed (only once per phrase pair - when target language is reached)
-            if (targetIndex >= 0 && phrases[targetIndex] && targetPhase === 'output') {
-                // Track next navigation (existing)
-                trackPlaybackEvent('next', `${collectionId || 'unknown'}-${targetIndex}`, targetPhase, targetIndex, speed);
-                // TODO - should we also increment viewed phrases when autoplaying (via use effect)?
-                if (paused) await debouncedUpdateUserStats(phrases, targetIndex, 'viewed');
-            }
-
-            // Increment viewed phrases when navigating from output phase
-            if (currentPhase === 'output' && paused) {
-                showViewedPhrases();
-            }
-
-            // Actually start playback if we weren't paused
-            if (!paused) {
-                setPaused(false);
-                setMSState('playing');        // keep OS transport "playing" between clips
-                safePlay('nav-next');         // actually start the new audio
-            }
-        }
-    };*/
+    // Removed large commented handleNext function - replaced with atomicAdvance
 
     // Removed attachAudioGuards - redundant with WebMediaSessionTransport handling
 
@@ -748,11 +527,11 @@ export function PhrasePlaybackView({
 
         const transport = new WebMediaSessionTransport(el);
         transportRef.current = transport;
-        transport.setCapabilities({ canPlayPause: true, canNextPrev: true, canSeek: false });
+        transport.setCapabilities({ canPlayPause: true, canNextPrev: true });
         transport.onPlay(handlePlay);
         transport.onPause(() => handlePause('external'));
-        transport.onNext(() => queueSkip(+1));
-        transport.onPrevious(() => queueSkip(-1));
+        transport.onNext(() => atomicAdvance(+1));
+        transport.onPrevious(() => atomicAdvance(-1));
 
         // Reapply handlers on playing event (critical for iOS)
         el.addEventListener('playing', () => {
@@ -913,8 +692,6 @@ export function PhrasePlaybackView({
         });
     }, [currentPhraseIndex, currentPhase, phrases, presentationConfig.enableInputPlayback]);
 
-    // oh
-
     // Audio playback effect
     useEffect(() => {
         if (currentPhraseIndex < 0 || paused) return;
@@ -1069,8 +846,8 @@ export function PhrasePlaybackView({
                             showProgressBar={showProgressBar}
                             progressDuration={progressDuration}
                             progressDelay={progressDelay}
-                            onPrevious={() => queueSkip(-1)}
-                            onNext={() => queueSkip(+1)}
+                            onPrevious={() => atomicAdvance(-1)}
+                            onNext={() => atomicAdvance(+1)}
                             canGoBack={true}
                             canGoForward={true}
                             currentPhraseIndex={currentPhraseIndex}
@@ -1091,8 +868,8 @@ export function PhrasePlaybackView({
                                 paused={paused}
                                 onPause={handlePause}
                                 onPlay={handlePlay}
-                                onPrevious={() => queueSkip(-1)}
-                                onNext={() => queueSkip(+1)}
+                                onPrevious={() => atomicAdvance(-1)}
+                                onNext={() => atomicAdvance(+1)}
                                 canGoBack={true}
                                 canGoForward={true}
                                 inputLang={phrases[0]?.inputLang}

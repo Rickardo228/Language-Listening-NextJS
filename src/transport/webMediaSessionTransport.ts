@@ -2,7 +2,6 @@ import {
   Transport,
   TransportCapabilities,
   TransportMetadata,
-  TransportPosition,
 } from "./transport";
 
 type Handlers = {
@@ -10,7 +9,7 @@ type Handlers = {
   pause?: () => void;
   next?: () => void;
   prev?: () => void;
-  seekTo?: (sec: number) => void;
+  // Removed seekTo - not used by the app
 };
 
 export class WebMediaSessionTransport implements Transport {
@@ -40,17 +39,7 @@ export class WebMediaSessionTransport implements Transport {
       // Not all browsers support seek actions
     }
 
-    // Keep OS position in sync while real audio is playing
-    const tick = () => this.updatePositionFromAudio();
-    audioEl?.addEventListener("timeupdate", tick);
-    audioEl?.addEventListener("ratechange", tick);
-
-    // Store a cleanup ref on the instance
-    (this as WebMediaSessionTransport & { _cleanup?: () => void })._cleanup =
-      () => {
-        audioEl?.removeEventListener("timeupdate", tick);
-        audioEl?.removeEventListener("ratechange", tick);
-      };
+    // No position tracking needed - removed timeupdate/ratechange listeners
   }
 
   setMetadata(meta: TransportMetadata): void {
@@ -73,19 +62,7 @@ export class WebMediaSessionTransport implements Transport {
     });
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  setPosition(pos: TransportPosition): void {
-    if (!("mediaSession" in navigator)) return;
-    try {
-      // navigator.mediaSession.setPositionState({
-      //   duration: isFinite(pos.durationSec) ? pos.durationSec : 0,
-      //   position: Math.max(0, Math.min(pos.positionSec, pos.durationSec)),
-      //   playbackRate: pos.rate,
-      // });
-    } catch {
-      // Some browsers may throw if position state is not supported
-    }
-  }
+  // Removed setPosition - not used by the app
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   setCapabilities(_cap: TransportCapabilities): void {
@@ -106,21 +83,14 @@ export class WebMediaSessionTransport implements Transport {
   onPrevious(cb: () => void): void {
     this.handlers.prev = cb;
   }
-  onSeekTo(cb: (sec: number) => void): void {
-    this.handlers.seekTo = cb;
-  }
+  // Removed onSeekTo - not used by the app
 
   reapplyHandlers(): void {
     if (!("mediaSession" in navigator)) return;
 
     const ms = navigator.mediaSession;
 
-    // Clear seek handlers to prevent 10s skip buttons
-    try {
-      ms.setActionHandler("seekto", null);
-      ms.setActionHandler("seekforward", null);
-      ms.setActionHandler("seekbackward", null);
-    } catch {}
+    // No seek handlers to clear - app doesn't use seeking
 
     // Reapply next/prev handlers (critical for iOS)
     ms.setActionHandler("nexttrack", () => this.handlers.next?.());
@@ -136,24 +106,10 @@ export class WebMediaSessionTransport implements Transport {
   dispose(): void {
     if (this.disposed) return;
     this.disposed = true;
-    const cleanupFn = (
-      this as WebMediaSessionTransport & { _cleanup?: () => void }
-    )._cleanup;
-    if (cleanupFn) cleanupFn();
-    // It's OK to leave mediaSession handlers in place; the page is disposing anyway.
+    // No cleanup needed since we removed the event listeners
   }
 
-  private updatePositionFromAudio(): void {
-    if (!("mediaSession" in navigator) || !this.audioEl) return;
-    // const el = this.audioEl;
-    // const duration = isFinite(el.duration) ? el.duration : 0;
-    // const position = el.currentTime || 0;
-    // const rate = el.playbackRate || (el.paused ? 0 : 1);
-    // this.setPosition({ durationSec: duration, positionSec: position, rate });
-  }
+  // Removed updatePositionFromAudio - not used since setPosition was removed
 
-  private _getPosSec(): number | null {
-    if (!this.audioEl) return null;
-    return this.audioEl.currentTime || 0;
-  }
+  // Removed _getPosSec - not needed without position tracking
 }
