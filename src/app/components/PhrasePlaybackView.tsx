@@ -140,7 +140,7 @@ export function PhrasePlaybackView({
             title,
             artist: collectionName || 'Session',
             album: configName,
-            artworkUrl: presentationConfig.bgImage || undefined,
+            artworkUrl: presentationConfig.bgImage || '/language-shadowing-logo-dark.png',
         });
     }, [phrases, currentPhraseIndex, currentPhase, collectionName, configName, presentationConfig.bgImage]);
 
