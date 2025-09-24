@@ -534,6 +534,8 @@ export function PhrasePlaybackView({
         transport.onPrevious(() => atomicAdvance(-1));
 
         // Reapply handlers on playing event (critical for iOS)
+        // This seemed to be necessary to get the media controls to show next and previous buttons
+        // TODO - Can this be optimised to only reapply handlers when necessary, or even only once, after the first play?
         el.addEventListener('playing', () => {
             transport.reapplyHandlers();
         });
