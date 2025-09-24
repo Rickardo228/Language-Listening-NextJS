@@ -80,8 +80,8 @@ export class WebMediaSessionTransport implements Transport {
     }
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   setCapabilities(_cap: TransportCapabilities): void {
-    // eslint-disable-line @typescript-eslint/no-unused-vars
     // Media Session has no explicit capability toggles;
     // capability is implied by which action handlers we set.
     // We already set handlers in constructor; if needed we could clear them here.
