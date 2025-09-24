@@ -524,9 +524,10 @@ export function PhrasePlaybackView({
 
     // Initialize transport callback ref
     const initTransport = useCallback((el: HTMLAudioElement | null) => {
+        console.log('initTransport');
         audioRef.current = el;
         if (!el || transportRef.current) return;
-
+        console.log('creating transport');
         const transport = new WebMediaSessionTransport(el);
         transportRef.current = transport;
         transport.setCapabilities({ canPlayPause: true, canNextPrev: true });
@@ -535,12 +536,19 @@ export function PhrasePlaybackView({
         transport.onNext(() => atomicAdvance(+1));
         transport.onPrevious(() => atomicAdvance(-1));
 
-        // Reapply handlers on playing event (critical for iOS)
-        // This seemed to be necessary to get the media controls to show next and previous buttons
-        // TODO - Can this be optimised to only reapply handlers when necessary, or even only once, after the first play?
-        el.addEventListener('playing', () => {
-            transport.reapplyHandlers();
-        });
+        // Reapply handlers on first playing event (critical for iOS)
+        // This is necessary to get the media controls to show next and previous buttons
+        // Optimized to only run once after the first play
+        let hasReappliedHandlers = false;
+        const handleFirstPlaying = () => {
+            if (!hasReappliedHandlers) {
+                transport.reapplyHandlers();
+                hasReappliedHandlers = true;
+                // Remove the listener after first use to prevent unnecessary calls
+                el.removeEventListener('playing', handleFirstPlaying);
+            }
+        };
+        el.addEventListener('playing', handleFirstPlaying);
 
         // Removed audio guards - using transport for media session handling
     }, [handlePlay, handlePause]);
