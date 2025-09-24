@@ -134,18 +134,16 @@ export function PhrasePlaybackView({
         if (!t) return;
 
         const phrase = phrases[currentPhraseIndex];
-        const title =
-            phrase ? (currentPhase === 'input' ? (phrase.input || '') : (phrase.translated || '')) : '';
 
         t.setMetadata({
-            title,
-            artist: collectionName?.replace(/\b\w/g, l => l.toUpperCase()) || 'Session',
-            album: configName,
+            title: (phrase?.translated || ''),
+            artist: phrase?.input || '',
+            album: (collectionName?.replace(/\b\w/g, l => l.toUpperCase()) || 'Session'),
             artworkUrl: presentationConfig.bgImage || '/language-shadowing-logo-dark.png',
         });
 
         // Handlers will be reapplied on 'playing' event
-    }, [phrases, currentPhraseIndex, currentPhase, collectionName, configName, presentationConfig.bgImage]);
+    }, [phrases, currentPhraseIndex, collectionName, presentationConfig.bgImage]);
 
     const setMSState = (state: 'none' | 'paused' | 'playing') => {
         try { if ('mediaSession' in navigator) (navigator as NavigatorWithMediaSession).mediaSession.playbackState = state; } catch { }
