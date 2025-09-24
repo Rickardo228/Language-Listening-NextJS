@@ -109,6 +109,7 @@ export function PhrasePlaybackView({
     // Removed delay period tracking - using simple setTimeout approach
 
     // Keep refs in sync with state
+    // TODO - do these even need to be useEffects? Cant we just set on each render?
     useEffect(() => { pausedRef.current = paused; }, [paused]);
     useEffect(() => { phaseRef.current = currentPhase; }, [currentPhase]);
     useEffect(() => { indexRef.current = currentPhraseIndex; }, [currentPhraseIndex]);
@@ -398,38 +399,39 @@ export function PhrasePlaybackView({
         }
     };
 
-    const handlePlay = () => {
+    const handlePlay = useCallback(() => {
         setPaused(false);
 
-        // No special delay handling needed - timeouts will naturally continue or be cleared
+        const idx = indexRef.current;          // always fresh
+        const phase = phaseRef.current;
 
-        if (currentPhraseIndex <= 0) {
+        // Only replay when we've intentionally set a negative index
+        if (idx < 0) {
             handleReplay();
-        } else if (audioRef.current) {
-            // Skip input audio if disabled and we're in input phase
-            if (currentPhase === 'input' && !presentationConfig.enableInputPlayback) {
-                setCurrentPhase('output');
-                return;
-            }
-
-            if (!audioRef.current.src) {
-                setSrcSafely(phrases[currentPhraseIndex]?.[currentPhase === "input" ? 'inputAudio' : 'outputAudio']?.audioUrl ?? '')
-            }
-            // Set playback speed based on current phase
-            const speed = currentPhase === 'input'
-                ? (presentationConfig.inputPlaybackSpeed || 1.0)
-                : (presentationConfig.outputPlaybackSpeed || 1.0);
-            if (speed !== 1.0) {
-                audioRef.current.playbackRate = speed;
-            }
-            safePlay('handlePlay');
-
-            // Track play event
-            if (currentPhraseIndex >= 0 && phrases[currentPhraseIndex]) {
-                trackPlaybackEvent('play', `${collectionId || 'unknown'}-${currentPhraseIndex}`, currentPhase, currentPhraseIndex, speed);
-            }
+            return;
         }
-    };
+
+        const el = audioRef.current;
+        if (!el) return;
+
+        // Ensure src set
+        if (!el.src) {
+            const url = phrases[idx]?.[phase === 'input' ? 'inputAudio' : 'outputAudio']?.audioUrl ?? '';
+            setSrcSafely(url);
+        }
+
+        // Apply speed for current phase
+        const speed = phase === 'input'
+            ? (presentationConfig.inputPlaybackSpeed || 1.0)
+            : (presentationConfig.outputPlaybackSpeed || 1.0);
+        if (speed !== 1.0) el.playbackRate = speed;
+
+        safePlay('handlePlay');
+        if (idx >= 0 && phrases[idx]) {
+            trackPlaybackEvent('play', `${collectionId || 'unknown'}-${idx}`, phase, idx, speed);
+        }
+    }, [phrases, presentationConfig.inputPlaybackSpeed, presentationConfig.outputPlaybackSpeed, collectionId]);
+
 
     const handleReplay = async () => {
         clearAllTimeouts();
