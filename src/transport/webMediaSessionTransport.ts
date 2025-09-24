@@ -128,10 +128,9 @@ export class WebMediaSessionTransport implements Transport {
     ms.setActionHandler("play", () => this.handlers.play?.());
     ms.setActionHandler("pause", () => this.handlers.pause?.());
 
-    // Set playback state
-    if (this.audioEl) {
-      ms.playbackState = this.audioEl.paused ? "paused" : "playing";
-    }
+    // Note: We don't override playbackState here anymore since the parent component
+    // manages virtual delay states via setMSState calls. This prevents conflicts
+    // between audio element state and virtual delay state.
   }
 
   dispose(): void {

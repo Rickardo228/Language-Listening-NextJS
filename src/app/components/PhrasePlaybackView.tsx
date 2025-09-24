@@ -8,7 +8,7 @@ import { BLEED_START_DELAY, DELAY_AFTER_INPUT_PHRASES_MULTIPLIER, DELAY_AFTER_OU
 import { useUpdateUserStats } from '../utils/userStats';
 import { track, trackAudioEnded, trackPlaybackEvent } from '../../lib/mixpanelClient';
 import { WebMediaSessionTransport } from '../../transport/webMediaSessionTransport';
-import { useVirtualDelay } from '../../transport/useVirtualDelay';
+// Removed useVirtualDelay import - reverting to simpler timeout-based approach
 
 interface NavigatorWithMediaSession extends Navigator {
     mediaSession: MediaSession;
@@ -89,25 +89,32 @@ export function PhrasePlaybackView({
     const audioRef = useRef<HTMLAudioElement>(null);
     const timeoutIds = useRef<number[]>([]);
     const transportRef = useRef<WebMediaSessionTransport | null>(null);
-    const delay = useVirtualDelay();
-    const delayRafCleanupRef = useRef<(() => void) | null>(null);
+    // Removed complex virtual delay system - using simpler setTimeout approach
     const programmaticPauseRef = useRef(false);   // set when *we* call pause() or swap src
+    // Play sequence counter prevents errors when trying to play an audio element that's already
+    // in the process of starting playback. Without this, rapid play() calls cause browser errors
+    // like "AbortError: The play() request was interrupted" when one play() cancels another.
+    // Each play attempt gets a unique sequence number - if another play starts while one is pending,
+    // the earlier attempt will bail out gracefully when it sees the sequence has changed.
     const playSeqRef = useRef(0);                 // increments on every new "play intent"
     const srcSwapRef = useRef(false);             // true while we're swapping src (navigation)
 
-    // Skip pump refs for coalescing rapid next/prev presses
+    // Skip pump system - NOT related to user stats throttling (that's handled separately above).
+    // This system prevents audio glitches when users rapidly click next/prev buttons by:
+    // 1. Queuing all skip requests instead of executing them immediately
+    // 2. Processing them sequentially with a small delay between each skip
+    // 3. Preventing multiple concurrent skip operations that could cause audio stuttering
+    // The user stats throttling (updateUserStatsTimeout above) is completely separate.
     const pendingSkipsRef = useRef(0);            // +N = next; -N = prev
-    const pumpingRef = useRef(false);
-    const SKIP_THROTTLE_MS = 80;
+    const pumpingRef = useRef(false);             // prevents concurrent pump execution
+    const SKIP_THROTTLE_MS = 80;                  // minimum delay between skip operations
 
     // Refs for state used in timers to prevent stale closures
     const pausedRef = useRef(paused);
     const phaseRef = useRef(currentPhase);
     const indexRef = useRef(currentPhraseIndex);
 
-    // Delay context tracking
-    type DelayContext = { kind: 'after-input' | 'after-output' };
-    const delayCtxRef = useRef<DelayContext | null>(null);
+    // Removed delay period tracking - using simple setTimeout approach
 
     // Keep refs in sync with state
     useEffect(() => { pausedRef.current = paused; }, [paused]);
@@ -160,73 +167,23 @@ export function PhrasePlaybackView({
         try {
             const p = el.play();
             await p;
-            // if another play intent happened meanwhile, bail
+            // BOTH sequence check AND error catching are needed:
+            // - Error catching handles AbortError when play() calls conflict
+            // - Sequence check prevents wasted work after successful play() if another call happened
             if (mySeq !== playSeqRef.current) return;
 
             // Reapply handlers after successful playback start
             transportRef.current?.reapplyHandlers();
         } catch (e: unknown) {
             if (e instanceof Error && e.name === 'AbortError') {
-                // benign: a pause/src change raced our play
+                // benign: a pause/src change raced our play - this IS the sequence logic in action
                 return;
             }
             console.error('play failed:', reason, e);
         }
     };
 
-    const startDelayWindow = useCallback((totalMs: number) => {
-        // const t = transportRef.current;
-        delay.start(totalMs);
-
-        // Make OS think we're "playing" during silence
-        setMSState('playing');
-
-        // Push a position snapshot immediately (critical for very short clips)
-        // t?.setPosition({
-        //     durationSec: delay.getDurationSec(),
-        //     positionSec: delay.getPositionSec(), // ~0 at start
-        //     rate: pausedRef.current ? 0 : 1,
-        // });
-
-        // rAF ticker while not paused
-        let raf = 0;
-        const tick = () => {
-            if (!delay.isActive()) return;
-            // t?.setPosition({
-            //     durationSec: delay.getDurationSec(),
-            //     positionSec: delay.getPositionSec(),
-            //     rate: pausedRef.current ? 0 : 1,
-            // });
-            if (!pausedRef.current) raf = requestAnimationFrame(tick);
-        };
-        if (!pausedRef.current) raf = requestAnimationFrame(tick);
-
-        // Return a cleanup to stop ticking
-        return () => {
-            if (raf) cancelAnimationFrame(raf);
-        };
-    }, [delay]);
-
-    const pushPausedPosition = useCallback(() => {
-        const t = transportRef.current;
-        if (!t) return;
-        if (delay.isActive()) {
-            // t.setPosition({
-            //     durationSec: delay.getDurationSec(),
-            //     positionSec: delay.getPositionSec(),
-            //     rate: 0,
-            // });
-        }
-    }, [delay]);
-
-    const clearDelayWindow = useCallback(() => {
-        if (delayRafCleanupRef.current) {
-            delayRafCleanupRef.current();
-            delayRafCleanupRef.current = null;
-        }
-        delay.clear();
-        setMSState('paused');
-    }, [delay]);
+    // No special delay period helpers needed - just use setTimeout and clearAllTimeouts()
 
     // Helper to safely set src without triggering system pause
     const setSrcSafely = (url: string) => {
@@ -270,9 +227,8 @@ export function PhrasePlaybackView({
     };
 
     const atomicAdvance = async (delta: 1 | -1) => {
-        // coalesce silence timers and keep OS state sane
+        // Clear any existing timers
         clearAllTimeouts();
-        clearDelayWindow();
 
         if (!phrases.length) return;
 
@@ -347,6 +303,18 @@ export function PhrasePlaybackView({
                 ? (presentationConfig.inputPlaybackSpeed || 1.0)
                 : (presentationConfig.outputPlaybackSpeed || 1.0);
         if (audioRef.current) audioRef.current.playbackRate = speed;
+
+        // Track navigation events and update user stats for phrase viewing
+        if (targetIndex >= 0 && phrases[targetIndex] && targetPhase === 'output') {
+            // Track skip navigation event
+            const eventType = delta === 1 ? 'next' : 'previous';
+            trackPlaybackEvent(eventType, `${collectionId || 'unknown'}-${targetIndex}`, targetPhase, targetIndex, speed);
+
+            // Update user stats when navigating while paused (phrase viewed)
+            if (!wasPlaying) {
+                await debouncedUpdateUserStats(phrases, targetIndex, 'viewed');
+            }
+        }
 
         // continue only if we were already playing
         if (wasPlaying) {
@@ -432,11 +400,10 @@ export function PhrasePlaybackView({
 
         try {
             clearAllTimeouts();
-            clearDelayWindow();
             setShowProgressBar(false);
             el.pause();
             setPaused(true);
-            pushPausedPosition();
+            setMSState('paused');
             showStatsUpdate(true);
 
             if (currentPhraseIndex >= 0 && phrases[currentPhraseIndex]) {
@@ -457,13 +424,13 @@ export function PhrasePlaybackView({
         programmaticPauseRef.current = true;
         try {
             clearAllTimeouts();
-            clearDelayWindow();
             setShowProgressBar(false);
             if (audioRef.current) {
                 audioRef.current.pause();
                 setSrcSafely('');
             }
             setPaused(true);
+            setMSState('paused');
             showStatsUpdate();
 
             // Track stop event
@@ -481,88 +448,7 @@ export function PhrasePlaybackView({
     const handlePlay = () => {
         setPaused(false);
 
-        // If resuming during a delay, re-schedule the remaining timeout
-        if (delay.isActive()) {
-            const remaining = delay.getRemainingMs();
-            const kind = delayCtxRef.current?.kind;
-            if (remaining > 0 && kind) {
-                // restart ticking
-                if (delayRafCleanupRef.current) delayRafCleanupRef.current();
-                delayRafCleanupRef.current = startDelayWindow(remaining);
-
-                // Recreate the timeout that would fire at delay end
-                const timeoutId = window.setTimeout(() => {
-                    // Check if still not paused before proceeding
-                    if (pausedRef.current) return;
-
-                    // Clear delay window and context
-                    clearDelayWindow();
-                    delayCtxRef.current = null;
-
-                    const playOutputBeforeInput = presentationConfig.enableOutputBeforeInput;
-
-                    if (kind === 'after-input') {
-                        setCurrentPhase('output');
-                        setShowProgressBar(false);
-                        if (playOutputBeforeInput) {
-                            if (indexRef.current < phrases.length - 1 && !pausedRef.current) {
-                                setCurrentPhraseIndex(indexRef.current + 1);
-                            } else {
-                                if (presentationConfig.enableLoop) {
-                                    setCurrentPhraseIndex(0);
-                                } else {
-                                    showStatsUpdate(true);
-                                    setPaused(true);
-                                }
-                            }
-                        }
-                    } else { // after-output
-                        setShowProgressBar(false);
-                        if (playOutputBeforeInput) {
-                            if (presentationConfig.enableInputPlayback) {
-                                setCurrentPhase('input');
-                            } else {
-                                if (indexRef.current < phrases.length - 1 && !pausedRef.current) {
-                                    setCurrentPhraseIndex(indexRef.current + 1);
-                                    setCurrentPhase('output');
-                                } else {
-                                    if (presentationConfig.enableLoop) {
-                                        setCurrentPhraseIndex(0);
-                                        setCurrentPhase('output');
-                                    } else {
-                                        showStatsUpdate(true);
-                                        setPaused(true);
-                                    }
-                                }
-                            }
-                        } else {
-                            if (indexRef.current < phrases.length - 1 && !pausedRef.current) {
-                                setCurrentPhraseIndex(indexRef.current + 1);
-                                if (presentationConfig.enableInputPlayback) {
-                                    setCurrentPhase('input');
-                                } else {
-                                    setCurrentPhase('output');
-                                }
-                            } else {
-                                if (presentationConfig.enableLoop) {
-                                    setCurrentPhraseIndex(0);
-                                    if (presentationConfig.enableInputPlayback) {
-                                        setCurrentPhase('input');
-                                    } else {
-                                        setCurrentPhase('output');
-                                    }
-                                } else {
-                                    showStatsUpdate(true);
-                                    setPaused(true);
-                                }
-                            }
-                        }
-                    }
-                }, remaining);
-                timeoutIds.current.push(timeoutId);
-            }
-            return;
-        }
+        // No special delay handling needed - timeouts will naturally continue or be cleared
 
         if (currentPhraseIndex <= 0) {
             handleReplay();
@@ -594,7 +480,6 @@ export function PhrasePlaybackView({
 
     const handleReplay = async () => {
         clearAllTimeouts();
-        clearDelayWindow();
         setCurrentPhraseIndex(prev => prev < 0 ? prev - 1 : -1);
 
         // Check if input playback is enabled, if not start with output phase
@@ -643,7 +528,6 @@ export function PhrasePlaybackView({
 
     const handlePlayPhrase = (index: number, phase: 'input' | 'output') => {
         clearAllTimeouts();
-        clearDelayWindow();
         if (audioRef.current) {
             // Skip input audio if disabled
             if (phase === 'input' && !presentationConfig.enableInputPlayback) {
@@ -865,11 +749,9 @@ export function PhrasePlaybackView({
 
     const attachAudioGuards = (el: HTMLAudioElement) => {
         const maybeExternalPause = () => {
-            const inDelay = delay.isActive();
             if (srcSwapRef.current) return;             // ignore during programmatic src change
             if (programmaticPauseRef.current) return;    // ignore our own pause/src swaps
-            // During delay we DO want to treat this as external pause:
-            if (!inDelay && el.ended) return;           // natural end outside delay → ignore here
+            if (el.ended) return;                       // natural end → ignore here
             handlePause('external');
         };
 
@@ -939,20 +821,14 @@ export function PhrasePlaybackView({
                 debouncedUpdateUserStats(phrases, currentPhraseIndex);
             }
 
-            // Start delay window tracking
-            if (delayRafCleanupRef.current) delayRafCleanupRef.current();
-            delayRafCleanupRef.current = startDelayWindow(totalDelayMs);
-
-            // Set delay context
-            delayCtxRef.current = { kind: 'after-input' };
+            // Set media session to playing during delay for proper media controls
+            setMSState('playing');
 
             const timeoutId = window.setTimeout(() => {
                 // Check if still not paused before proceeding
                 if (pausedRef.current) return;
 
-                // Clear delay window and context
-                clearDelayWindow();
-                delayCtxRef.current = null;
+                // Timeouts naturally end, no special cleanup needed
 
                 setCurrentPhase('output');
                 setShowProgressBar(false);
@@ -984,20 +860,14 @@ export function PhrasePlaybackView({
             setProgressDuration(totalOutputDelayMs);
             setProgressDelay(0);
 
-            // Start delay window tracking
-            if (delayRafCleanupRef.current) delayRafCleanupRef.current();
-            delayRafCleanupRef.current = startDelayWindow(totalOutputDelayMs);
-
-            // Set delay context
-            delayCtxRef.current = { kind: 'after-output' };
+            // Set media session to playing during delay for proper media controls
+            setMSState('playing');
 
             const timeoutId = window.setTimeout(() => {
                 // Check if still not paused before proceeding
                 if (pausedRef.current) return;
 
-                // Clear delay window and context
-                clearDelayWindow();
-                delayCtxRef.current = null;
+                // Timeouts naturally end, no special cleanup needed
 
                 setShowProgressBar(false);
                 if (playOutputBeforeInput) {
@@ -1163,7 +1033,6 @@ export function PhrasePlaybackView({
                                 onPhraseClick={(index) => {
                                     setCurrentPhraseIndex(index);
                                     clearAllTimeouts();
-                                    clearDelayWindow();
 
                                     // Determine target phase considering both enableOutputBeforeInput and enableInputPlayback
                                     let targetPhase: 'input' | 'output';
