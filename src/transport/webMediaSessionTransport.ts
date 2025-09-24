@@ -61,17 +61,19 @@ export class WebMediaSessionTransport implements Transport {
 
     // Get duration from audio element to signal track-based content
     const duration = this.audioEl?.duration;
-    const finiteDuration = duration && isFinite(duration) ? duration : undefined;
+    const finiteDuration =
+      duration && isFinite(duration) ? duration : undefined;
 
     navigator.mediaSession.metadata = new MediaMetadata({
       title: meta.title || " ",
       artist: meta.artist || " ",
       album: meta.album || " ",
       artwork,
-      ...(finiteDuration && { duration: finiteDuration })
+      ...(finiteDuration && { duration: finiteDuration }),
     });
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   setPosition(pos: TransportPosition): void {
     if (!("mediaSession" in navigator)) return;
     try {
@@ -115,9 +117,9 @@ export class WebMediaSessionTransport implements Transport {
 
     // Clear seek handlers to prevent 10s skip buttons
     try {
-      ms.setActionHandler('seekto', null);
-      ms.setActionHandler('seekforward', null);
-      ms.setActionHandler('seekbackward', null);
+      ms.setActionHandler("seekto", null);
+      ms.setActionHandler("seekforward", null);
+      ms.setActionHandler("seekbackward", null);
     } catch {}
 
     // Reapply next/prev handlers (critical for iOS)
@@ -128,7 +130,7 @@ export class WebMediaSessionTransport implements Transport {
 
     // Set playback state
     if (this.audioEl) {
-      ms.playbackState = this.audioEl.paused ? 'paused' : 'playing';
+      ms.playbackState = this.audioEl.paused ? "paused" : "playing";
     }
   }
 
