@@ -138,7 +138,7 @@ export function PhrasePlaybackView({
             phrase ? (currentPhase === 'input' ? (phrase.input || '') : (phrase.translated || '')) : '';
         t.setMetadata({
             title,
-            artist: collectionName || 'Session',
+            artist: collectionName?.replace(/\b\w/g, l => l.toUpperCase()) || 'Session',
             album: configName,
             artworkUrl: presentationConfig.bgImage || '/language-shadowing-logo-dark.png',
         });
