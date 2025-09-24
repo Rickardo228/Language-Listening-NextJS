@@ -58,23 +58,28 @@ export class WebMediaSessionTransport implements Transport {
     const artwork = meta.artworkUrl
       ? [{ src: meta.artworkUrl, sizes: "512x512", type: "image/png" }]
       : [];
+
+    // Get duration from audio element to signal track-based content
+    const duration = this.audioEl?.duration;
+    const finiteDuration = duration && isFinite(duration) ? duration : undefined;
+
     navigator.mediaSession.metadata = new MediaMetadata({
       title: meta.title || " ",
       artist: meta.artist || " ",
       album: meta.album || " ",
       artwork,
+      ...(finiteDuration && { duration: finiteDuration })
     });
-    // duration is provided via setPosition()
   }
 
   setPosition(pos: TransportPosition): void {
     if (!("mediaSession" in navigator)) return;
     try {
-      navigator.mediaSession.setPositionState({
-        duration: isFinite(pos.durationSec) ? pos.durationSec : 0,
-        position: Math.max(0, Math.min(pos.positionSec, pos.durationSec)),
-        playbackRate: pos.rate,
-      });
+      // navigator.mediaSession.setPositionState({
+      //   duration: isFinite(pos.durationSec) ? pos.durationSec : 0,
+      //   position: Math.max(0, Math.min(pos.positionSec, pos.durationSec)),
+      //   playbackRate: pos.rate,
+      // });
     } catch {
       // Some browsers may throw if position state is not supported
     }
@@ -101,6 +106,30 @@ export class WebMediaSessionTransport implements Transport {
   }
   onSeekTo(cb: (sec: number) => void): void {
     this.handlers.seekTo = cb;
+  }
+
+  reapplyHandlers(): void {
+    if (!("mediaSession" in navigator)) return;
+
+    const ms = navigator.mediaSession;
+
+    // Clear seek handlers to prevent 10s skip buttons
+    try {
+      ms.setActionHandler('seekto', null);
+      ms.setActionHandler('seekforward', null);
+      ms.setActionHandler('seekbackward', null);
+    } catch {}
+
+    // Reapply next/prev handlers (critical for iOS)
+    ms.setActionHandler("nexttrack", () => this.handlers.next?.());
+    ms.setActionHandler("previoustrack", () => this.handlers.prev?.());
+    ms.setActionHandler("play", () => this.handlers.play?.());
+    ms.setActionHandler("pause", () => this.handlers.pause?.());
+
+    // Set playback state
+    if (this.audioEl) {
+      ms.playbackState = this.audioEl.paused ? 'paused' : 'playing';
+    }
   }
 
   dispose(): void {

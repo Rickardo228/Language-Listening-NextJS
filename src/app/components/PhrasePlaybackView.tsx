@@ -136,12 +136,16 @@ export function PhrasePlaybackView({
         const phrase = phrases[currentPhraseIndex];
         const title =
             phrase ? (currentPhase === 'input' ? (phrase.input || '') : (phrase.translated || '')) : '';
+
         t.setMetadata({
             title,
             artist: collectionName?.replace(/\b\w/g, l => l.toUpperCase()) || 'Session',
             album: configName,
             artworkUrl: presentationConfig.bgImage || '/language-shadowing-logo-dark.png',
         });
+
+        // Reapply handlers after metadata changes (critical for iOS)
+        t.reapplyHandlers();
     }, [phrases, currentPhraseIndex, currentPhase, collectionName, configName, presentationConfig.bgImage]);
 
     const setMSState = (state: 'none' | 'paused' | 'playing') => {
@@ -158,6 +162,9 @@ export function PhrasePlaybackView({
             await p;
             // if another play intent happened meanwhile, bail
             if (mySeq !== playSeqRef.current) return;
+
+            // Reapply handlers after successful playback start
+            transportRef.current?.reapplyHandlers();
         } catch (e: unknown) {
             if (e instanceof Error && e.name === 'AbortError') {
                 // benign: a pause/src change raced our play
@@ -893,6 +900,11 @@ export function PhrasePlaybackView({
         transport.onPause(() => handlePause('external'));
         transport.onNext(() => queueSkip(+1));
         transport.onPrevious(() => queueSkip(-1));
+
+        // Reapply handlers on playing event (critical for iOS)
+        el.addEventListener('playing', () => {
+            transport.reapplyHandlers();
+        });
 
         // also attach audio-element fallbacks
         attachAudioGuards(el);
