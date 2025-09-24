@@ -29,8 +29,10 @@ export class WebMediaSessionTransport implements Transport {
         const sec = Number(e.seekTime ?? 0);
         this.handlers.seekTo?.(sec);
       });
+      ms.setActionHandler('seekforward', (e: any) => this.handlers.seekTo?.((this._getPosSec() ?? 0) + (e.seekOffset ?? 10)));
+      ms.setActionHandler('seekbackward', (e: any) => this.handlers.seekTo?.((this._getPosSec() ?? 0) - (e.seekOffset ?? 10)));
     } catch {
-      // Not all browsers support seekto
+      // Not all browsers support seek actions
     }
 
     // Keep OS position in sync while real audio is playing
@@ -96,5 +98,10 @@ export class WebMediaSessionTransport implements Transport {
     const position = el.currentTime || 0;
     const rate = el.playbackRate || (el.paused ? 0 : 1);
     this.setPosition({ durationSec: duration, positionSec: position, rate });
+  }
+
+  private _getPosSec(): number | null {
+    if (!this.audioEl) return null;
+    return this.audioEl.currentTime || 0;
   }
 }

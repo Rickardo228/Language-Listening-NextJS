@@ -92,6 +92,11 @@ export function PhrasePlaybackView({
     const playSeqRef = useRef(0);                 // increments on every new "play intent"
     const srcSwapRef = useRef(false);             // true while we're swapping src (navigation)
 
+    // Skip pump refs for coalescing rapid next/prev presses
+    const pendingSkipsRef = useRef(0);            // +N = next; -N = prev
+    const pumpingRef = useRef(false);
+    const SKIP_THROTTLE_MS = 80;
+
     // Refs for state used in timers to prevent stale closures
     const pausedRef = useRef(paused);
     const phaseRef = useRef(currentPhase);
@@ -137,7 +142,7 @@ export function PhrasePlaybackView({
     }, [phrases, currentPhraseIndex, currentPhase, collectionName, configName, presentationConfig.bgImage]);
 
     const setMSState = (state: 'none' | 'paused' | 'playing') => {
-        try { if ('mediaSession' in navigator) (navigator as any).mediaSession.playbackState = state; } catch {}
+        try { if ('mediaSession' in navigator) (navigator as any).mediaSession.playbackState = state; } catch { }
     };
 
     // call this *whenever* you want to start playback
@@ -230,6 +235,129 @@ export function PhrasePlaybackView({
             }, 0);
         }
     };
+
+    // Skip pump functions for coalescing rapid next/prev presses
+    const queueSkip = (delta: number) => {
+        pendingSkipsRef.current += delta;
+        pumpSkips();
+    };
+
+    const pumpSkips = async () => {
+        if (pumpingRef.current) return;
+        pumpingRef.current = true;
+        try {
+            while (pendingSkipsRef.current !== 0) {
+                const delta = Math.sign(pendingSkipsRef.current);
+                pendingSkipsRef.current -= delta;
+
+                await atomicAdvance(delta as 1 | -1);
+
+                await new Promise(r => setTimeout(r, SKIP_THROTTLE_MS));
+            }
+        } finally {
+            pumpingRef.current = false;
+        }
+    };
+
+    const atomicAdvance = async (delta: 1 | -1) => {
+        // coalesce silence timers and keep OS state sane
+        clearAllTimeouts();
+        clearDelayWindow();
+
+        if (!phrases.length) return;
+
+        const wasPlaying = !pausedRef.current; // snapshot before we move
+        // Compute next cursor
+        const playOutputBeforeInput = presentationConfig.enableOutputBeforeInput;
+        const enableInput = presentationConfig.enableInputPlayback;
+
+        let targetIndex = indexRef.current;
+        const curPhase = phaseRef.current;
+        let targetPhase: 'input' | 'output' = curPhase;
+
+        if (playOutputBeforeInput) {
+            if (delta === +1) {
+                if (curPhase === 'output') {
+                    // O -> I (same phrase)
+                    targetPhase = enableInput ? 'input' : 'output';
+                    if (!enableInput) targetIndex = (targetIndex + 1) % phrases.length; // no input phase, jump to next O
+                } else {
+                    // I -> next phrase O
+                    targetIndex = (targetIndex + 1) % phrases.length;
+                    targetPhase = 'output';
+                }
+            } else { // delta === -1
+                if (curPhase === 'input') {
+                    // I -> O (same phrase)
+                    targetPhase = 'output';
+                } else {
+                    // O -> previous phrase I
+                    targetIndex = (targetIndex - 1 + phrases.length) % phrases.length;
+                    targetPhase = enableInput ? 'input' : 'output';
+                }
+            }
+        } else {
+            // input-before-output mode
+            if (delta === +1) {
+                if (curPhase === 'input') {
+                    // I -> O (same phrase)
+                    targetPhase = 'output';
+                } else {
+                    // O -> next phrase (I if enabled else O)
+                    targetIndex = (targetIndex + 1) % phrases.length;
+                    targetPhase = enableInput ? 'input' : 'output';
+                }
+            } else { // delta === -1
+                if (curPhase === 'output' && enableInput) {
+                    // O -> I (same phrase)
+                    targetPhase = 'input';
+                } else {
+                    // (I) or (O & no input phase) -> previous phrase (I if enabled else O)
+                    targetIndex = (targetIndex - 1 + phrases.length) % phrases.length;
+                    targetPhase = enableInput ? 'input' : 'output';
+                }
+            }
+        }
+
+
+        // swap state + src (no pause)
+        setCurrentPhraseIndex(targetIndex);
+        setCurrentPhase(targetPhase);
+
+        const url =
+            targetPhase === 'input'
+                ? (phrases[targetIndex].inputAudio?.audioUrl || '')
+                : (phrases[targetIndex].outputAudio?.audioUrl || '');
+
+        setSrcSafely(url);
+
+        // apply rate
+        const speed =
+            targetPhase === 'input'
+                ? (presentationConfig.inputPlaybackSpeed || 1.0)
+                : (presentationConfig.outputPlaybackSpeed || 1.0);
+        if (audioRef.current) audioRef.current.playbackRate = speed;
+
+        // continue only if we were already playing
+        if (wasPlaying) {
+            setPaused(false);
+            setMSState('playing');
+            await safePlay('atomicAdvance');
+        } else {
+            setPaused(true);
+            setMSState('paused');
+            // reflect paused position to Media Session
+            transportRef.current?.setPosition({
+                durationSec: audioRef.current?.duration || 0,
+                positionSec: audioRef.current?.currentTime || 0,
+                rate: 0,
+            });
+        }
+
+        // update OS metadata
+        pushMetadataToTransport();
+    };
+
 
     const handleAudioError = async (phase: 'input' | 'output', autoPlay?: boolean) => {
         console.log('handleAudioError', phase, autoPlay);
@@ -760,12 +888,12 @@ export function PhrasePlaybackView({
         transport.setCapabilities({ canPlayPause: true, canNextPrev: true, canSeek: false });
         transport.onPlay(handlePlay);
         transport.onPause(() => handlePause('external'));
-        transport.onNext(handleNext);
-        transport.onPrevious(handlePrevious);
+        transport.onNext(() => queueSkip(+1));
+        transport.onPrevious(() => queueSkip(-1));
 
         // also attach audio-element fallbacks
         attachAudioGuards(el);
-    }, [handlePlay, handlePause, handleNext, handlePrevious]);
+    }, [handlePlay, handlePause]);
 
     const handleAudioEnded = () => {
         if (paused) return;
@@ -911,6 +1039,24 @@ export function PhrasePlaybackView({
     useEffect(() => {
         pushMetadataToTransport();
     }, [pushMetadataToTransport]);
+
+    // Preload next/prev clips for smoother continuous skip
+    useEffect(() => {
+        const i = indexRef.current;
+        const neigh = [
+            phrases[(i + 1) % phrases.length],
+            phrases[(i - 1 + phrases.length) % phrases.length],
+        ];
+        neigh.forEach(p => {
+            const url = (phaseRef.current === 'input' && presentationConfig.enableInputPlayback)
+                ? p.inputAudio?.audioUrl
+                : p.outputAudio?.audioUrl;
+            if (url) {
+                // fire-and-forget HEAD to warm connection; browsers will cache
+                fetch(url, { method: 'HEAD' }).catch(() => { });
+            }
+        });
+    }, [currentPhraseIndex, currentPhase, phrases, presentationConfig.enableInputPlayback]);
 
     // oh
 
@@ -1069,8 +1215,8 @@ export function PhrasePlaybackView({
                             showProgressBar={showProgressBar}
                             progressDuration={progressDuration}
                             progressDelay={progressDelay}
-                            onPrevious={handlePrevious}
-                            onNext={handleNext}
+                            onPrevious={() => queueSkip(-1)}
+                            onNext={() => queueSkip(+1)}
                             canGoBack={true}
                             canGoForward={true}
                             currentPhraseIndex={currentPhraseIndex}
@@ -1091,8 +1237,8 @@ export function PhrasePlaybackView({
                                 paused={paused}
                                 onPause={handlePause}
                                 onPlay={handlePlay}
-                                onPrevious={handlePrevious}
-                                onNext={handleNext}
+                                onPrevious={() => queueSkip(-1)}
+                                onNext={() => queueSkip(+1)}
                                 canGoBack={true}
                                 canGoForward={true}
                                 inputLang={phrases[0]?.inputLang}
