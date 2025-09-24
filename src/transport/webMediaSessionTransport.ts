@@ -115,11 +115,11 @@ export class WebMediaSessionTransport implements Transport {
 
   private updatePositionFromAudio(): void {
     if (!("mediaSession" in navigator) || !this.audioEl) return;
-    const el = this.audioEl;
-    const duration = isFinite(el.duration) ? el.duration : 0;
-    const position = el.currentTime || 0;
-    const rate = el.playbackRate || (el.paused ? 0 : 1);
-    this.setPosition({ durationSec: duration, positionSec: position, rate });
+    // const el = this.audioEl;
+    // const duration = isFinite(el.duration) ? el.duration : 0;
+    // const position = el.currentTime || 0;
+    // const rate = el.playbackRate || (el.paused ? 0 : 1);
+    // this.setPosition({ durationSec: duration, positionSec: position, rate });
   }
 
   private _getPosSec(): number | null {
