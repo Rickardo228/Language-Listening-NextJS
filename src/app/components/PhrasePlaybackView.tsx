@@ -129,21 +129,49 @@ export function PhrasePlaybackView({
 
     // Transport helper functions
     const pushMetadataToTransport = useCallback(() => {
-        console.log('pushMetadataToTransport');
+        console.log('🔄 pushMetadataToTransport called');
         const t = transportRef.current;
-        if (!t) return;
+        if (!t) {
+            console.log('🔄 No transport available');
+            return;
+        }
 
-        const phrase = phrases[currentPhraseIndex];
+        // Use refs to avoid stale closure values
+        const currentIndex = indexRef.current;
+        const currentPhaseValue = phaseRef.current;
+        const phrase = phrases[currentIndex];
 
-        t.setMetadata({
+        const metadata = {
             title: (phrase?.translated || ''),
             artist: phrase?.input || '',
             album: (collectionName?.replace(/\b\w/g, l => l.toUpperCase()) || 'Session'),
             artworkUrl: presentationConfig.bgImage || '/language-shadowing-logo-dark.png',
+        };
+
+        console.log('🔄 Setting transport metadata:', {
+            phraseIndex: currentIndex,
+            currentPhase: currentPhaseValue,
+            metadata: metadata,
+            phraseData: {
+                input: phrase?.input,
+                translated: phrase?.translated,
+                inputAudio: phrase?.inputAudio?.audioUrl ? 'present' : 'missing',
+                outputAudio: phrase?.outputAudio?.audioUrl ? 'present' : 'missing',
+            },
+            audioElement: {
+                src: audioRef.current?.src || 'none',
+                duration: audioRef.current?.duration || 0,
+                currentTime: audioRef.current?.currentTime || 0,
+                paused: audioRef.current?.paused,
+                playbackRate: audioRef.current?.playbackRate || 1,
+            },
+            timestamp: new Date().toISOString()
         });
 
+        t.setMetadata(metadata);
+
         // Handlers will be reapplied on 'playing' event
-    }, [phrases, currentPhraseIndex, collectionName, presentationConfig.bgImage]);
+    }, [phrases, collectionName, presentationConfig.bgImage]);
 
     const setMSState = (state: 'none' | 'paused' | 'playing') => {
         try { if ('mediaSession' in navigator) (navigator as NavigatorWithMediaSession).mediaSession.playbackState = state; } catch { }
@@ -549,6 +577,7 @@ export function PhrasePlaybackView({
             }
         };
         el.addEventListener('playing', handleFirstPlaying);
+        // TODO - clean up this even listener
 
         // Removed audio guards - using transport for media session handling
     }, [handlePlay, handlePause]);
