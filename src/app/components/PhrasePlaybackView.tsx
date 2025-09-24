@@ -10,6 +10,10 @@ import { track, trackAudioEnded, trackPlaybackEvent } from '../../lib/mixpanelCl
 import { WebMediaSessionTransport } from '../../transport/webMediaSessionTransport';
 import { useVirtualDelay } from '../../transport/useVirtualDelay';
 
+interface NavigatorWithMediaSession extends Navigator {
+    mediaSession: MediaSession;
+}
+
 type PauseSource = 'local' | 'external';
 
 // Extract the methods ref type into a reusable type
@@ -47,7 +51,7 @@ export function PhrasePlaybackView({
     stickyHeaderContent,
     methodsRef,
 }: PhrasePlaybackViewProps) {
-    const { updateUserStats, StatsPopups, StatsModal, showStatsUpdate, showViewedPhrases } = useUpdateUserStats();
+    const { updateUserStats, StatsPopups, StatsModal, showStatsUpdate } = useUpdateUserStats();
     const [currentPhraseIndex, setCurrentPhraseIndex] = useState(0);
     const [currentPhase, setCurrentPhase] = useState<'input' | 'output'>(
         presentationConfig.enableInputPlayback ? 'input' : 'output'
@@ -87,7 +91,6 @@ export function PhrasePlaybackView({
     const transportRef = useRef<WebMediaSessionTransport | null>(null);
     const delay = useVirtualDelay();
     const delayRafCleanupRef = useRef<(() => void) | null>(null);
-    const wasPlayingRef = useRef(false);          // becomes true after first successful play
     const programmaticPauseRef = useRef(false);   // set when *we* call pause() or swap src
     const playSeqRef = useRef(0);                 // increments on every new "play intent"
     const srcSwapRef = useRef(false);             // true while we're swapping src (navigation)
@@ -137,12 +140,12 @@ export function PhrasePlaybackView({
             title,
             artist: collectionName || 'Session',
             album: configName,
-            artworkUrl: presentationConfig.bgImage,
+            artworkUrl: presentationConfig.bgImage || undefined,
         });
     }, [phrases, currentPhraseIndex, currentPhase, collectionName, configName, presentationConfig.bgImage]);
 
     const setMSState = (state: 'none' | 'paused' | 'playing') => {
-        try { if ('mediaSession' in navigator) (navigator as any).mediaSession.playbackState = state; } catch { }
+        try { if ('mediaSession' in navigator) (navigator as NavigatorWithMediaSession).mediaSession.playbackState = state; } catch { }
     };
 
     // call this *whenever* you want to start playback
@@ -155,8 +158,8 @@ export function PhrasePlaybackView({
             await p;
             // if another play intent happened meanwhile, bail
             if (mySeq !== playSeqRef.current) return;
-        } catch (e: any) {
-            if (e?.name === 'AbortError') {
+        } catch (e: unknown) {
+            if (e instanceof Error && e.name === 'AbortError') {
                 // benign: a pause/src change raced our play
                 return;
             }
@@ -667,8 +670,8 @@ export function PhrasePlaybackView({
         }
     };
 
-    // Shared navigation handlers
-    const handlePrevious = async () => {
+    // Shared navigation handlers (commented out as unused)
+    /*const handlePrevious = async () => {
         clearAllTimeouts();
         clearDelayWindow();
         if (audioRef.current) {
@@ -758,9 +761,9 @@ export function PhrasePlaybackView({
                 safePlay('nav-prev');         // actually start the new audio
             }
         }
-    };
+    };*/
 
-    const handleNext = async () => {
+    /*const handleNext = async () => {
         clearAllTimeouts();
         clearDelayWindow();
         if (audioRef.current) {
@@ -851,7 +854,7 @@ export function PhrasePlaybackView({
                 safePlay('nav-next');         // actually start the new audio
             }
         }
-    };
+    };*/
 
     const attachAudioGuards = (el: HTMLAudioElement) => {
         const maybeExternalPause = () => {

@@ -25,12 +25,12 @@ export class WebMediaSessionTransport implements Transport {
 
     // Optional seek support
     try {
-      ms.setActionHandler('seekto', (e: any) => {
+      ms.setActionHandler('seekto', (e: MediaSessionActionDetails) => {
         const sec = Number(e.seekTime ?? 0);
         this.handlers.seekTo?.(sec);
       });
-      ms.setActionHandler('seekforward', (e: any) => this.handlers.seekTo?.((this._getPosSec() ?? 0) + (e.seekOffset ?? 10)));
-      ms.setActionHandler('seekbackward', (e: any) => this.handlers.seekTo?.((this._getPosSec() ?? 0) - (e.seekOffset ?? 10)));
+      ms.setActionHandler('seekforward', (e: MediaSessionActionDetails) => this.handlers.seekTo?.((this._getPosSec() ?? 0) + (e.seekOffset ?? 10)));
+      ms.setActionHandler('seekbackward', (e: MediaSessionActionDetails) => this.handlers.seekTo?.((this._getPosSec() ?? 0) - (e.seekOffset ?? 10)));
     } catch {
       // Not all browsers support seek actions
     }
@@ -41,7 +41,7 @@ export class WebMediaSessionTransport implements Transport {
     audioEl?.addEventListener('ratechange', tick);
 
     // Store a cleanup ref on the instance
-    (this as any)._cleanup = () => {
+    (this as WebMediaSessionTransport & { _cleanup?: () => void })._cleanup = () => {
       audioEl?.removeEventListener('timeupdate', tick);
       audioEl?.removeEventListener('ratechange', tick);
     };
@@ -72,7 +72,7 @@ export class WebMediaSessionTransport implements Transport {
     }
   }
 
-  setCapabilities(cap: TransportCapabilities): void {
+  setCapabilities(_cap: TransportCapabilities): void { // eslint-disable-line @typescript-eslint/no-unused-vars
     // Media Session has no explicit capability toggles;
     // capability is implied by which action handlers we set.
     // We already set handlers in constructor; if needed we could clear them here.
@@ -87,7 +87,8 @@ export class WebMediaSessionTransport implements Transport {
   dispose(): void {
     if (this.disposed) return;
     this.disposed = true;
-    if ((this as any)._cleanup) (this as any)._cleanup();
+    const cleanupFn = (this as WebMediaSessionTransport & { _cleanup?: () => void })._cleanup;
+    if (cleanupFn) cleanupFn();
     // It's OK to leave mediaSession handlers in place; the page is disposing anyway.
   }
 
