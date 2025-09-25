@@ -296,7 +296,9 @@ export function PresentationView({
           // Original single phrase display
           (currentTranslated || currentPhrase) && (
             <div
-
+              key={currentPhase === "input"
+                ? currentPhrase?.trim()
+                : currentTranslated?.trim()}
               className={`text-center px-12 ${alignPhraseTop ? 'pb-4' : ''} absolute flex bg-opacity-90 flex-col ${textColorClass}`}
               style={{
                 // alignItems: "center",
@@ -310,6 +312,9 @@ export function PresentationView({
               }}
             >
               <h2
+                key={currentPhase === "input"
+                  ? currentPhrase?.trim()
+                  : currentTranslated?.trim()}
                 className="font-bold"
                 style={{
                   margin: 0,
