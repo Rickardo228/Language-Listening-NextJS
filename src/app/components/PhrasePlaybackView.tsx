@@ -435,12 +435,18 @@ export function PhrasePlaybackView({
         setPaused(false);
 
         const idx = indexRef.current;          // always fresh
-        const phase = phaseRef.current;
+        let phase = phaseRef.current;
 
         // Only replay when we've intentionally set a negative index
         if (idx < 0) {
             handleReplay();
             return;
+        }
+
+        // If input playback is disabled and we're on input phase, switch to output
+        if (phase === 'input' && !presentationConfig.enableInputPlayback) {
+            phase = 'output';
+            setCurrentPhase('output');
         }
 
         const el = audioRef.current;
@@ -468,7 +474,7 @@ export function PhrasePlaybackView({
         if (idx >= 0 && phrases[idx]) {
             trackPlaybackEvent('play', `${collectionId || 'unknown'}-${idx}`, phase, idx, speed);
         }
-    }, [phrases, presentationConfig.inputPlaybackSpeed, presentationConfig.outputPlaybackSpeed, collectionId]);
+    }, [phrases, presentationConfig.inputPlaybackSpeed, presentationConfig.outputPlaybackSpeed, presentationConfig.enableInputPlayback, collectionId]);
 
 
     const handleReplay = async () => {
