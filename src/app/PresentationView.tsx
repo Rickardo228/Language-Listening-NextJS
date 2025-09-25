@@ -347,9 +347,9 @@ export function PresentationView({
                 key={currentPhase === "input"
                   ? currentPhrase?.trim()
                   : currentTranslated?.trim()}
-                initial={{ opacity: 0, y: isMobile && !fullScreen ? 0 : -10 }}
+                initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: isMobile && !fullScreen ? 0 : 10 }}
+                exit={{ opacity: 0, y: 10 }}
                 transition={{ duration: 0.3, ease: "easeOut" }}
                 className={`text-center px-12 ${alignPhraseTop ? 'pb-4' : ''} absolute flex bg-opacity-90 flex-col ${textColorClass}`}
                 style={{
@@ -446,9 +446,9 @@ export function PresentationView({
             (currentTranslated || currentPhrase) && (
               <motion.div
                 key={currentPhase === "input" ? currentPhrase : currentTranslated}
-                initial={{ opacity: 0, y: isMobile && !fullScreen ? 0 : -10 }}
+                initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: isMobile && !fullScreen ? 0 : 10 }}
+                exit={{ opacity: 0, y: 10 }}
                 transition={{ duration: 0.3, ease: "easeOut" }}
                 className={`text-center px-12 ${alignPhraseTop ? 'pb-4' : ''} absolute flex bg-opacity-90 flex-col ${textColorClass}`}
                 style={{
@@ -507,10 +507,10 @@ export function PresentationView({
           }}
         >
           <div
-            key={Boolean(showProgressBar && progressDuration) ? "progress-bar" : "no-progress-bar"}
             className="h-full bg-blue-500 transition-all duration-300 ease-linear"
             style={{
-              width: '0%',
+              opacity: showProgressBar && progressDuration ? 1 : 0,
+              width: showProgressBar && progressDuration ? '0%' : '100%',
               animation: showProgressBar && progressDuration ? `progressBar ${progressDuration}ms linear ${progressDelay || 0}ms forwards` : undefined
             }}
           />
