@@ -393,6 +393,13 @@ export function PhrasePlaybackView({
         setMSState('paused');
         showStatsUpdate(true);
 
+        if (source === 'external') {
+            // 💥 nuke any buffered/decoded audio so unlock can't leak sound
+            el.src = '';
+            el.load();
+            // resets the element (fires 'emptied')
+        }
+
         if (currentPhraseIndex >= 0 && phrases[currentPhraseIndex]) {
             const speed = currentPhase === 'input'
                 ? (presentationConfig.inputPlaybackSpeed || 1.0)
@@ -440,9 +447,15 @@ export function PhrasePlaybackView({
         if (!el) return;
 
         // Ensure src set
+        // Even more relevant now we nuke in external on pause
         if (!el.src) {
             const url = phrases[idx]?.[phase === 'input' ? 'inputAudio' : 'outputAudio']?.audioUrl ?? '';
             setSrcSafely(url);
+            // Apply speed for current phase now
+            const speed = phase === 'input'
+                ? (presentationConfig.inputPlaybackSpeed || 1.0)
+                : (presentationConfig.outputPlaybackSpeed || 1.0);
+            if (speed !== 1.0) el.playbackRate = speed;
         }
 
         // Apply speed for current phase
