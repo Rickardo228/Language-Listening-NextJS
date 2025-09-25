@@ -506,15 +506,15 @@ export function PresentationView({
               : "rgba(0,0,0,0.1) dark:bg-gray-600"
           }}
         >
-          {showProgressBar && progressDuration && (
-            <div
-              className="h-full bg-blue-500 transition-all duration-300 ease-linear"
-              style={{
-                width: '0%',
-                animation: `progressBar ${progressDuration}ms linear ${progressDelay || 0}ms forwards`
-              }}
-            />
-          )}
+          {/* {showProgressBar && progressDuration && ( */}
+          <div
+            className="h-full bg-blue-500 transition-all duration-300 ease-linear"
+            style={{
+              width: '0%',
+              animation: showProgressBar && progressDuration ? `progressBar ${progressDuration}ms linear ${progressDelay || 0}ms forwards` : undefined
+            }}
+          />
+          {/* )} */}
         </div>
       </div>
     </>
