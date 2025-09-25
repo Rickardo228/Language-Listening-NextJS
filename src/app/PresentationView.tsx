@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { createPortal } from "react-dom";
 import { ArrowLeft, ArrowRight, Maximize2 } from "lucide-react";
 import { AutumnLeaves } from "./Effects/AutumnLeaves";
@@ -300,193 +300,193 @@ export function PresentationView({
           }}></span>
         </div>}
         {/* Animate the title in/out with AnimatePresence */}
-        <AnimatePresence mode={'sync'}>
-          {title ? (
+        {/* <AnimatePresence mode={'sync'}> */}
+        {title ? (
+          <motion.div
+            key="title"
+            initial={{ opacity: 0, y: -20, scale: 0.98 }}
+            animate={{
+              opacity: 1,
+              y: 0,
+              scale: 1,
+              transition: { duration: TITLE_ANIMATION_DURATION / 1000, ease: "easeOut", delay: (BLEED_START_DELAY + TITLE_DELAY) / 1000 }
+            }}
+            exit={{
+              opacity: 0,
+              y: 20,
+              scale: 0.98,
+              transition: { duration: TITLE_ANIMATION_DURATION / 1000, ease: "easeOut" }
+            }}
+            className={`text-center absolute flex flex-col ${textColorClass}`}
+            style={{
+              maxWidth: "600px",
+              padding: 20,
+              alignItems: "center",
+              justifyContent: "center",
+              textShadow: textBg ? `2px 2px 2px ${textBg}` : "2px 2px 2px rgba(0,0,0,0.2)",
+              backgroundColor: textBg
+                ? (textBg.includes("rgb")
+                  ? (textBg.slice(0, -1) + " 0.7)").replaceAll(" ", ",")
+                  : textBg)
+                : "rgba(255,255,255,0.9) dark:bg-gray-800",
+              borderRadius: "1rem"
+            }}
+          >
+            <h1 className={titlePropClass} style={{
+              margin: 0,
+              padding: 0,
+              fontFamily: 'var(--font-playpen-sans), "Playpen Sans", system-ui, sans-serif'
+            }}>
+              {title}
+            </h1>
+          </motion.div>
+        ) : showAllPhrases ? (
+          // Show all phrases simultaneously with highlighting
+          (currentPhrase || currentTranslated) && (
             <motion.div
-              key="title"
-              initial={{ opacity: 0, y: -20, scale: 0.98 }}
-              animate={{
-                opacity: 1,
-                y: 0,
-                scale: 1,
-                transition: { duration: TITLE_ANIMATION_DURATION / 1000, ease: "easeOut", delay: (BLEED_START_DELAY + TITLE_DELAY) / 1000 }
-              }}
-              exit={{
-                opacity: 0,
-                y: 20,
-                scale: 0.98,
-                transition: { duration: TITLE_ANIMATION_DURATION / 1000, ease: "easeOut" }
-              }}
-              className={`text-center absolute flex flex-col ${textColorClass}`}
+              key="all-phrases"
+              initial={{ opacity: 0, y: isMobile && !fullScreen ? 0 : -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: isMobile && !fullScreen ? 0 : 10 }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
+              className={`text-center px-12 ${alignPhraseTop ? 'pb-4' : ''} absolute flex bg-opacity-90 flex-col ${textColorClass}`}
               style={{
-                maxWidth: "600px",
-                padding: 20,
                 alignItems: "center",
                 justifyContent: "center",
-                textShadow: textBg ? `2px 2px 2px ${textBg}` : "2px 2px 2px rgba(0,0,0,0.2)",
+                flexDirection: enableOutputBeforeInput ? "column-reverse" : "column",
                 backgroundColor: textBg
                   ? (textBg.includes("rgb")
-                    ? (textBg.slice(0, -1) + " 0.7)").replaceAll(" ", ",")
+                    ? (textBg.slice(0, -1) + " 0.9)").replaceAll(" ", ",")
                     : textBg)
                   : "rgba(255,255,255,0.9) dark:bg-gray-800",
-                borderRadius: "1rem"
+                borderRadius: '1rem'
               }}
             >
-              <h1 className={titlePropClass} style={{
-                margin: 0,
-                padding: 0,
-                fontFamily: 'var(--font-playpen-sans), "Playpen Sans", system-ui, sans-serif'
-              }}>
-                {title}
-              </h1>
-            </motion.div>
-          ) : showAllPhrases ? (
-            // Show all phrases simultaneously with highlighting
-            (currentPhrase || currentTranslated) && (
-              <motion.div
-                key="all-phrases"
-                initial={{ opacity: 0, y: isMobile && !fullScreen ? 0 : -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: isMobile && !fullScreen ? 0 : 10 }}
-                transition={{ duration: 0.3, ease: "easeOut" }}
-                className={`text-center px-12 ${alignPhraseTop ? 'pb-4' : ''} absolute flex bg-opacity-90 flex-col ${textColorClass}`}
-                style={{
-                  alignItems: "center",
-                  justifyContent: "center",
-                  flexDirection: enableOutputBeforeInput ? "column-reverse" : "column",
-                  backgroundColor: textBg
-                    ? (textBg.includes("rgb")
-                      ? (textBg.slice(0, -1) + " 0.9)").replaceAll(" ", ",")
-                      : textBg)
-                    : "rgba(255,255,255,0.9) dark:bg-gray-800",
-                  borderRadius: '1rem'
-                }}
-              >
-                {/* Calculate the smaller font size for all phrases */}
-                {(() => {
-                  const phraseFontSize = currentPhrase ? calculateFontSize(currentPhrase, fullScreen, false) : '0px';
-                  const translatedFontSize = currentTranslated ? calculateFontSize(currentTranslated, fullScreen, romanizedOutput ? true : false) : '0px';
+              {/* Calculate the smaller font size for all phrases */}
+              {(() => {
+                const phraseFontSize = currentPhrase ? calculateFontSize(currentPhrase, fullScreen, false) : '0px';
+                const translatedFontSize = currentTranslated ? calculateFontSize(currentTranslated, fullScreen, romanizedOutput ? true : false) : '0px';
 
-                  // Extract numeric values for comparison
-                  const phraseSize = parseInt(phraseFontSize);
-                  const translatedSize = parseInt(translatedFontSize);
+                // Extract numeric values for comparison
+                const phraseSize = parseInt(phraseFontSize);
+                const translatedSize = parseInt(translatedFontSize);
 
-                  // Use the smaller font size, or fallback to translated size if phrase is empty
-                  const commonFontSize = currentPhrase && currentTranslated
-                    ? `${Math.min(phraseSize, translatedSize)}px`
-                    : currentPhrase ? phraseFontSize : translatedFontSize;
+                // Use the smaller font size, or fallback to translated size if phrase is empty
+                const commonFontSize = currentPhrase && currentTranslated
+                  ? `${Math.min(phraseSize, translatedSize)}px`
+                  : currentPhrase ? phraseFontSize : translatedFontSize;
 
-                  // Make currentPhrase slightly smaller (85% of common size)
-                  const inputFontSize = currentPhrase && currentTranslated
-                    ? `${Math.floor(Math.min(phraseSize, translatedSize) * 0.85)}px`
-                    : currentPhrase ? phraseFontSize : translatedFontSize;
+                // Make currentPhrase slightly smaller (85% of common size)
+                const inputFontSize = currentPhrase && currentTranslated
+                  ? `${Math.floor(Math.min(phraseSize, translatedSize) * 0.85)}px`
+                  : currentPhrase ? phraseFontSize : translatedFontSize;
 
-                  return (
-                    <>
-                      {/* Input phrase */}
-                      {currentPhrase && (
+                return (
+                  <>
+                    {/* Input phrase */}
+                    {currentPhrase && (
+                      <h2
+                        className="font-bold mb-2"
+                        style={{
+                          margin: 0,
+                          padding: 0,
+                          fontSize: enableOutputBeforeInput ? commonFontSize : inputFontSize,
+                          color: currentPhase === "input" ? "#3b82f6" : undefined, // Blue highlight for input phase
+                          textShadow: currentPhase === "input" ? "0 0 10px rgba(59, 130, 246, 0.5)" : undefined,
+                          transition: "color 0.3s ease, text-shadow 0.3s ease"
+                        }}
+                      >
+                        {currentPhrase.trim()}
+                      </h2>
+                    )}
+
+                    <div>
+                      {currentTranslated && <h2
+                        className="font-bold"
+                        style={{
+                          margin: 0,
+                          padding: 0,
+                          fontSize: enableOutputBeforeInput ? inputFontSize : commonFontSize,
+                          color: currentPhase === "output" ? "#10b981" : undefined, // Green highlight for output phase
+                          textShadow: currentPhase === "output" ? "0 0 10px rgba(16, 185, 129, 0.5)" : undefined,
+                          transition: "color 0.3s ease, text-shadow 0.3s ease"
+                        }}
+                      >
+                        {currentTranslated.trim()}
+
+                      </h2>}
+                      {romanizedOutput && (
                         <h2
-                          className="font-bold mb-2"
-                          style={{
-                            margin: 0,
-                            padding: 0,
-                            fontSize: enableOutputBeforeInput ? commonFontSize : inputFontSize,
-                            color: currentPhase === "input" ? "#3b82f6" : undefined, // Blue highlight for input phase
-                            textShadow: currentPhase === "input" ? "0 0 10px rgba(59, 130, 246, 0.5)" : undefined,
-                            transition: "color 0.3s ease, text-shadow 0.3s ease"
-                          }}
-                        >
-                          {currentPhrase.trim()}
-                        </h2>
-                      )}
-
-                      <div>
-                        {currentTranslated && <h2
-                          className="font-bold"
+                          className="font-bold mt-3"
                           style={{
                             margin: 0,
                             padding: 0,
                             fontSize: enableOutputBeforeInput ? inputFontSize : commonFontSize,
-                            color: currentPhase === "output" ? "#10b981" : undefined, // Green highlight for output phase
-                            textShadow: currentPhase === "output" ? "0 0 10px rgba(16, 185, 129, 0.5)" : undefined,
+                            color: currentPhase === "output" ? "#f59e0b" : undefined, // Amber highlight for romanization during output phase
+                            textShadow: currentPhase === "output" ? "0 0 10px rgba(245, 158, 11, 0.5)" : undefined,
                             transition: "color 0.3s ease, text-shadow 0.3s ease"
                           }}
                         >
-                          {currentTranslated.trim()}
-
-                        </h2>}
-                        {romanizedOutput && (
-                          <h2
-                            className="font-bold mt-3"
-                            style={{
-                              margin: 0,
-                              padding: 0,
-                              fontSize: enableOutputBeforeInput ? inputFontSize : commonFontSize,
-                              color: currentPhase === "output" ? "#f59e0b" : undefined, // Amber highlight for romanization during output phase
-                              textShadow: currentPhase === "output" ? "0 0 10px rgba(245, 158, 11, 0.5)" : undefined,
-                              transition: "color 0.3s ease, text-shadow 0.3s ease"
-                            }}
-                          >
-                            {romanizedOutput}
-                          </h2>
-                        )}
-                      </div>
-                    </>
-                  );
-                })()}
-              </motion.div>
-            )
-          ) : (
-            // Original single phrase display
-            (currentTranslated || currentPhrase) && (
-              <motion.div
-                key={currentPhase}
-                initial={{ opacity: 0, y: isMobile && !fullScreen ? 0 : -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: isMobile && !fullScreen ? 0 : 10 }}
-                transition={{ duration: 0.3, ease: "easeOut" }}
-                className={`text-center px-12 ${alignPhraseTop ? 'pb-4' : ''} absolute flex bg-opacity-90 flex-col ${textColorClass}`}
+                          {romanizedOutput}
+                        </h2>
+                      )}
+                    </div>
+                  </>
+                );
+              })()}
+            </motion.div>
+          )
+        ) : (
+          // Original single phrase display
+          (currentTranslated || currentPhrase) && (
+            <motion.div
+              key={currentPhase}
+              initial={{ opacity: 0, y: isMobile && !fullScreen ? 0 : -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: isMobile && !fullScreen ? 0 : 10 }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
+              className={`text-center px-12 ${alignPhraseTop ? 'pb-4' : ''} absolute flex bg-opacity-90 flex-col ${textColorClass}`}
+              style={{
+                alignItems: "center",
+                justifyContent: "center",
+                backgroundColor: textBg
+                  ? (textBg.includes("rgb")
+                    ? (textBg.slice(0, -1) + " 0.9)").replaceAll(" ", ",")
+                    : textBg)
+                  : "rgba(255,255,255,0.9) dark:bg-gray-800",
+                borderRadius: '1rem'
+              }}
+            >
+              <h2
+                className="font-bold"
                 style={{
-                  alignItems: "center",
-                  justifyContent: "center",
-                  backgroundColor: textBg
-                    ? (textBg.includes("rgb")
-                      ? (textBg.slice(0, -1) + " 0.9)").replaceAll(" ", ",")
-                      : textBg)
-                    : "rgba(255,255,255,0.9) dark:bg-gray-800",
-                  borderRadius: '1rem'
+                  margin: 0,
+                  padding: 0,
+                  fontSize: calculateFontSize(
+                    currentPhase === "input" ? currentPhrase : currentTranslated,
+                    fullScreen,
+                    romanizedOutput ? true : false
+                  )
                 }}
               >
+                {currentPhase === "input"
+                  ? currentPhrase?.trim()
+                  : currentTranslated?.trim()}
+              </h2>
+              {currentPhase === "output" && romanizedOutput && (
                 <h2
-                  className="font-bold"
+                  className="font-bold mt-3"
                   style={{
-                    margin: 0,
-                    padding: 0,
-                    fontSize: calculateFontSize(
-                      currentPhase === "input" ? currentPhrase : currentTranslated,
-                      fullScreen,
-                      romanizedOutput ? true : false
-                    )
+                    fontSize: calculateFontSize(romanizedOutput, fullScreen, true)
                   }}
                 >
-                  {currentPhase === "input"
-                    ? currentPhrase?.trim()
-                    : currentTranslated?.trim()}
+                  {romanizedOutput}
                 </h2>
-                {currentPhase === "output" && romanizedOutput && (
-                  <h2
-                    className="font-bold mt-3"
-                    style={{
-                      fontSize: calculateFontSize(romanizedOutput, fullScreen, true)
-                    }}
-                  >
-                    {romanizedOutput}
-                  </h2>
-                )}
-              </motion.div>
-            )
-          )}
-        </AnimatePresence>
+              )}
+            </motion.div>
+          )
+        )}
+        {/* </AnimatePresence> */}
         {/* Progress Bar for Recall/Shadow */}
         <div
           className="absolute bottom-0 left-0 w-full h-1 overflow-hidden"
