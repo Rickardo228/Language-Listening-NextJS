@@ -148,7 +148,7 @@ export function PresentationView({
       backgroundImage: `url(${bgImage})`,
       backgroundSize: "cover",
       backgroundPosition: "center",
-      // overflow: "hidden" as const,
+      // overflow: "hidden" as const, // Might be able to reintroduce this just check it doesnt introduce layout jank on ios safari
       // overflowY: "auto" as const,
       ...(containerBg && { backgroundColor: containerBg })
     }
@@ -347,9 +347,9 @@ export function PresentationView({
                 key={currentPhase === "input"
                   ? currentPhrase?.trim()
                   : currentTranslated?.trim()}
-                initial={{ opacity: 0, y: -10 }}
+                initial={{ opacity: 0, y: isMobile && !fullScreen ? 0 : -10 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 10 }}
+                exit={{ opacity: 0, y: isMobile && !fullScreen ? 0 : 10 }}
                 transition={{ duration: 0.3, ease: "easeOut" }}
                 className={`text-center px-12 ${alignPhraseTop ? 'pb-4' : ''} absolute flex bg-opacity-90 flex-col ${textColorClass}`}
                 style={{
@@ -446,9 +446,9 @@ export function PresentationView({
             (currentTranslated || currentPhrase) && (
               <motion.div
                 key={currentPhase === "input" ? currentPhrase : currentTranslated}
-                initial={{ opacity: 0, y: -10 }}
+                initial={{ opacity: 0, y: isMobile && !fullScreen ? 0 : -10 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 10 }}
+                exit={{ opacity: 0, y: isMobile && !fullScreen ? 0 : 10 }}
                 transition={{ duration: 0.3, ease: "easeOut" }}
                 className={`text-center px-12 ${alignPhraseTop ? 'pb-4' : ''} absolute flex bg-opacity-90 flex-col ${textColorClass}`}
                 style={{
@@ -506,15 +506,14 @@ export function PresentationView({
               : "rgba(0,0,0,0.1) dark:bg-gray-600"
           }}
         >
-          {/* {showProgressBar && progressDuration && ( */}
           <div
+            key={Boolean(showProgressBar && progressDuration) ? "progress-bar" : "no-progress-bar"}
             className="h-full bg-blue-500 transition-all duration-300 ease-linear"
             style={{
               width: '0%',
               animation: showProgressBar && progressDuration ? `progressBar ${progressDuration}ms linear ${progressDelay || 0}ms forwards` : undefined
             }}
           />
-          {/* )} */}
         </div>
       </div>
     </>
