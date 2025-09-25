@@ -3,12 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { createPortal } from "react-dom";
-import { ArrowLeft, ArrowRight, Maximize2 } from "lucide-react";
-import { AutumnLeaves } from "./Effects/AutumnLeaves";
-import CherryBlossom from "./Effects/CherryBlossom";
 import { BLEED_START_DELAY, TITLE_DELAY } from './consts';
-import ParticleAnimation from "./Effects/ParticleGlow";
-import { PhraseCounter } from "./components/PhraseCounter";
 
 interface PresentationViewProps {
   currentPhrase: string;
@@ -71,13 +66,7 @@ export function PresentationView({
   fullScreen,
   setFullscreen,
   bgImage,
-  enableSnow,
-  enableLeaves,
-  enableAutumnLeaves,
-  enableCherryBlossom,
-  enableOrtonEffect,
-  enableParticles,
-  enableSteam,
+
   containerBg,
   textBg,
   romanizedOutput,
@@ -87,12 +76,7 @@ export function PresentationView({
   // showProgressBar,
   // progressDuration,
   // progressDelay,
-  onPrevious,
-  onNext,
-  canGoBack,
-  canGoForward,
-  currentPhraseIndex,
-  totalPhrases,
+
 }: PresentationViewProps) {
   const [isHovering, setIsHovering] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -126,7 +110,6 @@ export function PresentationView({
   };
 
   // Determine if navigation buttons should be visible
-  const shouldShowNavigationButtons = isMobile || isHovering;
 
   const totalPhraseLength = (currentPhrase?.length + (romanizedOutput?.length ?? 0));
 
@@ -171,134 +154,7 @@ export function PresentationView({
       `}</style>
       <div ref={containerRef} className={`${containerClass} ${isMobile ? "" : (isHovering ? "" : "cursor-none")}`} style={containerStyle} onClick={() => setFullscreen(prev => !prev)} onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
         {/* Fullscreen Button */}
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            setFullscreen(prev => !prev);
-          }}
-          className={`absolute p-3 bg-gray-200 dark:bg-gray-700 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 transition-all duration-200 z-10 ${fullScreen && isMobile && onPrevious && onNext
-            ? "bottom-4 left-20" // Move right to avoid overlap with navigation button
-            : "bottom-4 left-4"
-            }`}
-          title={fullScreen ? "Exit Presentation Mode" : "Enter Presentation Mode"}
-          style={{
-            opacity: shouldShowNavigationButtons ? 1 : 0,
-            transition: 'opacity 0.3s ease'
-          }}
-        >
-          <Maximize2 className="h-6 w-6 text-gray-700 dark:text-gray-300" />
-        </button>
 
-        {/* Navigation Buttons */}
-        {onPrevious && onNext && (
-          <>
-            {/* Left Navigation Button */}
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onPrevious();
-              }}
-              disabled={!canGoBack}
-              className={`absolute p-3 bg-gray-200 dark:bg-gray-700 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 z-10 ${fullScreen && isMobile
-                ? "left-4 bottom-4"
-                : "left-4 top-1/2 transform -translate-y-1/2"
-                }`}
-              title="Previous Phrase"
-              style={{
-                opacity: shouldShowNavigationButtons ? 1 : 0,
-                transition: 'opacity 0.3s ease'
-              }}
-            >
-              <ArrowLeft className="h-6 w-6 text-gray-700 dark:text-gray-300" />
-            </button>
-
-            {/* Right Navigation Button */}
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onNext();
-              }}
-              disabled={!canGoForward}
-              className={`absolute p-3 bg-gray-200 dark:bg-gray-700 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 z-10 ${fullScreen && isMobile
-                ? "right-4 bottom-4"
-                : "right-4 top-1/2 transform -translate-y-1/2"
-                }`}
-              title="Next Phrase"
-              style={{
-                opacity: shouldShowNavigationButtons ? 1 : 0,
-                transition: 'opacity 0.3s ease'
-              }}
-            >
-              <ArrowRight className="h-6 w-6 text-gray-700 dark:text-gray-300" />
-            </button>
-          </>
-        )}
-
-        {/* Phrase Counter */}
-        <PhraseCounter
-          currentPhraseIndex={currentPhraseIndex}
-          totalPhrases={totalPhrases}
-          className={`absolute z-10 ${fullScreen && isMobile && onNext
-            ? "bottom-4 right-4 mr-16" // Move left to avoid overlap with navigation button
-            : "bottom-4 right-4"
-            }`}
-          style={{
-            opacity: shouldShowNavigationButtons ? 1 : 0,
-            transition: 'opacity 0.3s ease'
-          }}
-        />
-
-        {enableOrtonEffect && (
-          <div
-            style={{
-              mixBlendMode: "lighten",
-              filter: "blur(50px)",
-              opacity: "50%",
-              backgroundImage: `url(${bgImage})`,
-              width: "100%",
-              height: "100%",
-            }}
-          ></div>
-        )}
-        {enableSnow && (
-          <div className="wrapper" style={{ position: fullScreen ? "absolute" : "static" }}>
-            <div className="snow layer1 a"></div>
-            <div className="snow layer1"></div>
-            <div className="snow layer2 a"></div>
-            <div className="snow layer2"></div>
-            <div className="snow layer3 a"></div>
-            <div className="snow layer3"></div>
-          </div>
-        )}
-        {enableLeaves && (
-          <div id="leaves" style={{ position: fullScreen ? "absolute" : "static" }}>
-            <i></i>
-            <i></i>
-            <i></i>
-            <i></i>
-            <i></i>
-            <i></i>
-            <i></i>
-            <i></i>
-            <i></i>
-            <i></i>
-            <i></i>
-            <i></i>
-            <i></i>
-            <i></i>
-            <i></i>
-          </div>
-        )}
-        {enableAutumnLeaves && <AutumnLeaves fullScreen={fullScreen} />}
-        {enableCherryBlossom && <CherryBlossom fullScreen={fullScreen} />}
-        {/* {<ParticleEffect />} */}
-        {fullScreen && enableParticles && <ParticleAnimation />
-        }
-        {enableSteam && <div style={{ position: 'absolute', width: '100%', height: '100%', top: '410px', left: '710px' }}>
-          <span className="steam" style={{
-
-          }}></span>
-        </div>}
         {/* Animate the title in/out with AnimatePresence */}
         {/* <AnimatePresence mode={'sync'}> */}
         {title ? (
