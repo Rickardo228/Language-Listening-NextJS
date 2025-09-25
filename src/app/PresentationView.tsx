@@ -441,9 +441,12 @@ export function PresentationView({
           ) : (
             // Original single phrase display
             (currentTranslated || currentPhrase) && (
-              <div
+              <motion.div
                 key={currentPhase === "input" ? currentPhrase : currentTranslated}
-
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 10 }}
+                transition={{ duration: 0.3, ease: "easeOut" }}
                 className={`text-center px-12 ${alignPhraseTop ? 'pb-4' : ''} absolute flex bg-opacity-90 flex-col ${textColorClass}`}
                 style={{
                   alignItems: "center",
@@ -484,7 +487,7 @@ export function PresentationView({
                     {romanizedOutput}
                   </h2>
                 )}
-              </div>
+              </motion.div>
             )
           )}
         </AnimatePresence>
