@@ -345,9 +345,7 @@ export function PresentationView({
             // Show all phrases simultaneously with highlighting
             (currentPhrase || currentTranslated) && (
               <motion.div
-                key={currentPhase === "input"
-                  ? currentPhrase?.trim()
-                  : currentTranslated?.trim()}
+                key={currentPhrase?.trim() + currentTranslated?.trim()}
                 initial={{ opacity: 0, y: (isSafari && isMobile && !fullScreen) ? 0 : -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: (isSafari && isMobile && !fullScreen) ? 0 : 10 }}
