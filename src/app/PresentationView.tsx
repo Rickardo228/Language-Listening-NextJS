@@ -148,13 +148,13 @@ export function PresentationView({
       backgroundImage: `url(${bgImage})`,
       backgroundSize: "cover",
       backgroundPosition: "center",
-      overflow: "hidden" as const,
-      overflowY: "auto" as const,
+      // overflow: "hidden" as const,
+      // overflowY: "auto" as const,
       ...(containerBg && { backgroundColor: containerBg })
     }
     : {
-      overflow: "hidden" as const,
-      overflowY: "auto" as const,
+      // overflow: "hidden" as const,
+      // overflowY: "auto" as const,
       ...(containerBg && { backgroundColor: containerBg })
     };
 
