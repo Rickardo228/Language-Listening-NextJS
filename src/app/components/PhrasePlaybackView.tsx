@@ -97,7 +97,6 @@ export function PhrasePlaybackView({
     // Each play attempt gets a unique sequence number - if another play starts while one is pending,
     // the earlier attempt will bail out gracefully when it sees the sequence has changed.
     const playSeqRef = useRef(0);                 // increments on every new "play intent"
-    const srcSwapRef = useRef(false);             // true while we're swapping src (navigation)
 
     // Removed skip pump system - using direct navigation instead
 
@@ -108,11 +107,9 @@ export function PhrasePlaybackView({
 
     // Removed delay period tracking - using simple setTimeout approach
 
-    // Keep refs in sync with state
+    // Keep pausedRef in sync with state
     // TODO - do these even need to be useEffects? Cant we just set on each render?
     useEffect(() => { pausedRef.current = paused; }, [paused]);
-    useEffect(() => { phaseRef.current = currentPhase; }, [currentPhase]);
-    useEffect(() => { indexRef.current = currentPhraseIndex; }, [currentPhraseIndex]);
 
     const currentInputAudioUrl = useMemo(() => {
         if (currentPhraseIndex < 0) return '';
@@ -177,6 +174,23 @@ export function PhrasePlaybackView({
         try { if ('mediaSession' in navigator) (navigator as NavigatorWithMediaSession).mediaSession.playbackState = state; } catch { }
     };
 
+    // Enhanced state setters that handle ref sync and metadata pushing
+    const setCurrentPhraseIndexWithMetadata = useCallback((index: number | ((prev: number) => number)) => {
+        setCurrentPhraseIndex(index);
+        // Sync ref immediately (replaces useEffect)
+        indexRef.current = typeof index === 'function' ? index(indexRef.current) : index;
+        // Push metadata after state update
+        setTimeout(() => pushMetadataToTransport(), 0);
+    }, [pushMetadataToTransport]);
+
+    const setCurrentPhaseWithMetadata = useCallback((phase: 'input' | 'output') => {
+        setCurrentPhase(phase);
+        // Sync ref immediately (replaces useEffect)
+        phaseRef.current = phase;
+        // Push metadata after state update
+        setTimeout(() => pushMetadataToTransport(), 0);
+    }, [pushMetadataToTransport]);
+
     // call this *whenever* you want to start playback
     const safePlay = async (reason: string) => {
         const el = audioRef.current;
@@ -210,16 +224,9 @@ export function PhrasePlaybackView({
     const setSrcSafely = (url: string) => {
         const el = audioRef.current;
         if (!el) return;
-        srcSwapRef.current = true;
         // cancel any current play intent
         ++playSeqRef.current;
-        try { el.src = url; }
-        finally {
-            // let the microtask queue flush before clearing flags
-            setTimeout(() => {
-                srcSwapRef.current = false;
-            }, 0);
-        }
+        el.src = url;
     };
 
     // Removed pump functions - using direct navigation
@@ -285,8 +292,8 @@ export function PhrasePlaybackView({
 
 
         // swap state + src (no pause)
-        setCurrentPhraseIndex(targetIndex);
-        setCurrentPhase(targetPhase);
+        setCurrentPhraseIndexWithMetadata(targetIndex);
+        setCurrentPhaseWithMetadata(targetPhase);
 
         const url =
             targetPhase === 'input'
@@ -446,7 +453,7 @@ export function PhrasePlaybackView({
         // If input playback is disabled and we're on input phase, switch to output
         if (phase === 'input' && !presentationConfig.enableInputPlayback) {
             phase = 'output';
-            setCurrentPhase('output');
+            setCurrentPhaseWithMetadata('output');
         }
 
         const el = audioRef.current;
@@ -479,11 +486,11 @@ export function PhrasePlaybackView({
 
     const handleReplay = async () => {
         clearAllTimeouts();
-        setCurrentPhraseIndex(prev => prev < 0 ? prev - 1 : -1);
+        setCurrentPhraseIndexWithMetadata(prev => prev < 0 ? prev - 1 : -1);
 
         // Check if input playback is enabled, if not start with output phase
         const startPhase = presentationConfig.enableInputPlayback ? 'input' : 'output';
-        setCurrentPhase(startPhase);
+        setCurrentPhaseWithMetadata(startPhase);
 
         if (startPhase === 'input' && audioRef.current && phrases[0]?.inputAudio?.audioUrl) {
             setSrcSafely(phrases[0].inputAudio?.audioUrl || '');
@@ -510,7 +517,7 @@ export function PhrasePlaybackView({
         timeoutIds.current.push(timeoutId1);
 
         const timeoutId = window.setTimeout(() => {
-            setCurrentPhraseIndex(0);
+            setCurrentPhraseIndexWithMetadata(0);
         }, presentationConfig.postProcessDelay + BLEED_START_DELAY);
         timeoutIds.current.push(timeoutId);
 
@@ -542,8 +549,8 @@ export function PhrasePlaybackView({
             if (speed !== 1.0) {
                 audioRef.current.playbackRate = speed;
             }
-            setCurrentPhraseIndex(index);
-            setCurrentPhase(phase);
+            setCurrentPhraseIndexWithMetadata(index);
+            setCurrentPhaseWithMetadata(phase);
             if (isPaused) {
                 // If paused, play in isolation without changing state
                 safePlay('handlePlayPhrase-paused');
@@ -636,16 +643,16 @@ export function PhrasePlaybackView({
 
                 // Timeouts naturally end, no special cleanup needed
 
-                setCurrentPhase('output');
+                setCurrentPhaseWithMetadata('output');
                 setShowProgressBar(false);
 
                 if (playOutputBeforeInput) {
                     if (indexRef.current < phrases.length - 1 && !pausedRef.current) {
-                        setCurrentPhraseIndex(indexRef.current + 1);
+                        setCurrentPhraseIndexWithMetadata(indexRef.current + 1);
                     } else {
                         if (presentationConfig.enableLoop) {
                             // If looping is enabled, restart from beginning
-                            setCurrentPhraseIndex(0);
+                            setCurrentPhraseIndexWithMetadata(0);
                         } else {
                             showStatsUpdate(true)
                             setPaused(true);
@@ -679,17 +686,17 @@ export function PhrasePlaybackView({
                 if (playOutputBeforeInput) {
                     // Check if input playback is enabled
                     if (presentationConfig.enableInputPlayback) {
-                        setCurrentPhase('input');
+                        setCurrentPhaseWithMetadata('input');
                     } else {
                         // Skip input phase if disabled, go to next phrase output
                         if (indexRef.current < phrases.length - 1 && !pausedRef.current) {
-                            setCurrentPhraseIndex(indexRef.current + 1);
-                            setCurrentPhase('output');
+                            setCurrentPhraseIndexWithMetadata(indexRef.current + 1);
+                            setCurrentPhaseWithMetadata('output');
                         } else {
                             if (presentationConfig.enableLoop) {
                                 // If looping is enabled, restart from beginning
-                                setCurrentPhraseIndex(0);
-                                setCurrentPhase('output');
+                                setCurrentPhraseIndexWithMetadata(0);
+                                setCurrentPhaseWithMetadata('output');
                             } else {
                                 showStatsUpdate(true)
                                 setPaused(true);
@@ -698,22 +705,22 @@ export function PhrasePlaybackView({
                     }
                 } else {
                     if (indexRef.current < phrases.length - 1 && !pausedRef.current) {
-                        setCurrentPhraseIndex(indexRef.current + 1);
+                        setCurrentPhraseIndexWithMetadata(indexRef.current + 1);
                         // Check if input playback is enabled
                         if (presentationConfig.enableInputPlayback) {
-                            setCurrentPhase('input');
+                            setCurrentPhaseWithMetadata('input');
                         } else {
-                            setCurrentPhase('output');
+                            setCurrentPhaseWithMetadata('output');
                         }
                     } else {
                         if (presentationConfig.enableLoop) {
                             // If looping is enabled, restart from beginning
-                            setCurrentPhraseIndex(0);
+                            setCurrentPhraseIndexWithMetadata(0);
                             // Check if input playback is enabled
                             if (presentationConfig.enableInputPlayback) {
-                                setCurrentPhase('input');
+                                setCurrentPhaseWithMetadata('input');
                             } else {
-                                setCurrentPhase('output');
+                                setCurrentPhaseWithMetadata('output');
                             }
                         } else {
                             showStatsUpdate(true)
@@ -726,10 +733,6 @@ export function PhrasePlaybackView({
         }
     };
 
-    // Push metadata whenever phrase/phase changes
-    useEffect(() => {
-        pushMetadataToTransport();
-    }, [pushMetadataToTransport, currentPhraseIndex, currentPhase]);
 
     // Preload next/prev clips for smoother continuous skip
     useEffect(() => {
@@ -758,7 +761,7 @@ export function PhrasePlaybackView({
             // Skip input audio playback if disabled
             if (!presentationConfig.enableInputPlayback) {
                 // Move to output phase immediately
-                setCurrentPhase('output');
+                setCurrentPhaseWithMetadata('output');
                 return;
             }
             src = currentInputAudioUrl;
@@ -790,8 +793,8 @@ export function PhrasePlaybackView({
         handlePlay,
         handleReplay,
         handlePlayPhrase,
-        setCurrentPhraseIndex,
-        setCurrentPhase,
+        setCurrentPhraseIndex: setCurrentPhraseIndexWithMetadata,
+        setCurrentPhase: setCurrentPhaseWithMetadata,
         getCurrentPhraseIndex: () => currentPhraseIndex
     };
 
@@ -835,7 +838,7 @@ export function PhrasePlaybackView({
                                 currentPhraseIndex={currentPhraseIndex}
                                 currentPhase={currentPhase}
                                 onPhraseClick={(index) => {
-                                    setCurrentPhraseIndex(index);
+                                    setCurrentPhraseIndexWithMetadata(index);
                                     clearAllTimeouts();
 
                                     // Determine target phase considering both enableOutputBeforeInput and enableInputPlayback
@@ -847,7 +850,7 @@ export function PhrasePlaybackView({
                                         targetPhase = presentationConfig.enableInputPlayback ? 'input' : 'output';
                                     }
 
-                                    setCurrentPhase(targetPhase);
+                                    setCurrentPhaseWithMetadata(targetPhase);
                                     if (audioRef.current) {
                                         const audioUrl = targetPhase === 'input'
                                             ? phrases[index].inputAudio?.audioUrl
