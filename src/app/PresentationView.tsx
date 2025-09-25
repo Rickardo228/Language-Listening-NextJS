@@ -84,9 +84,9 @@ export function PresentationView({
   title,
   showAllPhrases,
   enableOutputBeforeInput,
-  showProgressBar,
-  progressDuration,
-  progressDelay,
+  // showProgressBar,
+  // progressDuration,
+  // progressDelay,
   onPrevious,
   onNext,
   canGoBack,
@@ -488,7 +488,7 @@ export function PresentationView({
         )}
         {/* </AnimatePresence> */}
         {/* Progress Bar for Recall/Shadow */}
-        <div
+        {/* <div
           className="absolute bottom-0 left-0 w-full h-1 overflow-hidden"
           style={{
             zIndex: 10,
@@ -508,7 +508,7 @@ export function PresentationView({
               }}
             />
           )}
-        </div>
+        </div> */}
       </div>
     </>
   );
