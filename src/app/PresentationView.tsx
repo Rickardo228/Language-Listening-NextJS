@@ -344,7 +344,9 @@ export function PresentationView({
             // Show all phrases simultaneously with highlighting
             (currentPhrase || currentTranslated) && (
               <motion.div
-                key="all-phrases"
+                key={currentPhase === "input"
+                  ? currentPhrase?.trim()
+                  : currentTranslated?.trim()}
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 10 }}
@@ -386,6 +388,7 @@ export function PresentationView({
                       {/* Input phrase */}
                       {currentPhrase && (
                         <h2
+                          key={currentPhrase.trim()}
                           className="font-bold mb-2"
                           style={{
                             margin: 0,
@@ -402,6 +405,7 @@ export function PresentationView({
 
                       <div>
                         {currentTranslated && <h2
+                          key={currentTranslated.trim()}
                           className="font-bold"
                           style={{
                             margin: 0,
@@ -417,6 +421,7 @@ export function PresentationView({
                         </h2>}
                         {romanizedOutput && (
                           <h2
+                            key={romanizedOutput?.trim()}
                             className="font-bold mt-3"
                             style={{
                               margin: 0,
@@ -458,6 +463,7 @@ export function PresentationView({
                 }}
               >
                 <h2
+                  key={currentPhase === "input" ? currentPhrase : currentTranslated}
                   className="font-bold"
                   style={{
                     margin: 0,
@@ -475,6 +481,7 @@ export function PresentationView({
                 </h2>
                 {currentPhase === "output" && romanizedOutput && (
                   <h2
+                    key={currentPhase}
                     className="font-bold mt-3"
                     style={{
                       fontSize: calculateFontSize(romanizedOutput, fullScreen, true)
