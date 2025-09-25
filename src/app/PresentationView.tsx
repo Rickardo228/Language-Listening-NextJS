@@ -98,6 +98,7 @@ export function PresentationView({
   const containerRef = useRef<HTMLDivElement>(null);
   const [portalContainer, setPortalContainer] = useState<HTMLElement | null>(null);
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+  const isSafari = typeof window !== 'undefined' && /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
   // Create portal container on mount
   useEffect(() => {
     if (typeof document !== 'undefined') {
@@ -347,9 +348,9 @@ export function PresentationView({
                 key={currentPhase === "input"
                   ? currentPhrase?.trim()
                   : currentTranslated?.trim()}
-                initial={{ opacity: 0, y: -10 }}
+                initial={{ opacity: 0, y: (isSafari && isMobile && !fullScreen) ? 0 : -10 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 10 }}
+                exit={{ opacity: 0, y: (isSafari && isMobile && !fullScreen) ? 0 : 10 }}
                 transition={{ duration: 0.3, ease: "easeOut" }}
                 className={`text-center px-12 ${alignPhraseTop ? 'pb-4' : ''} absolute flex bg-opacity-90 flex-col ${textColorClass}`}
                 style={{
@@ -446,9 +447,9 @@ export function PresentationView({
             (currentTranslated || currentPhrase) && (
               <motion.div
                 key={currentPhase === "input" ? currentPhrase : currentTranslated}
-                initial={{ opacity: 0, y: -10 }}
+                initial={{ opacity: 0, y: (isSafari && isMobile && !fullScreen) ? 0 : -10 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 10 }}
+                exit={{ opacity: 0, y: (isSafari && isMobile && !fullScreen) ? 0 : 10 }}
                 transition={{ duration: 0.3, ease: "easeOut" }}
                 className={`text-center px-12 ${alignPhraseTop ? 'pb-4' : ''} absolute flex bg-opacity-90 flex-col ${textColorClass}`}
                 style={{
@@ -509,13 +510,14 @@ export function PresentationView({
           <div
             className="h-full bg-blue-500 transition-all duration-300 ease-linear"
             style={{
-              opacity: showProgressBar && progressDuration ? 1 : 0,
-              width: showProgressBar && progressDuration ? '0%' : '100%',
-              animation: showProgressBar && progressDuration ? `progressBar ${progressDuration}ms linear ${progressDelay || 0}ms forwards` : undefined
+              opacity: showProgressBar && progressDuration ? 1 : 0.1,
+              width: '0%',
+              animation: showProgressBar && progressDuration ? `progressBar ${progressDuration - 50}ms linear ${progressDelay || 0}ms forwards` : undefined
             }}
           />
         </div>
       </div>
+
     </>
   );
 
