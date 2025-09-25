@@ -295,16 +295,12 @@ export function PresentationView({
         ) : (
           // Original single phrase display
           (currentTranslated || currentPhrase) && (
-            <motion.div
-              key={currentPhase}
-              initial={{ opacity: 0, y: isMobile && !fullScreen ? 0 : -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: isMobile && !fullScreen ? 0 : 10 }}
-              transition={{ duration: 0.3, ease: "easeOut" }}
+            <div
+
               className={`text-center px-12 ${alignPhraseTop ? 'pb-4' : ''} absolute flex bg-opacity-90 flex-col ${textColorClass}`}
               style={{
-                alignItems: "center",
-                justifyContent: "center",
+                // alignItems: "center",
+                // justifyContent: "center",
                 backgroundColor: textBg
                   ? (textBg.includes("rgb")
                     ? (textBg.slice(0, -1) + " 0.9)").replaceAll(" ", ",")
@@ -339,7 +335,7 @@ export function PresentationView({
                   {romanizedOutput}
                 </h2>
               )}
-            </motion.div>
+            </div>
           )
         )}
         {/* </AnimatePresence> */}
