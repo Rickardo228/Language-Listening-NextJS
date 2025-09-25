@@ -343,11 +343,14 @@ export function PresentationView({
           ) : showAllPhrases ? (
             // Show all phrases simultaneously with highlighting
             (currentPhrase || currentTranslated) && (
-              <div
+              <motion.div
                 key={currentPhase === "input"
                   ? currentPhrase?.trim()
                   : currentTranslated?.trim()}
-
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 10 }}
+                transition={{ duration: 0.3, ease: "easeOut" }}
                 className={`text-center px-12 ${alignPhraseTop ? 'pb-4' : ''} absolute flex bg-opacity-90 flex-col ${textColorClass}`}
                 style={{
                   alignItems: "center",
@@ -436,7 +439,7 @@ export function PresentationView({
                     </>
                   );
                 })()}
-              </div>
+              </motion.div>
             )
           ) : (
             // Original single phrase display
