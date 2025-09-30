@@ -6,14 +6,15 @@ import { Config, languageOptions, Phrase, CollectionType as CollectionTypeEnum }
 import { API_BASE_URL } from '../consts';
 import { ImportPhrases } from '../ImportPhrases';
 import { User } from 'firebase/auth';
-import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, orderBy, limit as fbLimit } from 'firebase/firestore';
+import { getFirestore, collection, getDocs, doc, updateDoc, deleteDoc, query, orderBy, limit as fbLimit } from 'firebase/firestore';
 import { CollectionList } from '../CollectionList';
 import { useTheme } from '../ThemeProvider';
 import { UserAvatar } from './UserAvatar';
 import { defaultPresentationConfig, defaultPresentationConfigs } from '../defaultConfig';
 import { useUser } from '../contexts/UserContext';
 import { useSidebar } from '../contexts/SidebarContext';
-import { trackCreateList, trackSelectList, trackCreatePhrase, track } from '../../lib/mixpanelClient';
+import { trackSelectList, trackCreatePhrase, track } from '../../lib/mixpanelClient';
+import { createCollection } from '../utils/collectionService';
 import { TemplatesBrowser } from './TemplatesBrowser';
 import { SignInPage } from '../SignInPage';
 import { OnboardingGuard } from './OnboardingGuard';
@@ -128,12 +129,12 @@ export function AppLayout({ children }: AppLayoutProps) {
   }, [initialiseCollections, user, hideSidebar])
 
   // Save a new collection to Firestore
-  const handleCreateCollection = async (phrases: Phrase[], prompt?: string, collectionType?: CollectionTypeEnum, userArg?: User) => {
-    const userId = userArg?.uid || user?.uid;
-    if (!userId) return;
+  const handleCreateCollection = async (phrases: Phrase[], prompt?: string, collectionType?: CollectionTypeEnum, userArg?: User, skipTracking?: boolean) => {
+    const docRef = await createCollection(phrases, prompt, collectionType, userArg, user || undefined, { skipTracking });
+
     const generatedName = prompt || 'New List';
     const now = new Date().toISOString();
-    const newCollection = {
+    const newCollectionConfig = {
       name: generatedName,
       phrases: phrases.map(phrase => ({
         ...phrase,
@@ -144,27 +145,13 @@ export function AppLayout({ children }: AppLayoutProps) {
       presentationConfig: {
         ...(collectionType ? defaultPresentationConfigs[collectionType] : defaultPresentationConfig),
         name: generatedName
-      }
+      },
+      id: docRef
     };
-    const colRef = collection(firestore, 'users', userId, 'collections');
-    const docRef = await addDoc(colRef, newCollection);
-    const newCollectionConfig = {
-      ...newCollection,
-      id: docRef.id
-    };
+
     setSavedCollections(prev => [...prev, newCollectionConfig]);
-
-    trackCreateList(
-      docRef.id,
-      generatedName,
-      phrases.length,
-      collectionType || 'phrases',
-      phrases[0]?.inputLang || 'unknown',
-      phrases[0]?.targetLang || 'unknown'
-    );
-
-    handleLoadCollection(newCollectionConfig);
-    return docRef.id;
+    handleLoadCollection(newCollectionConfig, skipTracking);
+    return docRef;
   };
 
   const handleProcess = async (prompt?: string, inputLang?: string, targetLang?: string, collectionType?: CollectionTypeEnum) => {
@@ -206,7 +193,7 @@ export function AppLayout({ children }: AppLayoutProps) {
         targetVoice: data.targetVoice || `${targetLang || newCollectionTargetLang}-Standard-A`
       }));
 
-      const collectionId = await handleCreateCollection(processedPhrases, prompt, collectionType);
+      const collectionId = await handleCreateCollection(processedPhrases, prompt, collectionType, undefined, false);
 
       processedPhrases.forEach((phrase, index) => {
         trackCreatePhrase(
@@ -229,16 +216,18 @@ export function AppLayout({ children }: AppLayoutProps) {
     setLoading(false);
   };
 
-  const handleLoadCollection = async (config: Config) => {
+  const handleLoadCollection = async (config: Config, skipTracking?: boolean) => {
     setLoading(true);
     try {
-      trackSelectList(
-        config.id,
-        config.name,
-        config.phrases.length,
-        config.phrases[0]?.inputLang || 'unknown',
-        config.phrases[0]?.targetLang || 'unknown'
-      );
+      if (!skipTracking) {
+        trackSelectList(
+          config.id,
+          config.name,
+          config.phrases.length,
+          config.phrases[0]?.inputLang || 'unknown',
+          config.phrases[0]?.targetLang || 'unknown'
+        );
+      }
 
       // Navigate to the collection route
       router.push(`/collection/${config.id}`);

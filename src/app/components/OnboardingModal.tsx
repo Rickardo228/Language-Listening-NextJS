@@ -7,10 +7,10 @@ import { OnboardingAbilitySelect } from './OnboardingAbilitySelect';
 import { OnboardingContentPreferences } from './OnboardingContentPreferences';
 import { languageOptions, Phrase, CollectionType as CollectionTypeEnum } from '../types';
 import { saveOnboardingData } from '../utils/userPreferences';
-import { trackOnboardingCompleted, trackCreateList } from '../../lib/mixpanelClient';
+import { trackOnboardingCompleted } from '../../lib/mixpanelClient';
+import { createCollection } from '../utils/collectionService';
 import { useUser } from '../contexts/UserContext';
-import { getFirestore, collection, addDoc, getDocs, query, orderBy, limit as fbLimit } from 'firebase/firestore';
-import { defaultPresentationConfig, defaultPresentationConfigs } from '../defaultConfig';
+import { getFirestore, collection, getDocs, query, orderBy, limit as fbLimit } from 'firebase/firestore';
 import defaultPhrasesData from '../../defaultPhrases.json';
 import { User } from 'firebase/auth';
 
@@ -90,37 +90,8 @@ export function OnboardingModal({
         if (preselectedTargetLang) setTargetLang(preselectedTargetLang);
     }, [preselectedInputLang, preselectedTargetLang]);
 
-    const handleCreateCollection = async (phrases: Phrase[], prompt?: string, collectionType?: CollectionTypeEnum, userArg?: User) => {
-        const userId = userArg?.uid || user?.uid;
-        if (!userId) return;
-        const generatedName = prompt || 'New List';
-        const now = new Date().toISOString();
-        const newCollection = {
-            name: generatedName,
-            phrases: phrases.map(phrase => ({
-                ...phrase,
-                created_at: now
-            })),
-            created_at: now,
-            collectionType: collectionType || 'phrases',
-            presentationConfig: {
-                ...(collectionType ? defaultPresentationConfigs[collectionType] : defaultPresentationConfig),
-                name: generatedName
-            }
-        };
-        const colRef = collection(firestore, 'users', userId, 'collections');
-        const docRef = await addDoc(colRef, newCollection);
-
-        trackCreateList(
-            docRef.id,
-            generatedName,
-            phrases.length,
-            collectionType || 'phrases',
-            phrases[0]?.inputLang || 'unknown',
-            phrases[0]?.targetLang || 'unknown'
-        );
-
-        return docRef.id;
+    const handleCreateCollection = async (phrases: Phrase[], prompt?: string, collectionType?: CollectionTypeEnum, userArg?: User, skipTracking?: boolean) => {
+        return await createCollection(phrases, prompt, collectionType, userArg, user || undefined, { skipTracking });
     };
 
     const handleComplete = async () => {
@@ -144,7 +115,7 @@ export function OnboardingModal({
             if (snapshot.empty) {
                 // Always create default phrases with user's preferred languages
                 const defaultPhrases = getDefaultPhrasesForLanguages(inputLang, targetLang);
-                await handleCreateCollection(defaultPhrases, "My List", "phrases", user);
+                await handleCreateCollection(defaultPhrases, "My List", "phrases", user, true);
             }
 
             // Track completion in analytics
