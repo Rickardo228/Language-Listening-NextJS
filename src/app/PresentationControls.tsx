@@ -47,7 +47,7 @@ export function PresentationControls({
     canGoBack,
     canGoForward,
     inputLang,
-    targetLang
+    targetLang,
 }: PresentationControlsProps) {
     const [settingsOpen, setSettingsOpen] = useState(false);
 

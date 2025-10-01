@@ -8,6 +8,7 @@ export type ConfigFieldDefinition = {
   description?: string;
   decorator?: () => React.ReactElement;
   options?: { value: number; label: string }[];
+  disabledWhen?: (config: PresentationConfig) => boolean;
 };
 
 // Shared speed options to avoid duplication
@@ -59,6 +60,7 @@ export const presentationConfigDefinition: ConfigFieldDefinition[] = [
         Improve your memory
       </span>
     ),
+    disabledWhen: (config) => !config.enableInputPlayback,
   },
   {
     key: "enableOutputBeforeInput",

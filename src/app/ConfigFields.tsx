@@ -163,6 +163,7 @@ const ConfigFields: React.FC<ConfigFieldsProps> = ({
 
                 // Render a checkbox input.
                 if (inputType === "checkbox") {
+                    const isDisabled = field.disabledWhen?.(config) ?? false;
                     return (
                         <div key={key} className="flex flex-col">
                             <div className="flex items-center">
@@ -171,9 +172,10 @@ const ConfigFields: React.FC<ConfigFieldsProps> = ({
                                     id={String(key)}
                                     checked={value as boolean}
                                     onChange={(e) => handleChange(key, e.target.checked)}
-                                    className="mr-2"
+                                    disabled={isDisabled}
+                                    className={`mr-2 ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
                                 />
-                                <label htmlFor={String(key)} className="font-medium">
+                                <label htmlFor={String(key)} className={`font-medium ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}>
                                     {dynamicLabel}
                                 </label>
                             </div>

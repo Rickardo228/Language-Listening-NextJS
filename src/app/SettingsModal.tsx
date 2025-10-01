@@ -27,7 +27,7 @@ export function SettingsModal({
     setPresentationConfig,
     handleImageUpload,
     inputLang,
-    targetLang
+    targetLang,
 }: SettingsModalProps) {
     return (
         <Dialog open={isOpen} onClose={onClose} className="relative z-50 font-sans">
