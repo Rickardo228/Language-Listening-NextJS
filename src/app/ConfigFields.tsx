@@ -49,7 +49,7 @@ const ConfigFields: React.FC<ConfigFieldsProps> = ({
 
         switch (key) {
             case 'enableInputPlayback':
-                return `Play ${inputLangName} Audio`;
+                return `Play ${firstLang} Audio`;
             case 'enableInputDurationDelay':
                 return `Recall - Pause after ${firstLang}`;
             case 'enableOutputDurationDelay':
@@ -80,7 +80,7 @@ const ConfigFields: React.FC<ConfigFieldsProps> = ({
 
         switch (key) {
             case 'enableInputPlayback':
-                return `Enable or disable playback of the ${inputLangName} audio for each phrase.`;
+                return `Enable or disable playback of the ${firstLang} audio (recall phase) for each phrase.`;
             case 'enableInputDurationDelay':
                 return `Pause after ${firstLang} to test your memory by recalling the ${secondLang} translation.`;
             case 'enableOutputDurationDelay':

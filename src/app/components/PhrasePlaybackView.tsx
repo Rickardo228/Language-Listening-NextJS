@@ -105,6 +105,21 @@ export function PhrasePlaybackView({
     const phaseRef = useRef(currentPhase);
     const indexRef = useRef(currentPhraseIndex);
 
+    // Helper functions for phase semantics (recall = first audio, shadow = second audio)
+    const getRecallPhase = useCallback((): 'input' | 'output' => {
+        return presentationConfig.enableOutputBeforeInput ? 'output' : 'input';
+    }, [presentationConfig.enableOutputBeforeInput]);
+
+    const getShadowPhase = useCallback((): 'input' | 'output' => {
+        return presentationConfig.enableOutputBeforeInput ? 'input' : 'output';
+    }, [presentationConfig.enableOutputBeforeInput]);
+
+    const isRecallPhase = useCallback((phase: 'input' | 'output'): boolean => {
+        return presentationConfig.enableOutputBeforeInput
+            ? (phase === 'output')
+            : (phase === 'input');
+    }, [presentationConfig.enableOutputBeforeInput]);
+
     // Removed delay period tracking - using simple setTimeout approach
 
     // Keep pausedRef in sync with state
@@ -240,7 +255,7 @@ export function PhrasePlaybackView({
         const wasPlaying = !pausedRef.current; // snapshot before we move
         // Compute next cursor
         const playOutputBeforeInput = presentationConfig.enableOutputBeforeInput;
-        const enableInput = presentationConfig.enableInputPlayback;
+        const enableRecall = presentationConfig.enableInputPlayback;
 
         let targetIndex = indexRef.current;
         const curPhase = phaseRef.current;
@@ -249,43 +264,65 @@ export function PhrasePlaybackView({
         if (playOutputBeforeInput) {
             if (delta === +1) {
                 if (curPhase === 'output') {
-                    // O -> I (same phrase)
-                    targetPhase = enableInput ? 'input' : 'output';
-                    if (!enableInput) targetIndex = (targetIndex + 1) % phrases.length; // no input phase, jump to next O
+                    // Recall -> Shadow (same phrase) OR skip to next recall if shadow disabled
+                    targetPhase = enableRecall ? 'input' : 'output';
+                    if (enableRecall) {
+                        // Normal: go to shadow phase of same phrase
+                        targetPhase = 'input';
+                    } else {
+                        // Skip shadow, jump to next phrase's recall
+                        targetIndex = (targetIndex + 1) % phrases.length;
+                        targetPhase = 'output';
+                    }
                 } else {
-                    // I -> next phrase O
+                    // Shadow -> next phrase Recall
                     targetIndex = (targetIndex + 1) % phrases.length;
-                    targetPhase = 'output';
+                    targetPhase = enableRecall ? 'output' : 'input'; // Start at recall or shadow of next phrase
                 }
             } else { // delta === -1
                 if (curPhase === 'input') {
-                    // I -> O (same phrase)
-                    targetPhase = 'output';
+                    // Shadow -> Recall (same phrase) OR previous phrase shadow if recall disabled
+                    if (enableRecall) {
+                        targetPhase = 'output';
+                    } else {
+                        targetIndex = (targetIndex - 1 + phrases.length) % phrases.length;
+                        targetPhase = 'input';
+                    }
                 } else {
-                    // O -> previous phrase I
+                    // Recall -> previous phrase Shadow OR Recall
                     targetIndex = (targetIndex - 1 + phrases.length) % phrases.length;
-                    targetPhase = enableInput ? 'input' : 'output';
+                    targetPhase = enableRecall ? 'input' : 'output';
                 }
             }
         } else {
             // input-before-output mode
             if (delta === +1) {
                 if (curPhase === 'input') {
-                    // I -> O (same phrase)
-                    targetPhase = 'output';
+                    // Recall -> Shadow (same phrase) OR skip to next recall if shadow disabled
+                    if (enableRecall) {
+                        targetPhase = 'output';
+                    } else {
+                        targetIndex = (targetIndex + 1) % phrases.length;
+                        targetPhase = 'input';
+                    }
                 } else {
-                    // O -> next phrase (I if enabled else O)
+                    // Shadow -> next phrase Recall OR Shadow
                     targetIndex = (targetIndex + 1) % phrases.length;
-                    targetPhase = enableInput ? 'input' : 'output';
+                    targetPhase = enableRecall ? 'input' : 'output';
                 }
             } else { // delta === -1
-                if (curPhase === 'output' && enableInput) {
-                    // O -> I (same phrase)
-                    targetPhase = 'input';
+                if (curPhase === 'output') {
+                    // Shadow -> Recall (same phrase) OR previous phrase shadow if recall disabled
+                    if (enableRecall) {
+                        targetPhase = 'input';
+                    } else {
+                        targetIndex = (targetIndex - 1 + phrases.length) % phrases.length;
+                        targetPhase = 'output';
+                    }
                 } else {
-                    // (I) or (O & no input phase) -> previous phrase O (not I as before)
+                    // Recall -> previous phrase Shadow OR Recall
                     targetIndex = (targetIndex - 1 + phrases.length) % phrases.length;
-                    targetPhase = 'output'; // Always go to output of previous phrase when going back
+                    targetPhase = enableRecall ? 'output' : 'input';
                 }
             }
         }
@@ -450,10 +487,11 @@ export function PhrasePlaybackView({
             return;
         }
 
-        // If input playback is disabled and we're on input phase, switch to output
-        if (phase === 'input' && !presentationConfig.enableInputPlayback) {
-            phase = 'output';
-            setCurrentPhaseWithMetadata('output');
+        // If input playback is disabled and we're on the recall phase, switch to shadow phase
+        if (isRecallPhase(phase) && !presentationConfig.enableInputPlayback) {
+            const shadowPhase = getShadowPhase();
+            phase = shadowPhase;
+            setCurrentPhaseWithMetadata(shadowPhase);
         }
 
         const el = audioRef.current;
@@ -481,15 +519,17 @@ export function PhrasePlaybackView({
         if (idx >= 0 && phrases[idx]) {
             trackPlaybackEvent('play', `${collectionId || 'unknown'}-${idx}`, phase, idx, speed);
         }
-    }, [phrases, presentationConfig.inputPlaybackSpeed, presentationConfig.outputPlaybackSpeed, presentationConfig.enableInputPlayback, collectionId]);
+    }, [phrases, presentationConfig.inputPlaybackSpeed, presentationConfig.outputPlaybackSpeed, presentationConfig.enableInputPlayback, presentationConfig.enableOutputBeforeInput, collectionId]);
 
 
     const handleReplay = async () => {
         clearAllTimeouts();
         setCurrentPhraseIndexWithMetadata(prev => prev < 0 ? prev - 1 : -1);
 
-        // Check if input playback is enabled, if not start with output phase
-        const startPhase = presentationConfig.enableInputPlayback ? 'input' : 'output';
+        // Determine starting phase based on playback order and enableInputPlayback
+        const startPhase = presentationConfig.enableInputPlayback
+            ? getRecallPhase()  // Start with recall phase (first audio)
+            : getShadowPhase(); // Skip recall phase, start with shadow phase (second audio)
         setCurrentPhaseWithMetadata(startPhase);
 
         if (startPhase === 'input' && audioRef.current && phrases[0]?.inputAudio?.audioUrl) {
@@ -535,8 +575,8 @@ export function PhrasePlaybackView({
     const handlePlayPhrase = (index: number, phase: 'input' | 'output') => {
         clearAllTimeouts();
         if (audioRef.current) {
-            // Skip input audio if disabled
-            if (phase === 'input' && !presentationConfig.enableInputPlayback) {
+            // Skip recall phase if disabled
+            if (isRecallPhase(phase) && !presentationConfig.enableInputPlayback) {
                 return;
             }
 
@@ -756,14 +796,14 @@ export function PhrasePlaybackView({
     useEffect(() => {
         if (currentPhraseIndex < 0 || paused) return;
 
+        // Skip recall phase if disabled
+        if (isRecallPhase(currentPhase) && !presentationConfig.enableInputPlayback) {
+            setCurrentPhaseWithMetadata(getShadowPhase());
+            return;
+        }
+
         let src = '';
         if (currentPhase === 'input') {
-            // Skip input audio playback if disabled
-            if (!presentationConfig.enableInputPlayback) {
-                // Move to output phase immediately
-                setCurrentPhaseWithMetadata('output');
-                return;
-            }
             src = currentInputAudioUrl;
         } else if (currentPhase === 'output') {
             src = currentOutputAudioUrl;
@@ -785,7 +825,7 @@ export function PhrasePlaybackView({
                 safePlay('autoplay-effect');
             }
         }
-    }, [currentPhraseIndex, currentPhase, paused, currentInputAudioUrl, currentOutputAudioUrl, presentationConfig.inputPlaybackSpeed, presentationConfig.outputPlaybackSpeed, presentationConfig.enableInputPlayback]);
+    }, [currentPhraseIndex, currentPhase, paused, currentInputAudioUrl, currentOutputAudioUrl, presentationConfig.inputPlaybackSpeed, presentationConfig.outputPlaybackSpeed, presentationConfig.enableInputPlayback, presentationConfig.enableOutputBeforeInput]);
 
     if (methodsRef) methodsRef.current = {
         handleStop,
@@ -842,13 +882,9 @@ export function PhrasePlaybackView({
                                     clearAllTimeouts();
 
                                     // Determine target phase considering both enableOutputBeforeInput and enableInputPlayback
-                                    let targetPhase: 'input' | 'output';
-                                    if (presentationConfig.enableOutputBeforeInput) {
-                                        targetPhase = 'output';
-                                    } else {
-                                        // If input playback is disabled, start with output phase
-                                        targetPhase = presentationConfig.enableInputPlayback ? 'input' : 'output';
-                                    }
+                                    const targetPhase = presentationConfig.enableInputPlayback
+                                        ? getRecallPhase()  // Start with recall phase (first audio)
+                                        : getShadowPhase(); // Skip recall phase, start with shadow phase (second audio)
 
                                     setCurrentPhaseWithMetadata(targetPhase);
                                     if (audioRef.current) {
