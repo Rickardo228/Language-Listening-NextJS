@@ -38,18 +38,6 @@ export const presentationConfigDefinition: ConfigFieldDefinition[] = [
       "Enable or disable playback of the input language audio for each phrase.",
   },
   {
-    key: "enableOutputDurationDelay",
-    label: "Shadow",
-    inputType: "checkbox",
-    description:
-      "Pause after each phrase to practice your pronunciation by repeating it.",
-    decorator: () => (
-      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-        Practice your pronunciation
-      </span>
-    ),
-  },
-  {
     key: "enableInputDurationDelay",
     label: "Recall",
     inputType: "checkbox",
@@ -62,6 +50,19 @@ export const presentationConfigDefinition: ConfigFieldDefinition[] = [
     ),
     disabledWhen: (config) => !config.enableInputPlayback,
   },
+  {
+    key: "enableOutputDurationDelay",
+    label: "Shadow",
+    inputType: "checkbox",
+    description:
+      "Pause after each phrase to practice your pronunciation by repeating it.",
+    decorator: () => (
+      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+        Practice your pronunciation
+      </span>
+    ),
+  },
+
   {
     key: "enableOutputBeforeInput",
     label: "Play Output Before Input",

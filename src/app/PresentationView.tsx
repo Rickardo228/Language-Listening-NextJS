@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { createPortal } from "react-dom";
-import { ArrowLeft, ArrowRight, Maximize2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, Maximize2, X, Minimize2 } from "lucide-react";
 import { AutumnLeaves } from "./Effects/AutumnLeaves";
 import CherryBlossom from "./Effects/CherryBlossom";
 import { BLEED_START_DELAY, TITLE_DELAY } from './consts';
@@ -39,6 +39,7 @@ interface PresentationViewProps {
   canGoForward?: boolean; // New prop to check if can go forward
   currentPhraseIndex?: number; // New prop for current phrase index (0-based)
   totalPhrases?: number; // New prop for total number of phrases
+  isPlayingAudio?: boolean; // New prop to indicate if audio is actively playing
 }
 
 export const TITLE_ANIMATION_DURATION = 1000
@@ -93,12 +94,14 @@ export function PresentationView({
   canGoForward,
   currentPhraseIndex,
   totalPhrases,
+  isPlayingAudio = false,
 }: PresentationViewProps) {
   const [isHovering, setIsHovering] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const [portalContainer, setPortalContainer] = useState<HTMLElement | null>(null);
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
   const isSafari = typeof window !== 'undefined' && /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+  const [isDragging, setIsDragging] = useState(false);
   // Create portal container on mount
   useEffect(() => {
     if (typeof document !== 'undefined') {
@@ -170,68 +173,121 @@ export function PresentationView({
           to { width: 100%; }
         }
       `}</style>
-      <div ref={containerRef} className={`${containerClass} ${isMobile ? "" : (isHovering ? "" : "cursor-none")}`} style={containerStyle} onClick={() => setFullscreen(prev => !prev)} onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
-        {/* Fullscreen Button */}
+      <motion.div
+        ref={containerRef}
+        className={`${containerClass} ${isMobile ? "" : (isHovering ? "" : "cursor-none")}`}
+        style={containerStyle}
+        onClick={(e) => {
+          // Only toggle fullscreen if not dragging
+          if (!isDragging) {
+            setFullscreen(prev => !prev);
+          }
+        }}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+        drag={isMobile && onPrevious && onNext ? "x" : false}
+        dragConstraints={{ left: 0, right: 0 }}
+        dragElastic={0.2}
+        onDragStart={() => setIsDragging(true)}
+        onDragEnd={(e, info) => {
+          setIsDragging(false);
+          const swipeThreshold = 50;
+          if (info.offset.x > swipeThreshold && canGoBack) {
+            onPrevious?.();
+          } else if (info.offset.x < -swipeThreshold && canGoForward) {
+            onNext?.();
+          }
+        }}
+      >
+        {/* Fullscreen/Close Button - repositioned to top-right */}
         <button
           onClick={(e) => {
             e.stopPropagation();
             setFullscreen(prev => !prev);
           }}
-          className={`absolute p-3 bg-gray-200 dark:bg-gray-700 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 transition-all duration-200 z-10 ${fullScreen && isMobile && onPrevious && onNext
-            ? "bottom-4 left-20" // Move right to avoid overlap with navigation button
-            : "bottom-4 left-4"
-            }`}
+          className="absolute top-4 right-4 p-3 bg-gray-200 dark:bg-gray-700 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 transition-all duration-200 z-10"
           title={fullScreen ? "Exit Presentation Mode" : "Enter Presentation Mode"}
           style={{
             opacity: shouldShowNavigationButtons ? 1 : 0,
             transition: 'opacity 0.3s ease'
           }}
         >
-          <Maximize2 className="h-6 w-6 text-gray-700 dark:text-gray-300" />
+          {fullScreen ? (
+            <X className="h-6 w-6 text-gray-700 dark:text-gray-300" />
+          ) : (
+            <Maximize2 className="h-6 w-6 text-gray-700 dark:text-gray-300" />
+          )}
         </button>
 
-        {/* Navigation Buttons */}
+        {/* Navigation Buttons - Spotify-style bottom center on mobile fullscreen */}
         {onPrevious && onNext && (
           <>
-            {/* Left Navigation Button */}
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onPrevious();
-              }}
-              disabled={!canGoBack}
-              className={`absolute p-3 bg-gray-200 dark:bg-gray-700 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 z-10 ${fullScreen && isMobile
-                ? "left-4 bottom-4"
-                : "left-4 top-1/2 transform -translate-y-1/2"
-                }`}
-              title="Previous Phrase"
-              style={{
-                opacity: shouldShowNavigationButtons ? 1 : 0,
-                transition: 'opacity 0.3s ease'
-              }}
-            >
-              <ArrowLeft className="h-6 w-6 text-gray-700 dark:text-gray-300" />
-            </button>
-
-            {/* Right Navigation Button */}
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onNext();
-              }}
-              disabled={!canGoForward}
-              className={`absolute p-3 bg-gray-200 dark:bg-gray-700 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 z-10 ${fullScreen && isMobile
-                ? "right-4 bottom-4"
-                : "right-4 top-1/2 transform -translate-y-1/2"
-                }`}
-              title="Next Phrase"
-              style={{
-                opacity: shouldShowNavigationButtons ? 1 : 0,
-                transition: 'opacity 0.3s ease'
-              }}
-            >
-              <ArrowRight className="h-6 w-6 text-gray-700 dark:text-gray-300" />
-            </button>
+            {fullScreen && isMobile ? (
+              // Mobile fullscreen: Spotify-style bottom center layout
+              <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex items-center gap-8 z-10"
+                style={{
+                  opacity: shouldShowNavigationButtons ? 1 : 0,
+                  transition: 'opacity 0.3s ease'
+                }}
+              >
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onPrevious();
+                  }}
+                  disabled={!canGoBack}
+                  className="p-3 bg-gray-200 dark:bg-gray-700 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                  title="Previous Phrase"
+                >
+                  <ArrowLeft className="h-6 w-6 text-gray-700 dark:text-gray-300" />
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onNext();
+                  }}
+                  disabled={!canGoForward}
+                  className="p-3 bg-gray-200 dark:bg-gray-700 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                  title="Next Phrase"
+                >
+                  <ArrowRight className="h-6 w-6 text-gray-700 dark:text-gray-300" />
+                </button>
+              </div>
+            ) : (
+              // Desktop or inline: side-by-side layout
+              <>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onPrevious();
+                  }}
+                  disabled={!canGoBack}
+                  className="absolute left-4 top-1/2 transform -translate-y-1/2 p-3 bg-gray-200 dark:bg-gray-700 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 z-10"
+                  title="Previous Phrase"
+                  style={{
+                    opacity: shouldShowNavigationButtons ? 1 : 0,
+                    transition: 'opacity 0.3s ease'
+                  }}
+                >
+                  <ArrowLeft className="h-6 w-6 text-gray-700 dark:text-gray-300" />
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onNext();
+                  }}
+                  disabled={!canGoForward}
+                  className="absolute right-4 top-1/2 transform -translate-y-1/2 p-3 bg-gray-200 dark:bg-gray-700 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 z-10"
+                  title="Next Phrase"
+                  style={{
+                    opacity: shouldShowNavigationButtons ? 1 : 0,
+                    transition: 'opacity 0.3s ease'
+                  }}
+                >
+                  <ArrowRight className="h-6 w-6 text-gray-700 dark:text-gray-300" />
+                </button>
+              </>
+            )}
           </>
         )}
 
@@ -240,7 +296,7 @@ export function PresentationView({
           currentPhraseIndex={currentPhraseIndex}
           totalPhrases={totalPhrases}
           className={`absolute z-10 ${fullScreen && isMobile && onNext
-            ? "bottom-4 right-4 mr-16" // Move left to avoid overlap with navigation button
+            ? "top-4 left-4" // Move to top-left on mobile fullscreen
             : "bottom-4 right-4"
             }`}
           style={{
@@ -344,17 +400,10 @@ export function PresentationView({
           ) : showAllPhrases ? (
             // Show all phrases simultaneously with highlighting
             (currentPhrase || currentTranslated) && (
-              <motion.div
-                key={currentPhrase?.trim() + currentTranslated?.trim()}
-                initial={{ opacity: 0, y: (isSafari && isMobile && !fullScreen) ? 0 : -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: (isSafari && isMobile && !fullScreen) ? 0 : 10 }}
-                transition={{ duration: 0.3, ease: "easeOut" }}
-                className={`text-center px-12 ${alignPhraseTop ? 'pb-4' : ''} absolute flex bg-opacity-90 flex-col ${textColorClass}`}
+              <div className={`text-center px-12 ${alignPhraseTop ? 'pb-4' : ''} absolute flex bg-opacity-90 flex-col ${textColorClass}`}
                 style={{
                   alignItems: "center",
                   justifyContent: "center",
-                  flexDirection: enableOutputBeforeInput ? "column-reverse" : "column",
                   backgroundColor: textBg
                     ? (textBg.includes("rgb")
                       ? (textBg.slice(0, -1) + " 0.9)").replaceAll(" ", ",")
@@ -385,60 +434,97 @@ export function PresentationView({
                   return (
                     <>
                       {/* Input phrase */}
-                      {currentPhrase && (
-                        <h2
-                          key={currentPhrase.trim()}
-                          className="font-bold mb-2"
+                      <AnimatePresence mode="wait">
+                        {currentPhrase && (
+                          <motion.div
+                            key={currentPhrase.trim()}
+                            initial={{ opacity: 0, y: (isSafari && isMobile && !fullScreen) ? 0 : -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: (isSafari && isMobile && !fullScreen) ? 0 : 10 }}
+                            transition={{ duration: 0.3, ease: "easeOut" }}
+                          >
+                            <h2
+                              className="font-bold mb-2"
+                              style={{
+                                margin: 0,
+                                padding: 0,
+                                fontSize: enableOutputBeforeInput ? commonFontSize : inputFontSize,
+                                opacity: currentPhase !== "input" ? 0.6 : 1,
+                                transform: isPlayingAudio && currentPhase === "input" ? "scale(1.02)" : "scale(1)",
+                                filter: isPlayingAudio && currentPhase === "input" ? "drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3))" : "none",
+                                transition: "opacity 0.3s ease, transform 0.3s ease, filter 0.3s ease"
+                              }}
+                            >
+                              {currentPhrase.trim()}
+                            </h2>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+
+                      {/* Static divider line - always visible, no animation */}
+                      {currentPhrase && currentTranslated && (
+                        <div
                           style={{
-                            margin: 0,
-                            padding: 0,
-                            fontSize: enableOutputBeforeInput ? commonFontSize : inputFontSize,
-                            color: currentPhase === "input" ? "#3b82f6" : undefined, // Blue highlight for input phase
-                            textShadow: currentPhase === "input" ? "0 0 10px rgba(59, 130, 246, 0.5)" : undefined,
-                            transition: "color 0.3s ease, text-shadow 0.3s ease"
+                            width: '80px',
+                            height: '1px',
+                            margin: '16px auto',
+                            background: textBg
+                              ? (textBg.includes("rgb")
+                                ? (textBg.slice(0, -1) + " 0.3)").replaceAll(" ", ",")
+                                : textBg + "4D")
+                              : "rgba(255,255,255,0.3)",
+                            borderRadius: '1px'
                           }}
-                        >
-                          {currentPhrase.trim()}
-                        </h2>
+                        />
                       )}
 
-                      <div>
-                        {currentTranslated && <h2
-                          key={currentTranslated.trim()}
-                          className="font-bold"
-                          style={{
-                            margin: 0,
-                            padding: 0,
-                            fontSize: enableOutputBeforeInput ? inputFontSize : commonFontSize,
-                            color: currentPhase === "output" ? "#10b981" : undefined, // Green highlight for output phase
-                            textShadow: currentPhase === "output" ? "0 0 10px rgba(16, 185, 129, 0.5)" : undefined,
-                            transition: "color 0.3s ease, text-shadow 0.3s ease"
-                          }}
-                        >
-                          {currentTranslated.trim()}
-
-                        </h2>}
-                        {romanizedOutput && (
-                          <h2
-                            key={romanizedOutput?.trim()}
-                            className="font-bold mt-3"
-                            style={{
-                              margin: 0,
-                              padding: 0,
-                              fontSize: enableOutputBeforeInput ? inputFontSize : commonFontSize,
-                              color: currentPhase === "output" ? "#f59e0b" : undefined, // Amber highlight for romanization during output phase
-                              textShadow: currentPhase === "output" ? "0 0 10px rgba(245, 158, 11, 0.5)" : undefined,
-                              transition: "color 0.3s ease, text-shadow 0.3s ease"
-                            }}
+                      {/* Output phrase */}
+                      <AnimatePresence mode="wait">
+                        {currentTranslated && (
+                          <motion.div
+                            key={currentTranslated.trim()}
+                            initial={{ opacity: 0, y: (isSafari && isMobile && !fullScreen) ? 0 : -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: (isSafari && isMobile && !fullScreen) ? 0 : 10 }}
+                            transition={{ duration: 0.3, ease: "easeOut" }}
                           >
-                            {romanizedOutput}
-                          </h2>
+                            <h2
+                              className="font-bold"
+                              style={{
+                                margin: 0,
+                                padding: 0,
+                                fontSize: enableOutputBeforeInput ? inputFontSize : commonFontSize,
+                                opacity: currentPhase !== "output" ? 0.6 : 1,
+                                transform: isPlayingAudio && currentPhase === "output" ? "scale(1.02)" : "scale(1)",
+                                filter: isPlayingAudio && currentPhase === "output" ? "drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3))" : "none",
+                                transition: "opacity 0.3s ease, transform 0.3s ease, filter 0.3s ease"
+                              }}
+                            >
+                              {currentTranslated.trim()}
+                            </h2>
+                            {romanizedOutput && (
+                              <h2
+                                className="font-bold mt-3"
+                                style={{
+                                  margin: 0,
+                                  padding: 0,
+                                  fontSize: enableOutputBeforeInput ? inputFontSize : commonFontSize,
+                                  opacity: currentPhase !== "output" ? 0.6 : 1,
+                                  transform: isPlayingAudio && currentPhase === "output" ? "scale(1.02)" : "scale(1)",
+                                  filter: isPlayingAudio && currentPhase === "output" ? "drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3))" : "none",
+                                  transition: "opacity 0.3s ease, transform 0.3s ease, filter 0.3s ease"
+                                }}
+                              >
+                                {romanizedOutput}
+                              </h2>
+                            )}
+                          </motion.div>
                         )}
-                      </div>
+                      </AnimatePresence>
                     </>
                   );
                 })()}
-              </motion.div>
+              </div>
             )
           ) : (
             // Original single phrase display
@@ -514,7 +600,7 @@ export function PresentationView({
             }}
           />
         </div>
-      </div>
+      </motion.div>
 
     </>
   );

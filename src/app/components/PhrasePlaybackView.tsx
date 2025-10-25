@@ -57,6 +57,7 @@ export function PhrasePlaybackView({
         presentationConfig.enableInputPlayback ? 'input' : 'output'
     );
     const [paused, setPaused] = useState(true);
+    const [isPlayingAudio, setIsPlayingAudio] = useState(false);
     const [fullscreen, setFullscreenBase] = useState(false);
     const setFullscreen = (value: boolean | ((prevState: boolean) => boolean)) => {
         const newVal = typeof value === 'function' ? value(fullscreen) : value
@@ -850,7 +851,12 @@ export function PhrasePlaybackView({
             {/* Audio Element */}
             <audio
                 ref={initTransport}
-                onEnded={handleAudioEnded}
+                onEnded={(e) => {
+                    setIsPlayingAudio(false);
+                    handleAudioEnded(e);
+                }}
+                onPlay={() => setIsPlayingAudio(true)}
+                onPause={() => setIsPlayingAudio(false)}
                 controls
                 hidden
                 playsInline
@@ -948,6 +954,7 @@ export function PhrasePlaybackView({
                             canGoForward={true}
                             currentPhraseIndex={currentPhraseIndex}
                             totalPhrases={phrases.length}
+                            isPlayingAudio={isPlayingAudio}
                         />
                         <div className="py-1 px-1 lg:py-2">
                             <PresentationControls
