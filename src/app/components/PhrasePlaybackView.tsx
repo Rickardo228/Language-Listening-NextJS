@@ -251,6 +251,11 @@ export function PhrasePlaybackView({
         // Clear any existing timers
         clearAllTimeouts();
 
+        // Reset progress bar state
+        setShowProgressBar(false);
+        setProgressDuration(0);
+        setProgressDelay(0);
+
         if (!phrases.length) return;
 
         const wasPlaying = !pausedRef.current; // snapshot before we move
