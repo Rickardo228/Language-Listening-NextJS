@@ -576,11 +576,6 @@ export function PhrasePlaybackView({
     const handlePlayPhrase = (index: number, phase: 'input' | 'output') => {
         clearAllTimeouts();
         if (audioRef.current) {
-            // Skip recall phase if disabled
-            if (isRecallPhase(phase) && !presentationConfig.enableInputPlayback) {
-                return;
-            }
-
             const isPaused = paused;
             setSrcSafely(phrases[index][phase === 'input' ? 'inputAudio' : 'outputAudio']?.audioUrl || '');
             // Set playback speed based on phase
@@ -591,7 +586,15 @@ export function PhrasePlaybackView({
                 audioRef.current.playbackRate = speed;
             }
             setCurrentPhraseIndexWithMetadata(index);
-            setCurrentPhaseWithMetadata(phase);
+
+            // If input playback is disabled and user clicked input audio, keep phase as output
+            // but still play the audio and update the index
+            if (isRecallPhase(phase) && !presentationConfig.enableInputPlayback) {
+                setCurrentPhaseWithMetadata(getShadowPhase());
+            } else {
+                setCurrentPhaseWithMetadata(phase);
+            }
+
             if (isPaused) {
                 // If paused, play in isolation without changing state
                 safePlay('handlePlayPhrase-paused');
