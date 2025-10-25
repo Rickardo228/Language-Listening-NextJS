@@ -828,6 +828,20 @@ export function PhrasePlaybackView({
         }
     }, [currentPhraseIndex, currentPhase, paused, currentInputAudioUrl, currentOutputAudioUrl, presentationConfig.inputPlaybackSpeed, presentationConfig.outputPlaybackSpeed, presentationConfig.enableInputPlayback, presentationConfig.enableOutputBeforeInput]);
 
+    // Handle presentation config changes that affect current phase
+    useEffect(() => {
+        // When input playback is disabled, ensure we're not on the input phase
+        if (!presentationConfig.enableInputPlayback && currentPhase === 'input') {
+            setCurrentPhaseWithMetadata('output');
+            return;
+        }
+
+        // When input playback is enabled, we might want to reset to the appropriate starting phase
+        // based on enableOutputBeforeInput (optional - could be removed if not desired)
+        // For now, we'll leave the phase as-is when enableInputPlayback is turned ON
+        // to avoid disrupting the user's current state
+    }, [presentationConfig.enableInputPlayback, presentationConfig.enableOutputBeforeInput, currentPhase, setCurrentPhaseWithMetadata]);
+
     if (methodsRef) methodsRef.current = {
         handleStop,
         handlePause,
