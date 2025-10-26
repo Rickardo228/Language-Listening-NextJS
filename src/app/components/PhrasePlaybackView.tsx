@@ -873,9 +873,9 @@ export function PhrasePlaybackView({
             {/* Audio Element */}
             <audio
                 ref={initTransport}
-                onEnded={(e) => {
+                onEnded={() => {
                     setIsPlayingAudio(false);
-                    handleAudioEnded(e);
+                    handleAudioEnded();
                 }}
                 onPlay={() => setIsPlayingAudio(true)}
                 onPause={() => setIsPlayingAudio(false)}
