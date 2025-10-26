@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { createPortal } from "react-dom";
-import { ArrowLeft, ArrowRight, Maximize2, X, Minimize2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, Maximize2, X } from "lucide-react";
 import { AutumnLeaves } from "./Effects/AutumnLeaves";
 import CherryBlossom from "./Effects/CherryBlossom";
 import { BLEED_START_DELAY, TITLE_DELAY } from './consts';
@@ -177,7 +177,7 @@ export function PresentationView({
         ref={containerRef}
         className={`${containerClass} ${isMobile ? "" : (isHovering ? "" : "cursor-none")}`}
         style={containerStyle}
-        onClick={(e) => {
+        onClick={() => {
           // Only toggle fullscreen if not dragging
           if (!isDragging) {
             setFullscreen(prev => !prev);
