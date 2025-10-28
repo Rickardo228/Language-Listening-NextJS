@@ -105,6 +105,7 @@ export function PhrasePlaybackView({
     const pausedRef = useRef(paused);
     const phaseRef = useRef(currentPhase);
     const indexRef = useRef(currentPhraseIndex);
+    const prevPhraseIndexRef = useRef(currentPhraseIndex);
 
     // Helper functions for phase semantics (recall = first audio, shadow = second audio)
     const getRecallPhase = useCallback((): 'input' | 'output' => {
@@ -192,12 +193,25 @@ export function PhrasePlaybackView({
 
     // Enhanced state setters that handle ref sync and metadata pushing
     const setCurrentPhraseIndexWithMetadata = useCallback((index: number | ((prev: number) => number)) => {
+        // Calculate the actual numeric index value
+        const newIndex = typeof index === 'function' ? index(indexRef.current) : index;
+
+        // Track stats if phrase changed and user was paused (autoplay off)
+        if (newIndex >= 0 && newIndex !== prevPhraseIndexRef.current && pausedRef.current) {
+            debouncedUpdateUserStats(phrases, newIndex, 'viewed');
+            showViewedPhrases(5);
+        }
+
+        // Update refs
+        prevPhraseIndexRef.current = newIndex;
+        indexRef.current = newIndex;
+
+        // Update state
         setCurrentPhraseIndex(index);
-        // Sync ref immediately (replaces useEffect)
-        indexRef.current = typeof index === 'function' ? index(indexRef.current) : index;
+
         // Push metadata after state update
         setTimeout(() => pushMetadataToTransport(), 0);
-    }, [pushMetadataToTransport]);
+    }, [pushMetadataToTransport, phrases, debouncedUpdateUserStats, showViewedPhrases]);
 
     const setCurrentPhaseWithMetadata = useCallback((phase: 'input' | 'output') => {
         setCurrentPhase(phase);
@@ -352,18 +366,11 @@ export function PhrasePlaybackView({
                 : (presentationConfig.outputPlaybackSpeed || 1.0);
         if (audioRef.current) audioRef.current.playbackRate = speed;
 
-        // Track navigation events and update user stats for phrase viewing
+        // Track navigation events (stats tracking now handled in setCurrentPhraseIndexWithMetadata)
         if (targetIndex >= 0 && phrases[targetIndex] && targetPhase === 'output') {
             // Track skip navigation event
             const eventType = delta === 1 ? 'next' : 'previous';
             trackPlaybackEvent(eventType, `${collectionId || 'unknown'}-${targetIndex}`, targetPhase, targetIndex, speed);
-
-            // Update user stats when navigating while paused (phrase viewed)
-            if (!wasPlaying) {
-                await debouncedUpdateUserStats(phrases, targetIndex, 'viewed');
-                // Show popup for viewed phrases milestones (5, 10, 15, etc.)
-                showViewedPhrases(5);
-            }
         }
 
         // continue only if we were already playing
