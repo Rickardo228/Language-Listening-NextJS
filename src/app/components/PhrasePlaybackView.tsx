@@ -69,7 +69,7 @@ export function PhrasePlaybackView({
 
     // Debouncing refs for spam prevention
     const updateUserStatsTimeout = useRef<NodeJS.Timeout | null>(null);
-    const DEBOUNCE_DELAY = 800; // 1000ms debounce
+    const DEBOUNCE_DELAY = 400; // 300ms debounce
 
     // Debounced wrapper for updateUserStats
     const debouncedUpdateUserStats = useCallback(async (phrases: Phrase[], currentPhraseIndex: number, eventType: 'listened' | 'viewed' = 'listened') => {
@@ -117,7 +117,7 @@ export function PhrasePlaybackView({
     const indexRef = useRef(currentPhraseIndex);
     const prevPhraseIndexRef = useRef(currentPhraseIndex);
     // Track which phrase is currently playing for automatic listen tracking
-    const playingPhraseRef = useRef<{index: number, phase: 'input' | 'output'} | null>(null);
+    const playingPhraseRef = useRef<{ index: number, phase: 'input' | 'output' } | null>(null);
     const lastListenedPhraseRef = useRef<number>(-1);
 
     // Helper functions for phase semantics (recall = first audio, shadow = second audio)
