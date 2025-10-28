@@ -205,12 +205,16 @@ export function PhrasePlaybackView({
     };
 
     // Enhanced state setters that handle ref sync and metadata pushing
-    const setCurrentPhraseIndexWithMetadata = useCallback((index: number | ((prev: number) => number)) => {
+    const setCurrentPhraseIndexWithMetadata = useCallback((
+        index: number | ((prev: number) => number),
+        skipViewedTracking: boolean = false
+    ) => {
         // Calculate the actual numeric index value
         const newIndex = typeof index === 'function' ? index(indexRef.current) : index;
 
         // Track stats if phrase changed and user was paused (autoplay off)
-        if (newIndex >= 0 && newIndex !== prevPhraseIndexRef.current && pausedRef.current) {
+        // Skip tracking "viewed" when about to play audio (will track "listened" when audio ends)
+        if (!skipViewedTracking && newIndex >= 0 && newIndex !== prevPhraseIndexRef.current && pausedRef.current) {
             debouncedUpdateUserStats(phrases, newIndex, 'viewed');
             showViewedPhrases(5);
         }
@@ -610,7 +614,8 @@ export function PhrasePlaybackView({
             if (speed !== 1.0) {
                 audioRef.current.playbackRate = speed;
             }
-            setCurrentPhraseIndexWithMetadata(index);
+            // Skip "viewed" tracking since we're about to play audio (will track "listened" when audio ends)
+            setCurrentPhraseIndexWithMetadata(index, true);
 
             // If input playback is disabled and user clicked input audio, keep phase as output
             // but still play the audio and update the index
@@ -684,9 +689,8 @@ export function PhrasePlaybackView({
     }, []);
 
     const handleAudioEnded = () => {
-        if (paused) return;
-
         // Automatically track listen when audio ends
+        // Do this BEFORE checking paused state, because audio can play "in isolation" while paused
         if (playingPhraseRef.current !== null) {
             trackListenIfNeeded(playingPhraseRef.current.index);
         }
@@ -701,6 +705,9 @@ export function PhrasePlaybackView({
                 collectionId
             );
         }
+
+        // If paused, don't trigger automatic advancement to next phrase
+        if (paused) return;
 
         const playOutputBeforeInput = presentationConfig.enableOutputBeforeInput;
         const inputDuration = presentationConfig.enableInputDurationDelay ? (audioRef.current?.duration || 1) * 1000 : 0;
