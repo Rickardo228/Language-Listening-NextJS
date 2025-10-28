@@ -197,6 +197,7 @@ export const useUpdateUserStats = () => {
 
   const phrasesListenedRef = useRef(0);
   const phrasesViewedRef = useRef(0);
+  const viewedIncrementPending = useRef(false); // Track if viewed count has already been incremented
   const [mounted, setMounted] = useState(false);
   const { user } = useUser();
 
@@ -265,8 +266,13 @@ export const useUpdateUserStats = () => {
   const showViewedPhrases = (threshold: number = 5) => {
     console.log('try show viewed', JSON.stringify(phrasesViewedRef.current));
     // Show popup on exact multiples of threshold (5, 10, 15, etc.)
-    if (phrasesViewedRef.current % threshold === 0) {
-      console.log('show viewed', JSON.stringify(phrasesViewedRef.current));
+    // Check if the NEXT count will be a multiple of threshold
+    const nextCount = phrasesViewedRef.current + 1;
+    if (nextCount % threshold === 0) {
+      console.log('show viewed', JSON.stringify(nextCount));
+      // Increment immediately so showStatsUpdate shows the correct count
+      phrasesViewedRef.current = nextCount;
+      viewedIncrementPending.current = true; // Mark that we've already incremented
       showStatsUpdate(true, 'viewed');
     }
   };
@@ -423,7 +429,8 @@ export const useUpdateUserStats = () => {
   const updateUserStats = async (
     phrases: Phrase[],
     currentPhraseIndex: number,
-    eventType: 'listened' | 'viewed' = 'listened'
+    eventType: 'listened' | 'viewed' = 'listened',
+    skipSessionIncrement: boolean = false
   ) => {
     if (!user) {
       return;
@@ -463,12 +470,19 @@ export const useUpdateUserStats = () => {
     // Track phrases since last sync for smart syncing
     phraseCountSinceLastSync.current += 1;
 
-    // Increment the session ref counter based on event type
-    if (eventType === 'listened') {
-      phrasesListenedRef.current += 1;
-    } else if (eventType === 'viewed') {
-      console.log('update viewed', JSON.stringify(phrasesViewedRef.current));
-      phrasesViewedRef.current += 1;
+    // Increment the session ref counter based on event type (unless skipped)
+    if (!skipSessionIncrement) {
+      if (eventType === 'listened') {
+        phrasesListenedRef.current += 1;
+      } else if (eventType === 'viewed') {
+        // Check if increment was already done in showViewedPhrases
+        if (!viewedIncrementPending.current) {
+          console.log('update viewed', JSON.stringify(phrasesViewedRef.current));
+          phrasesViewedRef.current += 1;
+        }
+        // Always reset the flag after handling
+        viewedIncrementPending.current = false;
+      }
     }
 
     const now = new Date();
