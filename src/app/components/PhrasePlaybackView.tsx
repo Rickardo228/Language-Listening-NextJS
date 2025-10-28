@@ -84,6 +84,16 @@ export function PhrasePlaybackView({
         }, DEBOUNCE_DELAY);
     }, [updateUserStats, DEBOUNCE_DELAY]);
 
+    // Centralized listen tracking - automatically called when audio ends
+    // Prevents double-counting the same phrase
+    const trackListenIfNeeded = useCallback((phraseIndex: number) => {
+        // Only track if this is a different phrase from the last one we tracked
+        if (lastListenedPhraseRef.current !== phraseIndex) {
+            debouncedUpdateUserStats(phrases, phraseIndex, 'listened');
+            lastListenedPhraseRef.current = phraseIndex;
+        }
+    }, [phrases, debouncedUpdateUserStats]);
+
     const [showProgressBar, setShowProgressBar] = useState(false);
     const [progressDuration, setProgressDuration] = useState(0);
     const [progressDelay, setProgressDelay] = useState(0);
@@ -106,6 +116,9 @@ export function PhrasePlaybackView({
     const phaseRef = useRef(currentPhase);
     const indexRef = useRef(currentPhraseIndex);
     const prevPhraseIndexRef = useRef(currentPhraseIndex);
+    // Track which phrase is currently playing for automatic listen tracking
+    const playingPhraseRef = useRef<{index: number, phase: 'input' | 'output'} | null>(null);
+    const lastListenedPhraseRef = useRef<number>(-1);
 
     // Helper functions for phase semantics (recall = first audio, shadow = second audio)
     const getRecallPhase = useCallback((): 'input' | 'output' => {
@@ -661,8 +674,22 @@ export function PhrasePlaybackView({
         // Removed audio guards - using transport for media session handling
     }, [handlePlay, handlePause]);
 
+    const handleAudioPlay = useCallback(() => {
+        // Record which phrase/phase is currently playing for automatic listen tracking
+        playingPhraseRef.current = {
+            index: indexRef.current,
+            phase: phaseRef.current
+        };
+        setIsPlayingAudio(true);
+    }, []);
+
     const handleAudioEnded = () => {
         if (paused) return;
+
+        // Automatically track listen when audio ends
+        if (playingPhraseRef.current !== null) {
+            trackListenIfNeeded(playingPhraseRef.current.index);
+        }
 
         // Track audio ended event
         const currentPhrase = phrases[currentPhraseIndex];
@@ -686,10 +713,6 @@ export function PhrasePlaybackView({
         setProgressDelay(0);
 
         if (currentPhase === 'input') {
-            if (playOutputBeforeInput) {
-                debouncedUpdateUserStats(phrases, currentPhraseIndex);
-            }
-
             // Set media session to playing during delay for proper media controls
             setMSState('playing');
 
@@ -718,11 +741,6 @@ export function PhrasePlaybackView({
             }, totalDelayMs);
             timeoutIds.current.push(timeoutId);
         } else {
-            // Update user stats before phrase ends
-            if (!playOutputBeforeInput) {
-                debouncedUpdateUserStats(phrases, currentPhraseIndex);
-            }
-
             // Set progress bar for shadow (output duration delay)
             setShowProgressBar(true);
             const totalOutputDelayMs = playOutputBeforeInput ? inputDuration + 1000 : (outputDuration * DELAY_AFTER_OUTPUT_PHRASES_MULTIPLIER) + presentationConfig.delayBetweenPhrases;
@@ -884,7 +902,7 @@ export function PhrasePlaybackView({
                     setIsPlayingAudio(false);
                     handleAudioEnded();
                 }}
-                onPlay={() => setIsPlayingAudio(true)}
+                onPlay={handleAudioPlay}
                 onPause={() => setIsPlayingAudio(false)}
                 controls
                 hidden
