@@ -838,17 +838,17 @@ export function PhrasePlaybackView({
 
     // Handle presentation config changes that affect current phase
     useEffect(() => {
-        // When input playback is disabled, ensure we're not on the input phase
-        if (!presentationConfig.enableInputPlayback && currentPhase === 'input') {
-            setCurrentPhaseWithMetadata('output');
+        // When recall playback is disabled, ensure we're not on the recall phase
+        if (!presentationConfig.enableInputPlayback && isRecallPhase(currentPhase)) {
+            setCurrentPhaseWithMetadata(getShadowPhase());
             return;
         }
 
-        // When input playback is enabled, we might want to reset to the appropriate starting phase
+        // When recall playback is enabled, we might want to reset to the appropriate starting phase
         // based on enableOutputBeforeInput (optional - could be removed if not desired)
         // For now, we'll leave the phase as-is when enableInputPlayback is turned ON
         // to avoid disrupting the user's current state
-    }, [presentationConfig.enableInputPlayback, presentationConfig.enableOutputBeforeInput, currentPhase, setCurrentPhaseWithMetadata]);
+    }, [presentationConfig.enableInputPlayback, presentationConfig.enableOutputBeforeInput, currentPhase, setCurrentPhaseWithMetadata, isRecallPhase, getShadowPhase]);
 
     if (methodsRef) methodsRef.current = {
         handleStop,

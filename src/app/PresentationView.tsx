@@ -431,65 +431,63 @@ export function PresentationView({
                     ? `${Math.floor(Math.min(phraseSize, translatedSize) * 0.85)}px`
                     : currentPhrase ? phraseFontSize : translatedFontSize;
 
-                  return (
-                    <>
-                      {/* Input phrase */}
-                      <AnimatePresence mode="wait">
-                        {currentPhrase && (
-                          <motion.div
-                            key={currentPhrase.trim()}
-                            initial={{ opacity: 0, y: (isSafari && isMobile && !fullScreen) ? 0 : -10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: (isSafari && isMobile && !fullScreen) ? 0 : 10 }}
-                            transition={{ duration: 0.3, ease: "easeOut" }}
+                  // Extract phrase components for conditional ordering
+                  const inputPhrase = (
+                    <AnimatePresence mode="wait">
+                      {currentPhrase && (
+                        <motion.div
+                          key={currentPhrase.trim()}
+                          initial={{ opacity: 0, y: (isSafari && isMobile && !fullScreen) ? 0 : -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: (isSafari && isMobile && !fullScreen) ? 0 : 10 }}
+                          transition={{ duration: 0.3, ease: "easeOut" }}
+                        >
+                          <h2
+                            className="font-bold mb-2"
+                            style={{
+                              margin: 0,
+                              padding: 0,
+                              fontSize: enableOutputBeforeInput ? commonFontSize : inputFontSize,
+                              opacity: currentPhase !== "input" ? 0.6 : 1,
+                              transform: isPlayingAudio && currentPhase === "input" ? "scale(1.02)" : "scale(1)",
+                              filter: isPlayingAudio && currentPhase === "input" ? "drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3))" : "none",
+                              transition: "opacity 0.3s ease, transform 0.3s ease, filter 0.3s ease"
+                            }}
                           >
-                            <h2
-                              className="font-bold mb-2"
-                              style={{
-                                margin: 0,
-                                padding: 0,
-                                fontSize: enableOutputBeforeInput ? commonFontSize : inputFontSize,
-                                opacity: currentPhase !== "input" ? 0.6 : 1,
-                                transform: isPlayingAudio && currentPhase === "input" ? "scale(1.02)" : "scale(1)",
-                                filter: isPlayingAudio && currentPhase === "input" ? "drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3))" : "none",
-                                transition: "opacity 0.3s ease, transform 0.3s ease, filter 0.3s ease"
-                              }}
-                            >
-                              {currentPhrase.trim()}
-                            </h2>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-
-                      {/* Static divider line - always visible, no animation */}
-                      {currentPhrase && currentTranslated && (
-                        <div
-                          style={{
-                            width: '80px',
-                            height: '1px',
-                            margin: '16px auto',
-                            background: textBg
-                              ? (textBg.includes("rgb")
-                                ? (textBg.slice(0, -1) + " 0.3)").replaceAll(" ", ",")
-                                : textBg + "4D")
-                              : "rgba(255,255,255,0.3)",
-                            borderRadius: '1px'
-                          }}
-                        />
+                            {currentPhrase.trim()}
+                          </h2>
+                        </motion.div>
                       )}
+                    </AnimatePresence>
+                  );
 
-                      {/* Output phrase */}
-                      <AnimatePresence mode="wait">
-                        {currentTranslated && (
-                          <motion.div
-                            key={currentTranslated.trim()}
-                            initial={{ opacity: 0, y: (isSafari && isMobile && !fullScreen) ? 0 : -10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: (isSafari && isMobile && !fullScreen) ? 0 : 10 }}
-                            transition={{ duration: 0.3, ease: "easeOut" }}
+                  const outputPhrase = (
+                    <AnimatePresence mode="wait">
+                      {currentTranslated && (
+                        <motion.div
+                          key={currentTranslated.trim()}
+                          initial={{ opacity: 0, y: (isSafari && isMobile && !fullScreen) ? 0 : -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: (isSafari && isMobile && !fullScreen) ? 0 : 10 }}
+                          transition={{ duration: 0.3, ease: "easeOut" }}
+                        >
+                          <h2
+                            className="font-bold"
+                            style={{
+                              margin: 0,
+                              padding: 0,
+                              fontSize: enableOutputBeforeInput ? inputFontSize : commonFontSize,
+                              opacity: currentPhase !== "output" ? 0.6 : 1,
+                              transform: isPlayingAudio && currentPhase === "output" ? "scale(1.02)" : "scale(1)",
+                              filter: isPlayingAudio && currentPhase === "output" ? "drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3))" : "none",
+                              transition: "opacity 0.3s ease, transform 0.3s ease, filter 0.3s ease"
+                            }}
                           >
+                            {currentTranslated.trim()}
+                          </h2>
+                          {romanizedOutput && (
                             <h2
-                              className="font-bold"
+                              className="font-bold mt-3"
                               style={{
                                 margin: 0,
                                 padding: 0,
@@ -500,27 +498,46 @@ export function PresentationView({
                                 transition: "opacity 0.3s ease, transform 0.3s ease, filter 0.3s ease"
                               }}
                             >
-                              {currentTranslated.trim()}
+                              {romanizedOutput}
                             </h2>
-                            {romanizedOutput && (
-                              <h2
-                                className="font-bold mt-3"
-                                style={{
-                                  margin: 0,
-                                  padding: 0,
-                                  fontSize: enableOutputBeforeInput ? inputFontSize : commonFontSize,
-                                  opacity: currentPhase !== "output" ? 0.6 : 1,
-                                  transform: isPlayingAudio && currentPhase === "output" ? "scale(1.02)" : "scale(1)",
-                                  filter: isPlayingAudio && currentPhase === "output" ? "drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3))" : "none",
-                                  transition: "opacity 0.3s ease, transform 0.3s ease, filter 0.3s ease"
-                                }}
-                              >
-                                {romanizedOutput}
-                              </h2>
-                            )}
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
+                          )}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  );
+
+                  const divider = currentPhrase && currentTranslated && (
+                    <div
+                      style={{
+                        width: '80px',
+                        height: '1px',
+                        margin: '16px auto',
+                        background: textBg
+                          ? (textBg.includes("rgb")
+                            ? (textBg.slice(0, -1) + " 0.3)").replaceAll(" ", ",")
+                            : textBg + "4D")
+                          : "rgba(255,255,255,0.3)",
+                        borderRadius: '1px'
+                      }}
+                    />
+                  );
+
+                  // Render in order based on enableOutputBeforeInput
+                  return (
+                    <>
+                      {enableOutputBeforeInput ? (
+                        <>
+                          {outputPhrase}
+                          {divider}
+                          {inputPhrase}
+                        </>
+                      ) : (
+                        <>
+                          {inputPhrase}
+                          {divider}
+                          {outputPhrase}
+                        </>
+                      )}
                     </>
                   );
                 })()}
