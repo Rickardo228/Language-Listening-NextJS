@@ -156,7 +156,6 @@ function PhraseComponent({ phrase, phrases, isSelected, currentPhase, onPhraseCl
                 <button
                     className="px-2 py-1 text-sm hover:bg-secondary rounded text-gray-700 dark:text-white transition-colors w-8"
                     title="More options"
-                    onClick={(e) => e.stopPropagation()}
                 >
                     <EllipsisVerticalIcon className="w-4 h-4" />
                 </button>

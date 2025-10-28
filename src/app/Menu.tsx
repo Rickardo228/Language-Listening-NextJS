@@ -1,4 +1,5 @@
 import { Popover } from '@headlessui/react';
+import React from 'react';
 
 export interface MenuItem {
     label: string;
@@ -7,15 +8,28 @@ export interface MenuItem {
     className?: string;
 }
 
+interface TriggerProps {
+    className?: string;
+    title?: string;
+    children?: React.ReactNode;
+}
+
 interface MenuProps {
-    trigger: React.ReactElement;
+    trigger: React.ReactElement<TriggerProps>;
     items: MenuItem[];
 }
 
 export function Menu({ trigger, items }: MenuProps) {
     return (
         <Popover className="relative font-sans">
-            <Popover.Button as="div">{trigger}</Popover.Button>
+            <Popover.Button
+                as="button"
+                onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                className={trigger.props.className}
+                title={trigger.props.title}
+            >
+                {trigger.props.children}
+            </Popover.Button>
             <Popover.Panel className="absolute right-0 mt-1 w-48 rounded-md shadow-lg bg-background border border-border z-50">
                 <div className="py-1">
                     {items.map((item, index) => (
