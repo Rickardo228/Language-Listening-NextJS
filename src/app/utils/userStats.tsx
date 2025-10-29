@@ -197,7 +197,6 @@ export const useUpdateUserStats = () => {
 
   const phrasesListenedRef = useRef(0);
   const phrasesViewedRef = useRef(0);
-  const viewedIncrementPending = useRef(false); // Track if viewed count has already been incremented
   const [mounted, setMounted] = useState(false);
   const { user } = useUser();
 
@@ -262,22 +261,7 @@ export const useUpdateUserStats = () => {
     syncTotalIfNeeded(true);
   };
 
-  // Function to increment viewed phrases and show popup after threshold
-  const showViewedPhrases = (threshold: number = 5) => {
-    console.log('try show viewed', JSON.stringify(phrasesViewedRef.current));
-    // Show popup on exact multiples of threshold (5, 10, 15, etc.)
-    // Check if the NEXT count will be a multiple of threshold
-    const nextCount = phrasesViewedRef.current + 1;
-    if (nextCount % threshold === 0) {
-      console.log('show viewed', JSON.stringify(nextCount));
-      // Increment immediately so showStatsUpdate shows the correct count
-      phrasesViewedRef.current = nextCount;
-      viewedIncrementPending.current = true; // Mark that we've already incremented
-      showStatsUpdate(true, 'viewed');
-    }
-  };
-
-  const showStatsUpdate = (shouldPersistUntilInteraction: boolean = false, eventType: 'listened' | 'viewed' | 'both' = 'listened') => {
+  const showStatsUpdate = useCallback((shouldPersistUntilInteraction: boolean = false, eventType: 'listened' | 'viewed' | 'both' = 'listened') => {
     const listenedCount = phrasesListenedRef.current;
     const viewedCount = phrasesViewedRef.current;
 
@@ -334,8 +318,24 @@ export const useUpdateUserStats = () => {
         setShowStreakIncrement(false); // Hide streak when popup auto-hides
       }, 2000);
     }
-  };
+  }, []);
 
+  // Function to increment viewed count and show popup at milestones
+  const incrementViewedAndCheckMilestone = useCallback((threshold: number = 5) => {
+    // Increment the counter immediately
+    phrasesViewedRef.current += 1;
+    const newCount = phrasesViewedRef.current;
+
+    console.log('viewed count:', JSON.stringify(newCount));
+
+    // Show popup on exact multiples of threshold (5, 10, 15, etc.)
+    if (newCount % threshold === 0) {
+      console.log('milestone reached:', JSON.stringify(newCount));
+      showStatsUpdate(true, 'viewed');
+    }
+
+    return newCount;
+  }, [showStatsUpdate]);
 
   const closeStatsPopup = useCallback((source: "continue" | "escape" = "continue") => {
     // Track close action before closing
@@ -475,13 +475,8 @@ export const useUpdateUserStats = () => {
       if (eventType === 'listened') {
         phrasesListenedRef.current += 1;
       } else if (eventType === 'viewed') {
-        // Check if increment was already done in showViewedPhrases
-        if (!viewedIncrementPending.current) {
-          console.log('update viewed', JSON.stringify(phrasesViewedRef.current));
-          phrasesViewedRef.current += 1;
-        }
-        // Always reset the flag after handling
-        viewedIncrementPending.current = false;
+        console.log('update viewed', JSON.stringify(phrasesViewedRef.current));
+        phrasesViewedRef.current += 1;
       }
     }
 
@@ -1149,6 +1144,13 @@ export const useUpdateUserStats = () => {
     />
   ) : null;
 
+  // Initialize the viewed counter to 1 (accounts for viewing the first phrase)
+  const initializeViewedCounter = useCallback(async (phrases: Phrase[], phraseIndex: number) => {
+    phrasesViewedRef.current = 1;
+    // Write to Firestore to keep session counter and database in sync
+    await updateUserStats(phrases, phraseIndex, 'viewed', true);
+  }, [updateUserStats]);
+
   return {
     updateUserStats,
     StatsPopups,
@@ -1156,7 +1158,8 @@ export const useUpdateUserStats = () => {
     showStatsUpdate,
     closeStatsPopup,
     forceSyncTotal,
-    showViewedPhrases,
+    incrementViewedAndCheckMilestone,
+    initializeViewedCounter,
     phrasesListened: phrasesListenedRef.current,
     phrasesViewed: phrasesViewedRef.current,
     currentStreak,

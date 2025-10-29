@@ -51,7 +51,7 @@ export function PhrasePlaybackView({
     stickyHeaderContent,
     methodsRef,
 }: PhrasePlaybackViewProps) {
-    const { updateUserStats, StatsPopups, StatsModal, showStatsUpdate, showViewedPhrases } = useUpdateUserStats();
+    const { updateUserStats, StatsPopups, StatsModal, showStatsUpdate, incrementViewedAndCheckMilestone, initializeViewedCounter } = useUpdateUserStats();
     const [currentPhraseIndex, setCurrentPhraseIndex] = useState(0);
     const [currentPhase, setCurrentPhase] = useState<'input' | 'output'>(
         presentationConfig.enableInputPlayback ? 'input' : 'output'
@@ -72,7 +72,7 @@ export function PhrasePlaybackView({
     const DEBOUNCE_DELAY = 400; // 300ms debounce
 
     // Debounced wrapper for updateUserStats
-    const debouncedUpdateUserStats = useCallback(async (phrases: Phrase[], currentPhraseIndex: number, eventType: 'listened' | 'viewed' = 'listened') => {
+    const debouncedUpdateUserStats = useCallback(async (phrases: Phrase[], currentPhraseIndex: number, eventType: 'listened' | 'viewed' = 'listened', skipSessionIncrement: boolean = false) => {
         // Clear existing timeout
         if (updateUserStatsTimeout.current) {
             clearTimeout(updateUserStatsTimeout.current);
@@ -80,7 +80,7 @@ export function PhrasePlaybackView({
 
         // Set new timeout
         updateUserStatsTimeout.current = setTimeout(async () => {
-            await updateUserStats(phrases, currentPhraseIndex, eventType);
+            await updateUserStats(phrases, currentPhraseIndex, eventType, skipSessionIncrement);
         }, DEBOUNCE_DELAY);
     }, [updateUserStats, DEBOUNCE_DELAY]);
 
@@ -140,6 +140,20 @@ export function PhrasePlaybackView({
     // Keep pausedRef in sync with state
     // TODO - do these even need to be useEffects? Cant we just set on each render?
     useEffect(() => { pausedRef.current = paused; }, [paused]);
+
+    // Initialize viewed counter when phrases are first loaded (accounts for viewing the first phrase)
+    // Track if we've initialized to prevent re-initialization when phrases length changes
+    const hasInitializedRef = useRef(false);
+    useEffect(() => {
+        if (phrases.length > 0 && !hasInitializedRef.current) {
+            initializeViewedCounter(phrases, currentPhraseIndex);
+            hasInitializedRef.current = true;
+        }
+        // Reset initialization flag when phrases array becomes empty (new collection loading)
+        if (phrases.length === 0) {
+            hasInitializedRef.current = false;
+        }
+    }, [phrases, currentPhraseIndex, initializeViewedCounter]);
 
     const currentInputAudioUrl = useMemo(() => {
         if (currentPhraseIndex < 0) return '';
@@ -215,8 +229,10 @@ export function PhrasePlaybackView({
         // Track stats if phrase changed and user was paused (autoplay off)
         // Skip tracking "viewed" when about to play audio (will track "listened" when audio ends)
         if (!skipViewedTracking && newIndex >= 0 && newIndex !== prevPhraseIndexRef.current && pausedRef.current) {
-            debouncedUpdateUserStats(phrases, newIndex, 'viewed');
-            showViewedPhrases(5);
+            // Increment counter and check for milestone immediately
+            incrementViewedAndCheckMilestone(5);
+            // Update Firestore (skip session increment since we already incremented above)
+            debouncedUpdateUserStats(phrases, newIndex, 'viewed', true);
         }
 
         // Update refs
@@ -228,7 +244,7 @@ export function PhrasePlaybackView({
 
         // Push metadata after state update
         setTimeout(() => pushMetadataToTransport(), 0);
-    }, [pushMetadataToTransport, phrases, debouncedUpdateUserStats, showViewedPhrases]);
+    }, [pushMetadataToTransport, phrases, debouncedUpdateUserStats, incrementViewedAndCheckMilestone]);
 
     const setCurrentPhaseWithMetadata = useCallback((phase: 'input' | 'output') => {
         setCurrentPhase(phase);
