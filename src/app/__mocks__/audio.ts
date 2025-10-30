@@ -13,15 +13,15 @@ export class MockAudio {
   onplay: (() => void) | null = null
   onended: (() => void) | null = null
   onpause: (() => void) | null = null
-  onerror: ((error: any) => void) | null = null
+  onerror: ((error: Event | ErrorEvent) => void) | null = null
   onloadedmetadata: (() => void) | null = null
 
-  addEventListener = vi.fn((event: string, handler: () => void) => {
-    if (event === 'play') this.onplay = handler
-    if (event === 'ended') this.onended = handler
-    if (event === 'pause') this.onpause = handler
-    if (event === 'error') this.onerror = handler as any
-    if (event === 'loadedmetadata') this.onloadedmetadata = handler
+  addEventListener = vi.fn((event: string, handler: ((error?: Event | ErrorEvent) => void) | (() => void)) => {
+    if (event === 'play') this.onplay = handler as () => void
+    if (event === 'ended') this.onended = handler as () => void
+    if (event === 'pause') this.onpause = handler as () => void
+    if (event === 'error') this.onerror = handler as (error: Event | ErrorEvent) => void
+    if (event === 'loadedmetadata') this.onloadedmetadata = handler as () => void
   })
 
   removeEventListener = vi.fn()
@@ -64,5 +64,5 @@ export const createMockAudio = () => {
 
 // Mock the global Audio constructor
 export const mockAudioGlobal = () => {
-  global.Audio = MockAudio as any
+  global.Audio = MockAudio as unknown as typeof Audio
 }

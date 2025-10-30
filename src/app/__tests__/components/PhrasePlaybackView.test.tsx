@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, waitFor, act } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/react'
 import { PhrasePlaybackView } from '../../components/PhrasePlaybackView'
 import { createMockPhrases } from '../utils/test-helpers'
 import { UserContextProvider } from '../../contexts/UserContext'
@@ -78,8 +77,6 @@ describe('PhrasePlaybackView - Audio Tracking (Real Component)', () => {
    * the component is in paused state.
    */
   it('should track listen when audio is played while paused', async () => {
-    const user = userEvent.setup()
-
     render(
       <UserContextProvider>
         <PhrasePlaybackView
@@ -122,8 +119,6 @@ describe('PhrasePlaybackView - Audio Tracking (Real Component)', () => {
    * Test: Play Button Exists and is Clickable
    */
   it('should have a play button', async () => {
-    const user = userEvent.setup()
-
     render(
       <UserContextProvider>
         <PhrasePlaybackView

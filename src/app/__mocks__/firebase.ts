@@ -1,7 +1,25 @@
 import { vi } from 'vitest'
 
+interface MockUserData {
+  uid: string
+  email: string | null
+  displayName: string | null
+  photoURL: string | null
+  emailVerified: boolean
+  isAnonymous: boolean
+  metadata: Record<string, unknown>
+  providerData: unknown[]
+  refreshToken: string
+  tenantId: string | null
+  delete: () => Promise<void>
+  getIdToken: () => Promise<string>
+  getIdTokenResult: () => Promise<unknown>
+  reload: () => Promise<void>
+  toJSON: () => unknown
+}
+
 // Mock Firebase User
-export const createMockUser = (overrides?: Partial<any>) => ({
+export const createMockUser = (overrides?: Partial<MockUserData>) => ({
   uid: 'test-user-id',
   email: 'test@example.com',
   displayName: 'Test User',

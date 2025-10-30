@@ -48,8 +48,8 @@ export const createMockUser = createFirebaseMockUser
 // Custom render function with providers
 
 interface CustomRenderOptions extends Omit<RenderOptions, 'wrapper'> {
-  user?: any
-  initialProps?: any
+  user?: Record<string, unknown>
+  initialProps?: Record<string, unknown>
 }
 
 /**
