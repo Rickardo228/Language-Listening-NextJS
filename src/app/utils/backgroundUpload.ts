@@ -60,6 +60,7 @@ export async function uploadBackgroundMedia(
       collectionId,
       fileName: file.name,
       contentType: file.type,
+      fileSize: file.size,
     }),
   });
 
