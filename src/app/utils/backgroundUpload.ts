@@ -20,7 +20,7 @@ export async function uploadBackgroundMedia(
   userId: string,
   collectionId: string
 ): Promise<UploadResult> {
-  // Validate file type
+  // Validate file type (client-side check)
   if (!VALID_IMAGE_TYPES.includes(file.type)) {
     throw new Error(
       `Invalid file type. Supported formats: ${VALID_IMAGE_TYPES.map(
@@ -29,7 +29,7 @@ export async function uploadBackgroundMedia(
     );
   }
 
-  // Validate file size
+  // Validate file size (client-side check)
   if (file.size > MAX_IMAGE_SIZE) {
     const maxSizeMB = MAX_IMAGE_SIZE / (1024 * 1024);
     throw new Error(`File size exceeds maximum of ${maxSizeMB}MB`);
@@ -48,66 +48,33 @@ export async function uploadBackgroundMedia(
     throw new Error("Failed to get authentication token");
   }
 
-  // Get signed upload URL from backend
-  const getUrlResponse = await fetch(`${API_BASE_URL}/api/get-upload-url`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${idToken}`,
-    },
-    body: JSON.stringify({
-      userId,
-      collectionId,
-      fileName: file.name,
-      contentType: file.type,
-      fileSize: file.size,
-    }),
-  });
+  // Create FormData for multipart upload
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("userId", userId);
+  formData.append("collectionId", collectionId);
 
-  if (!getUrlResponse.ok) {
-    const errorData = await getUrlResponse
-      .json()
-      .catch(() => ({ error: "Unknown error" }));
-    throw new Error(errorData.error || "Failed to get upload URL");
-  }
-
-  const { uploadUrl, filePath, downloadUrl } = await getUrlResponse.json();
-
-  // Upload file directly to Firebase Storage using signed URL
-  const uploadResponse = await fetch(uploadUrl, {
-    method: "PUT",
-    headers: {
-      "Content-Type": file.type,
-    },
-    body: file,
-  });
-
-  if (!uploadResponse.ok) {
-    throw new Error("Failed to upload file to storage");
-  }
-
-  // Make the file public after upload
-  const makePublicResponse = await fetch(
-    `${API_BASE_URL}/api/make-file-public`,
+  // Upload file to server (server validates and uploads to storage)
+  const uploadResponse = await fetch(
+    `${API_BASE_URL}/api/upload-background-image`,
     {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
         Authorization: `Bearer ${idToken}`,
+        // Note: Don't set Content-Type header - browser will set it automatically with boundary
       },
-      body: JSON.stringify({
-        userId,
-        filePath,
-      }),
+      body: formData,
     }
   );
 
-  if (!makePublicResponse.ok) {
-    const errorData = await makePublicResponse
+  if (!uploadResponse.ok) {
+    const errorData = await uploadResponse
       .json()
       .catch(() => ({ error: "Unknown error" }));
-    throw new Error(errorData.error || "Failed to make file public");
+    throw new Error(errorData.error || "Failed to upload image");
   }
+
+  const { downloadUrl, filePath } = await uploadResponse.json();
 
   return {
     downloadUrl,
