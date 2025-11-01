@@ -138,7 +138,7 @@ export function PresentationView({
 
   const containerClass =
     `inset-0 flex flex-col items-center ${alignPhraseTop ? '' : 'justify-center'} ` +
-    (fullScreen ? "fixed z-50" : "relative p-4 lg:rounded shadow w-full h-48") +
+    (fullScreen ? "fixed z-50" : "relative p-4 lg:rounded shadow w-full h-48 lg:h-[70vh] lg:max-h-[80vh]") +
     (!containerBg ? " bg-gray-100 dark:bg-gray-900" : "");
 
   const titlePropClass = fullScreen
