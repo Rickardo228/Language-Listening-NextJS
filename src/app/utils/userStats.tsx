@@ -316,7 +316,7 @@ export const useUpdateUserStats = () => {
         setShowPopup(false);
         setPersistUntilInteraction(false);
         setShowStreakIncrement(false); // Hide streak when popup auto-hides
-      }, 1000);
+      }, 2000);
     }
   }, []);
 
