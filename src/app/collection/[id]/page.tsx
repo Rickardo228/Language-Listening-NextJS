@@ -12,6 +12,7 @@ import { CollectionHeader } from '../../CollectionHeader';
 import { defaultPresentationConfig } from '../../defaultConfig';
 import { useUser } from '../../contexts/UserContext';
 import { PhrasePlaybackView, PhrasePlaybackMethods } from '../../components/PhrasePlaybackView';
+import { uploadBackgroundMedia, deleteBackgroundMedia } from '../../utils/backgroundUpload';
 
 const firestore = getFirestore();
 
@@ -261,6 +262,38 @@ export default function CollectionPage() {
     }
   };
 
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user || !selectedCollection) {
+      return;
+    }
+
+    try {
+      // Delete old background if it exists and is a Firebase Storage URL
+      const oldBgImage = presentationConfig?.bgImage;
+      if (oldBgImage && oldBgImage.includes('storage.googleapis.com')) {
+        try {
+          await deleteBackgroundMedia(user.uid, selectedCollection, oldBgImage);
+        } catch (deleteError) {
+          console.error('Error deleting old background:', deleteError);
+          // Continue with upload even if deletion fails
+        }
+      }
+
+      // Upload new background
+      const { downloadUrl } = await uploadBackgroundMedia(file, user.uid, selectedCollection);
+
+      // Update presentation config with new URL
+      await setPresentationConfig({ bgImage: downloadUrl });
+    } catch (error) {
+      console.error('Error uploading background:', error);
+      alert(error instanceof Error ? error.message : 'Failed to upload background. Please try again.');
+    } finally {
+      // Reset file input
+      e.target.value = '';
+    }
+  };
+
   const handleUnshare = async (id: string) => {
     if (!user || !collectionConfig) return;
     try {
@@ -344,6 +377,7 @@ export default function CollectionPage() {
       showImportPhrases={true}
       stickyHeaderContent={stickyHeaderContent}
       methodsRef={playbackMethodsRef}
+      handleImageUpload={handleImageUpload}
     />
   );
 }

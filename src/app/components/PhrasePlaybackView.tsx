@@ -38,6 +38,7 @@ interface PhrasePlaybackViewProps {
     showImportPhrases?: boolean;
     stickyHeaderContent?: React.ReactNode;
     methodsRef?: React.MutableRefObject<PhrasePlaybackMethods | null>;
+    handleImageUpload?: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
 export function PhrasePlaybackView({
@@ -50,6 +51,7 @@ export function PhrasePlaybackView({
     showImportPhrases = false,
     stickyHeaderContent,
     methodsRef,
+    handleImageUpload,
 }: PhrasePlaybackViewProps) {
     const { updateUserStats, StatsPopups, StatsModal, showStatsUpdate, incrementViewedAndCheckMilestone, initializeViewedCounter } = useUpdateUserStats();
     const [currentPhraseIndex, setCurrentPhraseIndex] = useState(0);
@@ -1037,7 +1039,7 @@ export function PhrasePlaybackView({
                                 onSaveConfig={() => { }}
                                 presentationConfig={presentationConfig}
                                 setPresentationConfig={setPresentationConfig || (() => { })}
-                                handleImageUpload={() => { }}
+                                handleImageUpload={handleImageUpload || (() => { })}
                                 paused={paused}
                                 onPause={handlePause}
                                 onPlay={handlePlay}

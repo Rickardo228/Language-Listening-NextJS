@@ -22,7 +22,7 @@ export const playbackSpeedOptions = [
 ];
 
 export const presentationConfigDefinition: ConfigFieldDefinition[] = [
-  // { key: "bgImage", label: "Background Image", inputType: "file" },
+  { key: "bgImage", label: "Background Image", inputType: "file" },
   {
     key: "enableLoop",
     label: "Loop",
