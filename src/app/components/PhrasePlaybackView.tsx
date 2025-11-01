@@ -71,7 +71,11 @@ export function PhrasePlaybackView({
 
     // Debouncing refs for spam prevention
     const updateUserStatsTimeout = useRef<NodeJS.Timeout | null>(null);
-    const DEBOUNCE_DELAY = 400; // 300ms debounce
+    const DEBOUNCE_DELAY = 400; // 400ms debounce for DB writes
+
+    // Throttling for viewed counter increments
+    const lastViewedTimeRef = useRef<number>(0);
+    const THROTTLE_DELAY = 400; // 400ms throttle for counter increments
 
     // Debounced wrapper for updateUserStats
     const debouncedUpdateUserStats = useCallback(async (phrases: Phrase[], currentPhraseIndex: number, eventType: 'listened' | 'viewed' = 'listened', skipSessionIncrement: boolean = false) => {
@@ -231,10 +235,16 @@ export function PhrasePlaybackView({
         // Track stats if phrase changed and user was paused (autoplay off)
         // Skip tracking "viewed" when about to play audio (will track "listened" when audio ends)
         if (!skipViewedTracking && newIndex >= 0 && newIndex !== prevPhraseIndexRef.current && pausedRef.current) {
-            // Increment counter and check for milestone immediately
-            incrementViewedAndCheckMilestone(5);
-            // Update Firestore (skip session increment since we already incremented above)
-            debouncedUpdateUserStats(phrases, newIndex, 'viewed', true);
+            // Throttle counter increments to prevent counting during rapid navigation
+            const now = Date.now();
+            if (now - lastViewedTimeRef.current >= THROTTLE_DELAY) {
+                console.log('incrementing viewed count');
+                // Increment counter and check for milestone
+                incrementViewedAndCheckMilestone(5);
+                // Update Firestore (skip session increment since we already incremented above)
+                debouncedUpdateUserStats(phrases, newIndex, 'viewed', true);
+            }
+            lastViewedTimeRef.current = now;
         }
 
         // Update refs
