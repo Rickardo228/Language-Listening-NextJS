@@ -178,9 +178,14 @@ export function PresentationView({
         className={`${containerClass} ${isMobile ? "" : (isHovering ? "" : "cursor-none")}`}
         style={containerStyle}
         onClick={() => {
-          // Only toggle fullscreen if not dragging
           if (!isDragging) {
-            setFullscreen(prev => !prev);
+            if (fullScreen && onNext) {
+              // In fullscreen: advance to next phrase
+              onNext();
+            } else {
+              // Not in fullscreen: enter fullscreen
+              setFullscreen(true);
+            }
           }
         }}
         onMouseEnter={handleMouseEnter}

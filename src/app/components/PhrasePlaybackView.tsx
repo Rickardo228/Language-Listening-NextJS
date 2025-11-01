@@ -900,6 +900,37 @@ export function PhrasePlaybackView({
         // to avoid disrupting the user's current state
     }, [presentationConfig.enableInputPlayback, presentationConfig.enableOutputBeforeInput, currentPhase, setCurrentPhaseWithMetadata, isRecallPhase, getShadowPhase]);
 
+    // Keyboard navigation - only when in fullscreen
+    useEffect(() => {
+        if (!fullscreen) return;
+
+        const handleKeyDown = (e: KeyboardEvent) => {
+            // Only handle keys when fullscreen
+            if (!fullscreen) return;
+
+            switch (e.key) {
+                case 'ArrowLeft':
+                    e.preventDefault();
+                    atomicAdvance(-1);
+                    break;
+                case 'ArrowRight':
+                    e.preventDefault();
+                    atomicAdvance(1);
+                    break;
+                case 'Escape':
+                    e.preventDefault();
+                    setFullscreen(false);
+                    break;
+            }
+        };
+
+        document.addEventListener('keydown', handleKeyDown);
+
+        return () => {
+            document.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [fullscreen, atomicAdvance, setFullscreen]);
+
     if (methodsRef) methodsRef.current = {
         handleStop,
         handlePause,
