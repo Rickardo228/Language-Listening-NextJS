@@ -135,7 +135,10 @@ const ConfigFields: React.FC<ConfigFieldsProps> = ({
 
     return (
         <div className="space-y-4">
-            {definition.map((field) => {
+            {definition
+                // Filter out background image setting if handleImageUpload is not provided (e.g., for templates)
+                .filter(field => !(field.key === 'bgImage' && !handleImageUpload))
+                .map((field) => {
                 const { key, label, inputType, description, decorator } = field;
                 const value = config[key];
                 const dynamicLabel = getDynamicLabel(key, label);

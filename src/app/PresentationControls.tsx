@@ -16,7 +16,7 @@ interface PresentationControlsProps {
     onSaveConfig: () => void;
     presentationConfig: PresentationConfig;
     setPresentationConfig: (config: PresentationConfig) => void;
-    handleImageUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
+    handleImageUpload?: (e: React.ChangeEvent<HTMLInputElement>) => void;
     paused: boolean;
     onPause: () => void;
     onPlay: () => void;

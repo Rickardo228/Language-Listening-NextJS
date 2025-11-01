@@ -1080,7 +1080,7 @@ export function PhrasePlaybackView({
                                 onSaveConfig={() => { }}
                                 presentationConfig={presentationConfig}
                                 setPresentationConfig={setPresentationConfig || (() => { })}
-                                handleImageUpload={handleImageUpload || (() => { })}
+                                handleImageUpload={handleImageUpload}
                                 paused={paused}
                                 onPause={handlePause}
                                 onPlay={handlePlay}

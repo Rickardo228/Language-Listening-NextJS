@@ -12,7 +12,7 @@ interface SettingsModalProps {
     onSaveConfig: () => void;
     presentationConfig: PresentationConfig;
     setPresentationConfig: (config: PresentationConfig) => void;
-    handleImageUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
+    handleImageUpload?: (e: React.ChangeEvent<HTMLInputElement>) => void;
     inputLang?: string;
     targetLang?: string;
 }
