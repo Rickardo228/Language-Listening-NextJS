@@ -316,7 +316,7 @@ export const useUpdateUserStats = () => {
         setShowPopup(false);
         setPersistUntilInteraction(false);
         setShowStreakIncrement(false); // Hide streak when popup auto-hides
-      }, 2000);
+      }, 1000);
     }
   }, []);
 
@@ -331,7 +331,7 @@ export const useUpdateUserStats = () => {
     // Show popup on exact multiples of threshold (5, 10, 15, etc.)
     if (newCount % threshold === 0) {
       console.log('milestone reached:', JSON.stringify(newCount));
-      showStatsUpdate(true, 'viewed');
+      showStatsUpdate(false, 'viewed');
     }
 
     return newCount;
