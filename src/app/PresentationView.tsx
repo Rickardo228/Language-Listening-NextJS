@@ -177,11 +177,22 @@ export function PresentationView({
         ref={containerRef}
         className={`${containerClass} ${isMobile ? "" : (isHovering ? "" : "cursor-none")}`}
         style={containerStyle}
-        onClick={() => {
+        onClick={(e) => {
           if (!isDragging) {
-            if (fullScreen && onNext) {
-              // In fullscreen: advance to next phrase
-              onNext();
+            if (fullScreen) {
+              // In fullscreen: navigate based on click position
+              const clickX = e.nativeEvent.offsetX;
+              const containerWidth = e.currentTarget.offsetWidth;
+              const clickPercentage = (clickX / containerWidth) * 100;
+
+              if (clickPercentage < 33.33 && onPrevious && canGoBack) {
+                // Left third: go back
+                onPrevious();
+              } else if (clickPercentage > 66.66 && onNext && canGoForward) {
+                // Right third: go forward
+                onNext();
+              }
+              // Center third (33.33-66.66%): do nothing
             } else {
               // Not in fullscreen: enter fullscreen
               setFullscreen(true);
