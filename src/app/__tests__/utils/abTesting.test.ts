@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { assignAbTestVariant, getVariantConfig } from '../../utils/abTesting';
+import { assignAbTestVariant, getVariantConfig, type AbTestVariant } from '../../utils/abTesting';
 
 describe('abTesting', () => {
   describe('assignAbTestVariant', () => {
@@ -33,7 +33,7 @@ describe('abTesting', () => {
     });
 
     it('should fall back to control for invalid variant', () => {
-      const config = getVariantConfig('invalid' as any);
+      const config = getVariantConfig('invalid' as AbTestVariant);
       expect(config.enableLoop).toBe(true);
       expect(config.enableInputPlayback).toBe(true);
     });

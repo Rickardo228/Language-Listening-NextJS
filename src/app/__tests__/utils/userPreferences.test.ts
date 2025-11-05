@@ -2,6 +2,8 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { saveOnboardingData } from '../../utils/userPreferences';
 import { identifyUser } from '../../../lib/mixpanelClient';
 import { getDoc } from 'firebase/firestore';
+import type { DocumentSnapshot } from 'firebase/firestore';
+import type { User } from 'firebase/auth';
 
 // Mock modules
 vi.mock('../../../lib/mixpanelClient');
@@ -22,7 +24,7 @@ describe('userPreferences - AB Test Integration', () => {
         abTestVariant: 'variantB',
         defaultPresentationConfig: {},
       }),
-    } as any);
+    } as unknown as DocumentSnapshot);
 
     // Call saveOnboardingData
     await saveOnboardingData(
@@ -32,7 +34,7 @@ describe('userPreferences - AB Test Integration', () => {
         inputLang: 'en-GB',
         targetLang: 'es-ES',
       },
-      { email: 'test@example.com' } as any
+      { email: 'test@example.com' } as unknown as User
     );
 
     // Verify Mixpanel was notified with the AB variant

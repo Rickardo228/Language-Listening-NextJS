@@ -7,6 +7,7 @@ import { mockFirestore } from '../../__mocks__/firebase'
 import { saveOnboardingData } from '../../utils/userPreferences'
 import { createCollection } from '../../utils/collectionService'
 import { trackOnboardingCompleted } from '../../../lib/mixpanelClient'
+import type { QuerySnapshot } from 'firebase/firestore'
 
 // Mock UserContext
 const mockUser = createMockUser({
@@ -58,7 +59,7 @@ describe('OnboardingModal', () => {
     mockFirestore.getDocs.mockResolvedValue({
       docs: [],
       empty: true,
-    } as any)
+    } as unknown as QuerySnapshot)
   })
 
   describe('Modal Visibility', () => {
@@ -323,7 +324,7 @@ describe('OnboardingModal', () => {
       mockFirestore.getDocs.mockResolvedValue({
         docs: [{ id: 'existing-collection' }],
         empty: false,
-      } as any)
+      } as unknown as QuerySnapshot)
 
       const user = userEvent.setup()
       render(<OnboardingModal isOpen={true} onComplete={vi.fn()} />)

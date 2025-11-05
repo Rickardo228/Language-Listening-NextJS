@@ -210,15 +210,8 @@ describe('userStats - Snackbar Notifications Every 5 Phrases', () => {
     // Track listened count
     expect(result.current.phrasesListened).toBe(0)
 
-    // Increment to 5 - should trigger snackbar
-    // Note: The actual increment happens in updateUserStats, but we can test the counter
-    for (let i = 0; i < 5; i++) {
-      act(() => {
-        result.current.phrasesListened
-      })
-    }
-
-    // Verify the counter can accumulate
+    // Verify the counter is accessible
+    // Note: The actual increment happens in updateUserStats, but we can test the counter exists
     expect(result.current.phrasesListened).toBeDefined()
   })
 
