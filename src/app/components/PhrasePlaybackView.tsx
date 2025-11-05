@@ -562,11 +562,11 @@ export function PhrasePlaybackView({
         const el = audioRef.current;
         if (!el) return;
 
-        // Ensure src set
+        // Ensure src set and matches current phase
         // Even more relevant now we nuke in external on pause
-        if (!el.src) {
-            const url = phrases[idx]?.[phase === 'input' ? 'inputAudio' : 'outputAudio']?.audioUrl ?? '';
-            setSrcSafely(url);
+        const expectedUrl = phrases[idx]?.[phase === 'input' ? 'inputAudio' : 'outputAudio']?.audioUrl ?? '';
+        if (!el.src || el.src !== expectedUrl) {
+            setSrcSafely(expectedUrl);
             // Apply speed for current phase now
             const speed = phase === 'input'
                 ? (presentationConfig.inputPlaybackSpeed || 1.0)
@@ -641,7 +641,8 @@ export function PhrasePlaybackView({
         clearAllTimeouts();
         if (audioRef.current) {
             const isPaused = paused;
-            setSrcSafely(phrases[index][phase === 'input' ? 'inputAudio' : 'outputAudio']?.audioUrl || '');
+            const audioToPlay = phrases[index][phase === 'input' ? 'inputAudio' : 'outputAudio']?.audioUrl || '';
+            setSrcSafely(audioToPlay);
             // Set playback speed based on phase
             const speed = phase === 'input'
                 ? (presentationConfig.inputPlaybackSpeed || 1.0)
@@ -653,7 +654,7 @@ export function PhrasePlaybackView({
             setCurrentPhraseIndexWithMetadata(index, true);
 
             // If input playback is disabled and user clicked input audio, keep phase as output
-            // but still play the audio and update the index
+            // but still play the input audio and update the index
             if (isRecallPhase(phase) && !presentationConfig.enableInputPlayback) {
                 setCurrentPhaseWithMetadata(getShadowPhase());
             } else {
@@ -890,6 +891,9 @@ export function PhrasePlaybackView({
                 // If no source exists, generate it
                 handleAudioError(currentPhase);
             } else {
+                // Always update the source to match the current phase
+                // This ensures that if the user clicked input audio while input playback is disabled,
+                // the source will be updated to output audio for autoplay
                 setSrcSafely(src);
                 // Set playback speed based on current phase
                 const speed = currentPhase === 'input'
