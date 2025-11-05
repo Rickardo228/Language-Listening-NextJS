@@ -6,6 +6,7 @@ import { User } from 'firebase/auth';
 import { languageOptions } from '../types';
 import { createOrUpdateUserProfile } from '../utils/userPreferences';
 import { useUser } from '../contexts/UserContext';
+import { LanguageSelector } from './LanguageSelector';
 
 
 interface LanguagePreferencesModalProps {
@@ -100,43 +101,17 @@ export function LanguagePreferencesModal({ isOpen, onClose, user }: LanguagePref
 
                     {/* Content */}
                     <div className="p-6 space-y-6">
-                        {/* Input Language */}
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                Input Language (what you speak)
-                            </label>
-                            <select
-                                value={inputLang}
-                                onChange={(e) => setInputLang(e.target.value)}
-                                disabled={isLoading}
-                                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-                            >
-                                {languageOptions.map((lang) => (
-                                    <option key={lang.code} value={lang.code}>
-                                        {lang.label}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-
-                        {/* Target Language */}
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                Target Language (what you want to learn)
-                            </label>
-                            <select
-                                value={targetLang}
-                                onChange={(e) => setTargetLang(e.target.value)}
-                                disabled={isLoading}
-                                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-                            >
-                                {languageOptions.map((lang) => (
-                                    <option key={lang.code} value={lang.code}>
-                                        {lang.label}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
+                        <LanguageSelector
+                            inputLang={inputLang}
+                            setInputLang={setInputLang}
+                            targetLang={targetLang}
+                            setTargetLang={setTargetLang}
+                            direction="column"
+                            gap="lg"
+                            inputLabel="Input Language (what you speak)"
+                            targetLabel="Target Language (what you want to learn)"
+                            disabled={isLoading}
+                        />
 
                         {/* Preview */}
                         <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">

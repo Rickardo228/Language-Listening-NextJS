@@ -2,7 +2,7 @@ import { signInWithPopup, GoogleAuthProvider, createUserWithEmailAndPassword, si
 import { auth } from './firebase';
 import Link from 'next/link';
 import { useState, useEffect, ReactElement } from 'react';
-import { OnboardingLanguageSelect } from './components/OnboardingLanguageSelect';
+import { LanguageSelector } from './components/LanguageSelector';
 import { languageOptions } from './types';
 import { useRouter } from 'next/navigation';
 import { trackSignUp, identifyUser } from '../lib/mixpanelClient';
@@ -159,11 +159,12 @@ export function SignInPage({
             </div>
 
             {isSignUp && showLanguageSelect && (
-                <OnboardingLanguageSelect
+                <LanguageSelector
                     inputLang={inputLang}
                     setInputLang={setInputLang}
                     targetLang={targetLang}
                     setTargetLang={setTargetLang}
+                    direction="row"
                     disabled={isLoading}
                 />
             )}

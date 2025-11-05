@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { getFirestore, collection, query, where, getDocs, Timestamp, orderBy, limit, QuerySnapshot, DocumentSnapshot, } from 'firebase/firestore';
 import { languageOptions, Config } from '../types';
 import { CollectionList } from '../CollectionList';
-import { OnboardingLanguageSelect } from './OnboardingLanguageSelect';
+import { LanguageSelector } from './LanguageSelector';
 import { useUser } from '../contexts/UserContext';
 import { track } from '../../lib/mixpanelClient';
 
@@ -318,11 +318,12 @@ export function TemplatesBrowser({
                         </div>
                         <p className="text-muted-foreground mb-6">Select languages to view available templates</p>
 
-                        <OnboardingLanguageSelect
+                        <LanguageSelector
                             inputLang={inputLang}
                             setInputLang={handleInputLangChange}
                             targetLang={targetLang}
                             setTargetLang={handleTargetLangChange}
+                            direction="row"
                         />
                     </div>
                 )}

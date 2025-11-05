@@ -5,7 +5,7 @@ import { languageOptions, CollectionType } from './types'
 import { X, Plus } from 'lucide-react'
 import { API_BASE_URL } from './consts'
 import { Dialog } from '@headlessui/react'
-import { LanguageFlags } from './components/LanguageFlags'
+import { LanguageSelector } from './components/LanguageSelector'
 import { trackGeneratePhrases } from '../lib/mixpanelClient'
 
 export interface ImportPhrasesDialogProps {
@@ -160,61 +160,17 @@ export function ImportPhrasesDialog({
                                     </select>
                                 </div>
                             )}
-                            {onAddToCollection && (
-                                <div className="flex gap-2">
-                                    <LanguageFlags
-                                        inputLang={isSwapped ? targetLang : inputLang}
-                                        targetLang={isSwapped ? inputLang : targetLang}
-                                        size="xl"
-                                    />
-                                    <button
-                                        onClick={() => {
-                                            setIsSwapped(!isSwapped);
-                                        }}
-                                        className="p-2 rounded-md border bg-background hover:bg-secondary"
-                                        title="Swap languages"
-                                    >
-                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 21L3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5" />
-                                        </svg>
-                                    </button>
-                                </div>
-                            )}
-                            {!onAddToCollection && (
-                                <div className="flex gap-4">
-                                    <div className="flex-1">
-                                        <label className="block text-sm font-medium mb-1">Input Language</label>
-                                        <select
-                                            value={inputLang}
-                                            onChange={(e) => setInputLang(e.target.value)}
-                                            className="w-full p-2 rounded-md border bg-background"
-                                            disabled={loading}
-                                        >
-                                            {languageOptions.map((lang) => (
-                                                <option key={lang.code} value={lang.code}>
-                                                    {lang.label}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </div>
-
-                                    <div className="flex-1">
-                                        <label className="block text-sm font-medium mb-1">Target Language</label>
-                                        <select
-                                            value={targetLang}
-                                            onChange={(e) => setTargetLang(e.target.value)}
-                                            className="w-full p-2 rounded-md border bg-background"
-                                            disabled={loading}
-                                        >
-                                            {languageOptions.map((lang) => (
-                                                <option key={lang.code} value={lang.code}>
-                                                    {lang.label}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                </div>
-                            )}
+                            <LanguageSelector
+                                inputLang={inputLang}
+                                setInputLang={setInputLang}
+                                targetLang={targetLang}
+                                setTargetLang={setTargetLang}
+                                direction="row"
+                                mode={onAddToCollection ? 'locked' : 'editable'}
+                                disabled={loading}
+                                isSwapped={onAddToCollection ? isSwapped : undefined}
+                                onSwap={onAddToCollection ? () => setIsSwapped(!isSwapped) : undefined}
+                            />
                             {prompt.trim() && onProcess && (
                                 <button
                                     onClick={handleGeneratePhrases}

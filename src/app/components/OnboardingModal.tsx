@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { OnboardingLanguageSelect } from './OnboardingLanguageSelect';
+import { LanguageSelector } from './LanguageSelector';
 import { OnboardingAbilitySelect } from './OnboardingAbilitySelect';
 import { OnboardingContentPreferences } from './OnboardingContentPreferences';
 import { languageOptions, Phrase, CollectionType as CollectionTypeEnum } from '../types';
@@ -224,11 +224,12 @@ export function OnboardingModal({
                                         </p>
                                     </div>
 
-                                    <OnboardingLanguageSelect
+                                    <LanguageSelector
                                         inputLang={inputLang}
                                         setInputLang={setInputLang}
                                         targetLang={targetLang}
                                         setTargetLang={setTargetLang}
+                                        direction="row"
                                         disabled={isLoading}
                                     />
 
