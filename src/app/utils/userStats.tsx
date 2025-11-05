@@ -188,12 +188,26 @@ async function calculateStreak(userId: string): Promise<number> {
   }
 }
 
+// Sound playback utility
+const playCompletionSound = () => {
+  try {
+    const audio = new Audio('/sounds/completion.wav');
+    audio.volume = 0.5; // Set volume to 50%
+    audio.play().catch(error => {
+      console.log('Sound playback failed:', error);
+    });
+  } catch (error) {
+    console.log('Sound initialization failed:', error);
+  }
+};
+
 export const useUpdateUserStats = () => {
   const [showPopup, setShowPopup] = useState(false);
   const [countToShow, setCountToShow] = useState(0);
   const [persistUntilInteraction, setPersistUntilInteraction] = useState(false);
   const [showStatsModal, setShowStatsModal] = useState(false);
   const [popupEventType, setPopupEventType] = useState<'listened' | 'viewed'>('listened');
+  const [isListCompleted, setIsListCompleted] = useState(false);
 
   const phrasesListenedRef = useRef(0);
   const phrasesViewedRef = useRef(0);
@@ -261,7 +275,7 @@ export const useUpdateUserStats = () => {
     syncTotalIfNeeded(true);
   };
 
-  const showStatsUpdate = useCallback((shouldPersistUntilInteraction: boolean = false, eventType: 'listened' | 'viewed' | 'both' = 'listened') => {
+  const showStatsUpdate = useCallback((shouldPersistUntilInteraction: boolean = false, eventType: 'listened' | 'viewed' | 'both' = 'listened', listCompleted: boolean = false) => {
     const listenedCount = phrasesListenedRef.current;
     const viewedCount = phrasesViewedRef.current;
 
@@ -296,9 +310,15 @@ export const useUpdateUserStats = () => {
       setShowPopup(true);
       setCountToShow(displayCount);
       setPersistUntilInteraction(shouldPersistUntilInteraction);
+      setIsListCompleted(listCompleted);
 
       // Store the event type for display purposes
       setPopupEventType(displayType as 'listened' | 'viewed');
+
+      // Play completion sound if list is completed
+      if (listCompleted) {
+        playCompletionSound();
+      }
 
       // Track popup show event (keep existing tracking for listened events)
       if (displayType === 'listened') {
@@ -316,6 +336,7 @@ export const useUpdateUserStats = () => {
         setShowPopup(false);
         setPersistUntilInteraction(false);
         setShowStreakIncrement(false); // Hide streak when popup auto-hides
+        setIsListCompleted(false);
       }, 2000);
     }
   }, []);
@@ -349,6 +370,7 @@ export const useUpdateUserStats = () => {
 
     setShowPopup(false);
     setPersistUntilInteraction(false);
+    setIsListCompleted(false);
     // Clear recent milestones when user dismisses the popup
     setRecentMilestones([]);
     // Also hide streak increment when popup is closed
@@ -589,7 +611,18 @@ export const useUpdateUserStats = () => {
         // Update UI state for streak display and animation
         setPreviousStreak(currentStats.currentStreak || 0);
         setCurrentStreak(newStreak);
-        setShowStreakIncrement(streakChanged && newStreak > (currentStats.currentStreak || 0));
+
+        // Check localStorage to see if we've shown the streak today
+        const lastStreakShownDate = localStorage.getItem('lastStreakShownDate');
+        const shouldShowStreak = streakChanged && newStreak > (currentStats.currentStreak || 0);
+
+        // Only show if streak changed AND we haven't shown it today
+        if (shouldShowStreak && lastStreakShownDate !== todayLocal) {
+          setShowStreakIncrement(true);
+          localStorage.setItem('lastStreakShownDate', todayLocal);
+        } else if (!shouldShowStreak) {
+          setShowStreakIncrement(false);
+        }
       });
     } catch (err: unknown) {
       console.error("❌ Error updating user stats:", err);
@@ -771,18 +804,30 @@ export const useUpdateUserStats = () => {
 
   const StatsPopups = mounted ? createPortal(
     <AnimatePresence mode="wait">
-      {/* Pause Stats Popup */}
+      {/* Stats Popup - Snackbar for viewed (non-persistent), Full popup for listened */}
       {showPopup && (
         <motion.div
           key="pause-popup"
-          className="fixed inset-0 z-50 flex items-center justify-center md:items-center md:justify-center sm:items-end sm:justify-end sm:p-4"
+          className={`fixed z-50 ${
+            popupEventType === 'viewed' && !persistUntilInteraction
+              ? 'bottom-4 left-1/2 -translate-x-1/2' // Snackbar position
+              : 'inset-0 flex items-center justify-center md:items-center md:justify-center sm:items-end sm:justify-end sm:p-4' // Full popup
+          }`}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.2 }}
         >
           <motion.div
-            className={`${popupEventType === 'viewed' ? 'bg-blue-500' : 'bg-yellow-500'} text-white px-6 py-4 rounded-lg shadow-lg max-w-sm mx-4 sm:mx-0`}
+            className={`${
+              popupEventType === 'viewed' ? 'bg-blue-500' : 'bg-yellow-500'
+            } text-white rounded-lg shadow-lg ${
+              isListCompleted
+                ? 'px-8 py-6 max-w-md' // Bigger for list completion
+                : popupEventType === 'viewed' && !persistUntilInteraction
+                ? 'px-5 py-3 max-w-xs' // Compact snackbar
+                : 'px-6 py-4 max-w-sm' // Regular popup
+            } mx-4 sm:mx-0`}
             initial={{ scale: 0.8, opacity: 0, y: 20 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.8, opacity: 0, y: -20 }}
@@ -793,31 +838,70 @@ export const useUpdateUserStats = () => {
               duration: 0.3
             }}
           >
-            <div className="space-y-3">
-              {/* Main achievement header */}
-              <div className="flex items-center justify-center space-x-3">
-                <motion.svg
-                  className="w-6 h-6"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                  initial={{ rotate: -180, scale: 0 }}
-                  animate={{ rotate: 0, scale: 1 }}
-                  transition={{ delay: 0.1, type: "spring", stiffness: 400 }}
+            <div className={isListCompleted ? "space-y-4" : "space-y-3"}>
+              {/* Nice work header for list completion */}
+              {isListCompleted && (
+                <motion.div
+                  className="text-center"
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1, duration: 0.3 }}
                 >
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                </motion.svg>
+                  <span className="text-2xl font-bold">Nice work!</span>
+                </motion.div>
+              )}
+
+              {/* Main achievement header */}
+              <div className={`flex items-center justify-center ${
+                popupEventType === 'viewed' && !persistUntilInteraction ? 'space-x-2' : 'space-x-3'
+              }`}>
+                {!(popupEventType === 'viewed' && !persistUntilInteraction) && (
+                  <motion.svg
+                    className={isListCompleted ? "w-7 h-7" : "w-6 h-6"}
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                    initial={{ rotate: -180, scale: 0 }}
+                    animate={{ rotate: 0, scale: 1 }}
+                    transition={{ delay: 0.1, type: "spring", stiffness: 400 }}
+                  >
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </motion.svg>
+                )}
                 <motion.span
-                  className="font-bold text-lg"
+                  className={`font-bold ${
+                    isListCompleted
+                      ? 'text-xl'
+                      : popupEventType === 'viewed' && !persistUntilInteraction
+                      ? 'text-sm'
+                      : 'text-lg'
+                  }`}
                   initial={{ opacity: 0, x: 10 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.2, duration: 0.3 }}
                 >
-                  {popupEventType === 'viewed' ? '👀' : ''} {countToShow} phrase{countToShow !== 1 ? 's' : ''} {popupEventType}!
+                  {popupEventType === 'viewed' && !persistUntilInteraction
+                    ? `👀 ${countToShow} phrase${countToShow !== 1 ? 's' : ''} ${popupEventType}!`
+                    : `${popupEventType === 'viewed' ? '👀' : ''} ${countToShow} phrase${countToShow !== 1 ? 's' : ''} ${popupEventType}!`
+                  }
                 </motion.span>
               </div>
 
-              {/* Streak display - only show when incrementing */}
-              {showStreakIncrement && currentStreak > 0 && (() => {
+              {/* List completed badge for list completion */}
+              {isListCompleted && (
+                <motion.div
+                  className="flex items-center justify-center"
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.3, duration: 0.3, type: "spring" }}
+                >
+                  <span className="px-4 py-2 bg-white/20 dark:bg-black/30 rounded-full text-lg font-semibold border-2 border-white/30">
+                    🎉 List completed! 🎉
+                  </span>
+                </motion.div>
+              )}
+
+              {/* Streak display - show when incrementing, or always show on list completion, but NOT in snackbar mode */}
+              {((showStreakIncrement && currentStreak > 0) || (isListCompleted && currentStreak > 0)) && !(popupEventType === 'viewed' && !persistUntilInteraction) && (() => {
                 const streakData = getStreakMessage(currentStreak);
                 return (
                   <motion.div
@@ -906,8 +990,8 @@ export const useUpdateUserStats = () => {
                 );
               })()}
 
-              {/* Show recent milestones in the persistent popup */}
-              {persistUntilInteraction && recentMilestones.length > 0 && (
+              {/* Show recent milestones in the persistent popup (not in snackbar) */}
+              {persistUntilInteraction && recentMilestones.length > 0 && !(popupEventType === 'viewed' && !persistUntilInteraction) && (
                 <motion.div
                   className="mt-3 p-4 bg-gradient-to-r from-purple-500/20 to-blue-500/20 rounded-lg border border-purple-300/30"
                   initial={{ opacity: 0, height: 0 }}

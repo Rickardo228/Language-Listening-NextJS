@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
 import { PhrasePlaybackView, PhrasePlaybackMethods } from '../../components/PhrasePlaybackView'
 import { createMockPhrases } from '../utils/test-helpers'
 import { UserContextProvider } from '../../contexts/UserContext'
@@ -49,8 +48,6 @@ describe('PhrasePlaybackView - Additional Features', () => {
    * Test: Fullscreen Toggle
    */
   it('should toggle fullscreen when fullscreen button is clicked', async () => {
-    const user = userEvent.setup()
-
     render(
       <UserContextProvider>
         <PhrasePlaybackView

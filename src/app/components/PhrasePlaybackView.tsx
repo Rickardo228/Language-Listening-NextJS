@@ -64,6 +64,13 @@ export function PhrasePlaybackView({
     const setFullscreen = (value: boolean | ((prevState: boolean) => boolean)) => {
         const newVal = typeof value === 'function' ? value(fullscreen) : value
         track(`Fullscreen ${newVal ? 'Enabled' : 'Disabled'}`);
+
+        // If exiting fullscreen and user was in viewing mode (paused), show viewed popup
+        if (!newVal && fullscreen && pausedRef.current) {
+            // User is exiting fullscreen while paused (viewing mode)
+            showStatsUpdate(true, 'viewed');
+        }
+
         setFullscreenBase(value);
     };
     const [showTitle, setShowTitle] = useState(false);
@@ -768,7 +775,7 @@ export function PhrasePlaybackView({
                             // If looping is enabled, restart from beginning
                             setCurrentPhraseIndexWithMetadata(0);
                         } else {
-                            showStatsUpdate(true)
+                            showStatsUpdate(true, 'listened', true)
                             setPaused(true);
                         }
                     }
@@ -807,7 +814,7 @@ export function PhrasePlaybackView({
                                 setCurrentPhraseIndexWithMetadata(0);
                                 setCurrentPhaseWithMetadata('output');
                             } else {
-                                showStatsUpdate(true)
+                                showStatsUpdate(true, 'listened', true)
                                 setPaused(true);
                             }
                         }
@@ -832,7 +839,7 @@ export function PhrasePlaybackView({
                                 setCurrentPhaseWithMetadata('output');
                             }
                         } else {
-                            showStatsUpdate(true)
+                            showStatsUpdate(true, 'listened', true)
                             setPaused(true);
                         }
                     }
