@@ -112,6 +112,20 @@ export function LanguageSelector({
         ? 'block text-sm font-medium mb-1'
         : 'block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2';
 
+    // Swap button for editable mode (if onSwap is provided)
+    const swapButton = onSwap && direction === 'row' ? (
+        <button
+            onClick={onSwap}
+            className="p-2 rounded-md border bg-background hover:bg-secondary self-end mb-6"
+            title="Swap languages"
+            disabled={disabled}
+        >
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 21L3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5" />
+            </svg>
+        </button>
+    ) : null;
+
     return (
         <div className={`${containerClasses} ${className}`}>
             <div className={itemClasses}>
@@ -131,6 +145,8 @@ export function LanguageSelector({
                     ))}
                 </select>
             </div>
+
+            {swapButton}
 
             <div className={itemClasses}>
                 <label className={labelClasses}>

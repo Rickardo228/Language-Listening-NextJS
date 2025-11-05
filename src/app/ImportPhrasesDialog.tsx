@@ -169,7 +169,14 @@ export function ImportPhrasesDialog({
                                 mode={onAddToCollection ? 'locked' : 'editable'}
                                 disabled={loading}
                                 isSwapped={onAddToCollection ? isSwapped : undefined}
-                                onSwap={onAddToCollection ? () => setIsSwapped(!isSwapped) : undefined}
+                                onSwap={onAddToCollection
+                                    ? () => setIsSwapped(!isSwapped)
+                                    : () => {
+                                        // When creating new collection, swap the actual language values
+                                        const temp = inputLang;
+                                        setInputLang(targetLang);
+                                        setTargetLang(temp);
+                                    }}
                             />
                             {prompt.trim() && onProcess && (
                                 <button
