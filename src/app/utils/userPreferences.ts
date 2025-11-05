@@ -1,5 +1,8 @@
 import { getFirestore, doc, setDoc, getDoc } from 'firebase/firestore';
 import { User } from 'firebase/auth';
+import { PresentationConfig } from '../types';
+import { assignAbTestVariant, getVariantConfig } from './abTesting';
+import { identifyUser } from '../../lib/mixpanelClient';
 
 const firestore = getFirestore();
 
@@ -9,7 +12,7 @@ export interface UserProfile {
   email?: string;
   displayName?: string;
   photoURL?: string;
-  
+
   // Onboarding & preferences
   onboardingCompleted: boolean;
   abilityLevel: 'beginner' | 'elementary' | 'intermediate' | 'advanced' | 'native';
@@ -17,7 +20,11 @@ export interface UserProfile {
   preferredTargetLang: string;
   nativeLanguage?: string; // User's native/first language
   contentPreferences?: string[];
-  
+
+  // Presentation config & AB testing
+  defaultPresentationConfig?: PresentationConfig;
+  abTestVariant?: 'control' | 'variantB';
+
   // Metadata
   createdAt: string;
   updatedAt: string;
@@ -44,30 +51,43 @@ export const getUserProfile = async (userId: string): Promise<UserProfile | null
 };
 
 export const createOrUpdateUserProfile = async (
-  userId: string, 
+  userId: string,
   profileData: Partial<UserProfile>
 ): Promise<void> => {
   try {
     const userRef = doc(firestore, 'users', userId);
     const now = new Date().toISOString();
-    
+
     // Get existing profile
     const existingDoc = await getDoc(userRef);
     const existingData = existingDoc.exists() ? existingDoc.data() : {};
-    
+    const isNewUser = !existingDoc.exists();
+
+    // For new users, assign AB test variant and default config
+    let abTestData = {};
+    if (isNewUser) {
+      const variant = assignAbTestVariant();
+      const defaultConfig = getVariantConfig(variant);
+      abTestData = {
+        abTestVariant: variant,
+        defaultPresentationConfig: defaultConfig,
+      };
+    }
+
     // Merge with new data
     const updatedProfile: UserProfile = {
       uid: userId,
       abilityLevel: 'beginner',
       preferredInputLang: 'en-GB',
-      preferredTargetLang: 'it-IT', 
+      preferredTargetLang: 'it-IT',
       onboardingCompleted: false,
       createdAt: existingData.createdAt || now,
       ...existingData,
+      ...abTestData, // AB test data for new users only
       ...profileData,
       updatedAt: now,
     };
-    
+
     await setDoc(userRef, updatedProfile, { merge: true });
   } catch (error) {
     console.error('Error saving user profile:', error);
@@ -137,4 +157,14 @@ export const saveOnboardingData = async (
   }
 
   await createOrUpdateUserProfile(userId, profileData);
+
+  // Notify Mixpanel about AB test variant (for new users who just got assigned a variant)
+  try {
+    const profile = await getUserProfile(userId);
+    if (profile?.abTestVariant) {
+      identifyUser(userId, firebaseUser?.email || undefined, profile.abTestVariant);
+    }
+  } catch (error) {
+    console.error('Error notifying Mixpanel of AB variant:', error);
+  }
 };

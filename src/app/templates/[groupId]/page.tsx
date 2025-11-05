@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import { Phrase, languageOptions, PresentationConfig } from '../../types';
 import { defaultPresentationConfig } from '../../defaultConfig';
@@ -8,6 +8,7 @@ import { getFirestore, collection, query, where, getDocs, Timestamp, deleteDoc, 
 import { PhrasePlaybackView, PhrasePlaybackMethods } from '../../components/PhrasePlaybackView';
 import { CollectionHeader } from '../../CollectionHeader';
 import { useUser } from '../../contexts/UserContext';
+import { getUserProfile, createOrUpdateUserProfile } from '../../utils/userPreferences';
 
 const firestore = getFirestore();
 
@@ -136,6 +137,66 @@ export default function TemplateDetailPage() {
         enableLoop: false,
         enableOutputDurationDelay: false
     });
+    const [userConfigLoaded, setUserConfigLoaded] = useState(false);
+    const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+    // Fetch user's default presentation config on mount
+    useEffect(() => {
+        const loadUserConfig = async () => {
+            if (!user) {
+                setUserConfigLoaded(true);
+                return;
+            }
+
+            try {
+                const userProfile = await getUserProfile(user.uid);
+                if (userProfile?.defaultPresentationConfig) {
+                    // Initialize with user's saved default config
+                    const userConfig = userProfile.defaultPresentationConfig;
+                    setPresentationConfig(prev => ({
+                        ...userConfig,
+                        name: prev.name, // Keep the template name
+                    } as PresentationConfig));
+                }
+            } catch (error) {
+                console.error('Error loading user config:', error);
+            } finally {
+                setUserConfigLoaded(true);
+            }
+        };
+
+        loadUserConfig();
+    }, [user]);
+
+    // Debounced save function for real-time config persistence
+    const debouncedSaveConfig = useCallback((config: PresentationConfig) => {
+        if (!user || !userConfigLoaded) return;
+
+        // Clear existing timeout
+        if (saveTimeoutRef.current) {
+            clearTimeout(saveTimeoutRef.current);
+        }
+
+        // Set new timeout to save after 300ms of inactivity
+        saveTimeoutRef.current = setTimeout(async () => {
+            try {
+                await createOrUpdateUserProfile(user.uid, {
+                    defaultPresentationConfig: config,
+                });
+            } catch (error) {
+                console.error('Error saving presentation config:', error);
+            }
+        }, 300);
+    }, [user, userConfigLoaded]);
+
+    // Cleanup timeout on unmount
+    useEffect(() => {
+        return () => {
+            if (saveTimeoutRef.current) {
+                clearTimeout(saveTimeoutRef.current);
+            }
+        };
+    }, []);
 
     useEffect(() => {
         const fetchTemplates = async () => {
@@ -366,7 +427,11 @@ export default function TemplateDetailPage() {
                     presentationConfig={presentationConfig}
                     collectionName={`${templateData?.name || groupId} (${selectedInputLang} → ${selectedTargetLang})`}
                     setPhrases={async (phrases: Phrase[]) => setPhrases(phrases)}
-                    setPresentationConfig={async (config: Partial<PresentationConfig>) => setPresentationConfig(prev => ({ ...prev, ...config }))}
+                    setPresentationConfig={async (config: Partial<PresentationConfig>) => {
+                        const newConfig = { ...presentationConfig, ...config };
+                        setPresentationConfig(newConfig);
+                        debouncedSaveConfig(newConfig);
+                    }}
                     methodsRef={methodsRef}
                     collectionId={groupId as string}
                     stickyHeaderContent={collectionHeaderContent}

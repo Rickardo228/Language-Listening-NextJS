@@ -72,9 +72,10 @@ export const UserContextProvider: React.FC<UserContextProviderProps> = ({ childr
                 }
 
                 // Load user profile
+                let loadedProfile: UserProfile | null = null;
                 try {
-                    const profile = await getUserProfile(firebaseUser.uid);
-                    setUserProfile(profile);
+                    loadedProfile = await getUserProfile(firebaseUser.uid);
+                    setUserProfile(loadedProfile);
                 } catch (error) {
                     console.error("Error getting user profile:", error);
                     setUserProfile(null);
@@ -88,8 +89,12 @@ export const UserContextProvider: React.FC<UserContextProviderProps> = ({ childr
                         clarity.identify(firebaseUser.email || firebaseUser.uid);
                     }
 
-                    // Identify user in Mixpanel with email
-                    identifyUser(firebaseUser.uid, firebaseUser.email || undefined);
+                    // Identify user in Mixpanel with email and AB test variant
+                    identifyUser(
+                        firebaseUser.uid,
+                        firebaseUser.email || undefined,
+                        loadedProfile?.abTestVariant
+                    );
 
                     // Track login event
                     trackLogin(firebaseUser.uid, firebaseUser.providerData[0]?.providerId || 'email');

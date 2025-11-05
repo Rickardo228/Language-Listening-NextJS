@@ -34,7 +34,11 @@ export const setEnvironmentInfo = () => {
   });
 };
 
-export const identifyUser = (userId: string, email?: string) => {
+export const identifyUser = (
+  userId: string,
+  email?: string,
+  abTestVariant?: string
+) => {
   if (!MIXPANEL_TOKEN || !isInitialized) return;
 
   // Identify the user with their unique ID
@@ -45,7 +49,7 @@ export const identifyUser = (userId: string, email?: string) => {
     const environment = process.env.NODE_ENV || "development";
     const version = process.env.NEXT_PUBLIC_APP_VERSION || "unknown";
 
-    mixpanel.people.set({
+    const userProperties: Record<string, string> = {
       $email: email,
       $name: email.split("@")[0], // Use email prefix as name
       userId: userId,
@@ -54,6 +58,20 @@ export const identifyUser = (userId: string, email?: string) => {
       app_version: version,
       first_seen: new Date().toISOString(),
       last_seen: new Date().toISOString(),
+    };
+
+    // Add AB test variant if provided
+    if (abTestVariant) {
+      userProperties.ab_test_variant = abTestVariant;
+    }
+
+    mixpanel.people.set(userProperties);
+  }
+
+  // Always set AB test variant as a super property for all future events
+  if (abTestVariant) {
+    mixpanel.register({
+      ab_test_variant: abTestVariant,
     });
   }
 };
