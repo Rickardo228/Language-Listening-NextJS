@@ -287,7 +287,11 @@ export const useUpdateUserStats = () => {
       shouldShowPopup = true;
       displayCount = listenedCount;
       displayType = 'listened';
-      phrasesListenedRef.current = 0;
+      // Only reset counter for persistent popups (end of list, manual pause)
+      // For snackbar milestone popups (every 5), keep accumulating
+      if (shouldPersistUntilInteraction) {
+        phrasesListenedRef.current = 0;
+      }
     } else if (eventType === 'viewed' && viewedCount > 0) {
       shouldShowPopup = true;
       displayCount = viewedCount;
@@ -298,7 +302,10 @@ export const useUpdateUserStats = () => {
       if (listenedCount > 0) {
         displayCount = listenedCount;
         displayType = 'listened';
-        phrasesListenedRef.current = 0;
+        // Only reset if persistent
+        if (shouldPersistUntilInteraction) {
+          phrasesListenedRef.current = 0;
+        }
       } else {
         displayCount = viewedCount;
         displayType = 'viewed';
@@ -496,6 +503,15 @@ export const useUpdateUserStats = () => {
     if (!skipSessionIncrement) {
       if (eventType === 'listened') {
         phrasesListenedRef.current += 1;
+        const newListenedCount = phrasesListenedRef.current;
+
+        // Show snackbar popup every 5 phrases listened
+        if (newListenedCount % 5 === 0) {
+          // Use setTimeout to avoid showing popup during the same render cycle
+          setTimeout(() => {
+            showStatsUpdate(false, 'listened');
+          }, 100);
+        }
       } else if (eventType === 'viewed') {
         console.log('update viewed', JSON.stringify(phrasesViewedRef.current));
         phrasesViewedRef.current += 1;
@@ -804,13 +820,13 @@ export const useUpdateUserStats = () => {
 
   const StatsPopups = mounted ? createPortal(
     <AnimatePresence mode="wait">
-      {/* Stats Popup - Snackbar for viewed (non-persistent), Full popup for listened */}
+      {/* Stats Popup - Snackbar for non-persistent, Full popup for persistent */}
       {showPopup && (
         <motion.div
           key="pause-popup"
           className={`fixed z-50 ${
-            popupEventType === 'viewed' && !persistUntilInteraction
-              ? 'bottom-4 left-1/2 -translate-x-1/2' // Snackbar position
+            !persistUntilInteraction
+              ? 'bottom-4 left-1/2 -translate-x-1/2' // Snackbar position for both viewed and listened
               : 'inset-0 flex items-center justify-center md:items-center md:justify-center sm:items-end sm:justify-end sm:p-4' // Full popup
           }`}
           initial={{ opacity: 0 }}
@@ -824,8 +840,8 @@ export const useUpdateUserStats = () => {
             } text-white rounded-lg shadow-lg ${
               isListCompleted
                 ? 'px-8 py-6 max-w-md' // Bigger for list completion
-                : popupEventType === 'viewed' && !persistUntilInteraction
-                ? 'px-5 py-3 max-w-xs' // Compact snackbar
+                : !persistUntilInteraction
+                ? 'px-5 py-3 max-w-xs' // Compact snackbar for both types
                 : 'px-6 py-4 max-w-sm' // Regular popup
             } mx-4 sm:mx-0`}
             initial={{ scale: 0.8, opacity: 0, y: 20 }}
@@ -853,9 +869,9 @@ export const useUpdateUserStats = () => {
 
               {/* Main achievement header */}
               <div className={`flex items-center justify-center ${
-                popupEventType === 'viewed' && !persistUntilInteraction ? 'space-x-2' : 'space-x-3'
+                !persistUntilInteraction ? 'space-x-2' : 'space-x-3'
               }`}>
-                {!(popupEventType === 'viewed' && !persistUntilInteraction) && (
+                {persistUntilInteraction && (
                   <motion.svg
                     className={isListCompleted ? "w-7 h-7" : "w-6 h-6"}
                     fill="currentColor"
@@ -871,7 +887,7 @@ export const useUpdateUserStats = () => {
                   className={`font-bold ${
                     isListCompleted
                       ? 'text-xl'
-                      : popupEventType === 'viewed' && !persistUntilInteraction
+                      : !persistUntilInteraction
                       ? 'text-sm'
                       : 'text-lg'
                   }`}
@@ -879,8 +895,8 @@ export const useUpdateUserStats = () => {
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.2, duration: 0.3 }}
                 >
-                  {popupEventType === 'viewed' && !persistUntilInteraction
-                    ? `👀 ${countToShow} phrase${countToShow !== 1 ? 's' : ''} ${popupEventType}!`
+                  {!persistUntilInteraction
+                    ? `${popupEventType === 'viewed' ? '👀' : '🎧'} ${countToShow} phrase${countToShow !== 1 ? 's' : ''} ${popupEventType}!`
                     : `${popupEventType === 'viewed' ? '👀' : ''} ${countToShow} phrase${countToShow !== 1 ? 's' : ''} ${popupEventType}!`
                   }
                 </motion.span>
@@ -901,7 +917,7 @@ export const useUpdateUserStats = () => {
               )}
 
               {/* Streak display - show when incrementing, or always show on list completion, but NOT in snackbar mode */}
-              {((showStreakIncrement && currentStreak > 0) || (isListCompleted && currentStreak > 0)) && !(popupEventType === 'viewed' && !persistUntilInteraction) && (() => {
+              {((showStreakIncrement && currentStreak > 0) || (isListCompleted && currentStreak > 0)) && persistUntilInteraction && (() => {
                 const streakData = getStreakMessage(currentStreak);
                 return (
                   <motion.div
@@ -991,7 +1007,7 @@ export const useUpdateUserStats = () => {
               })()}
 
               {/* Show recent milestones in the persistent popup (not in snackbar) */}
-              {persistUntilInteraction && recentMilestones.length > 0 && !(popupEventType === 'viewed' && !persistUntilInteraction) && (
+              {persistUntilInteraction && recentMilestones.length > 0 && (
                 <motion.div
                   className="mt-3 p-4 bg-gradient-to-r from-purple-500/20 to-blue-500/20 rounded-lg border border-purple-300/30"
                   initial={{ opacity: 0, height: 0 }}
