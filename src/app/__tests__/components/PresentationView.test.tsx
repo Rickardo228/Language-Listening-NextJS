@@ -205,7 +205,6 @@ describe('PresentationView Component', () => {
     })
 
     it('should navigate on click in fullscreen mode (left third)', async () => {
-        const user = userEvent.setup()
         const onPrevious = vi.fn()
         const onNext = vi.fn()
 
