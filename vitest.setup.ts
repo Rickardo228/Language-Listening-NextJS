@@ -10,7 +10,7 @@ afterEach(() => {
 
 // Setup global Audio mock
 beforeAll(() => {
-  global.Audio = MockAudio as any;
+  global.Audio = MockAudio as unknown as typeof Audio;
 });
 
 // Mock Firebase modules
@@ -96,7 +96,7 @@ global.IntersectionObserver = class IntersectionObserver {
     return [];
   }
   unobserve() {}
-} as any;
+} as unknown as typeof IntersectionObserver;
 
 // Mock ResizeObserver
 global.ResizeObserver = class ResizeObserver {
@@ -104,4 +104,4 @@ global.ResizeObserver = class ResizeObserver {
   disconnect() {}
   observe() {}
   unobserve() {}
-} as any;
+} as unknown as typeof ResizeObserver;
