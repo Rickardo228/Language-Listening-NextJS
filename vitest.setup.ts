@@ -1,21 +1,21 @@
-import '@testing-library/jest-dom'
-import { afterEach, beforeAll, vi } from 'vitest'
-import { cleanup } from '@testing-library/react'
-import { MockAudio } from './src/app/__mocks__/audio'
+import "@testing-library/jest-dom";
+import { afterEach, beforeAll, vi } from "vitest";
+import { cleanup } from "@testing-library/react";
+import { MockAudio } from "./src/app/__mocks__/audio";
 
 // Cleanup after each test
 afterEach(() => {
-  cleanup()
-})
+  cleanup();
+});
 
 // Setup global Audio mock
 beforeAll(() => {
-  global.Audio = MockAudio as any
-})
+  global.Audio = MockAudio as any;
+});
 
 // Mock Firebase modules
-vi.mock('firebase/firestore', async () => {
-  const mocks = await import('./src/app/__mocks__/firebase')
+vi.mock("firebase/firestore", async () => {
+  const mocks = await import("./src/app/__mocks__/firebase");
   return {
     getFirestore: mocks.getFirestore,
     collection: mocks.mockFirestore.collection,
@@ -32,23 +32,25 @@ vi.mock('firebase/firestore', async () => {
     limit: mocks.mockFirestore.limit,
     runTransaction: mocks.mockFirestore.runTransaction,
     increment: mocks.increment,
-  }
-})
+  };
+});
 
-vi.mock('firebase/auth', async () => {
-  const mocks = await import('./src/app/__mocks__/firebase')
+vi.mock("firebase/auth", async () => {
+  const mocks = await import("./src/app/__mocks__/firebase");
   return {
     getAuth: mocks.getAuth,
     onAuthStateChanged: mocks.mockAuth.onAuthStateChanged,
     signInWithEmailAndPassword: mocks.mockAuth.signInWithEmailAndPassword,
     signInWithPopup: mocks.mockAuth.signInWithPopup,
     signOut: mocks.mockAuth.signOut,
-  }
-})
+    createUserWithEmailAndPassword: mocks.createUserWithEmailAndPassword,
+    GoogleAuthProvider: class GoogleAuthProvider {},
+  };
+});
 
 // Mock Mixpanel
-vi.mock('@/lib/mixpanelClient', async () => {
-  const mocks = await import('./src/app/__mocks__/mixpanel')
+vi.mock("@/lib/mixpanelClient", async () => {
+  const mocks = await import("./src/app/__mocks__/mixpanel");
   return {
     track: mocks.track,
     trackAudioEnded: mocks.trackAudioEnded,
@@ -67,11 +69,11 @@ vi.mock('@/lib/mixpanelClient', async () => {
     initMixpanel: mocks.initMixpanel,
     setEnvironmentInfo: mocks.setEnvironmentInfo,
     resetAllMixpanelMocks: mocks.resetAllMixpanelMocks,
-  }
-})
+  };
+});
 
 // Mock window.matchMedia
-Object.defineProperty(window, 'matchMedia', {
+Object.defineProperty(window, "matchMedia", {
   writable: true,
   value: (query: string) => ({
     matches: false,
@@ -83,7 +85,7 @@ Object.defineProperty(window, 'matchMedia', {
     removeEventListener: () => {},
     dispatchEvent: () => {},
   }),
-})
+});
 
 // Mock IntersectionObserver
 global.IntersectionObserver = class IntersectionObserver {
@@ -91,10 +93,10 @@ global.IntersectionObserver = class IntersectionObserver {
   disconnect() {}
   observe() {}
   takeRecords() {
-    return []
+    return [];
   }
   unobserve() {}
-} as any
+} as any;
 
 // Mock ResizeObserver
 global.ResizeObserver = class ResizeObserver {
@@ -102,4 +104,4 @@ global.ResizeObserver = class ResizeObserver {
   disconnect() {}
   observe() {}
   unobserve() {}
-} as any
+} as any;
