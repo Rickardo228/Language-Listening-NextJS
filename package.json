@@ -8,8 +8,10 @@
     "start": "next start",
     "lint": "next lint",
     "test": "vitest",
+    "test:ci": "vitest run",
     "test:ui": "vitest --ui",
-    "test:coverage": "vitest --coverage"
+    "test:coverage": "vitest --coverage",
+    "vercel-build": "npm run test:ci && npm run lint && npm run build"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.7",
