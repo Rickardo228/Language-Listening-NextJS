@@ -868,7 +868,7 @@ export function UserStatsModal({ isOpen, onClose, user }: UserStatsModalProps) {
                                                                     <span className="font-medium">
                                                                         {getLanguageName(langStat.language)}
                                                                     </span>
-                                                                    <span className="font-semibold">{langStat.totalCount.toLocaleString()} phrases</span>
+                                                                    <span className="font-semibold">{(langStat.totalCount || 0).toLocaleString()} phrases</span>
                                                                 </div>
                                                                 <div className="flex justify-between items-center mt-1">
                                                                     <div className="text-sm text-foreground/60">
