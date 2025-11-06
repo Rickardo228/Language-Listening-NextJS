@@ -270,11 +270,6 @@ export const useUpdateUserStats = () => {
     fetchInitialTotal();
   }, [user]);
 
-  // Force sync on collection/session changes
-  const forceSyncTotal = () => {
-    syncTotalIfNeeded(true);
-  };
-
   const showStatsUpdate = useCallback((shouldPersistUntilInteraction: boolean = false, eventType: 'listened' | 'viewed' | 'both' = 'listened', listCompleted: boolean = false) => {
     const listenedCount = phrasesListenedRef.current;
     const viewedCount = phrasesViewedRef.current;
@@ -418,7 +413,7 @@ export const useUpdateUserStats = () => {
   }, [showPopup, persistUntilInteraction, closeStatsPopup]);
 
   // Smart sync function - only fetches when needed
-  const syncTotalIfNeeded = async (force: boolean = false): Promise<void> => {
+  const syncTotalIfNeeded = useCallback(async (force: boolean = false): Promise<void> => {
     if (!user) return;
 
     // Skip syncing in debug mode to avoid overwriting debug counts
@@ -453,9 +448,14 @@ export const useUpdateUserStats = () => {
     } catch (error) {
       console.error("Error syncing total:", error);
     }
-  };
+  }, [user]);
 
-  const updateUserStats = async (
+  // Force sync on collection/session changes
+  const forceSyncTotal = useCallback(() => {
+    syncTotalIfNeeded(true);
+  }, [syncTotalIfNeeded]);
+
+  const updateUserStats = useCallback(async (
     phrases: Phrase[],
     currentPhraseIndex: number,
     eventType: 'listened' | 'viewed' = 'listened',
@@ -609,7 +609,8 @@ export const useUpdateUserStats = () => {
         }
 
         // Update both stats and streak data in one transaction
-        transaction.update(statsRef, {
+        // Use set with merge to create document if it doesn't exist (for new users)
+        transaction.set(statsRef, {
           currentStreak: newStreak,
           lastStreakCalculation: now.toISOString(),
           streakStartDate: newStreakStartDate,
@@ -622,7 +623,7 @@ export const useUpdateUserStats = () => {
             phrasesViewed: increment(1),
             lastViewedAt: now.toISOString()
           })
-        });
+        }, { merge: true });
 
         // Update UI state for streak display and animation
         setPreviousStreak(currentStats.currentStreak || 0);
@@ -642,37 +643,6 @@ export const useUpdateUserStats = () => {
       });
     } catch (err: unknown) {
       console.error("❌ Error updating user stats:", err);
-      // If the main stats document doesn't exist, create it
-      if (
-        err &&
-        typeof err === "object" &&
-        "code" in err &&
-        err.code === "not-found"
-      ) {
-        const statsRef = doc(
-          firestore,
-          "users",
-          user.uid,
-          "stats",
-          "listening"
-        );
-        await setDoc(statsRef, {
-          currentStreak: 1,
-          streakStartDate: now.toISOString(),
-          lastStreakCalculation: now.toISOString(),
-          streakChangeReason: 'initial_document_creation',
-          ...(eventType === 'listened' && {
-            phrasesListened: 1,
-            lastListenedAt: now.toISOString()
-          }),
-          ...(eventType === 'viewed' && {
-            phrasesViewed: 1,
-            lastViewedAt: now.toISOString()
-          })
-        });
-        setCurrentStreak(1);
-        setShowStreakIncrement(true);
-      }
     }
 
     // Update the daily stats - store with full timestamp for timezone accuracy
@@ -686,10 +656,12 @@ export const useUpdateUserStats = () => {
         "daily",
         todayLocalAsUTC
       );
-      await updateDoc(dailyStatsRef, {
+      await setDoc(dailyStatsRef, {
         lastUpdated: now.toISOString(),
         timestamp: now.toISOString(), // Store full timestamp for timezone accuracy
         totalCount: increment(1), // Denormalized field: total of listened + viewed
+        date: todayLocalAsUTC, // Add date field for new documents
+        dateLocal: todayLocal, // Add dateLocal field for new documents
         ...(eventType === 'listened' && {
           count: increment(1), // Main field for listened events
           countListened: increment(1) // Duplicate for future migration
@@ -697,27 +669,8 @@ export const useUpdateUserStats = () => {
         ...(eventType === 'viewed' && {
           countViewed: increment(1)
         })
-      }).catch(async (err: unknown) => {
-        // If the daily document doesn't exist, create it
-        if (
-          err &&
-          typeof err === "object" &&
-          "code" in err &&
-          err.code === "not-found"
-        ) {
-          await setDoc(dailyStatsRef, {
-            count: eventType === 'listened' ? 1 : 0, // Main field for listened events
-            totalCount: 1, // Denormalized field: total of listened + viewed
-            lastUpdated: now.toISOString(),
-            date: todayLocalAsUTC, // Store UTC date (converted from local)
-            dateLocal: todayLocal, // Store local date for reference
-            timestamp: now.toISOString(), // Store full timestamp for timezone accuracy
-            countListened: eventType === 'listened' ? 1 : 0, // Duplicate for future migration
-            countViewed: eventType === 'viewed' ? 1 : 0
-          });
-        } else {
-          console.error("❌ Error updating daily stats:", err);
-        }
+      }, { merge: true }).catch((err: unknown) => {
+        console.error("❌ Error updating daily stats:", err);
       });
 
       // Update language stats
@@ -730,93 +683,22 @@ export const useUpdateUserStats = () => {
         "languages",
         `${inputLang}-${targetLang}`
       );
-      await updateDoc(languageStatsRef, {
+      await setDoc(languageStatsRef, {
         count: increment(1),
         lastUpdated: now.toISOString(),
         inputLang,
         targetLang,
-      }).catch(async (err: unknown) => {
-        // If the language document doesn't exist, create it
-        if (
-          err &&
-          typeof err === "object" &&
-          "code" in err &&
-          err.code === "not-found"
-        ) {
-          await setDoc(languageStatsRef, {
-            count: 1,
-            lastUpdated: now.toISOString(),
-            inputLang,
-            targetLang,
-            firstListened: now.toISOString(),
-          });
-        } else {
-          console.error("❌ Error updating language stats:", err);
-        }
+        firstListened: now.toISOString(), // Add firstListened for new documents
+      }, { merge: true }).catch((err: unknown) => {
+        console.error("❌ Error updating language stats:", err);
       });
 
     } catch (err: unknown) {
       console.error("❌ Error in main stats update:", err);
-      // If the main stats document doesn't exist, create it
-      if (
-        err &&
-        typeof err === "object" &&
-        "code" in err &&
-        err.code === "not-found"
-      ) {
-        const statsRef = doc(
-          firestore,
-          "users",
-          user.uid,
-          "stats",
-          "listening"
-        );
-        await setDoc(statsRef, {
-          phrasesListened: 1,
-          lastListenedAt: now.toISOString(),
-        });
-
-        // Create the daily stats document
-        const dailyStatsRef = doc(
-          firestore,
-          "users",
-          user.uid,
-          "stats",
-          "listening",
-          "daily",
-          todayLocalAsUTC
-        );
-        await setDoc(dailyStatsRef, {
-          count: 1,
-          totalCount: 1, // Denormalized field: total of listened + viewed
-          lastUpdated: now.toISOString(),
-          date: todayLocalAsUTC,
-        });
-
-        // Create the language stats document
-        const languageStatsRef = doc(
-          firestore,
-          "users",
-          user.uid,
-          "stats",
-          "listening",
-          "languages",
-          `${inputLang}-${targetLang}`
-        );
-        await setDoc(languageStatsRef, {
-          count: 1,
-          lastUpdated: now.toISOString(),
-          inputLang,
-          targetLang,
-          firstListened: now.toISOString(),
-        });
-      } else {
-        console.error("❌ Error updating user stats:", err);
-      }
     }
 
     // Stats update completed successfully
-  };
+  }, [user, syncTotalIfNeeded, showStatsUpdate]);
 
   const StatsPopups = mounted ? createPortal(
     <AnimatePresence mode="wait">
@@ -824,26 +706,23 @@ export const useUpdateUserStats = () => {
       {showPopup && (
         <motion.div
           key="pause-popup"
-          className={`fixed z-50 ${
-            !persistUntilInteraction
+          className={`fixed z-50 ${!persistUntilInteraction
               ? 'bottom-4 left-1/2 -translate-x-1/2' // Snackbar position for both viewed and listened
               : 'inset-0 flex items-center justify-center md:items-center md:justify-center sm:items-end sm:justify-end sm:p-4' // Full popup
-          }`}
+            }`}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.2 }}
         >
           <motion.div
-            className={`${
-              popupEventType === 'viewed' ? 'bg-blue-500' : 'bg-yellow-500'
-            } text-white rounded-lg shadow-lg ${
-              isListCompleted
+            className={`${popupEventType === 'viewed' ? 'bg-blue-500' : 'bg-yellow-500'
+              } text-white rounded-lg shadow-lg ${isListCompleted
                 ? 'px-8 py-6 max-w-md' // Bigger for list completion
                 : !persistUntilInteraction
-                ? 'px-5 py-3 max-w-xs' // Compact snackbar for both types
-                : 'px-6 py-4 max-w-sm' // Regular popup
-            } mx-4 sm:mx-0`}
+                  ? 'px-5 py-3 max-w-xs' // Compact snackbar for both types
+                  : 'px-6 py-4 max-w-sm' // Regular popup
+              } mx-4 sm:mx-0`}
             initial={{ scale: 0.8, opacity: 0, y: 20 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.8, opacity: 0, y: -20 }}
@@ -868,9 +747,8 @@ export const useUpdateUserStats = () => {
               )}
 
               {/* Main achievement header */}
-              <div className={`flex items-center justify-center ${
-                !persistUntilInteraction ? 'space-x-2' : 'space-x-3'
-              }`}>
+              <div className={`flex items-center justify-center ${!persistUntilInteraction ? 'space-x-2' : 'space-x-3'
+                }`}>
                 {persistUntilInteraction && (
                   <motion.svg
                     className={isListCompleted ? "w-7 h-7" : "w-6 h-6"}
@@ -884,13 +762,12 @@ export const useUpdateUserStats = () => {
                   </motion.svg>
                 )}
                 <motion.span
-                  className={`font-bold ${
-                    isListCompleted
+                  className={`font-bold ${isListCompleted
                       ? 'text-xl'
                       : !persistUntilInteraction
-                      ? 'text-sm'
-                      : 'text-lg'
-                  }`}
+                        ? 'text-sm'
+                        : 'text-lg'
+                    }`}
                   initial={{ opacity: 0, x: 10 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.2, duration: 0.3 }}
