@@ -139,7 +139,7 @@ interface UserStats {
 }
 
 interface DailyStats {
-    count: number;
+    count?: number;
     countViewed?: number;
     totalCount?: number; // Denormalized field: total of listened + viewed
     lastUpdated: string;
@@ -156,7 +156,14 @@ interface LanguageStats {
 
 // Helper function to consistently calculate day totals
 function getDayTotal(day: DailyStats): number {
-    return day.totalCount && day.totalCount > day.count + (day.countViewed || 0) ? day.totalCount : (day.count + (day.countViewed || 0));
+    const listenedCount = day.count || 0;
+    const viewedCount = day.countViewed || 0;
+    const calculatedTotal = listenedCount + viewedCount;
+
+    // Use totalCount if it's higher (handles edge cases), otherwise use calculated
+    return day.totalCount && day.totalCount > calculatedTotal
+        ? day.totalCount
+        : calculatedTotal;
 }
 
 // Chart.js-based bar chart component

@@ -662,12 +662,10 @@ export const useUpdateUserStats = () => {
         totalCount: increment(1), // Denormalized field: total of listened + viewed
         date: todayLocalAsUTC, // Add date field for new documents
         dateLocal: todayLocal, // Add dateLocal field for new documents
+        count: increment(eventType === 'listened' ? 1 : 0), // Always initialize both fields
+        countViewed: increment(eventType === 'viewed' ? 1 : 0), // Always initialize both fields
         ...(eventType === 'listened' && {
-          count: increment(1), // Main field for listened events
           countListened: increment(1) // Duplicate for future migration
-        }),
-        ...(eventType === 'viewed' && {
-          countViewed: increment(1)
         })
       }, { merge: true }).catch((err: unknown) => {
         console.error("❌ Error updating daily stats:", err);
