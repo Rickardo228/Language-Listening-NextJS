@@ -626,7 +626,7 @@ export function UserStatsModal({ isOpen, onClose, user }: UserStatsModalProps) {
                                             {totalPhrases.toLocaleString()}
                                         </div>
                                         <div className="text-sm text-foreground/60 mb-3">
-                                            🎧 {mainStats.phrasesListened.toLocaleString()} listened • 👀 {(mainStats.phrasesViewed || 0).toLocaleString()} viewed
+                                            🎧 {(mainStats.phrasesListened || 0).toLocaleString()} listened • 👀 {(mainStats.phrasesViewed || 0).toLocaleString()} viewed
                                         </div>
                                         <div className="text-lg font-medium mb-2">
                                             <span className={getPhraseRankTitle(totalPhrases).color}>
