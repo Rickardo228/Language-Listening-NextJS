@@ -612,12 +612,12 @@ export function UserStatsModal({ isOpen, onClose, user }: UserStatsModalProps) {
                                         {currentStreak > 0 && (() => {
                                             const streakData = getStreakMessage(currentStreak);
                                             return (
-                                                <div className="bg-gray-800 dark:bg-gray-900 p-3 rounded-xl border-2 border-gray-600 shadow-md mb-4 inline-block">
+                                                <div className="bg-gray-100 dark:bg-gray-900 p-3 rounded-xl border-2 border-gray-300 dark:border-gray-600 shadow-md mb-4 inline-block">
                                                     <div className="flex items-center justify-center mb-1">
-                                                        <span className="text-2xl font-bold text-white mr-2">{currentStreak}</span>
+                                                        <span className="text-2xl font-bold text-gray-900 dark:text-white mr-2">{currentStreak}</span>
                                                         <span className="text-2xl animate-pulse">{streakData.emoji}</span>
                                                     </div>
-                                                    <div className="text-xs font-semibold text-gray-300 uppercase tracking-wide">Day Streak</div>
+                                                    <div className="text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wide">Day Streak</div>
                                                 </div>
                                             );
                                         })()}

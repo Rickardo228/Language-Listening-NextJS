@@ -707,8 +707,8 @@ export const useUpdateUserStats = () => {
         <motion.div
           key="pause-popup"
           className={`fixed z-50 ${!persistUntilInteraction
-              ? 'bottom-4 left-1/2 -translate-x-1/2' // Snackbar position for both viewed and listened
-              : 'inset-0 flex items-center justify-center md:items-center md:justify-center sm:items-end sm:justify-end sm:p-4' // Full popup
+            ? 'bottom-4 left-1/2 -translate-x-1/2' // Snackbar position for both viewed and listened
+            : 'inset-0 flex items-center justify-center md:items-center md:justify-center sm:items-end sm:justify-end sm:p-4' // Full popup
             }`}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -763,10 +763,10 @@ export const useUpdateUserStats = () => {
                 )}
                 <motion.span
                   className={`font-bold ${isListCompleted
-                      ? 'text-xl'
-                      : !persistUntilInteraction
-                        ? 'text-sm'
-                        : 'text-lg'
+                    ? 'text-xl'
+                    : !persistUntilInteraction
+                      ? 'text-sm'
+                      : 'text-lg'
                     }`}
                   initial={{ opacity: 0, x: 10 }}
                   animate={{ opacity: 1, x: 0 }}
@@ -798,7 +798,7 @@ export const useUpdateUserStats = () => {
                 const streakData = getStreakMessage(currentStreak);
                 return (
                   <motion.div
-                    className="relative flex items-center justify-center space-x-3 p-3 bg-white/10 dark:bg-black/20 rounded-lg border border-white/20"
+                    className="relative flex items-center justify-center space-x-3 p-3 bg-black/10 dark:bg-white/10 rounded-lg border border-black/20 dark:border-white/20"
                     initial={{ opacity: 0, scale: 0.8, y: 15 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.9, y: -10 }}
@@ -825,7 +825,7 @@ export const useUpdateUserStats = () => {
                       animate={{ opacity: 1 }}
                       transition={{ delay: 0.7, duration: 0.3 }}
                     >
-                      <motion.div className="text-lg font-bold text-white flex items-center space-x-1">
+                      <motion.div className="text-lg font-bold text-gray-900 dark:text-white flex items-center space-x-1">
                         {/* Animated number increment */}
                         <AnimatePresence mode="wait">
                           <motion.span
@@ -846,7 +846,7 @@ export const useUpdateUserStats = () => {
                         <span> day streak</span>
                       </motion.div>
                       <motion.span
-                        className="text-xs font-medium text-white/80 uppercase tracking-wide"
+                        className="text-xs font-medium text-gray-700 dark:text-white/80 uppercase tracking-wide"
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         transition={{ delay: 1.0, duration: 0.3 }}
