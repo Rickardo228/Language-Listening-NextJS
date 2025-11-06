@@ -1,7 +1,6 @@
 import {
   getFirestore,
   doc,
-  updateDoc,
   increment,
   setDoc,
   runTransaction,
@@ -223,7 +222,6 @@ export const useUpdateUserStats = () => {
   const SYNC_AFTER_PHRASES = 10; // Re-sync every 10 phrases
   const [currentStreak, setCurrentStreak] = useState(0);
   const [, setPreviousStreak] = useState(0);
-  const [showStreakIncrement, setShowStreakIncrement] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -337,7 +335,6 @@ export const useUpdateUserStats = () => {
       setTimeout(() => {
         setShowPopup(false);
         setPersistUntilInteraction(false);
-        setShowStreakIncrement(false); // Hide streak when popup auto-hides
         setIsListCompleted(false);
       }, 2000);
     }
@@ -370,14 +367,23 @@ export const useUpdateUserStats = () => {
       );
     }
 
+    // If this was a persistent popup with a streak shown, mark it as shown today
+    if (persistUntilInteraction && currentStreak > 0) {
+      const lastStreakShownDate = localStorage.getItem('lastStreakShownDate');
+      const todayLocal = new Date().toLocaleDateString();
+      // Only set if we haven't shown it today (meaning it was actually displayed in this popup)
+      if (lastStreakShownDate !== todayLocal) {
+        localStorage.setItem('lastStreakShownDate', todayLocal);
+        console.log('Set lastStreakShownDate to', todayLocal);
+      }
+    }
+
     setShowPopup(false);
     setPersistUntilInteraction(false);
     setIsListCompleted(false);
     // Clear recent milestones when user dismisses the popup
     setRecentMilestones([]);
-    // Also hide streak increment when popup is closed
-    setShowStreakIncrement(false);
-  }, [showPopup, countToShow, persistUntilInteraction]);
+  }, [showPopup, countToShow, persistUntilInteraction, currentStreak]);
 
   const openStatsModal = () => {
     // Track view stats action before closing popup
@@ -554,7 +560,6 @@ export const useUpdateUserStats = () => {
 
         // Calculate streak based on database state
         let newStreak = currentStats.currentStreak || 0;
-        let streakChanged = false;
         let streakChangeReason = '';
         let newStreakStartDate = currentStats.streakStartDate || todayLocal;
 
@@ -569,7 +574,6 @@ export const useUpdateUserStats = () => {
             if (lastActivityDate === yesterdayStr) {
               // Consecutive day - increment streak
               newStreak = (currentStats.currentStreak || 0) + 1;
-              streakChanged = true;
               streakChangeReason = 'incremented';
               // Keep existing streak start date (don't change it for consecutive days)
               // If somehow streakStartDate is missing, estimate yesterday's timestamp
@@ -583,13 +587,11 @@ export const useUpdateUserStats = () => {
             } else if (lastActivityDate === null) {
               // First time user - start streak at 1
               newStreak = 1;
-              streakChanged = true;
               streakChangeReason = 'first_time';
               newStreakStartDate = now.toISOString();
             } else {
               // Gap found - reset streak to 1
               newStreak = 1;
-              streakChanged = true;
               streakChangeReason = 'reset';
               newStreakStartDate = now.toISOString();
             }
@@ -598,7 +600,6 @@ export const useUpdateUserStats = () => {
             if ((currentStats.currentStreak || 0) === 0) {
               // First time user on their first day - start streak at 1
               newStreak = 1;
-              streakChanged = true;
               streakChangeReason = 'first_time_same_day';
               newStreakStartDate = now.toISOString();
             } else {
@@ -628,18 +629,6 @@ export const useUpdateUserStats = () => {
         // Update UI state for streak display and animation
         setPreviousStreak(currentStats.currentStreak || 0);
         setCurrentStreak(newStreak);
-
-        // Check localStorage to see if we've shown the streak today
-        const lastStreakShownDate = localStorage.getItem('lastStreakShownDate');
-        const shouldShowStreak = streakChanged && newStreak > (currentStats.currentStreak || 0);
-
-        // Only show if streak changed AND we haven't shown it today
-        if (shouldShowStreak && lastStreakShownDate !== todayLocal) {
-          setShowStreakIncrement(true);
-          localStorage.setItem('lastStreakShownDate', todayLocal);
-        } else if (!shouldShowStreak) {
-          setShowStreakIncrement(false);
-        }
       });
     } catch (err: unknown) {
       console.error("❌ Error updating user stats:", err);
@@ -791,8 +780,26 @@ export const useUpdateUserStats = () => {
                 </motion.div>
               )}
 
-              {/* Streak display - show when incrementing, or always show on list completion, but NOT in snackbar mode */}
-              {((showStreakIncrement && currentStreak > 0) || (isListCompleted && currentStreak > 0)) && persistUntilInteraction && (() => {
+              {/* Streak display - show once per day in persistent popups */}
+              {persistUntilInteraction && currentStreak > 0 && (() => {
+
+                // Check if we should show the streak based on localStorage
+                const lastStreakShownDate = localStorage.getItem('lastStreakShownDate');
+                const todayLocal = new Date().toLocaleDateString();
+                console.log('currentStreak', currentStreak);
+                console.log('lastStreakShownDate', lastStreakShownDate);
+                console.log('todayLocal', todayLocal);
+                console.log('isListCompleted', isListCompleted);
+                // Show streak if: we haven't shown today OR it's list completion
+                const shouldShowStreak = (lastStreakShownDate !== todayLocal) || isListCompleted;
+                console.log('shouldShowStreak', shouldShowStreak);
+
+                if (!shouldShowStreak) {
+                  return null;
+                }
+
+                // Don't set localStorage here - let closeStatsPopup do it when user clicks continue
+
                 const streakData = getStreakMessage(currentStreak);
                 return (
                   <motion.div
