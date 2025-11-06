@@ -13,6 +13,20 @@ import React from 'react'
  * - Bug #3: "Invalid Date" in Recent Activity
  */
 
+// Type definitions for Firestore mocks
+interface MockDocumentSnapshot {
+  exists: () => boolean
+  data: () => Record<string, unknown>
+}
+
+interface MockQueryDocumentSnapshot {
+  data: () => Record<string, unknown>
+}
+
+interface MockQuerySnapshot {
+  docs: MockQueryDocumentSnapshot[]
+}
+
 // Mock Firestore
 vi.mock('firebase/firestore', () => ({
   getFirestore: vi.fn(),
@@ -42,7 +56,7 @@ vi.mock('react-chartjs-2', () => ({
 
 // Mock languageUtils
 vi.mock('../../utils/languageUtils', () => ({
-  getFlagEmoji: (lang: string) => `🏴‍☠️`,
+  getFlagEmoji: () => `🏴‍☠️`,
   getLanguageName: (lang: string) => lang,
 }))
 
@@ -79,49 +93,8 @@ describe('getDayTotal function - Unit Tests', () => {
   // We need to extract and test the getDayTotal function
   // Since it's not exported, we'll test its behavior through the component
 
-  /**
-   * Helper to test getDayTotal behavior by observing component output
-   */
-  const testGetDayTotalBehavior = async (dailyStats: any, expectedValue: string) => {
-    const { getFirestore, doc, getDoc, collection, getDocs, query, orderBy, limit } = await import('firebase/firestore')
-
-    // Mock main stats
-    const mockMainStats = {
-      phrasesListened: 10,
-      phrasesViewed: 5,
-      lastListenedAt: '2025-01-15T12:00:00Z',
-      currentStreak: 1,
-    }
-
-    vi.mocked(getDoc).mockResolvedValue({
-      exists: () => true,
-      data: () => mockMainStats,
-    } as any)
-
-    // Mock daily stats
-    vi.mocked(getDocs).mockResolvedValue({
-      docs: dailyStats.map((stat: any) => ({
-        data: () => stat,
-      })),
-    } as any)
-
-    const mockUser = { uid: 'test-user-123' } as User
-
-    render(
-      <UserStatsModal
-        isOpen={true}
-        onClose={vi.fn()}
-        user={mockUser}
-      />
-    )
-
-    await waitFor(() => {
-      expect(screen.queryByText('Loading stats...')).not.toBeInTheDocument()
-    })
-  }
-
   it('should handle undefined count (viewed-only user) - Bug #2', async () => {
-    const { getFirestore, doc, getDoc, collection, getDocs } = await import('firebase/firestore')
+    const { getDoc, getDocs } = await import('firebase/firestore')
 
     const mockMainStats = {
       phrasesListened: 0,
@@ -143,13 +116,13 @@ describe('getDayTotal function - Unit Tests', () => {
     vi.mocked(getDoc).mockResolvedValue({
       exists: () => true,
       data: () => mockMainStats,
-    } as any)
+    } as MockDocumentSnapshot)
 
     vi.mocked(getDocs).mockResolvedValue({
       docs: mockDailyStats.map(stat => ({
         data: () => stat,
       })),
-    } as any)
+    } as MockQuerySnapshot)
 
     const mockUser = { uid: 'test-user-123' } as User
 
@@ -192,13 +165,13 @@ describe('getDayTotal function - Unit Tests', () => {
     vi.mocked(getDoc).mockResolvedValue({
       exists: () => true,
       data: () => mockMainStats,
-    } as any)
+    } as MockDocumentSnapshot)
 
     vi.mocked(getDocs).mockResolvedValue({
       docs: mockDailyStats.map(stat => ({
         data: () => stat,
       })),
-    } as any)
+    } as MockQuerySnapshot)
 
     const mockUser = { uid: 'test-user-123' } as User
 
@@ -239,13 +212,13 @@ describe('getDayTotal function - Unit Tests', () => {
     vi.mocked(getDoc).mockResolvedValue({
       exists: () => true,
       data: () => mockMainStats,
-    } as any)
+    } as MockDocumentSnapshot)
 
     vi.mocked(getDocs).mockResolvedValue({
       docs: mockDailyStats.map(stat => ({
         data: () => stat,
       })),
-    } as any)
+    } as MockQuerySnapshot)
 
     const mockUser = { uid: 'test-user-123' } as User
 
@@ -284,11 +257,11 @@ describe('UserStatsModal - Regression Tests', () => {
     vi.mocked(getDoc).mockResolvedValue({
       exists: () => true,
       data: () => mockMainStats,
-    } as any)
+    } as MockDocumentSnapshot)
 
     vi.mocked(getDocs).mockResolvedValue({
       docs: [],
-    } as any)
+    } as MockQuerySnapshot)
 
     const mockUser = { uid: 'test-user-123' } as User
 
@@ -334,13 +307,13 @@ describe('UserStatsModal - Regression Tests', () => {
     vi.mocked(getDoc).mockResolvedValue({
       exists: () => true,
       data: () => mockMainStats,
-    } as any)
+    } as MockDocumentSnapshot)
 
     vi.mocked(getDocs).mockResolvedValue({
       docs: mockDailyStats.map(stat => ({
         data: () => stat,
       })),
-    } as any)
+    } as MockQuerySnapshot)
 
     const mockUser = { uid: 'test-user-123' } as User
 
@@ -377,11 +350,11 @@ describe('UserStatsModal - Regression Tests', () => {
     vi.mocked(getDoc).mockResolvedValue({
       exists: () => true,
       data: () => mockMainStats,
-    } as any)
+    } as MockDocumentSnapshot)
 
     vi.mocked(getDocs).mockResolvedValue({
       docs: [],
-    } as any)
+    } as MockQuerySnapshot)
 
     const mockUser = { uid: 'test-user-123' } as User
 
@@ -419,11 +392,11 @@ describe('UserStatsModal - Regression Tests', () => {
     vi.mocked(getDoc).mockResolvedValue({
       exists: () => true,
       data: () => mockMainStats,
-    } as any)
+    } as MockDocumentSnapshot)
 
     vi.mocked(getDocs).mockResolvedValue({
       docs: [],
-    } as any)
+    } as MockQuerySnapshot)
 
     const mockUser = { uid: 'test-user-123' } as User
 
@@ -457,11 +430,11 @@ describe('UserStatsModal - Regression Tests', () => {
     vi.mocked(getDoc).mockResolvedValue({
       exists: () => true,
       data: () => mockMainStats,
-    } as any)
+    } as MockDocumentSnapshot)
 
     vi.mocked(getDocs).mockResolvedValue({
       docs: [],
-    } as any)
+    } as MockQuerySnapshot)
 
     const mockUser = { uid: 'test-user-123' } as User
 
@@ -492,9 +465,10 @@ describe('UserStatsModal - Component Rendering', () => {
     const { getDoc, getDocs } = await import('firebase/firestore')
 
     // Make getDocs return a promise that never resolves
-    const neverResolve = new Promise(() => {})
-    vi.mocked(getDocs).mockReturnValue(neverResolve as any)
-    vi.mocked(getDoc).mockReturnValue(neverResolve as any)
+    const neverResolve = new Promise<MockQuerySnapshot>(() => {})
+    const neverResolveDoc = new Promise<MockDocumentSnapshot>(() => {})
+    vi.mocked(getDocs).mockReturnValue(neverResolve as Promise<MockQuerySnapshot>)
+    vi.mocked(getDoc).mockReturnValue(neverResolveDoc as Promise<MockDocumentSnapshot>)
 
     const mockUser = { uid: 'test-user-123' } as User
 
@@ -534,11 +508,11 @@ describe('UserStatsModal - Component Rendering', () => {
         lastListenedAt: '2025-01-15T12:00:00Z',
         currentStreak: 1,
       }),
-    } as any)
+    } as MockDocumentSnapshot)
 
     vi.mocked(getDocs).mockResolvedValue({
       docs: [],
-    } as any)
+    } as MockQuerySnapshot)
 
     const mockUser = { uid: 'test-user-123' } as User
 
