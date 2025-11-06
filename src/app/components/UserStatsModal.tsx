@@ -132,7 +132,8 @@ interface UserStatsModalProps {
 interface UserStats {
     phrasesListened: number;
     phrasesViewed: number;
-    lastListenedAt: string;
+    lastListenedAt?: string;
+    lastViewedAt?: string;
     currentStreak?: number;
     lastStreakCalculation?: string;
     streakStartDate?: string;
@@ -900,7 +901,17 @@ export function UserStatsModal({ isOpen, onClose, user }: UserStatsModalProps) {
                                 <h3 className="font-semibold mb-3 text-foreground/60">Recent Activity</h3>
                                 <div className="text-center">
                                     <div className="text-lg">
-                                        {new Date(mainStats.lastListenedAt).toLocaleDateString()}
+                                        {(() => {
+                                            const lastListened = mainStats.lastListenedAt ? new Date(mainStats.lastListenedAt) : null;
+                                            const lastViewed = mainStats.lastViewedAt ? new Date(mainStats.lastViewedAt) : null;
+
+                                            let mostRecent = lastListened;
+                                            if (lastViewed && (!lastListened || lastViewed > lastListened)) {
+                                                mostRecent = lastViewed;
+                                            }
+
+                                            return mostRecent ? mostRecent.toLocaleDateString() : 'No activity yet';
+                                        })()}
                                     </div>
                                     <div className="text-sm text-foreground/60">Last Practice Session</div>
                                 </div>
