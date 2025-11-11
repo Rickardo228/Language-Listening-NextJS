@@ -333,10 +333,45 @@ export function getPhraseRankTitle(
 // Language-specific ranking system
 const LANGUAGE_RANKS: Array<{ threshold: number } & RankInfo> = [
   {
-    threshold: 15000,
+    threshold: 50000,
     title: "Language Deity",
     color: "text-amber-500",
     nextMilestone: 0,
+    description: "Transcendent mastery. You've become one with the language.",
+  },
+  {
+    threshold: 40000,
+    title: "Eternal Echo",
+    color: "text-amber-500",
+    nextMilestone: 50000,
+    description: "Your voice echoes through time. Legendary dedication.",
+  },
+  {
+    threshold: 30000,
+    title: "Golden Tongue",
+    color: "text-amber-500",
+    nextMilestone: 40000,
+    description: "Every word is gold. You've achieved linguistic perfection.",
+  },
+  {
+    threshold: 25000,
+    title: "Shadow Sovereign",
+    color: "text-amber-500",
+    nextMilestone: 30000,
+    description: "Reigning supreme over this language domain.",
+  },
+  {
+    threshold: 20000,
+    title: "Linguistic Luminary",
+    color: "text-amber-500",
+    nextMilestone: 25000,
+    description: "A shining beacon of language mastery.",
+  },
+  {
+    threshold: 15000,
+    title: "Divine Practitioner",
+    color: "text-amber-500",
+    nextMilestone: 20000,
     description: "Divine commitment to this language.",
   },
   {
