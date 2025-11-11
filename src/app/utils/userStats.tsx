@@ -127,20 +127,75 @@ function getStreakMessage(streakCount: number): { emoji: string; message: string
 }
 
 // Function to get appropriate background style based on rank color - solid and readable
+// For standalone milestone popups (high contrast needed)
 function getMilestoneBackgroundStyle(color: string): string {
   if (color.includes('amber') || color.includes('yellow')) {
-    return 'bg-gradient-to-br from-amber-100 to-yellow-200 border-amber-300 dark:from-amber-800 dark:to-yellow-700 dark:border-amber-600';
+    return 'bg-gradient-to-br from-amber-50 to-yellow-100 border-amber-400 dark:from-amber-900 dark:to-yellow-800 dark:border-amber-600';
   } else if (color.includes('purple')) {
-    return 'bg-gradient-to-br from-purple-100 to-purple-200 border-purple-300 dark:from-purple-800 dark:to-purple-700 dark:border-purple-600';
+    return 'bg-gradient-to-br from-purple-50 to-purple-100 border-purple-400 dark:from-purple-900 dark:to-purple-800 dark:border-purple-600';
   } else if (color.includes('blue')) {
-    return 'bg-gradient-to-br from-blue-100 to-blue-200 border-blue-300 dark:from-blue-800 dark:to-blue-700 dark:border-blue-600';
+    return 'bg-gradient-to-br from-blue-50 to-blue-100 border-blue-400 dark:from-blue-900 dark:to-blue-800 dark:border-blue-600';
   } else if (color.includes('green')) {
-    return 'bg-gradient-to-br from-green-100 to-green-200 border-green-300 dark:from-green-800 dark:to-green-700 dark:border-green-600';
+    return 'bg-gradient-to-br from-green-50 to-green-100 border-green-400 dark:from-green-900 dark:to-green-800 dark:border-green-600';
   } else if (color.includes('orange')) {
-    return 'bg-gradient-to-br from-orange-100 to-orange-200 border-orange-300 dark:from-orange-800 dark:to-orange-700 dark:border-orange-600';
+    return 'bg-gradient-to-br from-orange-50 to-orange-100 border-orange-400 dark:from-orange-900 dark:to-orange-800 dark:border-orange-600';
   } else {
-    return 'bg-gradient-to-br from-gray-100 to-gray-200 border-gray-300 dark:from-gray-700 dark:to-gray-600 dark:border-gray-500';
+    return 'bg-gradient-to-br from-gray-50 to-gray-100 border-gray-400 dark:from-gray-800 dark:to-gray-700 dark:border-gray-500';
   }
+}
+
+// Function to get text color that ensures good contrast on milestone backgrounds
+function getMilestoneTextColor(color: string): string {
+  if (color.includes('amber') || color.includes('yellow')) {
+    return 'text-amber-900 dark:text-amber-100';
+  } else if (color.includes('purple')) {
+    return 'text-purple-900 dark:text-purple-100';
+  } else if (color.includes('blue')) {
+    return 'text-blue-900 dark:text-blue-100';
+  } else if (color.includes('green')) {
+    return 'text-green-900 dark:text-green-100';
+  } else if (color.includes('orange')) {
+    return 'text-orange-900 dark:text-orange-100';
+  } else {
+    return 'text-gray-900 dark:text-gray-100';
+  }
+}
+
+// Function to get background style for recent milestones in phrases popup
+// Uses darker, more saturated colors to stand out against gold/blue popup backgrounds
+function getRecentMilestoneBackgroundStyle(color: string, popupType: 'listened' | 'viewed'): string {
+  const isListened = popupType === 'listened';
+
+  if (color.includes('amber') || color.includes('yellow')) {
+    // For yellow/amber milestones, use darker colors to contrast with gold popup
+    if (isListened) {
+      // On gold background, use darker amber/orange tones
+      return 'bg-gradient-to-br from-amber-600 to-orange-600 border-amber-700 dark:from-amber-800 dark:to-orange-800 dark:border-amber-900';
+    } else {
+      // On blue background, amber/yellow works fine
+      return 'bg-gradient-to-br from-amber-500 to-yellow-500 border-amber-600 dark:from-amber-700 dark:to-yellow-700 dark:border-amber-800';
+    }
+  } else if (color.includes('purple')) {
+    return 'bg-gradient-to-br from-purple-500 to-purple-600 border-purple-700 dark:from-purple-700 dark:to-purple-800 dark:border-purple-900';
+  } else if (color.includes('blue')) {
+    // For blue milestones on blue popup, use darker shade
+    if (!isListened) {
+      return 'bg-gradient-to-br from-blue-600 to-blue-700 border-blue-800 dark:from-blue-800 dark:to-blue-900 dark:border-blue-950';
+    } else {
+      return 'bg-gradient-to-br from-blue-500 to-blue-600 border-blue-700 dark:from-blue-700 dark:to-blue-800 dark:border-blue-900';
+    }
+  } else if (color.includes('green')) {
+    return 'bg-gradient-to-br from-green-500 to-green-600 border-green-700 dark:from-green-700 dark:to-green-800 dark:border-green-900';
+  } else if (color.includes('orange')) {
+    return 'bg-gradient-to-br from-orange-500 to-orange-600 border-orange-700 dark:from-orange-700 dark:to-orange-800 dark:border-orange-900';
+  } else {
+    return 'bg-gradient-to-br from-gray-500 to-gray-600 border-gray-700 dark:from-gray-700 dark:to-gray-800 dark:border-gray-900';
+  }
+}
+
+// Function to get text color for recent milestones (always white for contrast on darker backgrounds)
+function getRecentMilestoneTextColor(): string {
+  return 'text-white';
 }
 
 // Function to calculate current streak from daily stats
@@ -891,7 +946,7 @@ export const useUpdateUserStats = () => {
               {/* Show recent milestones in the persistent popup (not in snackbar) */}
               {persistUntilInteraction && recentMilestones.length > 0 && (
                 <motion.div
-                  className="mt-3 p-4 bg-gradient-to-r from-purple-500/20 to-blue-500/20 rounded-lg border border-purple-300/30"
+                  className="mt-3 p-4 bg-white/10 dark:bg-black/20 rounded-lg border border-white/20"
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: "auto" }}
                   transition={{ delay: 0.3, duration: 0.3 }}
@@ -915,7 +970,7 @@ export const useUpdateUserStats = () => {
                     {recentMilestones.slice(0, 2).map((milestone, index) => (
                       <motion.div
                         key={index}
-                        className={`p-3 rounded-lg border ${getMilestoneBackgroundStyle(milestone.color)} shadow-sm`}
+                        className={`p-3 rounded-lg border ${getRecentMilestoneBackgroundStyle(milestone.color, popupEventType)} shadow-sm`}
                         initial={{ opacity: 0, x: -20, scale: 0.9 }}
                         animate={{ opacity: 1, x: 0, scale: 1 }}
                         transition={{
@@ -928,7 +983,7 @@ export const useUpdateUserStats = () => {
                         <div className="flex items-center justify-between">
                           <div className="flex items-center space-x-2">
                             <motion.div
-                              className={`w-3 h-3 rounded-full ${milestone.color.replace('text-', 'bg-')}`}
+                              className={`w-3 h-3 rounded-full bg-white/80`}
                               animate={{ scale: [1, 1.2, 1] }}
                               transition={{
                                 delay: 0.7 + index * 0.1,
@@ -936,12 +991,12 @@ export const useUpdateUserStats = () => {
                                 repeat: 1
                               }}
                             />
-                            <span className={`font-bold text-sm ${milestone.color}`}>
+                            <span className={`font-bold text-sm ${getRecentMilestoneTextColor()}`}>
                               {milestone.title}
                             </span>
                           </div>
                           <motion.span
-                            className="text-xs font-medium text-foreground/70 px-2 py-1 bg-white/50 dark:bg-black/20 rounded-full"
+                            className={`text-xs font-medium ${getRecentMilestoneTextColor()} px-2 py-1 bg-white/20 dark:bg-black/30 rounded-full`}
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             transition={{ delay: 0.8 + index * 0.1 }}
@@ -950,7 +1005,7 @@ export const useUpdateUserStats = () => {
                           </motion.span>
                         </div>
                         <motion.div
-                          className="text-xs text-foreground/60 mt-1 italic"
+                          className={`text-xs ${getRecentMilestoneTextColor()}/90 mt-1 italic`}
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}
                           transition={{ delay: 0.9 + index * 0.1 }}
@@ -1001,7 +1056,7 @@ export const useUpdateUserStats = () => {
           transition={{ duration: 0.3 }}
         >
           <motion.div
-            className={`${getMilestoneBackgroundStyle(milestoneInfo.color)} text-foreground px-8 py-6 rounded-xl shadow-2xl max-w-md mx-4 border-2 pointer-events-auto`}
+            className={`${getMilestoneBackgroundStyle(milestoneInfo.color)} px-8 py-6 rounded-xl shadow-2xl max-w-md mx-4 border-2 pointer-events-auto`}
             initial={{ scale: 0.6, opacity: 0, y: 50, rotate: -3 }}
             animate={{
               scale: 1,
@@ -1037,7 +1092,7 @@ export const useUpdateUserStats = () => {
                   🎉
                 </motion.span>
                 <motion.span
-                  className="text-xl font-bold text-foreground"
+                  className={`text-xl font-bold ${getMilestoneTextColor(milestoneInfo.color)}`}
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.3, type: "spring" }}
@@ -1060,16 +1115,16 @@ export const useUpdateUserStats = () => {
                 className="space-y-2"
               >
                 <motion.div
-                  className={`text-3xl font-bold text-white px-4 py-2 rounded-lg border-2 ${milestoneInfo.color.replace('text-', 'border-')} bg-gradient-to-r ${milestoneInfo.color.replace('text-', 'from-')}/20 ${milestoneInfo.color.replace('text-', 'to-')}/10`}
+                  className={`text-3xl font-bold ${getMilestoneTextColor(milestoneInfo.color)} px-4 py-2 rounded-lg border-2 ${milestoneInfo.color.replace('text-', 'border-')} bg-gradient-to-r ${milestoneInfo.color.replace('text-', 'from-')}/20 ${milestoneInfo.color.replace('text-', 'to-')}/10`}
                   animate={{ scale: [1, 1.05, 1] }}
                   transition={{ delay: 0.6, duration: 0.4, repeat: 1 }}
                 >
                   {milestoneInfo.title}
                 </motion.div>
-                <div className="text-lg font-semibold text-foreground/90">
+                <div className={`text-lg font-semibold ${getMilestoneTextColor(milestoneInfo.color)}/90`}>
                   {milestoneInfo.count.toLocaleString()} phrases!
                 </div>
-                <div className="text-sm text-foreground/70 italic">
+                <div className={`text-sm ${getMilestoneTextColor(milestoneInfo.color)}/80 italic`}>
                   {milestoneInfo.description}
                 </div>
               </motion.div>
