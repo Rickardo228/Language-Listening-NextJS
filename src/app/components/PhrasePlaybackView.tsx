@@ -189,10 +189,8 @@ export function PhrasePlaybackView({
 
     // Transport helper functions
     const pushMetadataToTransport = useCallback(() => {
-        console.log('🔄 pushMetadataToTransport called');
         const t = transportRef.current;
         if (!t) {
-            console.log('🔄 No transport available');
             return;
         }
 
@@ -207,26 +205,6 @@ export function PhrasePlaybackView({
             album: (collectionName?.replace(/\b\w/g, l => l.toUpperCase()) || 'Session'),
             artworkUrl: presentationConfig.bgImage || '/language-shadowing-logo-dark.png',
         };
-
-        console.log('🔄 Setting transport metadata:', {
-            phraseIndex: currentIndex,
-            currentPhase: currentPhaseValue,
-            metadata: metadata,
-            phraseData: {
-                input: phrase?.input,
-                translated: phrase?.translated,
-                inputAudio: phrase?.inputAudio?.audioUrl ? 'present' : 'missing',
-                outputAudio: phrase?.outputAudio?.audioUrl ? 'present' : 'missing',
-            },
-            audioElement: {
-                src: audioRef.current?.src || 'none',
-                duration: audioRef.current?.duration || 0,
-                currentTime: audioRef.current?.currentTime || 0,
-                paused: audioRef.current?.paused,
-                playbackRate: audioRef.current?.playbackRate || 1,
-            },
-            timestamp: new Date().toISOString()
-        });
 
         t.setMetadata(metadata);
 
@@ -251,7 +229,6 @@ export function PhrasePlaybackView({
             // Throttle counter increments to prevent counting during rapid navigation
             const now = Date.now();
             if (now - lastViewedTimeRef.current >= THROTTLE_DELAY) {
-                console.log('incrementing viewed count');
                 // Increment counter and check for milestone
                 incrementViewedAndCheckMilestone(5);
                 // Update Firestore (skip session increment since we already incremented above)
@@ -444,21 +421,14 @@ export function PhrasePlaybackView({
 
 
     const handleAudioError = async (phase: 'input' | 'output', autoPlay?: boolean) => {
-        console.log('handleAudioError', phase, autoPlay);
         if (!audioRef.current || currentPhraseIndex < 0 || !setPhrases) return;
-        console.log('phrases', phrases);
         const phrase = phrases[currentPhraseIndex];
         if (!phrase) return;
-        console.log('phrase', phrase);
         try {
             const text = phase === 'input' ? phrase.input : phrase.translated;
             const language = phase === 'input' ? phrase.inputLang : phrase.targetLang;
             const voice = phase === 'input' ? phrase.inputVoice : phrase.targetVoice;
-            console.log('text', text);
-            console.log('language', language);
-            console.log('voice', voice);
             if (!text || !language || !voice) return;
-            console.log('generating audio', text, language, voice);
             const { audioUrl, duration } = await generateAudio(text, language, voice);
 
             // Update the phrase with new audio
@@ -494,7 +464,6 @@ export function PhrasePlaybackView({
 
     // Playback control handlers
     const handlePause = (source: PauseSource = 'local') => {
-        console.log('handlePause', source);
         const el = audioRef.current;
         if (!el) return;
 
@@ -708,15 +677,11 @@ export function PhrasePlaybackView({
 
     // Initialize transport callback ref
     const initTransport = useCallback((el: HTMLAudioElement | null) => {
-        console.log('initTransport');
         audioRef.current = el;
         if (!el || transportRef.current) return;
 
         // Use external transport if provided, otherwise create new one
         const transport = externalTransport || new WebMediaSessionTransport(el);
-        if (!externalTransport) {
-            console.log('creating transport');
-        }
         transportRef.current = transport;
         transport.setCapabilities({ canPlayPause: true, canNextPrev: true });
         transport.onPlay(handlePlay);

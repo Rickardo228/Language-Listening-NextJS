@@ -247,11 +247,11 @@ const playCompletionSound = () => {
   try {
     const audio = new Audio('/sounds/completion.wav');
     audio.volume = 0.5; // Set volume to 50%
-    audio.play().catch(error => {
-      console.log('Sound playback failed:', error);
+    audio.play().catch(() => {
+      // Silently fail - sound playback is non-critical
     });
-  } catch (error) {
-    console.log('Sound initialization failed:', error);
+  } catch {
+    // Silently fail - sound initialization is non-critical
   }
 };
 
@@ -401,11 +401,8 @@ export const useUpdateUserStats = () => {
     phrasesViewedRef.current += 1;
     const newCount = phrasesViewedRef.current;
 
-    console.log('viewed count:', JSON.stringify(newCount));
-
     // Show popup on exact multiples of threshold (5, 10, 15, etc.)
     if (newCount % threshold === 0) {
-      console.log('milestone reached:', JSON.stringify(newCount));
       showStatsUpdate(false, 'viewed');
     }
 
@@ -429,7 +426,6 @@ export const useUpdateUserStats = () => {
       // Only set if we haven't shown it today (meaning it was actually displayed in this popup)
       if (lastStreakShownDate !== todayLocal) {
         localStorage.setItem('lastStreakShownDate', todayLocal);
-        console.log('Set lastStreakShownDate to', todayLocal);
       }
     }
 
@@ -574,7 +570,6 @@ export const useUpdateUserStats = () => {
           }, 100);
         }
       } else if (eventType === 'viewed') {
-        console.log('update viewed', JSON.stringify(phrasesViewedRef.current));
         phrasesViewedRef.current += 1;
       }
     }
@@ -841,13 +836,8 @@ export const useUpdateUserStats = () => {
                 // Check if we should show the streak based on localStorage
                 const lastStreakShownDate = localStorage.getItem('lastStreakShownDate');
                 const todayLocal = new Date().toLocaleDateString();
-                console.log('currentStreak', currentStreak);
-                console.log('lastStreakShownDate', lastStreakShownDate);
-                console.log('todayLocal', todayLocal);
-                console.log('isListCompleted', isListCompleted);
                 // Show streak if: we haven't shown today OR it's list completion
                 const shouldShowStreak = (lastStreakShownDate !== todayLocal) || isListCompleted;
-                console.log('shouldShowStreak', shouldShowStreak);
 
                 if (!shouldShowStreak) {
                   return null;
