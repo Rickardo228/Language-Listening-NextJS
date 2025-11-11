@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useParams, useSearchParams } from 'next/navigation';
+import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import { Phrase, languageOptions, PresentationConfig } from '../../types';
 import { defaultPresentationConfig } from '../../defaultConfig';
 import { getFirestore, collection, query, where, getDocs, Timestamp, deleteDoc, doc } from 'firebase/firestore';
@@ -121,10 +121,11 @@ export default function TemplateDetailPage() {
     const { groupId: rawGroupId } = useParams();
     // Decode the URL-encoded groupId to handle spaces and special characters
     const groupId = rawGroupId ? decodeURIComponent(rawGroupId as string) : null;
-    // const router = useRouter();
+    const router = useRouter();
     const searchParams = useSearchParams();
     const { user, isAuthLoading, isAdmin } = useUser();
     const methodsRef = useRef<PhrasePlaybackMethods | null>(null);
+    const shouldAutoplay = searchParams.get('autoplay') === '1' || searchParams.get('autoplay') === 'true';
     const [phrases, setPhrases] = useState<Phrase[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedInputLang, setSelectedInputLang] = useState<string>(searchParams.get('inputLang') || 'en-GB');
@@ -351,17 +352,15 @@ export default function TemplateDetailPage() {
         }
     };
 
-    // Autoplay when requested via query param once phrases are available
+    // Clear autoplay parameter from URL after it's been read
     useEffect(() => {
-        const shouldAutoplay = searchParams.get('autoplay') === '1' || searchParams.get('autoplay') === 'true';
-        if (shouldAutoplay && phrases.length > 0) {
-            // small delay to ensure audio element/state ready
-            const id = setTimeout(() => {
-                methodsRef.current?.handleReplay?.();
-            }, 300);
-            return () => clearTimeout(id);
+        if (shouldAutoplay) {
+            const params = new URLSearchParams(searchParams.toString());
+            params.delete('autoplay');
+            const newUrl = params.toString() ? `?${params.toString()}` : window.location.pathname;
+            router.replace(newUrl, { scroll: false });
         }
-    }, [phrases, searchParams]);
+    }, [shouldAutoplay, searchParams, router]);
 
     if (isAuthLoading || loading) {
         return (
@@ -436,6 +435,7 @@ export default function TemplateDetailPage() {
                     collectionId={groupId as string}
                     stickyHeaderContent={collectionHeaderContent}
                     showImportPhrases={true}
+                    autoplay={shouldAutoplay}
                 />
             ) : (
                 <div className="flex items-center justify-center h-full">

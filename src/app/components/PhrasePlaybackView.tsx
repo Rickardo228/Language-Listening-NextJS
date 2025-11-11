@@ -39,6 +39,7 @@ interface PhrasePlaybackViewProps {
     stickyHeaderContent?: React.ReactNode;
     methodsRef?: React.MutableRefObject<PhrasePlaybackMethods | null>;
     handleImageUpload?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+    autoplay?: boolean;
 }
 
 export function PhrasePlaybackView({
@@ -52,6 +53,7 @@ export function PhrasePlaybackView({
     stickyHeaderContent,
     methodsRef,
     handleImageUpload,
+    autoplay = false,
 }: PhrasePlaybackViewProps) {
     const { updateUserStats, StatsPopups, StatsModal, showStatsUpdate, incrementViewedAndCheckMilestone, initializeViewedCounter, phrasesViewed } = useUpdateUserStats();
     const [currentPhraseIndex, setCurrentPhraseIndex] = useState(0);
@@ -543,7 +545,6 @@ export function PhrasePlaybackView({
 
     const handlePlay = useCallback(() => {
         setPaused(false);
-
         const idx = indexRef.current;          // always fresh
         let phase = phaseRef.current;
 
@@ -586,6 +587,9 @@ export function PhrasePlaybackView({
             trackPlaybackEvent('play', `${collectionId || 'unknown'}-${idx}`, phase, idx, speed);
         }
     }, [phrases, presentationConfig.inputPlaybackSpeed, presentationConfig.outputPlaybackSpeed, presentationConfig.enableInputPlayback, presentationConfig.enableOutputBeforeInput, collectionId]);
+
+
+
 
 
     const handleReplay = async () => {
@@ -637,6 +641,19 @@ export function PhrasePlaybackView({
             trackPlaybackEvent('replay', `${collectionId || 'unknown'}-0`, startPhase, 0, speed);
         }
     };
+
+    // Autoplay effect - triggers play when autoplay prop is true and component is ready
+    const autoplayTriggeredRef = useRef(false);
+    useEffect(() => {
+        if (autoplay && phrases.length > 0 && !autoplayTriggeredRef.current) {
+            autoplayTriggeredRef.current = true;
+            // Small delay to ensure audio element is ready
+            setTimeout(() => {
+                handleReplay();
+            }, 300);
+        }
+    }, [autoplay, phrases.length, handleReplay]);
+
 
     const handlePlayPhrase = (index: number, phase: 'input' | 'output') => {
         clearAllTimeouts();
