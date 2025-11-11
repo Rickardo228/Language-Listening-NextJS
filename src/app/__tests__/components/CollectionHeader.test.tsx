@@ -11,7 +11,10 @@ vi.mock('firebase/firestore', () => ({
   collection: vi.fn(),
   query: vi.fn(),
   where: vi.fn(),
-  getDocs: vi.fn(),
+  getDocs: vi.fn().mockResolvedValue({
+    empty: true,
+    docs: [],
+  }),
 }))
 
 describe('CollectionHeader Component', () => {
@@ -41,11 +44,17 @@ describe('CollectionHeader Component', () => {
 
   const mockSavedCollections: Config[] = [mockCollection]
 
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks()
+    // Reset getDocs to default empty response
+    const { getDocs } = await import('firebase/firestore')
+    vi.mocked(getDocs).mockResolvedValue({
+      empty: true,
+      docs: [],
+    })
   })
 
-  it('should render collection name', () => {
+  it('should render collection name', async () => {
     render(
       <CollectionHeader
         collectionId="test-collection-id"
@@ -55,10 +64,13 @@ describe('CollectionHeader Component', () => {
       />
     )
 
-    expect(screen.getByText('Test Collection')).toBeInTheDocument()
+    // Wait for async operations to complete
+    await waitFor(() => {
+      expect(screen.getByText('Test Collection')).toBeInTheDocument()
+    })
   })
 
-  it('should return null when collection is not found', () => {
+  it('should return null when collection is not found', async () => {
     const { container } = render(
       <CollectionHeader
         collectionId="non-existent-id"
@@ -68,10 +80,13 @@ describe('CollectionHeader Component', () => {
       />
     )
 
-    expect(container.firstChild).toBeNull()
+    // Wait for async operations to complete
+    await waitFor(() => {
+      expect(container.firstChild).toBeNull()
+    })
   })
 
-  it('should show menu button when menu items are available', () => {
+  it('should show menu button when menu items are available', async () => {
     render(
       <CollectionHeader
         collectionId="test-collection-id"
@@ -83,10 +98,12 @@ describe('CollectionHeader Component', () => {
       />
     )
 
-    expect(screen.getByTitle('List options')).toBeInTheDocument()
+    await waitFor(() => {
+      expect(screen.getByTitle('List options')).toBeInTheDocument()
+    })
   })
 
-  it('should not show menu button when no menu items are available', () => {
+  it('should not show menu button when no menu items are available', async () => {
     render(
       <CollectionHeader
         collectionId="test-collection-id"
@@ -96,7 +113,9 @@ describe('CollectionHeader Component', () => {
       />
     )
 
-    expect(screen.queryByTitle('List options')).not.toBeInTheDocument()
+    await waitFor(() => {
+      expect(screen.queryByTitle('List options')).not.toBeInTheDocument()
+    })
   })
 
   it('should open menu when menu button is clicked', async () => {
@@ -319,7 +338,7 @@ describe('CollectionHeader Component', () => {
     })
   })
 
-  it('should apply custom className', () => {
+  it('should apply custom className', async () => {
     render(
       <CollectionHeader
         collectionId="test-collection-id"
@@ -330,11 +349,13 @@ describe('CollectionHeader Component', () => {
       />
     )
 
-    const header = screen.getByText('Test Collection').closest('div')
-    expect(header?.className).toContain('custom-header-class')
+    await waitFor(() => {
+      const header = screen.getByText('Test Collection').closest('div')
+      expect(header?.className).toContain('custom-header-class')
+    })
   })
 
-  it('should apply custom titleClassName', () => {
+  it('should apply custom titleClassName', async () => {
     render(
       <CollectionHeader
         collectionId="test-collection-id"
@@ -345,8 +366,10 @@ describe('CollectionHeader Component', () => {
       />
     )
 
-    const title = screen.getByText('Test Collection')
-    expect(title.className).toContain('custom-title-class')
+    await waitFor(() => {
+      const title = screen.getByText('Test Collection')
+      expect(title.className).toContain('custom-title-class')
+    })
   })
 })
 
