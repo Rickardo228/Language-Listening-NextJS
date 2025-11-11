@@ -57,7 +57,7 @@ describe('ImportPhrases Component', () => {
         // There are multiple textboxes (input and textarea), so find the textarea specifically
         const textareas = screen.getAllByRole('textbox').filter(el => el.tagName === 'TEXTAREA')
         expect(textareas.length).toBeGreaterThan(0)
-        
+
         // Check that language selectors are present (they might be in a different structure)
         // Use querySelector to find select elements directly
         const dialog = screen.getByRole('dialog')
@@ -105,7 +105,7 @@ describe('ImportPhrases Component', () => {
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const { onAddToCollection, ...propsWithProcessOnly } = defaultProps
         render(
-            <ImportPhrases 
+            <ImportPhrases
                 {...propsWithProcessOnly}
                 inputLang="en-GB"
                 setInputLang={mockSetInputLang}
@@ -126,11 +126,11 @@ describe('ImportPhrases Component', () => {
         // Find all select elements (combobox role) and check their values
         const selects = screen.getAllByRole('combobox') as HTMLSelectElement[]
         expect(selects.length).toBeGreaterThanOrEqual(2)
-        
+
         // Find the selects that have the expected values
         const inputLangSelect = selects.find(select => select.value === 'en-GB')
         const targetLangSelect = selects.find(select => select.value === 'es-ES')
-        
+
         expect(inputLangSelect).toBeDefined()
         expect(targetLangSelect).toBeDefined()
         expect(inputLangSelect!.value).toBe('en-GB')
