@@ -40,6 +40,7 @@ interface PhrasePlaybackViewProps {
     methodsRef?: React.MutableRefObject<PhrasePlaybackMethods | null>;
     handleImageUpload?: (e: React.ChangeEvent<HTMLInputElement>) => void;
     autoplay?: boolean;
+    transport?: any; // Optional transport for testing/external control
 }
 
 export function PhrasePlaybackView({
@@ -54,6 +55,7 @@ export function PhrasePlaybackView({
     methodsRef,
     handleImageUpload,
     autoplay = false,
+    transport: externalTransport,
 }: PhrasePlaybackViewProps) {
     const { updateUserStats, StatsPopups, StatsModal, showStatsUpdate, incrementViewedAndCheckMilestone, initializeViewedCounter, phrasesViewed } = useUpdateUserStats();
     const [currentPhraseIndex, setCurrentPhraseIndex] = useState(0);
@@ -708,8 +710,12 @@ export function PhrasePlaybackView({
         console.log('initTransport');
         audioRef.current = el;
         if (!el || transportRef.current) return;
-        console.log('creating transport');
-        const transport = new WebMediaSessionTransport(el);
+
+        // Use external transport if provided, otherwise create new one
+        const transport = externalTransport || new WebMediaSessionTransport(el);
+        if (!externalTransport) {
+            console.log('creating transport');
+        }
         transportRef.current = transport;
         transport.setCapabilities({ canPlayPause: true, canNextPrev: true });
         transport.onPlay(handlePlay);
@@ -733,7 +739,7 @@ export function PhrasePlaybackView({
         // TODO - clean up this even listener
 
         // Removed audio guards - using transport for media session handling
-    }, [handlePlay, handlePause]);
+    }, [handlePlay, handlePause, externalTransport]);
 
     const handleAudioPlay = useCallback(() => {
         // Record which phrase/phase is currently playing for automatic listen tracking
@@ -873,6 +879,8 @@ export function PhrasePlaybackView({
 
     // Preload next/prev clips for smoother continuous skip
     useEffect(() => {
+        if (phrases.length === 0) return;
+
         const i = indexRef.current;
         const neighbouringPhrases = [
             phrases[(i + 1) % phrases.length],
