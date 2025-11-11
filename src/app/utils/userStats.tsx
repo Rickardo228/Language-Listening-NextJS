@@ -800,7 +800,7 @@ export const useUpdateUserStats = () => {
           transition={{ duration: 0.2 }}
         >
           <motion.div
-            className={`${popupEventType === 'viewed' ? 'bg-blue-500' : 'bg-yellow-500'
+            className={`${(isListCompleted || recentMilestones.length > 0) ? 'bg-yellow-500' : 'bg-blue-500'
               } text-white rounded-lg shadow-lg ${isListCompleted
                 ? 'px-8 py-6 max-w-md' // Bigger for list completion
                 : !persistUntilInteraction
