@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { PresentationView } from '../../PresentationView'
 import React from 'react'
@@ -220,22 +220,40 @@ describe('PresentationView Component', () => {
         )
 
         const presentationDiv = container.querySelector('.inset-0')
-        if (presentationDiv) {
-            // Simulate click on left third
-            const mockEvent = new MouseEvent('click', {
-                bubbles: true,
-                cancelable: true,
-                clientX: 100, // Left third of a 300px wide container
-            })
-            Object.defineProperty(mockEvent, 'offsetX', { value: 50 })
-            Object.defineProperty(presentationDiv, 'offsetWidth', { value: 300 })
+        expect(presentationDiv).toBeInTheDocument()
 
-            presentationDiv.dispatchEvent(mockEvent)
-        }
+        // Mock offsetWidth for click position calculation
+        Object.defineProperty(presentationDiv, 'offsetWidth', {
+            writable: true,
+            configurable: true,
+            value: 900, // 900px wide
+        })
 
-        // Note: This test verifies the structure exists, actual click position
-        // logic would need more sophisticated mocking
-        expect(onPrevious || onNext).toBeDefined()
+        // Click on LEFT third (should trigger onPrevious)
+        // 200/900 = 22% (left third is < 33%)
+        fireEvent.click(presentationDiv!, {
+            nativeEvent: {
+                offsetX: 200,
+            },
+            currentTarget: presentationDiv,
+        } as any)
+
+        expect(onPrevious).toHaveBeenCalledTimes(1)
+        expect(onNext).not.toHaveBeenCalled()
+
+        vi.clearAllMocks()
+
+        // Click on RIGHT third (should trigger onNext)
+        // 700/900 = 78% (right third is > 66%)
+        fireEvent.click(presentationDiv!, {
+            nativeEvent: {
+                offsetX: 700,
+            },
+            currentTarget: presentationDiv,
+        } as any)
+
+        expect(onNext).toHaveBeenCalledTimes(1)
+        expect(onPrevious).not.toHaveBeenCalled()
     })
 
     it('should render title when provided', () => {

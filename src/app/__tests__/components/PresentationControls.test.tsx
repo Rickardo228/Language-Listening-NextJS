@@ -158,11 +158,11 @@ describe('PresentationControls Component', () => {
     const settingsButton = screen.getByTitle('Settings')
     await user.click(settingsButton)
 
-    // Settings modal should open - check for modal content
-    // This would depend on the actual SettingsModal implementation
+    // Check for modal-specific content
     await waitFor(() => {
-      // Modal should be visible - adjust selector based on actual modal implementation
-      expect(screen.getByTitle('Settings')).toBeInTheDocument()
+      expect(screen.getByRole('dialog')).toBeInTheDocument()
+      // Check for settings-specific content
+      expect(screen.getByText('Settings')).toBeInTheDocument()
     })
   })
 

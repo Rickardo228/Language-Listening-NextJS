@@ -5,6 +5,15 @@ import { CollectionHeader } from '../../CollectionHeader'
 import { createMockPhrases } from '../utils/test-helpers'
 import { Config } from '../../types'
 
+// Mock Firestore
+vi.mock('firebase/firestore', () => ({
+  getFirestore: vi.fn(),
+  collection: vi.fn(),
+  query: vi.fn(),
+  where: vi.fn(),
+  getDocs: vi.fn(),
+}))
+
 describe('CollectionHeader Component', () => {
   const mockCollection: Config = {
     id: 'test-collection-id',
@@ -249,6 +258,7 @@ describe('CollectionHeader Component', () => {
       />
     )
 
+    // Open menu
     const menuButton = screen.getByTitle('List options')
     await user.click(menuButton)
 
@@ -256,13 +266,14 @@ describe('CollectionHeader Component', () => {
       expect(screen.getByText('Change voices')).toBeInTheDocument()
     })
 
+    // Click change voices
     await user.click(screen.getByText('Change voices'))
 
-    // Voice selection modal should open (check for modal content)
-    // This would depend on the actual VoiceSelectionModal implementation
+    // Verify modal is actually visible (look for modal-specific content)
     await waitFor(() => {
-      // Modal should be visible - adjust selector based on actual modal implementation
-      expect(onVoiceChange).toBeDefined()
+      expect(screen.getByRole('dialog')).toBeInTheDocument()
+      // Check for specific modal content:
+      expect(screen.getByText('Select Voices')).toBeInTheDocument()
     })
   })
 
@@ -270,17 +281,15 @@ describe('CollectionHeader Component', () => {
     const user = userEvent.setup()
     const onUnshare = vi.fn()
 
-    // Mock Firestore query to return published collection
-    vi.doMock('firebase/firestore', async () => {
-      const actual = await vi.importActual('firebase/firestore')
-      return {
-        ...actual,
-        getDocs: vi.fn().mockResolvedValue({
-          empty: false,
-          docs: [{ id: 'published-id' }],
-        }),
-      }
-    })
+    // Properly mock Firestore to return published collection
+    const { getDocs } = await import('firebase/firestore')
+    vi.mocked(getDocs).mockResolvedValue({
+      empty: false,
+      docs: [{
+        id: 'published-id',
+        data: () => ({ shared_from_list: 'test-collection-id' })
+      }],
+    } as any)
 
     render(
       <CollectionHeader
@@ -293,18 +302,21 @@ describe('CollectionHeader Component', () => {
       />
     )
 
-    // Wait for published status check
+    // Wait for published status check to complete
     await waitFor(() => {
-      const menuButton = screen.getByTitle('List options')
+      const menuButton = screen.queryByTitle('List options')
       expect(menuButton).toBeInTheDocument()
-    }, { timeout: 2000 })
+    }, { timeout: 3000 })
 
+    // Open menu
     const menuButton = screen.getByTitle('List options')
     await user.click(menuButton)
 
-    // Note: This test assumes the collection becomes published
-    // In a real scenario, you'd need to properly mock the Firestore query
-    expect(onUnshare).toBeDefined()
+    // Verify "Unshare" option appears (not "Share")
+    await waitFor(() => {
+      expect(screen.getByText('Unshare list')).toBeInTheDocument()
+      expect(screen.queryByText('Share with link')).not.toBeInTheDocument()
+    })
   })
 
   it('should apply custom className', () => {

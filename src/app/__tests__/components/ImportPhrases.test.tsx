@@ -42,11 +42,15 @@ describe('ImportPhrases Component', () => {
         const button = screen.getByText('Create New List')
         await user.click(button)
 
-        // Dialog should open - check for dialog content
-        // This would depend on the actual ImportPhrasesDialog implementation
+        // Check for dialog-specific elements
         await waitFor(() => {
-            // Dialog should be visible - adjust selector based on actual dialog implementation
-            expect(button).toBeInTheDocument()
+            // Dialog should be visible
+            expect(screen.getByRole('dialog')).toBeInTheDocument()
+            // Check for dialog content
+            expect(screen.getByText('Input Language')).toBeInTheDocument()
+            expect(screen.getByText('Target Language')).toBeInTheDocument()
+            // Check for textarea
+            expect(screen.getByPlaceholderText(/paste phrases/i)).toBeInTheDocument()
         })
     })
 
@@ -83,34 +87,60 @@ describe('ImportPhrases Component', () => {
 
     it('should pass props to ImportPhrasesDialog', async () => {
         const user = userEvent.setup()
+        const mockSetInputLang = vi.fn()
+        const mockSetTargetLang = vi.fn()
 
-        render(<ImportPhrases {...defaultProps} />)
+        render(
+            <ImportPhrases
+                {...defaultProps}
+                inputLang="en-GB"
+                setInputLang={mockSetInputLang}
+                targetLang="es-ES"
+                setTargetLang={mockSetTargetLang}
+                phrasesInput="Test phrase"
+            />
+        )
 
-        const button = screen.getByText('Create New List')
-        await user.click(button)
+        await user.click(screen.getByText('Create New List'))
 
-        // Dialog should receive the props
-        // This would depend on the actual ImportPhrasesDialog implementation
         await waitFor(() => {
-            expect(button).toBeInTheDocument()
+            expect(screen.getByRole('dialog')).toBeInTheDocument()
         })
+
+        // Verify dialog shows the correct language selections
+        expect(screen.getByDisplayValue('en-GB')).toBeInTheDocument()
+        expect(screen.getByDisplayValue('es-ES')).toBeInTheDocument()
+
+        // Verify phrasesInput is in the textarea
+        expect(screen.getByDisplayValue('Test phrase')).toBeInTheDocument()
+
+        // Test that changing language calls the setter
+        const inputLangSelect = screen.getByLabelText(/input language/i)
+        await user.selectOptions(inputLangSelect, 'fr-FR')
+
+        expect(mockSetInputLang).toHaveBeenCalledWith('fr-FR')
     })
 
-    it('should close dialog when onClose is called', async () => {
+    it('should close dialog when close button is clicked', async () => {
         const user = userEvent.setup()
 
         render(<ImportPhrases {...defaultProps} />)
 
-        const button = screen.getByText('Create New List')
-        await user.click(button)
+        // Open dialog
+        await user.click(screen.getByText('Create New List'))
 
-        // Dialog should be open
         await waitFor(() => {
-            expect(button).toBeInTheDocument()
+            expect(screen.getByRole('dialog')).toBeInTheDocument()
         })
 
-        // Close dialog (this would depend on actual dialog implementation)
-        // The dialog should handle closing internally
+        // Close dialog (find close button)
+        const closeButton = screen.getByRole('button', { name: /close/i })
+        await user.click(closeButton)
+
+        // Verify dialog is closed
+        await waitFor(() => {
+            expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+        })
     })
 
     it('should handle loading state', () => {
