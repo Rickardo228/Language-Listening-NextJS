@@ -256,6 +256,7 @@ export function PhrasePlaybackView({
         setTimeout(() => pushMetadataToTransport(), 0);
     }, [pushMetadataToTransport]);
 
+
     // call this *whenever* you want to start playback
     const safePlay = async (reason: string) => {
         const el = audioRef.current;
@@ -768,7 +769,7 @@ export function PhrasePlaybackView({
                             // If looping is enabled, restart from beginning
                             setCurrentPhraseIndexWithMetadata(0);
                         } else {
-                            showStatsUpdate(true, 'listened', true)
+                            showStatsUpdate(true, 'listened', true, handleReplay)
                             setPaused(true);
                         }
                     }
@@ -807,7 +808,7 @@ export function PhrasePlaybackView({
                                 setCurrentPhraseIndexWithMetadata(0);
                                 setCurrentPhaseWithMetadata('output');
                             } else {
-                                showStatsUpdate(true, 'listened', true)
+                                showStatsUpdate(true, 'listened', true, handleReplay)
                                 setPaused(true);
                             }
                         }
@@ -832,7 +833,7 @@ export function PhrasePlaybackView({
                                 setCurrentPhaseWithMetadata('output');
                             }
                         } else {
-                            showStatsUpdate(true, 'listened', true)
+                            showStatsUpdate(true, 'listened', true, handleReplay)
                             setPaused(true);
                         }
                     }

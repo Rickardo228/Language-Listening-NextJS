@@ -13,6 +13,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { UserStatsModal } from "../components/UserStatsModal";
 import { trackPhrasesListenedPopup } from "../../lib/mixpanelClient";
 import { getPhraseRankTitle, DEBUG_MILESTONE_THRESHOLDS } from "./rankingSystem";
+import { useRouter } from "next/navigation";
 
 const firestore = getFirestore();
 
@@ -256,12 +257,14 @@ const playCompletionSound = () => {
 };
 
 export const useUpdateUserStats = () => {
+  const router = useRouter();
   const [showPopup, setShowPopup] = useState(false);
   const [countToShow, setCountToShow] = useState(0);
   const [persistUntilInteraction, setPersistUntilInteraction] = useState(false);
   const [showStatsModal, setShowStatsModal] = useState(false);
   const [popupEventType, setPopupEventType] = useState<'listened' | 'viewed'>('listened');
   const [isListCompleted, setIsListCompleted] = useState(false);
+  const [onGoAgainCallback, setOnGoAgainCallback] = useState<(() => void | Promise<void>) | null>(null);
 
   const phrasesListenedRef = useRef(0);
   const phrasesViewedRef = useRef(0);
@@ -323,7 +326,7 @@ export const useUpdateUserStats = () => {
     fetchInitialTotal();
   }, [user]);
 
-  const showStatsUpdate = useCallback((shouldPersistUntilInteraction: boolean = false, eventType: 'listened' | 'viewed' | 'both' = 'listened', listCompleted: boolean = false) => {
+  const showStatsUpdate = useCallback((shouldPersistUntilInteraction: boolean = false, eventType: 'listened' | 'viewed' | 'both' = 'listened', listCompleted: boolean = false, onGoAgain?: () => void | Promise<void>) => {
     const listenedCount = phrasesListenedRef.current;
     const viewedCount = phrasesViewedRef.current;
 
@@ -366,6 +369,8 @@ export const useUpdateUserStats = () => {
       setCountToShow(displayCount);
       setPersistUntilInteraction(shouldPersistUntilInteraction);
       setIsListCompleted(listCompleted);
+      // Store the go again callback if provided (wrap in function to avoid React treating it as lazy initializer)
+      setOnGoAgainCallback(listCompleted && onGoAgain ? () => onGoAgain : () => null);
 
       // Store the event type for display purposes
       setPopupEventType(displayType as 'listened' | 'viewed');
@@ -391,6 +396,7 @@ export const useUpdateUserStats = () => {
         setShowPopup(false);
         setPersistUntilInteraction(false);
         setIsListCompleted(false);
+        setOnGoAgainCallback(() => null);
       }, 2000);
     }
   }, []);
@@ -432,6 +438,7 @@ export const useUpdateUserStats = () => {
     setShowPopup(false);
     setPersistUntilInteraction(false);
     setIsListCompleted(false);
+    setOnGoAgainCallback(() => null);
     // Clear recent milestones when user dismisses the popup
     setRecentMilestones([]);
   }, [showPopup, countToShow, persistUntilInteraction, currentStreak]);
@@ -1022,11 +1029,30 @@ export const useUpdateUserStats = () => {
                       View Stats
                     </button>
                   )}
+                  {isListCompleted && onGoAgainCallback && (
+                    <button
+                      className={`w-full px-4 py-2 ${popupEventType === 'viewed' ? 'bg-blue-700 hover:bg-blue-800' : 'bg-yellow-700 hover:bg-yellow-800'} text-white rounded text-sm font-medium transition-colors shadow-md border-2 border-white/30`}
+                      onClick={async () => {
+                        const callback = onGoAgainCallback();
+                        if (callback) {
+                          await callback;
+                        }
+                        closeStatsPopup("continue");
+                      }}
+                    >
+                      Go Again
+                    </button>
+                  )}
                   <button
                     className={`w-full px-4 py-2 ${popupEventType === 'viewed' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-yellow-600 hover:bg-yellow-700'} text-white rounded text-sm font-medium transition-colors shadow-md`}
-                    onClick={() => closeStatsPopup("continue")}
+                    onClick={() => {
+                      closeStatsPopup("continue");
+                      if (isListCompleted) {
+                        router.push('/');
+                      }
+                    }}
                   >
-                    Continue
+                    {isListCompleted ? 'Home' : 'Continue'}
                   </button>
                 </motion.div>
               )}
