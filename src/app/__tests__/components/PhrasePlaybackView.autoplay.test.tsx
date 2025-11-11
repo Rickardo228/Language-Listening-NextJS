@@ -76,9 +76,7 @@ describe('PhrasePlaybackView - Autoplay Feature', () => {
 
   let mockTransport: WebMediaSessionTransport
   let playHandler: (() => void) | undefined
-  let pauseHandler: (() => void) | undefined
   let nextHandler: (() => void) | undefined
-  let prevHandler: (() => void) | undefined
 
   beforeEach(() => {
     vi.clearAllMocks()
@@ -91,14 +89,14 @@ describe('PhrasePlaybackView - Autoplay Feature', () => {
     vi.spyOn(mockTransport, 'onPlay').mockImplementation((cb) => {
       playHandler = cb
     })
-    vi.spyOn(mockTransport, 'onPause').mockImplementation((cb) => {
-      pauseHandler = cb
+    vi.spyOn(mockTransport, 'onPause').mockImplementation(() => {
+      // Handler not needed in these tests
     })
     vi.spyOn(mockTransport, 'onNext').mockImplementation((cb) => {
       nextHandler = cb
     })
-    vi.spyOn(mockTransport, 'onPrevious').mockImplementation((cb) => {
-      prevHandler = cb
+    vi.spyOn(mockTransport, 'onPrevious').mockImplementation(() => {
+      // Handler not needed in these tests
     })
   })
 

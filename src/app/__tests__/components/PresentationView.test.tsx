@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, waitFor, fireEvent } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { PresentationView } from '../../PresentationView'
 import React from 'react'
@@ -242,16 +242,9 @@ describe('PresentationView Component', () => {
         // Click on LEFT third (should trigger onPrevious)
         // 200/900 = 22% (left third is < 33%)
         // For framer-motion, we need to create a proper synthetic event
-        const leftClickEvent = {
-            nativeEvent: {
-                offsetX: 200,
-            },
-            currentTarget: presentationDiv,
-            stopPropagation: vi.fn(),
-        } as any
         
         // Get the onClick handler from the motion.div
-        const motionDiv = presentationDiv as any
+        const motionDiv = presentationDiv as HTMLElement & { __reactInternalInstance?: unknown; _reactInternalFiber?: unknown }
         if (motionDiv.__reactInternalInstance || motionDiv._reactInternalFiber) {
             // Try to trigger the click handler directly
             const syntheticEvent = new MouseEvent('click', { bubbles: true, cancelable: true })

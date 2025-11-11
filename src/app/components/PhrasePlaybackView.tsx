@@ -41,7 +41,7 @@ interface PhrasePlaybackViewProps {
     methodsRef?: React.MutableRefObject<PhrasePlaybackMethods | null>;
     handleImageUpload?: (e: React.ChangeEvent<HTMLInputElement>) => void;
     autoplay?: boolean;
-    transport?: any; // Optional transport for testing/external control
+    transport?: WebMediaSessionTransport; // Optional transport for testing/external control
 }
 
 export function PhrasePlaybackView({
@@ -66,19 +66,21 @@ export function PhrasePlaybackView({
     const [paused, setPaused] = useState(true);
     const [isPlayingAudio, setIsPlayingAudio] = useState(false);
     const [fullscreen, setFullscreenBase] = useState(false);
-    const setFullscreen = (value: boolean | ((prevState: boolean) => boolean)) => {
-        const newVal = typeof value === 'function' ? value(fullscreen) : value
-        track(`Fullscreen ${newVal ? 'Enabled' : 'Disabled'}`);
+    const setFullscreen = useCallback((value: boolean | ((prevState: boolean) => boolean)) => {
+        setFullscreenBase(prevFullscreen => {
+            const newVal = typeof value === 'function' ? value(prevFullscreen) : value;
+            track(`Fullscreen ${newVal ? 'Enabled' : 'Disabled'}`);
 
-        // If exiting fullscreen and user was in viewing mode (paused), show viewed popup
-        // Only show if phrases viewed count is over 5
-        if (!newVal && fullscreen && pausedRef.current && phrasesViewed > 5) {
-            // User is exiting fullscreen while paused (viewing mode)
-            showStatsUpdate(true, 'viewed');
-        }
+            // If exiting fullscreen and user was in viewing mode (paused), show viewed popup
+            // Only show if phrases viewed count is over 5
+            if (!newVal && prevFullscreen && pausedRef.current && phrasesViewed > 5) {
+                // User is exiting fullscreen while paused (viewing mode)
+                showStatsUpdate(true, 'viewed');
+            }
 
-        setFullscreenBase(value);
-    };
+            return newVal;
+        });
+    }, [phrasesViewed, showStatsUpdate]);
     const [showTitle, setShowTitle] = useState(false);
     const [configName, setConfigName] = useState('Default');
 
@@ -196,7 +198,6 @@ export function PhrasePlaybackView({
 
         // Use refs to avoid stale closure values
         const currentIndex = indexRef.current;
-        const currentPhaseValue = phaseRef.current;
         const phrase = phrases[currentIndex];
 
         const metadata = {
@@ -258,7 +259,7 @@ export function PhrasePlaybackView({
 
 
     // call this *whenever* you want to start playback
-    const safePlay = async (reason: string) => {
+    const safePlay = useCallback(async (reason: string) => {
         const el = audioRef.current;
         if (!el) return;
         const mySeq = ++playSeqRef.current; // claim this play intent
@@ -278,11 +279,12 @@ export function PhrasePlaybackView({
             }
             console.error('play failed:', reason, e);
             // If playback fails, try to regenerate the audio (restored lost functionality)
-            if (currentPhraseIndex >= 0) {
-                handleAudioError(currentPhase);
+            if (indexRef.current >= 0) {
+                handleAudioError(phaseRef.current);
             }
         }
-    };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     // No special delay period helpers needed - just use setTimeout and clearAllTimeouts()
 
@@ -297,7 +299,7 @@ export function PhrasePlaybackView({
 
     // Removed pump functions - using direct navigation
 
-    const atomicAdvance = async (delta: 1 | -1) => {
+    const atomicAdvance = useCallback(async (delta: 1 | -1) => {
         // Clear any existing timers
         clearAllTimeouts();
 
@@ -418,12 +420,13 @@ export function PhrasePlaybackView({
             setPaused(true);
             setMSState('paused');
         }
-    };
+    }, [phrases, presentationConfig.enableOutputBeforeInput, presentationConfig.enableInputPlayback, presentationConfig.inputPlaybackSpeed, presentationConfig.outputPlaybackSpeed, setCurrentPhraseIndexWithMetadata, setCurrentPhaseWithMetadata, collectionId, safePlay]);
 
 
-    const handleAudioError = async (phase: 'input' | 'output', autoPlay?: boolean) => {
-        if (!audioRef.current || currentPhraseIndex < 0 || !setPhrases) return;
-        const phrase = phrases[currentPhraseIndex];
+    const handleAudioError = useCallback(async (phase: 'input' | 'output', autoPlay?: boolean) => {
+        const currentIndex = indexRef.current;
+        if (!audioRef.current || currentIndex < 0 || !setPhrases) return;
+        const phrase = phrases[currentIndex];
         if (!phrase) return;
         try {
             const text = phase === 'input' ? phrase.input : phrase.translated;
@@ -434,8 +437,8 @@ export function PhrasePlaybackView({
 
             // Update the phrase with new audio
             const newPhrases = [...phrases];
-            newPhrases[currentPhraseIndex] = {
-                ...newPhrases[currentPhraseIndex],
+            newPhrases[currentIndex] = {
+                ...newPhrases[currentIndex],
                 [phase === 'input' ? 'inputAudio' : 'outputAudio']: { audioUrl, duration }
             };
             await setPhrases(newPhrases, collectionId);
@@ -461,10 +464,10 @@ export function PhrasePlaybackView({
             }
             setPaused(true);
         }
-    };
+    }, [phrases, setPhrases, collectionId, presentationConfig.inputPlaybackSpeed, presentationConfig.outputPlaybackSpeed, safePlay]);
 
     // Playback control handlers
-    const handlePause = (source: PauseSource = 'local') => {
+    const handlePause = useCallback((source: PauseSource = 'local') => {
         const el = audioRef.current;
         if (!el) return;
 
@@ -485,13 +488,15 @@ export function PhrasePlaybackView({
             // resets the element (fires 'emptied')
         }
 
-        if (currentPhraseIndex >= 0 && phrases[currentPhraseIndex]) {
-            const speed = currentPhase === 'input'
+        const currentIndex = indexRef.current;
+        const currentPhaseValue = phaseRef.current;
+        if (currentIndex >= 0 && phrases[currentIndex]) {
+            const speed = currentPhaseValue === 'input'
                 ? (presentationConfig.inputPlaybackSpeed || 1.0)
                 : (presentationConfig.outputPlaybackSpeed || 1.0);
-            trackPlaybackEvent('pause', `${collectionId || 'unknown'}-${currentPhraseIndex}`, currentPhase, currentPhraseIndex, speed);
+            trackPlaybackEvent('pause', `${collectionId || 'unknown'}-${currentIndex}`, currentPhaseValue, currentIndex, speed);
         }
-    };
+    }, [showStatsUpdate, phrases, presentationConfig.inputPlaybackSpeed, presentationConfig.outputPlaybackSpeed, collectionId]);
 
     const handleStop = () => {
         // cancel any current play intent
@@ -706,7 +711,7 @@ export function PhrasePlaybackView({
         // TODO - clean up this even listener
 
         // Removed audio guards - using transport for media session handling
-    }, [handlePlay, handlePause, externalTransport]);
+    }, [handlePlay, handlePause, externalTransport, atomicAdvance]);
 
     const handleAudioPlay = useCallback(() => {
         // Record which phrase/phase is currently playing for automatic listen tracking
@@ -900,7 +905,7 @@ export function PhrasePlaybackView({
                 safePlay('autoplay-effect');
             }
         }
-    }, [currentPhraseIndex, currentPhase, paused, currentInputAudioUrl, currentOutputAudioUrl, presentationConfig.inputPlaybackSpeed, presentationConfig.outputPlaybackSpeed, presentationConfig.enableInputPlayback, presentationConfig.enableOutputBeforeInput]);
+    }, [currentPhraseIndex, currentPhase, paused, currentInputAudioUrl, currentOutputAudioUrl, presentationConfig.inputPlaybackSpeed, presentationConfig.outputPlaybackSpeed, presentationConfig.enableInputPlayback, presentationConfig.enableOutputBeforeInput, getShadowPhase, handleAudioError, isRecallPhase, safePlay, setCurrentPhaseWithMetadata]);
 
     // Handle presentation config changes that affect current phase
     useEffect(() => {

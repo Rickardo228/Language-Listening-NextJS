@@ -308,7 +308,7 @@ describe('CollectionHeader Component', () => {
         id: 'published-id',
         data: () => ({ shared_from_list: 'test-collection-id' })
       }],
-    } as any)
+    } as Awaited<ReturnType<typeof getDocs>>)
 
     render(
       <CollectionHeader
