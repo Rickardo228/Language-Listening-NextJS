@@ -543,56 +543,8 @@ export function PhrasePlaybackView({
         }
     };
 
-    const handlePlay = useCallback(() => {
-        setPaused(false);
-        const idx = indexRef.current;          // always fresh
-        let phase = phaseRef.current;
 
-        // Only replay when we've intentionally set a negative index
-        if (idx < 0) {
-            handleReplay();
-            return;
-        }
-
-        // If input playback is disabled and we're on the recall phase, switch to shadow phase
-        if (isRecallPhase(phase) && !presentationConfig.enableInputPlayback) {
-            const shadowPhase = getShadowPhase();
-            phase = shadowPhase;
-            setCurrentPhaseWithMetadata(shadowPhase);
-        }
-
-        const el = audioRef.current;
-        if (!el) return;
-
-        // Ensure src set and matches current phase
-        // Even more relevant now we nuke in external on pause
-        const expectedUrl = phrases[idx]?.[phase === 'input' ? 'inputAudio' : 'outputAudio']?.audioUrl ?? '';
-        if (!el.src || el.src !== expectedUrl) {
-            setSrcSafely(expectedUrl);
-            // Apply speed for current phase now
-            const speed = phase === 'input'
-                ? (presentationConfig.inputPlaybackSpeed || 1.0)
-                : (presentationConfig.outputPlaybackSpeed || 1.0);
-            if (speed !== 1.0) el.playbackRate = speed;
-        }
-
-        // Apply speed for current phase
-        const speed = phase === 'input'
-            ? (presentationConfig.inputPlaybackSpeed || 1.0)
-            : (presentationConfig.outputPlaybackSpeed || 1.0);
-        if (speed !== 1.0) el.playbackRate = speed;
-
-        safePlay('handlePlay');
-        if (idx >= 0 && phrases[idx]) {
-            trackPlaybackEvent('play', `${collectionId || 'unknown'}-${idx}`, phase, idx, speed);
-        }
-    }, [phrases, presentationConfig.inputPlaybackSpeed, presentationConfig.outputPlaybackSpeed, presentationConfig.enableInputPlayback, presentationConfig.enableOutputBeforeInput, collectionId]);
-
-
-
-
-
-    const handleReplay = async () => {
+    const handleReplay = useCallback(async () => {
         clearAllTimeouts();
         setCurrentPhraseIndexWithMetadata(prev => prev < 0 ? prev - 1 : -1);
 
@@ -640,7 +592,57 @@ export function PhrasePlaybackView({
 
             trackPlaybackEvent('replay', `${collectionId || 'unknown'}-0`, startPhase, 0, speed);
         }
-    };
+    }, [setCurrentPhraseIndexWithMetadata, presentationConfig.enableInputPlayback, getRecallPhase, getShadowPhase, setCurrentPhaseWithMetadata, phrases, presentationConfig.inputPlaybackSpeed, presentationConfig.outputPlaybackSpeed, presentationConfig.postProcessDelay, collectionId]);
+
+
+    const handlePlay = useCallback(() => {
+        setPaused(false);
+        const idx = indexRef.current;          // always fresh
+        let phase = phaseRef.current;
+
+        // Only replay when we've intentionally set a negative index
+        if (idx < 0) {
+            handleReplay();
+            return;
+        }
+
+        // If input playback is disabled and we're on the recall phase, switch to shadow phase
+        if (isRecallPhase(phase) && !presentationConfig.enableInputPlayback) {
+            const shadowPhase = getShadowPhase();
+            phase = shadowPhase;
+            setCurrentPhaseWithMetadata(shadowPhase);
+        }
+
+        const el = audioRef.current;
+        if (!el) return;
+
+        // Ensure src set and matches current phase
+        // Even more relevant now we nuke in external on pause
+        const expectedUrl = phrases[idx]?.[phase === 'input' ? 'inputAudio' : 'outputAudio']?.audioUrl ?? '';
+        if (!el.src || el.src !== expectedUrl) {
+            setSrcSafely(expectedUrl);
+            // Apply speed for current phase now
+            const speed = phase === 'input'
+                ? (presentationConfig.inputPlaybackSpeed || 1.0)
+                : (presentationConfig.outputPlaybackSpeed || 1.0);
+            if (speed !== 1.0) el.playbackRate = speed;
+        }
+
+        // Apply speed for current phase
+        const speed = phase === 'input'
+            ? (presentationConfig.inputPlaybackSpeed || 1.0)
+            : (presentationConfig.outputPlaybackSpeed || 1.0);
+        if (speed !== 1.0) el.playbackRate = speed;
+
+        safePlay('handlePlay');
+        if (idx >= 0 && phrases[idx]) {
+            trackPlaybackEvent('play', `${collectionId || 'unknown'}-${idx}`, phase, idx, speed);
+        }
+    }, [isRecallPhase, presentationConfig.enableInputPlayback, presentationConfig.inputPlaybackSpeed, presentationConfig.outputPlaybackSpeed, phrases, safePlay, handleReplay, getShadowPhase, setCurrentPhaseWithMetadata, collectionId]);
+
+
+
+
 
     // Autoplay effect - triggers play when autoplay prop is true and component is ready
     const autoplayTriggeredRef = useRef(false);
