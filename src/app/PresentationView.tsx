@@ -164,6 +164,11 @@ export function PresentationView({
 
 
 
+  // Calculate progress percentage
+  const progressPercentage = totalPhrases && currentPhraseIndex !== undefined
+    ? ((currentPhraseIndex + 1) / totalPhrases) * 100
+    : 0;
+
   const content = (
     <>
       {/* CSS Animation for Progress Bar */}
@@ -215,6 +220,35 @@ export function PresentationView({
           }
         }}
       >
+        {/* Progress Indicator at the top */}
+        {totalPhrases && currentPhraseIndex !== undefined && (
+          <div
+            className="absolute top-0 left-0 w-full h-1.5 overflow-hidden z-20"
+            style={{
+              backgroundColor: textBg
+                ? (textBg.includes("rgb")
+                  ? (textBg.slice(0, -1) + " 0.2)").replaceAll(" ", ",")
+                  : textBg + "33") // 33 = 20% opacity in hex
+                : "rgba(0,0,0,0.15)"
+            }}
+          >
+            <motion.div
+              className="h-full"
+              style={{
+                backgroundColor: textBg
+                  ? (textBg.includes("rgb")
+                    ? textBg.replaceAll(" ", ",")
+                    : textBg)
+                  : "rgba(59, 130, 246, 0.8)", // blue-500 with opacity
+                width: `${progressPercentage}%`,
+              }}
+              initial={{ width: 0 }}
+              animate={{ width: `${progressPercentage}%` }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
+            />
+          </div>
+        )}
+
         {/* Fullscreen/Close Button - repositioned to top-right */}
         <button
           onClick={(e) => {
