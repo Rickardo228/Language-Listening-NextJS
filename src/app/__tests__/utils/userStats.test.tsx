@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useUpdateUserStats } from '../../utils/userStats'
 import { UserContextProvider } from '../../contexts/UserContext'
@@ -87,14 +87,19 @@ describe('userStats - Phrase Viewed Tracking (Real Hook)', () => {
  */
 describe('userStats - Stats Tracking Responsiveness', () => {
   /**
-   * This test ensures that debounce delay is under 500ms for good UX.
-   * The DEBOUNCE_DELAY constant in PhrasePlaybackView should be 400ms.
+   * This test documents the expected debounce delay constant.
+   * Note: This is a documentation test, not a behavioral test.
+   * The actual debounce behavior is tested in the component integration tests.
    */
-  it('should ensure debounce delay is under 500ms for good UX', () => {
+  it('should document expected debounce delay for stats updates', () => {
     const EXPECTED_MAX_DELAY = 500
     const ACTUAL_DELAY = 400 // Current value in PhrasePlaybackView.tsx
 
+    // Document that we're aiming for sub-500ms responsiveness
     expect(ACTUAL_DELAY).toBeLessThan(EXPECTED_MAX_DELAY)
+
+    // Note: This is a documentation/contract test. Actual debounce behavior
+    // is tested in PhrasePlaybackView component tests where timers are mocked.
   })
 })
 
@@ -147,8 +152,7 @@ describe('userStats - Completion Sound', () => {
 
     const { result } = renderHook(() => useUpdateUserStats(), { wrapper })
 
-    // Simulate list completion (persistent + listCompleted flag)
-    // The sound will be played during the render cycle, not directly in the function call
+    // Simulate list completion (persistent + listCompleted flag) - should not throw
     expect(() => {
       act(() => {
         result.current.showStatsUpdate(true, 'listened', true)
@@ -156,6 +160,8 @@ describe('userStats - Completion Sound', () => {
     }).not.toThrow()
 
     // Verify the function accepted the parameters correctly
+    // Note: Audio playback for list completion is tested in integration tests
+    // where the full user interaction flow is simulated
     expect(result.current.showStatsUpdate).toBeDefined()
   })
 
@@ -210,19 +216,20 @@ describe('userStats - Snackbar Notifications Every 5 Phrases', () => {
     vi.useRealTimers()
   })
 
-  it('should show snackbar every 5 phrases listened', () => {
+  it('should initialize with listened counter at 0', () => {
     const wrapper = ({ children }: { children: React.ReactNode }) => (
       <UserContextProvider>{children}</UserContextProvider>
     )
 
     const { result } = renderHook(() => useUpdateUserStats(), { wrapper })
 
-    // Track listened count
+    // Verify initial state
     expect(result.current.phrasesListened).toBe(0)
-
-    // Verify the counter is accessible
-    // Note: The actual increment happens in updateUserStats, but we can test the counter exists
     expect(result.current.phrasesListened).toBeDefined()
+
+    // Note: The actual snackbar display logic (every 5 phrases) is tested
+    // in the integration tests with PhrasePlaybackView component where
+    // updateUserStats is called with actual phrase data
   })
 
   it('should NOT reset listened counter for non-persistent popup', () => {
@@ -323,42 +330,47 @@ describe('userStats - localStorage Streak Tracking', () => {
  * List Completed Popup Enhancement Tests
  */
 describe('userStats - List Completed Popup', () => {
-  it('should identify list completed state correctly', () => {
+  it('should accept list completed state in showStatsUpdate', () => {
     const wrapper = ({ children }: { children: React.ReactNode }) => (
       <UserContextProvider>{children}</UserContextProvider>
     )
 
     const { result } = renderHook(() => useUpdateUserStats(), { wrapper })
 
-    // Show list completed popup
-    act(() => {
-      result.current.showStatsUpdate(true, 'listened', true)
-    })
+    // Show list completed popup - should not throw
+    expect(() => {
+      act(() => {
+        result.current.showStatsUpdate(true, 'listened', true)
+      })
+    }).not.toThrow()
 
-    // Popup should be triggered (we can't directly test internal state,
-    // but we verify the function accepts the parameters)
-    expect(result.current.showStatsUpdate).toBeDefined()
+    // Verify the API is available
+    expect(typeof result.current.showStatsUpdate).toBe('function')
   })
 
-  it('should show different content for regular vs list completed popup', () => {
+  it('should accept both regular and list completed popup flags', () => {
     const wrapper = ({ children }: { children: React.ReactNode }) => (
       <UserContextProvider>{children}</UserContextProvider>
     )
 
     const { result } = renderHook(() => useUpdateUserStats(), { wrapper })
 
-    // Regular popup
-    act(() => {
-      result.current.showStatsUpdate(true, 'listened', false)
-    })
+    // Regular popup (not list completed)
+    expect(() => {
+      act(() => {
+        result.current.showStatsUpdate(true, 'listened', false)
+      })
+    }).not.toThrow()
 
     // List completed popup
-    act(() => {
-      result.current.showStatsUpdate(true, 'listened', true)
-    })
+    expect(() => {
+      act(() => {
+        result.current.showStatsUpdate(true, 'listened', true)
+      })
+    }).not.toThrow()
 
-    // Both should execute without errors
-    expect(true).toBe(true)
+    // Both modes should be supported without errors
+    // Note: Visual differences are tested in component integration tests
   })
 
   it('should accept onGoAgain callback for list completed popup', () => {
@@ -369,14 +381,15 @@ describe('userStats - List Completed Popup', () => {
     const { result } = renderHook(() => useUpdateUserStats(), { wrapper })
     const mockGoAgain = vi.fn()
 
-    // Show list completed popup with callback
-    act(() => {
-      result.current.showStatsUpdate(true, 'listened', true, mockGoAgain)
-    })
+    // Show list completed popup with callback - should not throw
+    expect(() => {
+      act(() => {
+        result.current.showStatsUpdate(true, 'listened', true, mockGoAgain)
+      })
+    }).not.toThrow()
 
-    // Function should accept the callback without errors
-    expect(result.current.showStatsUpdate).toBeDefined()
-    expect(mockGoAgain).not.toHaveBeenCalled() // Should not be called yet
+    // Callback should not be invoked immediately (only when user clicks "Go Again")
+    expect(mockGoAgain).not.toHaveBeenCalled()
   })
 
   it('should accept async onGoAgain callback', async () => {
@@ -387,14 +400,15 @@ describe('userStats - List Completed Popup', () => {
     const { result } = renderHook(() => useUpdateUserStats(), { wrapper })
     const mockGoAgainAsync = vi.fn().mockResolvedValue(undefined)
 
-    // Show list completed popup with async callback
-    act(() => {
-      result.current.showStatsUpdate(true, 'listened', true, mockGoAgainAsync)
-    })
+    // Show list completed popup with async callback - should not throw
+    expect(() => {
+      act(() => {
+        result.current.showStatsUpdate(true, 'listened', true, mockGoAgainAsync)
+      })
+    }).not.toThrow()
 
-    // Function should accept the async callback without errors
-    expect(result.current.showStatsUpdate).toBeDefined()
-    expect(mockGoAgainAsync).not.toHaveBeenCalled() // Should not be called yet
+    // Async callback should not be invoked immediately
+    expect(mockGoAgainAsync).not.toHaveBeenCalled()
   })
 
   it('should work without onGoAgain callback (backward compatibility)', () => {
@@ -404,13 +418,14 @@ describe('userStats - List Completed Popup', () => {
 
     const { result } = renderHook(() => useUpdateUserStats(), { wrapper })
 
-    // Show list completed popup without callback
-    act(() => {
-      result.current.showStatsUpdate(true, 'listened', true)
-    })
+    // Show list completed popup without callback - should not throw
+    expect(() => {
+      act(() => {
+        result.current.showStatsUpdate(true, 'listened', true)
+      })
+    }).not.toThrow()
 
-    // Should work without errors (backward compatible)
-    expect(result.current.showStatsUpdate).toBeDefined()
+    // Should be backward compatible (callback is optional)
   })
 })
 
