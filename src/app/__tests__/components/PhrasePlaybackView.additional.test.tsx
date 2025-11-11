@@ -17,6 +17,29 @@ import React from 'react'
  * - Navigation methods
  */
 
+// Mock the useUpdateUserStats hook to avoid Next.js router dependency
+vi.mock('../../utils/userStats', async () => {
+  const actual = await vi.importActual('../../utils/userStats')
+  const updateUserStatsSpy = vi.fn()
+
+  return {
+    ...actual,
+    useUpdateUserStats: () => ({
+      updateUserStats: updateUserStatsSpy,
+      StatsPopups: null,
+      StatsModal: null,
+      showStatsUpdate: vi.fn(),
+      closeStatsPopup: vi.fn(),
+      forceSyncTotal: vi.fn(),
+      incrementViewedAndCheckMilestone: vi.fn(),
+      initializeViewedCounter: vi.fn(),
+      phrasesListened: 0,
+      phrasesViewed: 0,
+      currentStreak: 0,
+    }),
+  }
+})
+
 describe('PhrasePlaybackView - Additional Features', () => {
   const mockPhrases = createMockPhrases(5)
   const mockSetPhrases = vi.fn().mockResolvedValue(undefined)

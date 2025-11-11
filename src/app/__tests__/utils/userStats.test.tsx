@@ -4,6 +4,16 @@ import { useUpdateUserStats } from '../../utils/userStats'
 import { UserContextProvider } from '../../contexts/UserContext'
 import React from 'react'
 
+// Mock Next.js router
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({
+    push: vi.fn(),
+    replace: vi.fn(),
+    prefetch: vi.fn(),
+  }),
+  usePathname: () => '/',
+}))
+
 /**
  * REAL Hook Tests for useUpdateUserStats
  *
@@ -349,6 +359,58 @@ describe('userStats - List Completed Popup', () => {
 
     // Both should execute without errors
     expect(true).toBe(true)
+  })
+
+  it('should accept onGoAgain callback for list completed popup', () => {
+    const wrapper = ({ children }: { children: React.ReactNode }) => (
+      <UserContextProvider>{children}</UserContextProvider>
+    )
+
+    const { result } = renderHook(() => useUpdateUserStats(), { wrapper })
+    const mockGoAgain = vi.fn()
+
+    // Show list completed popup with callback
+    act(() => {
+      result.current.showStatsUpdate(true, 'listened', true, mockGoAgain)
+    })
+
+    // Function should accept the callback without errors
+    expect(result.current.showStatsUpdate).toBeDefined()
+    expect(mockGoAgain).not.toHaveBeenCalled() // Should not be called yet
+  })
+
+  it('should accept async onGoAgain callback', async () => {
+    const wrapper = ({ children }: { children: React.ReactNode }) => (
+      <UserContextProvider>{children}</UserContextProvider>
+    )
+
+    const { result } = renderHook(() => useUpdateUserStats(), { wrapper })
+    const mockGoAgainAsync = vi.fn().mockResolvedValue(undefined)
+
+    // Show list completed popup with async callback
+    act(() => {
+      result.current.showStatsUpdate(true, 'listened', true, mockGoAgainAsync)
+    })
+
+    // Function should accept the async callback without errors
+    expect(result.current.showStatsUpdate).toBeDefined()
+    expect(mockGoAgainAsync).not.toHaveBeenCalled() // Should not be called yet
+  })
+
+  it('should work without onGoAgain callback (backward compatibility)', () => {
+    const wrapper = ({ children }: { children: React.ReactNode }) => (
+      <UserContextProvider>{children}</UserContextProvider>
+    )
+
+    const { result } = renderHook(() => useUpdateUserStats(), { wrapper })
+
+    // Show list completed popup without callback
+    act(() => {
+      result.current.showStatsUpdate(true, 'listened', true)
+    })
+
+    // Should work without errors (backward compatible)
+    expect(result.current.showStatsUpdate).toBeDefined()
   })
 })
 
