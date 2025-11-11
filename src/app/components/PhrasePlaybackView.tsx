@@ -53,7 +53,7 @@ export function PhrasePlaybackView({
     methodsRef,
     handleImageUpload,
 }: PhrasePlaybackViewProps) {
-    const { updateUserStats, StatsPopups, StatsModal, showStatsUpdate, incrementViewedAndCheckMilestone, initializeViewedCounter } = useUpdateUserStats();
+    const { updateUserStats, StatsPopups, StatsModal, showStatsUpdate, incrementViewedAndCheckMilestone, initializeViewedCounter, phrasesViewed } = useUpdateUserStats();
     const [currentPhraseIndex, setCurrentPhraseIndex] = useState(0);
     const [currentPhase, setCurrentPhase] = useState<'input' | 'output'>(
         presentationConfig.enableInputPlayback ? 'input' : 'output'
@@ -66,7 +66,8 @@ export function PhrasePlaybackView({
         track(`Fullscreen ${newVal ? 'Enabled' : 'Disabled'}`);
 
         // If exiting fullscreen and user was in viewing mode (paused), show viewed popup
-        if (!newVal && fullscreen && pausedRef.current) {
+        // Only show if phrases viewed count is over 5
+        if (!newVal && fullscreen && pausedRef.current && phrasesViewed > 5) {
             // User is exiting fullscreen while paused (viewing mode)
             showStatsUpdate(true, 'viewed');
         }
