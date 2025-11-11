@@ -268,6 +268,8 @@ export const useUpdateUserStats = () => {
 
   const phrasesListenedRef = useRef(0);
   const phrasesViewedRef = useRef(0);
+  const isListCompletedRef = useRef(false);
+  const popupCloseTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [mounted, setMounted] = useState(false);
   const { user } = useUser();
 
@@ -283,7 +285,14 @@ export const useUpdateUserStats = () => {
 
   useEffect(() => {
     setMounted(true);
-    return () => setMounted(false);
+    return () => {
+      setMounted(false);
+      // Clear any pending timeouts on unmount
+      if (popupCloseTimeoutRef.current) {
+        clearTimeout(popupCloseTimeoutRef.current);
+        popupCloseTimeoutRef.current = null;
+      }
+    };
   }, []);
 
   // Initial fetch of total phrases count when user changes
@@ -364,11 +373,24 @@ export const useUpdateUserStats = () => {
       }
     }
 
+    // Guard: Don't allow non-persistent popups to override list completion popups
+    // This prevents milestone snackbars from closing the list completion modal
+    if (isListCompletedRef.current && !listCompleted && !shouldPersistUntilInteraction) {
+      return;
+    }
+
     if (shouldShowPopup) {
+      // Clear any pending close timeout from previous popups
+      if (popupCloseTimeoutRef.current) {
+        clearTimeout(popupCloseTimeoutRef.current);
+        popupCloseTimeoutRef.current = null;
+      }
+
       setShowPopup(true);
       setCountToShow(displayCount);
       setPersistUntilInteraction(shouldPersistUntilInteraction);
       setIsListCompleted(listCompleted);
+      isListCompletedRef.current = listCompleted; // Sync ref for guard checks
       // Store the go again callback if provided (wrap in function to avoid React treating it as lazy initializer)
       setOnGoAgainCallback(listCompleted && onGoAgain ? () => onGoAgain : () => null);
 
@@ -389,15 +411,19 @@ export const useUpdateUserStats = () => {
           shouldPersistUntilInteraction ? "natural" : "manual"
         );
       }
-    }
 
-    if (!shouldPersistUntilInteraction) {
-      setTimeout(() => {
-        setShowPopup(false);
-        setPersistUntilInteraction(false);
-        setIsListCompleted(false);
-        setOnGoAgainCallback(() => null);
-      }, 2000);
+      // Set up auto-close timeout for non-persistent popups
+      if (!shouldPersistUntilInteraction) {
+        const timeoutId = setTimeout(() => {
+          setShowPopup(false);
+          setPersistUntilInteraction(false);
+          setIsListCompleted(false);
+          isListCompletedRef.current = false; // Reset ref
+          setOnGoAgainCallback(() => null);
+          popupCloseTimeoutRef.current = null;
+        }, 2000);
+        popupCloseTimeoutRef.current = timeoutId;
+      }
     }
   }, []);
 
@@ -435,9 +461,16 @@ export const useUpdateUserStats = () => {
       }
     }
 
+    // Clear any pending close timeout
+    if (popupCloseTimeoutRef.current) {
+      clearTimeout(popupCloseTimeoutRef.current);
+      popupCloseTimeoutRef.current = null;
+    }
+
     setShowPopup(false);
     setPersistUntilInteraction(false);
     setIsListCompleted(false);
+    isListCompletedRef.current = false; // Reset ref
     setOnGoAgainCallback(() => null);
     // Clear recent milestones when user dismisses the popup
     setRecentMilestones([]);
@@ -453,9 +486,16 @@ export const useUpdateUserStats = () => {
       );
     }
 
+    // Clear any pending close timeout
+    if (popupCloseTimeoutRef.current) {
+      clearTimeout(popupCloseTimeoutRef.current);
+      popupCloseTimeoutRef.current = null;
+    }
+
     setShowStatsModal(true);
     setShowPopup(false);
     setPersistUntilInteraction(false);
+    isListCompletedRef.current = false; // Reset ref
     // Clear recent milestones when user opens stats modal
     setRecentMilestones([]);
   };
