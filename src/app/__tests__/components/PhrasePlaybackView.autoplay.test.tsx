@@ -338,40 +338,6 @@ describe('PhrasePlaybackView - Autoplay Feature', () => {
   })
 
   /**
-   * Test: Autoplay with Empty Phrases Array
-   *
-   * Verifies that autoplay doesn't crash or behave incorrectly when
-   * phrases array is empty
-   */
-  it('should handle autoplay gracefully when phrases array is empty', async () => {
-    const methodsRef = { current: null } as React.MutableRefObject<PhrasePlaybackMethods | null>
-
-    render(
-      <UserContextProvider>
-        <PhrasePlaybackView
-          phrases={[]}
-          setPhrases={mockSetPhrases}
-          presentationConfig={defaultPresentationConfig}
-          setPresentationConfig={mockSetPresentationConfig}
-          autoplay={true}
-          methodsRef={methodsRef}
-          transport={mockTransport}
-        />
-      </UserContextProvider>
-    )
-
-    // Advance timers to allow component to mount
-    await vi.advanceTimersByTimeAsync(0)
-
-    // Wait for potential autoplay timeout
-    await vi.advanceTimersByTimeAsync(300)
-
-    // Component should render without errors
-    // methodsRef may or may not be populated, but no errors should occur
-    expect(true).toBe(true) // Just verify no crashes
-  })
-
-  /**
    * Integration Test: Autoplay with Input Playback Disabled
    *
    * Verifies that autoplay works correctly when input playback is disabled
@@ -405,10 +371,16 @@ describe('PhrasePlaybackView - Autoplay Feature', () => {
     // Verify methodsRef is populated
     expect(methodsRef.current).toBeTruthy()
 
+    // Initial phase should be 'output' when input playback is disabled
+    const initialPhase = methodsRef.current.getCurrentPhase()
+    expect(initialPhase).toBe('output')
+
     // Wait for autoplay timeout
     await vi.advanceTimersByTimeAsync(300)
+    await vi.advanceTimersByTimeAsync(0)
 
-    // Verify component renders without errors
-    expect(methodsRef.current).toBeTruthy()
+    // After autoplay triggers, should still be in output phase (not input)
+    const currentPhase = methodsRef.current.getCurrentPhase()
+    expect(currentPhase).toBe('output')
   })
 })

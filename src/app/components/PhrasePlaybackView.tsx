@@ -26,6 +26,7 @@ export type PhrasePlaybackMethods = {
     setCurrentPhraseIndex: (index: number) => void;
     setCurrentPhase: (phase: 'input' | 'output') => void;
     getCurrentPhraseIndex: () => number;
+    getCurrentPhase: () => 'input' | 'output';
 };
 
 interface PhrasePlaybackViewProps {
@@ -988,7 +989,8 @@ export function PhrasePlaybackView({
         handlePlayPhrase,
         setCurrentPhraseIndex: setCurrentPhraseIndexWithMetadata,
         setCurrentPhase: setCurrentPhaseWithMetadata,
-        getCurrentPhraseIndex: () => currentPhraseIndex
+        getCurrentPhraseIndex: () => currentPhraseIndex,
+        getCurrentPhase: () => currentPhase
     };
 
     return (
