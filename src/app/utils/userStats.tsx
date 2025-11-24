@@ -799,25 +799,30 @@ export const useUpdateUserStats = () => {
           exit={{ opacity: 0 }}
           transition={{ duration: 0.2 }}
         >
-          <motion.div
-            className={`${(isListCompleted || recentMilestones.length > 0) ? 'bg-yellow-500' : 'bg-blue-500'
-              } text-white rounded-lg shadow-lg ${isListCompleted
-                ? 'px-8 py-6 max-w-md' // Bigger for list completion
-                : !persistUntilInteraction
-                  ? 'px-5 py-3 max-w-xs' // Compact snackbar for both types
-                  : 'px-6 py-4 max-w-sm' // Regular popup
-              } mx-4 sm:mx-0`}
-            initial={{ scale: 0.8, opacity: 0, y: 20 }}
-            animate={{ scale: 1, opacity: 1, y: 0 }}
-            exit={{ scale: 0.8, opacity: 0, y: -20 }}
-            transition={{
-              type: "spring",
-              stiffness: 300,
-              damping: 25,
-              duration: 0.3
-            }}
-          >
-            <div className={isListCompleted ? "space-y-4" : "space-y-3"}>
+          {(() => {
+            // Determine popup color scheme based on completion status or milestones
+            const useYellowTheme = isListCompleted || recentMilestones.length > 0;
+
+            return (
+              <motion.div
+                className={`${useYellowTheme ? 'bg-yellow-500' : 'bg-blue-500'
+                  } text-white rounded-lg shadow-lg ${isListCompleted
+                    ? 'px-8 py-6 max-w-md' // Bigger for list completion
+                    : !persistUntilInteraction
+                      ? 'px-5 py-3 max-w-xs' // Compact snackbar for both types
+                      : 'px-6 py-4 max-w-sm' // Regular popup
+                  } mx-4 sm:mx-0`}
+                initial={{ scale: 0.8, opacity: 0, y: 20 }}
+                animate={{ scale: 1, opacity: 1, y: 0 }}
+                exit={{ scale: 0.8, opacity: 0, y: -20 }}
+                transition={{
+                  type: "spring",
+                  stiffness: 300,
+                  damping: 25,
+                  duration: 0.3
+                }}
+              >
+                <div className={isListCompleted ? "space-y-4" : "space-y-3"}>
               {/* Nice work header for list completion */}
               {isListCompleted && (
                 <motion.div
@@ -1063,7 +1068,7 @@ export const useUpdateUserStats = () => {
                 >
                   {user && (
                     <button
-                      className={`w-full px-4 py-2 ${popupEventType === 'viewed' ? 'bg-blue-800 hover:bg-blue-900' : 'bg-yellow-800 hover:bg-yellow-900'} text-white rounded text-sm font-medium transition-colors`}
+                      className={`w-full px-4 py-2 ${useYellowTheme ? 'bg-yellow-800 hover:bg-yellow-900' : 'bg-blue-800 hover:bg-blue-900'} text-white rounded text-sm font-medium transition-colors`}
                       onClick={openStatsModal}
                     >
                       View Stats
@@ -1071,7 +1076,7 @@ export const useUpdateUserStats = () => {
                   )}
                   {isListCompleted && onGoAgainCallback && (
                     <button
-                      className={`w-full px-4 py-2 ${popupEventType === 'viewed' ? 'bg-blue-700 hover:bg-blue-800' : 'bg-yellow-700 hover:bg-yellow-800'} text-white rounded text-sm font-medium transition-colors shadow-md border-2 border-white/30`}
+                      className={`w-full px-4 py-2 ${useYellowTheme ? 'bg-yellow-700 hover:bg-yellow-800' : 'bg-blue-700 hover:bg-blue-800'} text-white rounded text-sm font-medium transition-colors shadow-md border-2 border-white/30`}
                       onClick={async () => {
                         const callback = onGoAgainCallback();
                         if (callback) {
@@ -1084,7 +1089,7 @@ export const useUpdateUserStats = () => {
                     </button>
                   )}
                   <button
-                    className={`w-full px-4 py-2 ${popupEventType === 'viewed' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-yellow-600 hover:bg-yellow-700'} text-white rounded text-sm font-medium transition-colors shadow-md`}
+                    className={`w-full px-4 py-2 ${useYellowTheme ? 'bg-yellow-600 hover:bg-yellow-700' : 'bg-blue-600 hover:bg-blue-700'} text-white rounded text-sm font-medium transition-colors shadow-md`}
                     onClick={() => {
                       closeStatsPopup("continue");
                       if (isListCompleted) {
@@ -1097,7 +1102,9 @@ export const useUpdateUserStats = () => {
                 </motion.div>
               )}
             </div>
-          </motion.div>
+              </motion.div>
+            );
+          })()}
         </motion.div>
       )}
 
