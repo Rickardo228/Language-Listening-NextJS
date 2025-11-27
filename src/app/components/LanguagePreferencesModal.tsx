@@ -7,6 +7,8 @@ import { languageOptions } from '../types';
 import { createOrUpdateUserProfile } from '../utils/userPreferences';
 import { useUser } from '../contexts/UserContext';
 import { LanguageSelector } from './LanguageSelector';
+import { OnboardingAbilitySelect } from './OnboardingAbilitySelect';
+import { AbilityLevel } from '../utils/contentRecommendations';
 
 
 interface LanguagePreferencesModalProps {
@@ -19,6 +21,7 @@ export function LanguagePreferencesModal({ isOpen, onClose, user }: LanguagePref
     const { userProfile, refreshUserProfile } = useUser();
     const [inputLang, setInputLang] = useState(userProfile?.preferredInputLang || 'en-GB');
     const [targetLang, setTargetLang] = useState(userProfile?.preferredTargetLang || 'it-IT');
+    const [abilityLevel, setAbilityLevel] = useState<AbilityLevel>(userProfile?.abilityLevel || 'beginner');
     const [isLoading, setIsLoading] = useState(false);
 
     // Update local state when userProfile changes
@@ -26,6 +29,7 @@ export function LanguagePreferencesModal({ isOpen, onClose, user }: LanguagePref
         if (userProfile) {
             setInputLang(userProfile.preferredInputLang);
             setTargetLang(userProfile.preferredTargetLang);
+            setAbilityLevel(userProfile.abilityLevel);
         }
     }, [userProfile]);
 
@@ -34,7 +38,8 @@ export function LanguagePreferencesModal({ isOpen, onClose, user }: LanguagePref
         try {
             await createOrUpdateUserProfile(user.uid, {
                 preferredInputLang: inputLang,
-                preferredTargetLang: targetLang
+                preferredTargetLang: targetLang,
+                abilityLevel: abilityLevel
             });
 
             // Refresh user profile to get updated data
@@ -54,6 +59,7 @@ export function LanguagePreferencesModal({ isOpen, onClose, user }: LanguagePref
         if (userProfile) {
             setInputLang(userProfile.preferredInputLang);
             setTargetLang(userProfile.preferredTargetLang);
+            setAbilityLevel(userProfile.abilityLevel);
         }
         onClose();
     };
@@ -76,7 +82,7 @@ export function LanguagePreferencesModal({ isOpen, onClose, user }: LanguagePref
                     initial={{ scale: 0.95, opacity: 0, y: 10 }}
                     animate={{ scale: 1, opacity: 1, y: 0 }}
                     exit={{ scale: 0.95, opacity: 0, y: 10 }}
-                    className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-md w-full"
+                    className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] flex flex-col"
                     onClick={(e) => e.stopPropagation()}
                 >
                     {/* Header */}
@@ -100,7 +106,7 @@ export function LanguagePreferencesModal({ isOpen, onClose, user }: LanguagePref
                     </div>
 
                     {/* Content */}
-                    <div className="p-6 space-y-6">
+                    <div className="p-6 space-y-6 overflow-y-auto flex-1">
                         <LanguageSelector
                             inputLang={inputLang}
                             setInputLang={setInputLang}
@@ -112,6 +118,16 @@ export function LanguagePreferencesModal({ isOpen, onClose, user }: LanguagePref
                             targetLabel="Target Language (what you want to learn)"
                             disabled={isLoading}
                         />
+
+                        {/* Ability Level Section */}
+                        <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
+                            <OnboardingAbilitySelect
+                                selectedLevel={abilityLevel}
+                                onLevelChange={(level) => setAbilityLevel(level as AbilityLevel)}
+                                targetLanguage={targetLanguage?.label || targetLang}
+                                disabled={isLoading}
+                            />
+                        </div>
 
                         {/* Preview */}
                         <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
@@ -135,7 +151,7 @@ export function LanguagePreferencesModal({ isOpen, onClose, user }: LanguagePref
                         </button>
                         <button
                             onClick={handleSave}
-                            disabled={isLoading || (inputLang === userProfile?.preferredInputLang && targetLang === userProfile?.preferredTargetLang)}
+                            disabled={isLoading || (inputLang === userProfile?.preferredInputLang && targetLang === userProfile?.preferredTargetLang && abilityLevel === userProfile?.abilityLevel)}
                             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                         >
                             {isLoading ? (

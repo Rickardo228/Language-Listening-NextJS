@@ -2,6 +2,7 @@
 
 import { TemplatesBrowser } from './TemplatesBrowser';
 import { useUser } from '../contexts/UserContext';
+import { getRecommendedPaths } from '../utils/contentRecommendations';
 
 interface TemplateBrowserStackProps {
     showAllOverride?: boolean;
@@ -14,16 +15,21 @@ export function TemplateBrowserStack({
 }: TemplateBrowserStackProps) {
     const { userProfile } = useUser();
 
+    const learningPaths = getRecommendedPaths(userProfile?.abilityLevel);
+
     return (
         <div className={`p-4 space-y-16 ${className}`}>
-            <TemplatesBrowser
-                pathId="beginner_path"
-                showHeader={false}
-                title="Learn the Basics"
-                className="mt-2"
-                noTemplatesComponent={<></>}
-                showAllOverride={showAllOverride}
-            />
+            {learningPaths.map(path => (
+                <TemplatesBrowser
+                    key={path.id}
+                    pathId={path.pathId}
+                    showHeader={false}
+                    title={path.title}
+                    className="mt-2"
+                    noTemplatesComponent={<></>}
+                    showAllOverride={showAllOverride}
+                />
+            ))}
             <TemplatesBrowser
                 showHeader={false}
                 title="New Playlists"
