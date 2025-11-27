@@ -8,6 +8,8 @@ import { BLEED_START_DELAY, DELAY_AFTER_INPUT_PHRASES_MULTIPLIER, DELAY_AFTER_OU
 import { useUpdateUserStats } from '../utils/userStats';
 import { track, trackAudioEnded, trackPlaybackEvent } from '../../lib/mixpanelClient';
 import { WebMediaSessionTransport } from '../../transport/webMediaSessionTransport';
+import { loadProgress, saveProgress, markCompleted } from '../utils/progressService';
+import { useUser } from '../contexts/UserContext';
 // Removed useVirtualDelay import - reverting to simpler timeout-based approach
 
 interface NavigatorWithMediaSession extends Navigator {
@@ -42,6 +44,7 @@ interface PhrasePlaybackViewProps {
     handleImageUpload?: (e: React.ChangeEvent<HTMLInputElement>) => void;
     autoplay?: boolean;
     transport?: WebMediaSessionTransport; // Optional transport for testing/external control
+    itemType?: 'template' | 'collection';
 }
 
 export function PhrasePlaybackView({
@@ -57,7 +60,9 @@ export function PhrasePlaybackView({
     handleImageUpload,
     autoplay = false,
     transport: externalTransport,
+    itemType,
 }: PhrasePlaybackViewProps) {
+    const { user } = useUser();
     const { updateUserStats, StatsPopups, StatsModal, showStatsUpdate, incrementViewedAndCheckMilestone, initializeViewedCounter, phrasesViewed } = useUpdateUserStats();
     const [currentPhraseIndex, setCurrentPhraseIndex] = useState(0);
     const [currentPhase, setCurrentPhase] = useState<'input' | 'output'>(
@@ -92,6 +97,12 @@ export function PhrasePlaybackView({
     const lastViewedTimeRef = useRef<number>(0);
     const THROTTLE_DELAY = 400; // 400ms throttle for counter increments
 
+    // Progress tracking refs
+    const progressSaveTimeout = useRef<NodeJS.Timeout | null>(null);
+    const PROGRESS_DEBOUNCE_DELAY = 500; // 500ms debounce for progress saves
+    const phrasesRef = useRef(phrases);
+    const progressLoadedRef = useRef(false);
+    const [progressLoaded, setProgressLoaded] = useState(false);
     // Debounced wrapper for updateUserStats
     const debouncedUpdateUserStats = useCallback(async (phrases: Phrase[], currentPhraseIndex: number, eventType: 'listened' | 'viewed' = 'listened', skipSessionIncrement: boolean = false) => {
         // Clear existing timeout
@@ -105,15 +116,50 @@ export function PhrasePlaybackView({
         }, DEBOUNCE_DELAY);
     }, [updateUserStats, DEBOUNCE_DELAY]);
 
+    // Debounced progress save (defined early to avoid circular dependency with trackListenIfNeeded)
+    const debouncedSaveProgress = useCallback(() => {
+        if (!user?.uid || !collectionId || !itemType) return;
+
+        // Don't save until progress has been loaded to prevent race condition
+        if (!progressLoadedRef.current) {
+            console.log('Skipping save - progress not loaded yet');
+            return;
+        }
+
+        if (progressSaveTimeout.current) {
+            clearTimeout(progressSaveTimeout.current);
+        }
+
+        progressSaveTimeout.current = setTimeout(() => {
+            const currentPhrases = phrasesRef.current;
+            const currentIndex = indexRef.current;
+
+            console.log('Saving progress - indexRef:', currentIndex, 'phaseRef:', phaseRef.current);
+            saveProgress(user.uid, {
+                collectionId,
+                itemType,
+                lastPhraseIndex: currentIndex,
+                lastPhase: phaseRef.current,
+                lastAccessedAt: new Date().toISOString(),
+                inputLang: currentPhrases[0]?.inputLang,
+                targetLang: currentPhrases[0]?.targetLang,
+            });
+        }, PROGRESS_DEBOUNCE_DELAY);
+    }, [user?.uid, collectionId, itemType]);
+
     // Centralized listen tracking - automatically called when audio ends
     // Prevents double-counting the same phrase
     const trackListenIfNeeded = useCallback((phraseIndex: number) => {
+        console.log('trackListenIfNeeded called with phraseIndex:', phraseIndex, 'lastListened:', lastListenedPhraseRef.current);
         // Only track if this is a different phrase from the last one we tracked
         if (lastListenedPhraseRef.current !== phraseIndex) {
             debouncedUpdateUserStats(phrases, phraseIndex, 'listened');
             lastListenedPhraseRef.current = phraseIndex;
+            // Save progress after tracking a listened phrase (saveProgress will update listenedPhraseIndices)
+            console.log('Saving progress after tracking a listened phrase');
+            debouncedSaveProgress();
         }
-    }, [phrases, debouncedUpdateUserStats]);
+    }, [phrases, debouncedUpdateUserStats, debouncedSaveProgress]);
 
     const [showProgressBar, setShowProgressBar] = useState(false);
     const [progressDuration, setProgressDuration] = useState(0);
@@ -162,19 +208,62 @@ export function PhrasePlaybackView({
     // TODO - do these even need to be useEffects? Cant we just set on each render?
     useEffect(() => { pausedRef.current = paused; }, [paused]);
 
-    // Initialize viewed counter when phrases are first loaded (accounts for viewing the first phrase)
+    // Initialize viewed counter and progress doc when phrases are first loaded (accounts for viewing the first phrase)
     // Track if we've initialized to prevent re-initialization when phrases length changes
     const hasInitializedRef = useRef(false);
     useEffect(() => {
-        if (phrases.length > 0 && !hasInitializedRef.current) {
+        if (phrases.length > 0 && progressLoaded && !hasInitializedRef.current) {
             initializeViewedCounter(phrases, currentPhraseIndex);
+            if (user?.uid && collectionId && itemType) {
+                console.log('Saving progress on mount');
+                saveProgress(user.uid, {
+                    collectionId,
+                    itemType,
+                    lastPhraseIndex: currentPhraseIndex,
+                    lastPhase: phaseRef.current,
+                    lastAccessedAt: new Date().toISOString(),
+                    inputLang: phrases[0]?.inputLang,
+                    targetLang: phrases[0]?.targetLang,
+                });
+            }
             hasInitializedRef.current = true;
         }
         // Reset initialization flag when phrases array becomes empty (new collection loading)
         if (phrases.length === 0) {
             hasInitializedRef.current = false;
         }
-    }, [phrases, currentPhraseIndex, initializeViewedCounter]);
+    }, [phrases, currentPhraseIndex, initializeViewedCounter, user?.uid, collectionId, itemType, phrases[0]?.inputLang, phrases[0]?.targetLang, progressLoaded]);
+
+    // Load progress on mount
+    useEffect(() => {
+        if (!user?.uid || !collectionId || !itemType) return;
+
+        const loadSavedProgress = async () => {
+            const progress = await loadProgress(user.uid, collectionId, phrases[0]?.inputLang, phrases[0]?.targetLang);
+            console.log('Loaded progress:', progress);
+            if (progress && typeof progress.lastPhraseIndex === 'number') {
+                console.log('Setting current phrase index and phase to:', progress.lastPhraseIndex, progress.lastPhase);
+                // Update refs immediately to prevent race condition
+                indexRef.current = progress.lastPhraseIndex;
+                phaseRef.current = progress.lastPhase;
+                prevPhraseIndexRef.current = progress.lastPhraseIndex;
+                // Update state
+                setCurrentPhraseIndex(progress.lastPhraseIndex);
+                setCurrentPhase(progress.lastPhase);
+            }
+            // Mark progress as loaded (even if no progress exists, we've attempted to load it)
+            progressLoadedRef.current = true;
+            setProgressLoaded(true);
+            console.log('Progress loading complete, saves now enabled');
+        };
+
+        loadSavedProgress();
+    }, [user?.uid, collectionId, itemType, phrases[0]?.inputLang, phrases[0]?.targetLang]);
+
+    // Keep phrasesRef in sync
+    useEffect(() => {
+        phrasesRef.current = phrases;
+    }, [phrases]);
 
     const currentInputAudioUrl = useMemo(() => {
         if (currentPhraseIndex < 0) return '';
@@ -234,6 +323,8 @@ export function PhrasePlaybackView({
                 incrementViewedAndCheckMilestone(5);
                 // Update Firestore (skip session increment since we already incremented above)
                 debouncedUpdateUserStats(phrases, newIndex, 'viewed', true);
+                // Save progress when navigating while paused (mirrors debouncedUpdateUserStats)
+                debouncedSaveProgress();
             }
             lastViewedTimeRef.current = now;
         }
@@ -247,7 +338,7 @@ export function PhrasePlaybackView({
 
         // Push metadata after state update
         setTimeout(() => pushMetadataToTransport(), 0);
-    }, [pushMetadataToTransport, phrases, debouncedUpdateUserStats, incrementViewedAndCheckMilestone]);
+    }, [pushMetadataToTransport, phrases, debouncedUpdateUserStats, incrementViewedAndCheckMilestone, debouncedSaveProgress]);
 
     const setCurrentPhaseWithMetadata = useCallback((phase: 'input' | 'output') => {
         setCurrentPhase(phase);
@@ -723,10 +814,14 @@ export function PhrasePlaybackView({
     }, []);
 
     const handleAudioEnded = () => {
+        console.log('handleAudioEnded - playingPhraseRef:', playingPhraseRef.current);
         // Automatically track listen when audio ends
         // Do this BEFORE checking paused state, because audio can play "in isolation" while paused
         if (playingPhraseRef.current !== null) {
+            console.log('Calling trackListenIfNeeded with index:', playingPhraseRef.current.index);
             trackListenIfNeeded(playingPhraseRef.current.index);
+        } else {
+            console.log('playingPhraseRef is null, not tracking listen');
         }
 
         // Track audio ended event
@@ -776,6 +871,10 @@ export function PhrasePlaybackView({
                         } else {
                             showStatsUpdate(true, 'listened', true, handleReplay)
                             setPaused(true);
+                            // Mark template/collection as completed
+                            if (user && collectionId) {
+                                markCompleted(user.uid, collectionId, currentPhrase?.inputLang, currentPhrase?.targetLang);
+                            }
                         }
                     }
                 }
@@ -815,6 +914,10 @@ export function PhrasePlaybackView({
                             } else {
                                 showStatsUpdate(true, 'listened', true, handleReplay)
                                 setPaused(true);
+                                // Mark template/collection as completed
+                                if (user?.uid && collectionId && currentPhrase?.inputLang && currentPhrase?.targetLang) {
+                                    markCompleted(user.uid, collectionId, currentPhrase?.inputLang, currentPhrase?.targetLang);
+                                }
                             }
                         }
                     }
@@ -840,6 +943,10 @@ export function PhrasePlaybackView({
                         } else {
                             showStatsUpdate(true, 'listened', true, handleReplay)
                             setPaused(true);
+                            // Mark template/collection as completed
+                            if (user?.uid && collectionId && currentPhrase?.inputLang && currentPhrase?.targetLang) {
+                                markCompleted(user.uid, collectionId, currentPhrase?.inputLang, currentPhrase?.targetLang);
+                            }
                         }
                     }
                 }

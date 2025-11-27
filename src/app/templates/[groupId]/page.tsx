@@ -436,6 +436,8 @@ export default function TemplateDetailPage() {
                     stickyHeaderContent={collectionHeaderContent}
                     showImportPhrases={true}
                     autoplay={shouldAutoplay}
+                    itemId={`${groupId}_${selectedInputLang}_${selectedTargetLang}`}
+                    itemType="template"
                 />
             ) : (
                 <div className="flex items-center justify-center h-full">

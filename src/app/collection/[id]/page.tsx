@@ -378,6 +378,8 @@ export default function CollectionPage() {
       stickyHeaderContent={stickyHeaderContent}
       methodsRef={playbackMethodsRef}
       handleImageUpload={handleImageUpload}
+      itemId={collectionId}
+      itemType="collection"
     />
   );
 }

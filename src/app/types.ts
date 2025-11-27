@@ -91,3 +91,15 @@ export type Phrase = {
   useRomanizedForAudio?: boolean;
   created_at?: string;
 };
+
+export interface ProgressData {
+  collectionId: string;
+  itemType: "template" | "collection";
+  lastPhraseIndex: number;
+  lastPhase: "input" | "output";
+  lastAccessedAt: string;
+  completedAt?: string;
+  inputLang: string;
+  targetLang: string;
+  listenedPhraseIndices?: number[];
+}
