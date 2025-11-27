@@ -1,9 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { TemplateBrowserStack } from '../../components/TemplateBrowserStack';
+import { UserProfile } from 'firebase/auth';
 
 // Mock UserContext
-let mockUserProfile: any;
+let mockUserProfile: UserProfile | null = null;
 
 vi.mock('../../contexts/UserContext', () => ({
   useUser: () => ({
@@ -13,6 +14,7 @@ vi.mock('../../contexts/UserContext', () => ({
 
 // Mock TemplatesBrowser component for simplified testing
 vi.mock('../../components/TemplatesBrowser', () => ({
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   TemplatesBrowser: ({ title, pathId, showHeader, showAllOverride }: any) => (
     <div
       data-testid={`template-browser-${pathId || 'no-path'}`}
@@ -158,7 +160,7 @@ describe('TemplateBrowserStack', () => {
     });
 
     it('should render all paths when userProfile is undefined', () => {
-      mockUserProfile = undefined;
+      mockUserProfile = null;
 
       render(<TemplateBrowserStack />);
 
