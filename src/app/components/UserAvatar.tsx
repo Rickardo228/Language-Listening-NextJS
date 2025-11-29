@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { User, signOut, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import { auth } from '../firebase';
-import { BarChart3, MessageSquare, LogOut, Languages, Heart } from 'lucide-react';
+import { BarChart3, MessageSquare, LogOut, Languages, Heart, Mail } from 'lucide-react';
 import { Menu } from '@headlessui/react';
 import { UserStatsModal } from './UserStatsModal';
 import { LanguagePreferencesModal } from './LanguagePreferencesModal';
 import { ContentPreferencesModal } from './ContentPreferencesModal';
+import { EmailNotificationPreferencesModal } from './EmailNotificationPreferencesModal';
 import { track } from '../../lib/mixpanelClient';
 
 interface UserAvatarProps {
@@ -16,6 +17,7 @@ export function UserAvatar({ user }: UserAvatarProps) {
     const [statsModalOpen, setStatsModalOpen] = useState(false);
     const [languagePrefsModalOpen, setLanguagePrefsModalOpen] = useState(false);
     const [contentPrefsModalOpen, setContentPrefsModalOpen] = useState(false);
+    const [emailPrefsModalOpen, setEmailPrefsModalOpen] = useState(false);
 
     return (
         <div className="relative">
@@ -82,7 +84,22 @@ export function UserAvatar({ user }: UserAvatarProps) {
                                 </button>
                             )}
                         </Menu.Item>
-                        
+
+                        <Menu.Item>
+                            {({ active }) => (
+                                <button
+                                    className={`w-full text-left px-4 py-2 flex items-center gap-2 ${active ? 'bg-secondary' : ''}`}
+                                    onClick={() => {
+                                        track('Email Preferences Clicked');
+                                        setEmailPrefsModalOpen(true);
+                                    }}
+                                >
+                                    <Mail className="w-4 h-4" />
+                                    Email Preferences
+                                </button>
+                            )}
+                        </Menu.Item>
+
                         <Menu.Item>
                             {({ active }) => (
                                 <a
@@ -142,6 +159,14 @@ export function UserAvatar({ user }: UserAvatarProps) {
                 <ContentPreferencesModal
                     isOpen={contentPrefsModalOpen}
                     onClose={() => setContentPrefsModalOpen(false)}
+                    user={user}
+                />
+            )}
+
+            {user && (
+                <EmailNotificationPreferencesModal
+                    isOpen={emailPrefsModalOpen}
+                    onClose={() => setEmailPrefsModalOpen(false)}
                     user={user}
                 />
             )}

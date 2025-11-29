@@ -1,8 +1,8 @@
-import { getFirestore, doc, setDoc, getDoc } from 'firebase/firestore';
-import { User } from 'firebase/auth';
-import { PresentationConfig } from '../types';
-import { assignAbTestVariant, getVariantConfig } from './abTesting';
-import { identifyUser } from '../../lib/mixpanelClient';
+import { getFirestore, doc, setDoc, getDoc } from "firebase/firestore";
+import { User } from "firebase/auth";
+import { PresentationConfig } from "../types";
+import { assignAbTestVariant, getVariantConfig } from "./abTesting";
+import { identifyUser } from "../../lib/mixpanelClient";
 
 const firestore = getFirestore();
 
@@ -15,15 +15,35 @@ export interface UserProfile {
 
   // Onboarding & preferences
   onboardingCompleted: boolean;
-  abilityLevel: 'beginner' | 'elementary' | 'intermediate' | 'advanced' | 'native';
+  abilityLevel:
+    | "beginner"
+    | "elementary"
+    | "intermediate"
+    | "advanced"
+    | "native";
   preferredInputLang: string;
   preferredTargetLang: string;
   nativeLanguage?: string; // User's native/first language
   contentPreferences?: string[];
+  timezone?: string; // User's timezone for streak warnings
+
+  // Email notification preferences
+  emailNotificationsEnabled?: boolean; // Master toggle
+  practiceReminderEnabled?: boolean; // Smart daily reminder (streak-aware)
+  weeklyStatsEnabled?: boolean; // Sunday weekly stats summary
+
+  // Email notification tracking (managed by backend)
+  lastPracticeReminderSent?: string; // ISO string
+  lastWeeklyStatsSent?: string; // ISO string
+
+  // Global anti-spam & lifecycle
+  lastAnyEmailSentAt?: string; // ISO string
+  emailsSentLast7Days?: number; // rolling counter
+  reengagementEmailSentAt?: string; // when we sent a "we miss you" email
 
   // Presentation config & AB testing
   defaultPresentationConfig?: PresentationConfig;
-  abTestVariant?: 'control' | 'variantB';
+  abTestVariant?: "control" | "variantB";
 
   // Metadata
   createdAt: string;
@@ -32,20 +52,25 @@ export interface UserProfile {
 }
 
 // Legacy interface for backward compatibility
-export type UserPreferences = Omit<UserProfile, 'uid' | 'email' | 'displayName' | 'photoURL'>;
+export type UserPreferences = Omit<
+  UserProfile,
+  "uid" | "email" | "displayName" | "photoURL"
+>;
 
-export const getUserProfile = async (userId: string): Promise<UserProfile | null> => {
+export const getUserProfile = async (
+  userId: string
+): Promise<UserProfile | null> => {
   try {
-    const userRef = doc(firestore, 'users', userId);
+    const userRef = doc(firestore, "users", userId);
     const docSnap = await getDoc(userRef);
-    
+
     if (docSnap.exists()) {
       return docSnap.data() as UserProfile;
     }
-    
+
     return null;
   } catch (error) {
-    console.error('Error getting user profile:', error);
+    console.error("Error getting user profile:", error);
     return null;
   }
 };
@@ -55,7 +80,7 @@ export const createOrUpdateUserProfile = async (
   profileData: Partial<UserProfile>
 ): Promise<void> => {
   try {
-    const userRef = doc(firestore, 'users', userId);
+    const userRef = doc(firestore, "users", userId);
     const now = new Date().toISOString();
 
     // Get existing profile
@@ -77,9 +102,9 @@ export const createOrUpdateUserProfile = async (
     // Merge with new data
     const updatedProfile: UserProfile = {
       uid: userId,
-      abilityLevel: 'beginner',
-      preferredInputLang: 'en-GB',
-      preferredTargetLang: 'it-IT',
+      abilityLevel: "beginner",
+      preferredInputLang: "en-GB",
+      preferredTargetLang: "it-IT",
       onboardingCompleted: false,
       createdAt: existingData.createdAt || now,
       ...existingData,
@@ -90,31 +115,33 @@ export const createOrUpdateUserProfile = async (
 
     await setDoc(userRef, updatedProfile, { merge: true });
   } catch (error) {
-    console.error('Error saving user profile:', error);
+    console.error("Error saving user profile:", error);
     throw error;
   }
 };
 
 // Legacy function for backward compatibility
 export const saveUserPreferences = async (
-  userId: string, 
+  userId: string,
   preferences: Partial<UserPreferences>
 ): Promise<void> => {
   return createOrUpdateUserProfile(userId, preferences);
 };
 
-export const getUserPreferences = async (userId: string): Promise<UserPreferences | null> => {
+export const getUserPreferences = async (
+  userId: string
+): Promise<UserPreferences | null> => {
   try {
-    const userRef = doc(firestore, 'users', userId);
+    const userRef = doc(firestore, "users", userId);
     const docSnap = await getDoc(userRef);
-    
+
     if (docSnap.exists()) {
       return docSnap.data() as UserPreferences;
     }
-    
+
     return null;
   } catch (error) {
-    console.error('Error getting user preferences:', error);
+    console.error("Error getting user preferences:", error);
     return null;
   }
 };
@@ -132,15 +159,15 @@ export const saveOnboardingData = async (
   const profileData: Partial<UserProfile> = {
     // Core user info (from Firebase user if available)
     uid: userId,
-    
+
     // Onboarding & preferences (from form data)
-    abilityLevel: data.abilityLevel as UserProfile['abilityLevel'],
+    abilityLevel: data.abilityLevel as UserProfile["abilityLevel"],
     preferredInputLang: data.inputLang,
     preferredTargetLang: data.targetLang,
     nativeLanguage: data.inputLang, // Save preferred input language as native language
     contentPreferences: data.contentPreferences,
     onboardingCompleted: true,
-    
+
     // Metadata (set current timestamp for activity)
     lastActiveAt: new Date().toISOString(),
   };
@@ -162,9 +189,13 @@ export const saveOnboardingData = async (
   try {
     const profile = await getUserProfile(userId);
     if (profile?.abTestVariant) {
-      identifyUser(userId, firebaseUser?.email || undefined, profile.abTestVariant);
+      identifyUser(
+        userId,
+        firebaseUser?.email || undefined,
+        profile.abTestVariant
+      );
     }
   } catch (error) {
-    console.error('Error notifying Mixpanel of AB variant:', error);
+    console.error("Error notifying Mixpanel of AB variant:", error);
   }
 };
