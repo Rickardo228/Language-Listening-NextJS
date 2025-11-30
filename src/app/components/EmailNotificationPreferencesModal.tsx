@@ -194,7 +194,7 @@ export function EmailNotificationPreferencesModal({
                         <h3 className="font-semibold">Weekly Stats Summary</h3>
                       </div>
                       <p className="text-sm text-muted-foreground">
-                        Every Sunday, get a summary of your progress for the week (replaces daily reminder on Sundays)
+                        Every Sunday, get a summary of your progress for the week
                       </p>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
@@ -214,7 +214,7 @@ export function EmailNotificationPreferencesModal({
               {/* Privacy Note */}
               <div className="text-xs text-muted-foreground bg-muted/50 rounded p-3">
                 <p className="font-medium mb-1">Your privacy matters</p>
-                <p>We respect your inbox. You'll receive at most one email per day. On Sundays, weekly stats replace your daily reminder.</p>
+                <p>We respect your inbox. You'll typically receive one email per day. On Sundays, you may receive both your weekly stats and a practice reminder if needed.</p>
               </div>
             </>
           )}
