@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { getFirestore, collection, query, where, getDocs, Timestamp, orderBy, limit, QuerySnapshot, DocumentSnapshot, } from 'firebase/firestore';
 import { languageOptions, Config } from '../types';
@@ -8,6 +8,7 @@ import { CollectionList } from '../CollectionList';
 import { LanguageSelector } from './LanguageSelector';
 import { useUser } from '../contexts/UserContext';
 import { track } from '../../lib/mixpanelClient';
+import { loadProgress } from '../utils/progressService';
 
 const firestore = getFirestore();
 
@@ -60,10 +61,11 @@ export function TemplatesBrowser({
     showAllOverride = false,
 }: TemplatesBrowserProps) {
     const router = useRouter();
-    const { userProfile } = useUser();
+    const { user, userProfile } = useUser();
     const [templates, setTemplates] = useState<Template[]>([]);
     const [loading, setLoading] = useState(true);
     const [isShowingAll, setIsShowingAll] = useState(false);
+    const [templateProgress, setTemplateProgress] = useState<Record<string, { completedAt?: string; listenedCount: number; lastPhraseIndex?: number }>>({});
 
     // Use user preferences if available, otherwise fall back to props
     const [inputLang, setInputLang] = useState(
@@ -74,93 +76,138 @@ export function TemplatesBrowser({
     );
     const hasInitialFetch = useRef(false);
 
-    // Update languages when user profile loads/changes
-    useEffect(() => {
-        if (userProfile?.preferredInputLang && userProfile?.preferredTargetLang) {
-            const newInputLang = userProfile.preferredInputLang;
-            const newTargetLang = userProfile.preferredTargetLang;
+    // Fetch templates for the current language pair (optionally overridden)
+    const fetchTemplates = useCallback(
+        async (
+            currentInputLang?: string,
+            currentTargetLang?: string,
+            options?: { fetchAll?: boolean; limitCount?: number }
+        ) => {
+            // Use the passed values or fall back to state values
+            const inputLangToUse = currentInputLang || inputLang;
+            const targetLangToUse = currentTargetLang || targetLang;
 
-            // Only update if different to avoid infinite loops
-            if (inputLang !== newInputLang || targetLang !== newTargetLang) {
-                setInputLang(newInputLang);
-                setTargetLang(newTargetLang);
+            setLoading(true);
 
-                // Refetch templates with new languages
-                fetchTemplates(newInputLang, newTargetLang);
-            }
-        }
-    }, [userProfile?.preferredInputLang, userProfile?.preferredTargetLang, inputLang, targetLang]);
+            try {
+                const templatesRef = collection(firestore, 'templates');
+                const FETCH_LIMIT = options?.limitCount || 10;
 
-    const fetchTemplates = async (
-        currentInputLang?: string,
-        currentTargetLang?: string,
-        options?: { fetchAll?: boolean; limitCount?: number }
-    ) => {
-        // Use the passed values or fall back to state values
-        const inputLangToUse = currentInputLang || inputLang;
-        const targetLangToUse = currentTargetLang || targetLang;
+                // Build base query conditions
+                const getPathConditions = () => {
+                    if (pathId) {
+                        return [where('pathId', '==', pathId)];
+                    } else {
+                        return [where('is_path', '!=', true)];
+                    }
+                };
 
-        setLoading(true);
+                const pathConditions = getPathConditions();
 
-        try {
-            const templatesRef = collection(firestore, 'templates');
-            const FETCH_LIMIT = options?.limitCount || 10;
+                // If tags are provided, make multiple queries (one per tag)
+                if (tags.length > 0) {
+                    const allQueries: Promise<QuerySnapshot>[] = [];
 
-            // Build base query conditions
-            const getPathConditions = () => {
-                if (pathId) {
-                    return [where('pathId', '==', pathId)];
-                } else {
-                    return [where('is_path', '!=', true)];
+                    // Create queries for each tag
+                    for (const tag of tags) {
+                        const query1 = query(
+                            templatesRef,
+                            where('lang', '==', inputLangToUse),
+                            where('tags', 'array-contains', tag),
+                            ...pathConditions,
+                            orderBy(pathId ? 'pathIndex' : 'createdAt', pathId ? 'asc' : 'desc'),
+                            ...(options?.fetchAll ? [] as [] : [limit(FETCH_LIMIT)])
+                        );
+
+                        const query2 = query(
+                            templatesRef,
+                            where('lang', '==', targetLangToUse),
+                            where('tags', 'array-contains', tag),
+                            ...pathConditions,
+                            orderBy(pathId ? 'pathIndex' : 'createdAt', pathId ? 'asc' : 'desc'),
+                            ...(options?.fetchAll ? [] as [] : [limit(FETCH_LIMIT)])
+                        );
+
+                        allQueries.push(getDocs(query1), getDocs(query2));
+                    }
+
+                    // Execute all queries in parallel
+                    const querySnapshots = await Promise.all(allQueries);
+
+                    // Process all results
+                    const templatesData: Template[] = [];
+                    const seenIds = new Set<string>();
+
+                    querySnapshots.forEach((querySnapshot: QuerySnapshot) => {
+                        querySnapshot.forEach((doc: DocumentSnapshot) => {
+                            if (!seenIds.has(doc.id)) {
+                                seenIds.add(doc.id);
+                                templatesData.push({ id: doc.id, ...doc.data() } as Template);
+                            }
+                        });
+                    });
+
+                    // Process the results (same as before)
+                    const templatesByGroup = templatesData.reduce((acc, template) => {
+                        if (!acc[template.groupId]) {
+                            acc[template.groupId] = [] as Template[];
+                        }
+                        (acc[template.groupId] as Template[]).push(template);
+                        return acc;
+                    }, {} as Record<string, Template[]>);
+
+                    const uniqueTemplates = Object.values(templatesByGroup)
+                        .filter((groupTemplates) => {
+                            const hasInput = groupTemplates.some((t) => t.lang === inputLangToUse);
+                            const hasTarget = groupTemplates.some((t) => t.lang === targetLangToUse);
+                            return hasInput && hasTarget;
+                        })
+                        .map((groupTemplates) => groupTemplates.find((t) => t.lang === inputLangToUse) || groupTemplates[0]);
+
+
+                    setTemplates(options?.fetchAll ? uniqueTemplates : uniqueTemplates.slice(0, FETCH_LIMIT));
+                    return;
                 }
-            };
 
-            const pathConditions = getPathConditions();
+                // Original logic for when no tags are provided
+                const baseConditions1 = [
+                    where('lang', '==', inputLangToUse),
+                    ...pathConditions,
+                    orderBy(pathId ? 'pathIndex' : 'createdAt', pathId ? 'asc' : 'desc'),
+                    ...(options?.fetchAll ? [] as [] : [limit(FETCH_LIMIT)])
+                ];
 
-            // If tags are provided, make multiple queries (one per tag)
-            if (tags.length > 0) {
-                const allQueries: Promise<QuerySnapshot>[] = [];
+                const baseConditions2 = [
+                    where('lang', '==', targetLangToUse),
+                    ...pathConditions,
+                    orderBy(pathId ? 'pathIndex' : 'createdAt', pathId ? 'asc' : 'desc'),
+                    ...(options?.fetchAll ? [] as [] : [limit(FETCH_LIMIT)])
+                ];
 
-                // Create queries for each tag
-                for (const tag of tags) {
-                    const query1 = query(
-                        templatesRef,
-                        where('lang', '==', inputLangToUse),
-                        where('tags', 'array-contains', tag),
-                        ...pathConditions,
-                        orderBy(pathId ? 'pathIndex' : 'createdAt', pathId ? 'asc' : 'desc'),
-                        ...(options?.fetchAll ? [] as [] : [limit(FETCH_LIMIT)])
-                    );
+                const query1 = query(templatesRef, ...baseConditions1);
+                const query2 = query(templatesRef, ...baseConditions2);
 
-                    const query2 = query(
-                        templatesRef,
-                        where('lang', '==', targetLangToUse),
-                        where('tags', 'array-contains', tag),
-                        ...pathConditions,
-                        orderBy(pathId ? 'pathIndex' : 'createdAt', pathId ? 'asc' : 'desc'),
-                        ...(options?.fetchAll ? [] as [] : [limit(FETCH_LIMIT)])
-                    );
+                const [querySnapshot1, querySnapshot2] = await Promise.all([
+                    getDocs(query1),
+                    getDocs(query2),
+                ]);
 
-                    allQueries.push(getDocs(query1), getDocs(query2));
-                }
-
-                // Execute all queries in parallel
-                const querySnapshots = await Promise.all(allQueries);
-
-                // Process all results
                 const templatesData: Template[] = [];
                 const seenIds = new Set<string>();
 
-                querySnapshots.forEach((querySnapshot: QuerySnapshot) => {
-                    querySnapshot.forEach((doc: DocumentSnapshot) => {
-                        if (!seenIds.has(doc.id)) {
-                            seenIds.add(doc.id);
-                            templatesData.push({ id: doc.id, ...doc.data() } as Template);
-                        }
-                    });
+                querySnapshot1.forEach((doc: DocumentSnapshot) => {
+                    if (!seenIds.has(doc.id)) {
+                        seenIds.add(doc.id);
+                        templatesData.push({ id: doc.id, ...doc.data() } as Template);
+                    }
+                });
+                querySnapshot2.forEach((doc: DocumentSnapshot) => {
+                    if (!seenIds.has(doc.id)) {
+                        seenIds.add(doc.id);
+                        templatesData.push({ id: doc.id, ...doc.data() } as Template);
+                    }
                 });
 
-                // Process the results (same as before)
                 const templatesByGroup = templatesData.reduce((acc, template) => {
                     if (!acc[template.groupId]) {
                         acc[template.groupId] = [] as Template[];
@@ -177,94 +224,52 @@ export function TemplatesBrowser({
                     })
                     .map((groupTemplates) => groupTemplates.find((t) => t.lang === inputLangToUse) || groupTemplates[0]);
 
+                // Sort by pathIndex or createdAt
+                const sortedTemplates = uniqueTemplates.sort((a, b) => {
+                    if (pathId) {
+                        const indexA = a.pathIndex || 0;
+                        const indexB = b.pathIndex || 0;
+                        return indexA - indexB;
+                    } else {
+                        const dateA = a.createdAt?.toDate?.() || new Date(0);
+                        const dateB = b.createdAt?.toDate?.() || new Date(0);
+                        return dateB.getTime() - dateA.getTime();
+                    }
+                });
 
-                setTemplates(options?.fetchAll ? uniqueTemplates : uniqueTemplates.slice(0, FETCH_LIMIT));
-                return;
+                setTemplates(options?.fetchAll ? sortedTemplates : sortedTemplates.slice(0, FETCH_LIMIT));
+            } catch (err) {
+                console.error('Error fetching templates:', err);
+                setTemplates([]);
+            } finally {
+                setLoading(false);
             }
+        },
+        [inputLang, targetLang, pathId, tags]
+    );
 
-            // Original logic for when no tags are provided
-            const baseConditions1 = [
-                where('lang', '==', inputLangToUse),
-                ...pathConditions,
-                orderBy(pathId ? 'pathIndex' : 'createdAt', pathId ? 'asc' : 'desc'),
-                ...(options?.fetchAll ? [] as [] : [limit(FETCH_LIMIT)])
-            ];
+    useEffect(() => {
+        if (userProfile?.preferredInputLang && userProfile?.preferredTargetLang) {
+            const newInputLang = userProfile.preferredInputLang;
+            const newTargetLang = userProfile.preferredTargetLang;
 
-            const baseConditions2 = [
-                where('lang', '==', targetLangToUse),
-                ...pathConditions,
-                orderBy(pathId ? 'pathIndex' : 'createdAt', pathId ? 'asc' : 'desc'),
-                ...(options?.fetchAll ? [] as [] : [limit(FETCH_LIMIT)])
-            ];
+            // Only update if different to avoid infinite loops
+            if (inputLang !== newInputLang || targetLang !== newTargetLang) {
+                setInputLang(newInputLang);
+                setTargetLang(newTargetLang);
 
-            const query1 = query(templatesRef, ...baseConditions1);
-            const query2 = query(templatesRef, ...baseConditions2);
-
-            const [querySnapshot1, querySnapshot2] = await Promise.all([
-                getDocs(query1),
-                getDocs(query2),
-            ]);
-
-            const templatesData: Template[] = [];
-            const seenIds = new Set<string>();
-
-            querySnapshot1.forEach((doc: DocumentSnapshot) => {
-                if (!seenIds.has(doc.id)) {
-                    seenIds.add(doc.id);
-                    templatesData.push({ id: doc.id, ...doc.data() } as Template);
-                }
-            });
-            querySnapshot2.forEach((doc: DocumentSnapshot) => {
-                if (!seenIds.has(doc.id)) {
-                    seenIds.add(doc.id);
-                    templatesData.push({ id: doc.id, ...doc.data() } as Template);
-                }
-            });
-
-            const templatesByGroup = templatesData.reduce((acc, template) => {
-                if (!acc[template.groupId]) {
-                    acc[template.groupId] = [] as Template[];
-                }
-                (acc[template.groupId] as Template[]).push(template);
-                return acc;
-            }, {} as Record<string, Template[]>);
-
-            const uniqueTemplates = Object.values(templatesByGroup)
-                .filter((groupTemplates) => {
-                    const hasInput = groupTemplates.some((t) => t.lang === inputLangToUse);
-                    const hasTarget = groupTemplates.some((t) => t.lang === targetLangToUse);
-                    return hasInput && hasTarget;
-                })
-                .map((groupTemplates) => groupTemplates.find((t) => t.lang === inputLangToUse) || groupTemplates[0]);
-
-            // Sort by pathIndex or createdAt
-            const sortedTemplates = uniqueTemplates.sort((a, b) => {
-                if (pathId) {
-                    const indexA = a.pathIndex || 0;
-                    const indexB = b.pathIndex || 0;
-                    return indexA - indexB;
-                } else {
-                    const dateA = a.createdAt?.toDate?.() || new Date(0);
-                    const dateB = b.createdAt?.toDate?.() || new Date(0);
-                    return dateB.getTime() - dateA.getTime();
-                }
-            });
-
-            setTemplates(options?.fetchAll ? sortedTemplates : sortedTemplates.slice(0, FETCH_LIMIT));
-        } catch (err) {
-            console.error('Error fetching templates:', err);
-            setTemplates([]);
-        } finally {
-            setLoading(false);
+                // Refetch templates with new languages
+                fetchTemplates(newInputLang, newTargetLang);
+            }
         }
-    };
+    }, [userProfile?.preferredInputLang, userProfile?.preferredTargetLang, inputLang, targetLang, fetchTemplates]);
 
     useEffect(() => {
         if (!hasInitialFetch.current) {
             hasInitialFetch.current = true;
             fetchTemplates(undefined, undefined, { fetchAll: false, limitCount: 10 });
         }
-    }, [pathId]);
+    }, [pathId, fetchTemplates]);
 
     const handleInputLangChange = (lang: string) => {
         setTemplates([]);
@@ -283,6 +288,44 @@ export function TemplatesBrowser({
     const getLanguageLabel = (value: string) => {
         return languageOptions.find((option) => option.code === value)?.label || value;
     };
+
+    // Load progress for visible templates for the current user and language pair
+    useEffect(() => {
+        const fetchCompletionStatus = async () => {
+            if (!user?.uid || templates.length === 0) {
+                setTemplateProgress({});
+                return;
+            }
+
+            const results: Record<string, { completedAt?: string; listenedCount: number; lastPhraseIndex?: number }> = {};
+
+            await Promise.all(
+                templates.map(async (template) => {
+                    try {
+                        const progress = await loadProgress(
+                            user.uid,
+                            template.groupId,
+                            inputLang,
+                            targetLang
+                        );
+                        if (progress) {
+                            results[template.groupId] = {
+                                completedAt: progress.completedAt,
+                                listenedCount: progress.listenedPhraseIndices?.length ?? 0,
+                                lastPhraseIndex: progress.lastPhraseIndex,
+                            };
+                        }
+                    } catch (err) {
+                        console.error('Error loading completion status for template', template.groupId, err);
+                    }
+                })
+            );
+
+            setTemplateProgress(results);
+        };
+
+        fetchCompletionStatus();
+    }, [user?.uid, templates, inputLang, targetLang]);
 
     // No separate loader branch; `CollectionList` will show skeletons when loading is true
 
@@ -360,6 +403,26 @@ export function TemplatesBrowser({
                                 loading={loading}
                                 getPhraseCount={(c) => templateByGroup.get(c.id)?.phraseCount || 0}
                                 getLanguagePair={() => ({ inputLang, targetLang })}
+                                getCompletionStatus={(c) => {
+                                    const t = templateByGroup.get(c.id);
+                                    const progress = templateProgress[c.id];
+                                    const total = t?.phraseCount || 0;
+                                    if (!progress || !total) return false;
+                                    // Treat as completed if we have an explicit completedAt
+                                    // OR if we've listened to all phrases in this template
+                                    return Boolean(progress.completedAt) || progress.listenedCount >= total;
+                                }}
+                                getProgressSummary={(c) => {
+                                    const t = templateByGroup.get(c.id);
+                                    const progress = templateProgress[c.id];
+                                    const total = t?.phraseCount || 0;
+                                    if (!progress || !total) return null;
+                                    const fromLastPlayed = typeof progress.lastPhraseIndex === 'number' && progress.lastPhraseIndex >= 0
+                                        ? progress.lastPhraseIndex + 1
+                                        : 0;
+                                    const completedCount = Math.min(fromLastPlayed, total);
+                                    return { completedCount, totalCount: total };
+                                }}
                                 onLoadCollection={(c) => {
                                     const template = templateByGroup.get(c.id);
                                     track('Template Collection Selected', {

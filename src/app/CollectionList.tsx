@@ -29,6 +29,10 @@ interface CollectionListProps {
     enableCarouselControls?: boolean;
     getPhraseCount?: (collection: Config) => number;
     getLanguagePair?: (collection: Config) => { inputLang: string; targetLang: string } | null;
+    // Optional callback to determine if a collection is completed
+    getCompletionStatus?: (collection: Config) => boolean;
+    // Optional callback to provide progress for incomplete collections
+    getProgressSummary?: (collection: Config) => { completedCount: number; totalCount: number } | null;
 }
 
 export function CollectionList({
@@ -50,6 +54,8 @@ export function CollectionList({
     enableCarouselControls = false,
     getPhraseCount,
     getLanguagePair,
+    getCompletionStatus,
+    getProgressSummary,
 }: CollectionListProps) {
     const router = useRouter();
     const containerRef = useRef<HTMLDivElement | null>(null);
@@ -190,6 +196,10 @@ export function CollectionList({
                             const languages = getLanguagePair ? getLanguagePair(collection) : (collection.phrases[0]
                                 ? { inputLang: collection.phrases[0].inputLang, targetLang: collection.phrases[0].targetLang }
                                 : null);
+                            const isCompleted = getCompletionStatus ? getCompletionStatus(collection) : false;
+                            const progress = getProgressSummary
+                                ? getProgressSummary(collection)
+                                : null;
 
                             if (itemVariant === 'card') {
                                 const paletteIndex = tileBackgroundPalette.length
@@ -210,6 +220,33 @@ export function CollectionList({
                                             `
                                             }
                                         >
+                                            {isCompleted && (
+                                                <div className="absolute top-2 left-2 inline-flex items-center gap-1 rounded-full bg-black/50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide">
+                                                    <svg
+                                                        xmlns="http://www.w3.org/2000/svg"
+                                                        viewBox="0 0 24 24"
+                                                        fill="none"
+                                                        stroke="currentColor"
+                                                        strokeWidth={2}
+                                                        strokeLinecap="round"
+                                                        strokeLinejoin="round"
+                                                        className="w-3 h-3"
+                                                    >
+                                                        <path d="M20 6L9 17l-5-5" />
+                                                    </svg>
+                                                    <span>Completed</span>
+                                                </div>
+                                            )}
+                                            {progress && progress.totalCount > 0 && (
+                                                <div className="absolute inset-x-0 top-0 h-[3px] bg-primary/15 dark:bg-primary/25">
+                                                    <div
+                                                        className="h-full bg-primary"
+                                                        style={{
+                                                            width: `${Math.min(100, Math.max(0, (progress.completedCount / progress.totalCount) * 100))}%`,
+                                                        }}
+                                                    />
+                                                </div>
+                                            )}
                                             {(showPlayOnHover ?? true) && (
                                                 <div className="absolute bottom-3 right-3 hidden sm:block">
                                                     <div className="pointer-events-none absolute inset-0 rounded-full bg-white/30 blur-md opacity-0 scale-75 group-hover:opacity-100 group-hover:scale-100 transition-all duration-300"></div>
