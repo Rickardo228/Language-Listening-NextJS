@@ -3,6 +3,7 @@ import { User } from "firebase/auth";
 import { PresentationConfig } from "../types";
 import { assignAbTestVariant, getVariantConfig } from "./abTesting";
 import { identifyUser } from "../../lib/mixpanelClient";
+import { AbilityLevel } from "./contentRecommendations";
 
 const firestore = getFirestore();
 
@@ -15,12 +16,7 @@ export interface UserProfile {
 
   // Onboarding & preferences
   onboardingCompleted: boolean;
-  abilityLevel:
-    | "beginner"
-    | "elementary"
-    | "intermediate"
-    | "advanced"
-    | "native";
+  abilityLevel: AbilityLevel;
   preferredInputLang: string;
   preferredTargetLang: string;
   nativeLanguage?: string; // User's native/first language
@@ -167,6 +163,11 @@ export const saveOnboardingData = async (
     nativeLanguage: data.inputLang, // Save preferred input language as native language
     contentPreferences: data.contentPreferences,
     onboardingCompleted: true,
+
+    // Email notification preferences (opt-in by default for new users)
+    emailNotificationsEnabled: true,
+    practiceReminderEnabled: true,
+    weeklyStatsEnabled: true,
 
     // Metadata (set current timestamp for activity)
     lastActiveAt: new Date().toISOString(),
