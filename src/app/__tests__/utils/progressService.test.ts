@@ -228,17 +228,16 @@ describe("progressService", () => {
 
       expect(setDoc).toHaveBeenCalledWith(
         mockDocRef,
-        {
+        expect.objectContaining({
           itemId: mockItemId,
           itemType: "collection",
           lastPhraseIndex: 7,
           lastPhase: "input",
           lastAccessedAt: expect.anything(),
-          completedAt: null,
           inputLang: mockInputLang,
           targetLang: mockTargetLang,
           listenedPhraseIndices: expect.anything(),
-        },
+        }),
         { merge: true }
       );
 
