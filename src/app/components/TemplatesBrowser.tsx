@@ -248,6 +248,7 @@ export function TemplatesBrowser({
         [inputLang, targetLang, pathId, tags]
     );
 
+    // Update languages when user profile loads/changes
     useEffect(() => {
         if (userProfile?.preferredInputLang && userProfile?.preferredTargetLang) {
             const newInputLang = userProfile.preferredInputLang;
