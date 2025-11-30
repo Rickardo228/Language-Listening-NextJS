@@ -107,7 +107,7 @@ export function EmailNotificationPreferencesModal({
                 <div className="text-sm text-blue-800 dark:text-blue-200">
                   <p className="font-medium mb-1">Stay consistent with your practice</p>
                   <p className="text-blue-700 dark:text-blue-300">
-                    Get helpful reminders ~23 hours after your last practice. If you have an active streak, we'll remind you to keep it going!
+                    Get helpful reminders ~23 hours after your last practice. If you have an active streak, we&apos;ll remind you to keep it going!
                   </p>
                 </div>
               </div>
@@ -164,7 +164,7 @@ export function EmailNotificationPreferencesModal({
                         </p>
                         <p className="flex items-center gap-1.5">
                           <span className="text-orange-600">•</span>
-                          <span><strong>Have a streak?</strong> We'll remind you to keep it alive</span>
+                          <span><strong>Have a streak?</strong> We&apos;ll remind you to keep it alive</span>
                         </p>
                         <p className="flex items-center gap-1.5">
                           <span className="text-red-600">•</span>
@@ -214,7 +214,7 @@ export function EmailNotificationPreferencesModal({
               {/* Privacy Note */}
               <div className="text-xs text-muted-foreground bg-muted/50 rounded p-3">
                 <p className="font-medium mb-1">Your privacy matters</p>
-                <p>We respect your inbox. You'll typically receive one email per day. On Sundays, you may receive both your weekly stats and a practice reminder if needed.</p>
+                <p>We respect your inbox. You&apos;ll typically receive one email per day. On Sundays, you may receive both your weekly stats and a practice reminder if needed.</p>
               </div>
             </>
           )}
