@@ -260,7 +260,7 @@ describe("PhrasePlaybackView - Progress Tracking", () => {
 
         it("should not save progress before loading is complete", async () => {
             // Make loadProgress take a long time
-            let resolveLoadProgress: (value: any) => void;
+            let resolveLoadProgress: (value: null) => void;
             const loadProgressPromise = new Promise((resolve) => {
                 resolveLoadProgress = resolve;
             });
@@ -339,7 +339,7 @@ describe("PhrasePlaybackView - Progress Tracking", () => {
             // Create a small collection for easier testing
             const smallPhrases = createMockPhrases(2);
 
-            const { rerender } = render(
+            render(
                 <UserContextProvider>
                     <PhrasePlaybackView
                         phrases={smallPhrases}
@@ -490,7 +490,7 @@ describe("PhrasePlaybackView - Progress Tracking", () => {
 
     describe("Integration with existing functionality", () => {
         it("should not interfere with phrase editing", async () => {
-            const { container } = render(
+            render(
                 <UserContextProvider>
                     <PhrasePlaybackView
                         phrases={mockPhrases}
