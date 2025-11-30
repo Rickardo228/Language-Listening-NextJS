@@ -4,11 +4,12 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import { Phrase, languageOptions, PresentationConfig } from '../../types';
 import { defaultPresentationConfig } from '../../defaultConfig';
-import { getFirestore, collection, query, where, getDocs, Timestamp, deleteDoc, doc } from 'firebase/firestore';
+import { getFirestore, collection, query, where, getDocs, Timestamp, deleteDoc, doc, updateDoc } from 'firebase/firestore';
 import { PhrasePlaybackView, PhrasePlaybackMethods } from '../../components/PhrasePlaybackView';
 import { CollectionHeader } from '../../CollectionHeader';
 import { useUser } from '../../contexts/UserContext';
 import { getUserProfile, createOrUpdateUserProfile } from '../../utils/userPreferences';
+import { uploadBackgroundMedia, deleteBackgroundMedia } from '../../utils/backgroundUpload';
 
 const firestore = getFirestore();
 
@@ -29,6 +30,7 @@ interface Template {
     complexity: string;
     phraseCount: number;
     name: string;
+    presentationConfig?: PresentationConfig;
 }
 
 // Helper function to get language label from code using Intl.DisplayNames
@@ -138,6 +140,8 @@ export default function TemplateDetailPage() {
         enableLoop: false,
         enableOutputDurationDelay: false
     });
+    const [userDefaultConfig, setUserDefaultConfig] = useState<PresentationConfig | null>(null);
+    const [templatePresentationConfig, setTemplatePresentationConfig] = useState<PresentationConfig | null>(null);
     const [userConfigLoaded, setUserConfigLoaded] = useState(false);
     const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -152,12 +156,7 @@ export default function TemplateDetailPage() {
             try {
                 const userProfile = await getUserProfile(user.uid);
                 if (userProfile?.defaultPresentationConfig) {
-                    // Initialize with user's saved default config
-                    const userConfig = userProfile.defaultPresentationConfig;
-                    setPresentationConfig(prev => ({
-                        ...userConfig,
-                        name: prev.name, // Keep the template name
-                    } as PresentationConfig));
+                    setUserDefaultConfig(userProfile.defaultPresentationConfig);
                 }
             } catch (error) {
                 console.error('Error loading user config:', error);
@@ -169,16 +168,14 @@ export default function TemplateDetailPage() {
         loadUserConfig();
     }, [user]);
 
-    // Debounced save function for real-time config persistence
+    // Debounced save function for real-time user default persistence
     const debouncedSaveConfig = useCallback((config: PresentationConfig) => {
         if (!user || !userConfigLoaded) return;
 
-        // Clear existing timeout
         if (saveTimeoutRef.current) {
             clearTimeout(saveTimeoutRef.current);
         }
 
-        // Set new timeout to save after 300ms of inactivity
         saveTimeoutRef.current = setTimeout(async () => {
             try {
                 await createOrUpdateUserProfile(user.uid, {
@@ -296,6 +293,11 @@ export default function TemplateDetailPage() {
 
                     // Store template data for name extraction
                     setTemplateData(inputTemplateData);
+
+                    // Capture template-level presentation config (admin-set)
+                    if (inputTemplateData.presentationConfig) {
+                        setTemplatePresentationConfig(inputTemplateData.presentationConfig);
+                    }
                 } else {
                     setPhrases([]);
                 }
@@ -316,6 +318,18 @@ export default function TemplateDetailPage() {
 
         fetchTemplates();
     }, [user, groupId, selectedInputLang, selectedTargetLang]);
+
+    // Combine defaults: system -> user default -> template-level config
+    useEffect(() => {
+        const base: PresentationConfig = {
+            ...defaultPresentationConfig,
+            ...(userDefaultConfig || {}),
+            ...(templatePresentationConfig || {}),
+            name: templateData?.name || `Template ${groupId}`,
+        };
+
+        setPresentationConfig(base);
+    }, [userDefaultConfig, templatePresentationConfig, templateData?.name, groupId]);
 
     // Admin-only template deletion function
     const handleDeleteTemplate = async (templateGroupId: string) => {
@@ -349,6 +363,119 @@ export default function TemplateDetailPage() {
         } catch (error) {
             console.error('Error deleting template:', error);
             alert('Failed to delete template. Please try again.');
+        }
+    };
+
+    // Admin-only template background upload function
+    const handleTemplateBackgroundUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file || !user || !groupId || !isAdmin) {
+            return;
+        }
+
+        try {
+            // Delete old background if it exists and is a Firebase Storage URL
+            const oldBgImage = presentationConfig?.bgImage;
+            if (oldBgImage && oldBgImage.includes('storage.googleapis.com')) {
+                try {
+                    await deleteBackgroundMedia(user.uid, groupId as string, oldBgImage);
+                } catch (deleteError) {
+                    console.error('Error deleting old template background:', deleteError);
+                    // Continue with upload even if deletion fails
+                }
+            }
+
+            // Upload new background
+            const { downloadUrl } = await uploadBackgroundMedia(file, user.uid, groupId as string);
+
+            // Update local presentation config state without touching user defaults
+            setPresentationConfig(prev => ({
+                ...prev,
+                bgImage: downloadUrl,
+            }));
+            setTemplatePresentationConfig(prev => prev ? { ...prev, bgImage: downloadUrl } : prev);
+
+            // Persist background to all template docs in this group so it applies across languages
+            try {
+                const templatesRef = collection(firestore, 'templates');
+                const groupQuery = query(templatesRef, where('groupId', '==', groupId));
+                const groupSnapshot = await getDocs(groupQuery);
+
+                const updatePromises = groupSnapshot.docs.map(docSnapshot =>
+                    updateDoc(doc(firestore, 'templates', docSnapshot.id), {
+                        presentationConfig: {
+                            ...(docSnapshot.data().presentationConfig || {}),
+                            bgImage: downloadUrl,
+                        },
+                    })
+                );
+
+                await Promise.all(updatePromises);
+            } catch (persistError) {
+                console.error('Error saving template background to Firestore:', persistError);
+                alert('Background image applied locally but failed to save for this template. Please try again.');
+            }
+        } catch (error) {
+            console.error('Error uploading template background:', error);
+            alert(error instanceof Error ? error.message : 'Failed to upload background. Please try again.');
+        } finally {
+            // Reset file input
+            e.target.value = '';
+        }
+    };
+
+    // Admin-only template background removal function
+    const handleTemplateBackgroundRemove = async () => {
+        if (!user || !groupId || !isAdmin) {
+            return;
+        }
+
+        const oldBgImage = presentationConfig?.bgImage || templatePresentationConfig?.bgImage || null;
+        if (!oldBgImage) {
+            return;
+        }
+
+        try {
+            // Delete old background if it exists and is a Firebase Storage URL
+            if (oldBgImage.includes('storage.googleapis.com')) {
+                try {
+                    await deleteBackgroundMedia(user.uid, groupId as string, oldBgImage);
+                } catch (deleteError) {
+                    console.error('Error deleting template background:', deleteError);
+                    // Continue even if deletion fails
+                }
+            }
+
+            // Clear local presentation/background configs without touching user defaults
+            setPresentationConfig(prev => ({
+                ...prev,
+                bgImage: null,
+            }));
+            setTemplatePresentationConfig(prev => (prev ? { ...prev, bgImage: null } : prev));
+
+            // Persist removal to all template docs in this group
+            try {
+                const templatesRef = collection(firestore, 'templates');
+                const groupQuery = query(templatesRef, where('groupId', '==', groupId));
+                const groupSnapshot = await getDocs(groupQuery);
+
+                const updatePromises = groupSnapshot.docs.map(docSnapshot =>
+                    updateDoc(doc(firestore, 'templates', docSnapshot.id), {
+                        presentationConfig: {
+                            ...(docSnapshot.data().presentationConfig || {}),
+                            bgImage: null,
+                        },
+                    })
+                );
+
+                await Promise.all(updatePromises);
+            } catch (persistError) {
+                console.error('Error saving template background removal to Firestore:', persistError);
+                alert('Background removed locally but failed to save for this template. Please try again.');
+            }
+        } catch (error) {
+            console.error('Error removing template background:', error);
+            alert(error instanceof Error ? error.message : 'Failed to remove background. Please try again.');
         }
     };
 
@@ -432,6 +559,8 @@ export default function TemplateDetailPage() {
                         debouncedSaveConfig(newConfig);
                     }}
                     methodsRef={methodsRef}
+                    handleImageUpload={isAdmin ? handleTemplateBackgroundUpload : undefined}
+                    handleRemoveBackground={isAdmin ? handleTemplateBackgroundRemove : undefined}
                     collectionId={groupId as string}
                     stickyHeaderContent={collectionHeaderContent}
                     showImportPhrases={true}

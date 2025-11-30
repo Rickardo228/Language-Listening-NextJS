@@ -13,6 +13,7 @@ interface SettingsModalProps {
     presentationConfig: PresentationConfig;
     setPresentationConfig: (config: PresentationConfig) => void;
     handleImageUpload?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+    onRemoveBackground?: () => void;
     inputLang?: string;
     targetLang?: string;
 }
@@ -26,6 +27,7 @@ export function SettingsModal({
     presentationConfig,
     setPresentationConfig,
     handleImageUpload,
+    onRemoveBackground,
     inputLang,
     targetLang,
 }: SettingsModalProps) {
@@ -50,6 +52,8 @@ export function SettingsModal({
                         config={presentationConfig}
                         setConfig={(newConfig) => setPresentationConfig({ ...presentationConfig, ...newConfig })}
                         handleImageUpload={handleImageUpload}
+                        handleRemoveBackground={onRemoveBackground}
+                        hasBackground={Boolean(presentationConfig.bgImage)}
                         inputLang={inputLang}
                         targetLang={targetLang}
                     />

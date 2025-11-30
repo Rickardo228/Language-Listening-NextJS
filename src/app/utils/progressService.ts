@@ -75,22 +75,31 @@ export async function saveProgress(
     );
     const progressRef = doc(firestore, "users", userId, "progress", itemId);
 
+    // Base payload which is always written
+    const basePayload: Record<string, unknown> = {
+      itemId,
+      itemType: data.itemType,
+      lastPhraseIndex: data.lastPhraseIndex,
+      lastPhase: data.lastPhase,
+      lastAccessedAt: Timestamp.now(),
+      inputLang: data.inputLang,
+      targetLang: data.targetLang,
+      // Use arrayUnion to automatically add lastPhraseIndex to listenedPhraseIndices (no duplicates)
+      listenedPhraseIndices: arrayUnion(data.lastPhraseIndex),
+    };
+
+    // Only include completedAt when the caller explicitly provides it.
+    // This prevents accidentally clearing an existing completion timestamp
+    // when saving normal in-progress progress updates.
+    if (data.completedAt !== undefined) {
+      basePayload.completedAt = data.completedAt
+        ? Timestamp.fromDate(new Date(data.completedAt))
+        : null;
+    }
+
     await setDoc(
       progressRef,
-      {
-        itemId,
-        itemType: data.itemType,
-        lastPhraseIndex: data.lastPhraseIndex,
-        lastPhase: data.lastPhase,
-        lastAccessedAt: Timestamp.now(),
-        completedAt: data.completedAt
-          ? Timestamp.fromDate(new Date(data.completedAt))
-          : null,
-        inputLang: data.inputLang,
-        targetLang: data.targetLang,
-        // Use arrayUnion to automatically add lastPhraseIndex to listenedPhraseIndices (no duplicates)
-        listenedPhraseIndices: arrayUnion(data.lastPhraseIndex),
-      },
+      basePayload,
       { merge: true }
     );
   } catch (error) {

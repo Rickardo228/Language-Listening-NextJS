@@ -10,6 +10,8 @@ interface ConfigFieldsProps {
     config: PresentationConfig;
     setConfig: (newConfig: Partial<PresentationConfig>) => void;
     handleImageUpload?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+    handleRemoveBackground?: () => void;
+    hasBackground?: boolean;
     inputLang?: string;
     targetLang?: string;
 }
@@ -19,6 +21,8 @@ const ConfigFields: React.FC<ConfigFieldsProps> = ({
     config,
     setConfig,
     handleImageUpload,
+    handleRemoveBackground,
+    hasBackground,
     inputLang,
     targetLang,
 }) => {
@@ -157,6 +161,15 @@ const ConfigFields: React.FC<ConfigFieldsProps> = ({
                                 onChange={handleImageUpload}
                                 className="w-full p-2 border border-gray-300 rounded"
                             />
+                            {hasBackground && handleRemoveBackground && (
+                                <button
+                                    type="button"
+                                    onClick={handleRemoveBackground}
+                                    className="mt-2 text-sm text-red-600 hover:underline self-start"
+                                >
+                                    Remove background
+                                </button>
+                            )}
                             {dynamicDescription && (
                                 <p className="text-sm text-muted-foreground mt-1">{dynamicDescription}</p>
                             )}
