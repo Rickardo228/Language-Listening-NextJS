@@ -386,8 +386,8 @@ export default function TemplateDetailPage() {
                 }
             }
 
-            // Upload new background
-            const { downloadUrl } = await uploadBackgroundMedia(file, user.uid, groupId as string);
+            // Upload new background (template upload uses shared path)
+            const { downloadUrl } = await uploadBackgroundMedia(file, user.uid, groupId as string, true);
 
             // Update local presentation config state without touching user defaults
             setPresentationConfig(prev => ({

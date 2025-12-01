@@ -18,7 +18,8 @@ const VALID_IMAGE_TYPES = [
 export async function uploadBackgroundMedia(
   file: File,
   userId: string,
-  collectionId: string
+  collectionId: string,
+  isTemplate?: boolean
 ): Promise<UploadResult> {
   // Validate file type (client-side check)
   if (!VALID_IMAGE_TYPES.includes(file.type)) {
@@ -53,6 +54,9 @@ export async function uploadBackgroundMedia(
   formData.append("file", file);
   formData.append("userId", userId);
   formData.append("collectionId", collectionId);
+  if (isTemplate) {
+    formData.append("isTemplate", "true");
+  }
 
   // Upload file to server (server validates and uploads to storage)
   const uploadResponse = await fetch(
