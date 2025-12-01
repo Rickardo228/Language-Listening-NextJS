@@ -19,29 +19,33 @@ import { createOrUpdateUserProfile } from "./userPreferences";
 const firestore = getFirestore();
 
 // Utility function for timezone-aware date handling
+// Always returns ISO format (YYYY-MM-DD) regardless of browser locale
 export function getUserLocalDateBoundary(timezone?: string, date?: Date): string {
   const targetDate = date || new Date();
 
   // Use provided timezone or detect from browser
   const userTimezone = timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
 
-  // Create a new date object in the user's timezone
-  // This approach is more reliable than parsing locale strings
-  const year = targetDate.toLocaleDateString(undefined, {
+  // Use Intl.DateTimeFormat with 'en-US' locale to ensure consistent numeric output
+  // This ensures we always get "2025" not "2025年" regardless of browser locale
+  const formatter = new Intl.DateTimeFormat('en-US', {
     year: 'numeric',
-    timeZone: userTimezone
-  });
-  const month = targetDate.toLocaleDateString(undefined, {
     month: '2-digit',
-    timeZone: userTimezone
-  });
-  const day = targetDate.toLocaleDateString(undefined, {
     day: '2-digit',
-    timeZone: userTimezone
+    timeZone: userTimezone,
+    calendar: 'gregory', // Ensure Gregorian calendar
   });
 
-  // Return in YYYY-MM-DD format
-  return `${year}-${month}-${day}`;
+  // Format the date and extract parts
+  const parts = formatter.formatToParts(targetDate);
+
+  // Extract parts and ensure proper formatting
+  const year = parts.find((p) => p.type === 'year')?.value || '';
+  const month = parts.find((p) => p.type === 'month')?.value || '';
+  const day = parts.find((p) => p.type === 'day')?.value || '';
+
+  // Return in YYYY-MM-DD format (always ISO, regardless of browser locale)
+  return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
 }
 
 export function getUserTimezone(): string {
