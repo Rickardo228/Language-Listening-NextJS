@@ -97,11 +97,7 @@ export async function saveProgress(
         : null;
     }
 
-    await setDoc(
-      progressRef,
-      basePayload,
-      { merge: true }
-    );
+    await setDoc(progressRef, basePayload, { merge: true });
   } catch (error) {
     console.error("Error saving progress:", error);
   }
