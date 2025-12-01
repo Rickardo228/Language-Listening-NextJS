@@ -558,6 +558,10 @@ export default function TemplateDetailPage() {
                         // Save user-level config (exclude template-level fields: bgImage, backgroundOverlayOpacity)
                         // eslint-disable-next-line @typescript-eslint/no-unused-vars
                         const { bgImage, backgroundOverlayOpacity, ...userConfig } = newConfig;
+
+                        // Update local user config state so the effect doesn't overwrite our changes
+                        setUserDefaultConfig(userConfig as PresentationConfig);
+
                         debouncedSaveConfig(userConfig as PresentationConfig);
                     }}
                     methodsRef={methodsRef}
