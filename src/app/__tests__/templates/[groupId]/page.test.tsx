@@ -57,8 +57,10 @@ vi.mock('../../../contexts/UserContext', () => ({
 }))
 
 // Mock userPreferences
-const mockCreateOrUpdateUserProfile = vi.fn(() => Promise.resolve())
-const mockGetUserProfile = vi.fn(() => Promise.resolve({ defaultPresentationConfig: {} }))
+const { mockCreateOrUpdateUserProfile, mockGetUserProfile } = vi.hoisted(() => ({
+    mockCreateOrUpdateUserProfile: vi.fn(() => Promise.resolve()),
+    mockGetUserProfile: vi.fn(() => Promise.resolve({ defaultPresentationConfig: {} })),
+}))
 
 vi.mock('../../../utils/userPreferences', () => ({
     getUserProfile: () => mockGetUserProfile(),
