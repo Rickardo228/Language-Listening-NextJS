@@ -68,8 +68,10 @@ vi.mock('../../../utils/userPreferences', () => ({
 }))
 
 // Mock backgroundUpload
-const mockDeleteBackgroundMedia = vi.fn(() => Promise.resolve())
-const mockUploadBackgroundMedia = vi.fn(() => Promise.resolve({ downloadUrl: 'https://storage.googleapis.com/test.jpg' }))
+const { mockDeleteBackgroundMedia, mockUploadBackgroundMedia } = vi.hoisted(() => ({
+    mockDeleteBackgroundMedia: vi.fn(() => Promise.resolve()),
+    mockUploadBackgroundMedia: vi.fn(() => Promise.resolve({ downloadUrl: 'https://storage.googleapis.com/test.jpg' })),
+}))
 
 vi.mock('../../../utils/backgroundUpload', () => ({
     deleteBackgroundMedia: mockDeleteBackgroundMedia,
@@ -99,11 +101,14 @@ describe('TemplateDetailPage - Template-Level Config', () => {
         back: vi.fn(),
     }
 
+    let getDocsCallCount = 0
+
     beforeEach(() => {
         vi.clearAllMocks()
         mockIsAdmin = false
         mockUserProfile = mockUser
         capturedSetPresentationConfig = null
+        getDocsCallCount = 0
 
             // Setup default mocks
             ; (useParams as ReturnType<typeof vi.fn>).mockReturnValue({ groupId: mockGroupId })
@@ -119,35 +124,118 @@ describe('TemplateDetailPage - Template-Level Config', () => {
 
         mockFirestore.query.mockReturnValue({})
 
-        mockFirestore.getDocs.mockResolvedValue({
-            docs: [
-                {
-                    id: 'template-1',
-                    data: () => ({
-                        groupId: mockGroupId,
-                        lang: 'en-GB',
-                        phrases: {},
-                        presentationConfig: {
-                            bgImage: null,
-                            backgroundOverlayOpacity: 0.35,
+        // Mock getDocs to return different results based on call order
+        // First call: inputQuery (en-GB), Second call: targetQuery (it-IT), Third call: allTemplatesQuery
+        mockFirestore.getDocs.mockImplementation(() => {
+            getDocsCallCount++
+            if (getDocsCallCount === 1) {
+                // First call: input language template (en-GB)
+                return Promise.resolve({
+                    docs: [
+                        {
+                            id: 'template-1',
+                            data: () => ({
+                                groupId: mockGroupId,
+                                lang: 'en-GB',
+                                name: 'Test Template',
+                                phrases: {
+                                    'phrase-1': {
+                                        translated: 'Hello',
+                                        audioUrl: 'https://example.com/audio1.mp3',
+                                        duration: 1.5,
+                                        voice: 'voice1',
+                                    },
+                                },
+                                createdAt: { toDate: () => new Date() },
+                                presentationConfig: {
+                                    bgImage: 'https://storage.googleapis.com/test-bucket/backgrounds/admin-user-id/test-group-id/image.jpg',
+                                    backgroundOverlayOpacity: 0.35,
+                                },
+                            }),
                         },
-                    }),
-                },
-                {
-                    id: 'template-2',
-                    data: () => ({
-                        groupId: mockGroupId,
-                        lang: 'es-ES',
-                        phrases: {},
-                        presentationConfig: {
-                            bgImage: null,
-                            backgroundOverlayOpacity: 0.35,
+                    ],
+                    empty: false,
+                } as unknown as Awaited<ReturnType<typeof mockFirestore.getDocs>>)
+            } else if (getDocsCallCount === 2) {
+                // Second call: target language template (it-IT)
+                return Promise.resolve({
+                    docs: [
+                        {
+                            id: 'template-2',
+                            data: () => ({
+                                groupId: mockGroupId,
+                                lang: 'it-IT',
+                                name: 'Test Template',
+                                phrases: {
+                                    'phrase-1': {
+                                        translated: 'Ciao',
+                                        audioUrl: 'https://example.com/audio2.mp3',
+                                        duration: 1.5,
+                                        voice: 'voice2',
+                                    },
+                                },
+                                createdAt: { toDate: () => new Date() },
+                                presentationConfig: {
+                                    bgImage: 'https://storage.googleapis.com/test-bucket/backgrounds/admin-user-id/test-group-id/image.jpg',
+                                    backgroundOverlayOpacity: 0.35,
+                                },
+                            }),
                         },
-                    }),
-                },
-            ],
-            empty: false,
-        } as unknown as Awaited<ReturnType<typeof mockFirestore.getDocs>>)
+                    ],
+                    empty: false,
+                } as unknown as Awaited<ReturnType<typeof mockFirestore.getDocs>>)
+            } else {
+                // Third call and beyond: all templates query (for getting available languages and updates)
+                // This is called when fetching all templates for language selection and when updating templates
+                return Promise.resolve({
+                    docs: [
+                        {
+                            id: 'template-1',
+                            data: () => ({
+                                groupId: mockGroupId,
+                                lang: 'en-GB',
+                                name: 'Test Template',
+                                phrases: {
+                                    'phrase-1': {
+                                        translated: 'Hello',
+                                        audioUrl: 'https://example.com/audio1.mp3',
+                                        duration: 1.5,
+                                        voice: 'voice1',
+                                    },
+                                },
+                                createdAt: { toDate: () => new Date() },
+                                presentationConfig: {
+                                    bgImage: 'https://storage.googleapis.com/test-bucket/backgrounds/admin-user-id/test-group-id/image.jpg',
+                                    backgroundOverlayOpacity: 0.35,
+                                },
+                            }),
+                        },
+                        {
+                            id: 'template-2',
+                            data: () => ({
+                                groupId: mockGroupId,
+                                lang: 'it-IT',
+                                name: 'Test Template',
+                                phrases: {
+                                    'phrase-1': {
+                                        translated: 'Ciao',
+                                        audioUrl: 'https://example.com/audio2.mp3',
+                                        duration: 1.5,
+                                        voice: 'voice2',
+                                    },
+                                },
+                                createdAt: { toDate: () => new Date() },
+                                presentationConfig: {
+                                    bgImage: 'https://storage.googleapis.com/test-bucket/backgrounds/admin-user-id/test-group-id/image.jpg',
+                                    backgroundOverlayOpacity: 0.35,
+                                },
+                            }),
+                        },
+                    ],
+                    empty: false,
+                } as unknown as Awaited<ReturnType<typeof mockFirestore.getDocs>>)
+            }
+        })
 
         mockFirestore.doc.mockReturnValue({
             id: 'template-doc',
