@@ -45,6 +45,20 @@ export default function CollectionPage() {
   }
 
   const setPresentationConfig = async (newConfig: Partial<PresentationConfig>) => {
+    // Handle background removal (bgImage set to null)
+    if ('bgImage' in newConfig && newConfig.bgImage === null && presentationConfig?.bgImage) {
+      const oldBgImage = presentationConfig.bgImage;
+      // Delete from storage if Firebase URL
+      if (oldBgImage.includes('storage.googleapis.com') && user && selectedCollection) {
+        try {
+          await deleteBackgroundMedia(user.uid, selectedCollection, oldBgImage);
+        } catch (deleteError) {
+          console.error('Error deleting background:', deleteError);
+          // Continue even if deletion fails
+        }
+      }
+    }
+
     setPresentationConfigBase(newConfig);
     if (selectedCollection && user) {
       try {
@@ -294,35 +308,6 @@ export default function CollectionPage() {
     }
   };
 
-  const handleRemoveBackground = async () => {
-    if (!user || !selectedCollection) {
-      return;
-    }
-
-    const oldBgImage = presentationConfig?.bgImage;
-    if (!oldBgImage) {
-      return;
-    }
-
-    try {
-      // Delete old background if it exists and is a Firebase Storage URL
-      if (oldBgImage.includes('storage.googleapis.com')) {
-        try {
-          await deleteBackgroundMedia(user.uid, selectedCollection, oldBgImage);
-        } catch (deleteError) {
-          console.error('Error deleting background:', deleteError);
-          // Continue even if deletion fails
-        }
-      }
-
-      // Clear background in presentation config (and persist via setPresentationConfig)
-      await setPresentationConfig({ bgImage: null });
-    } catch (error) {
-      console.error('Error removing background:', error);
-      alert(error instanceof Error ? error.message : 'Failed to remove background. Please try again.');
-    }
-  };
-
   const handleUnshare = async (id: string) => {
     if (!user || !collectionConfig) return;
     try {
@@ -407,7 +392,6 @@ export default function CollectionPage() {
       stickyHeaderContent={stickyHeaderContent}
       methodsRef={playbackMethodsRef}
       handleImageUpload={handleImageUpload}
-      handleRemoveBackground={handleRemoveBackground}
       itemType="collection"
     />
   );
