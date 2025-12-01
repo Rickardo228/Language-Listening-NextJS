@@ -6,16 +6,17 @@ import { createMockPhrases } from '../utils/test-helpers'
 import { Config } from '../../types'
 
 // Mock Firestore
-vi.mock('firebase/firestore', () => ({
-  getFirestore: vi.fn(),
-  collection: vi.fn(),
-  query: vi.fn(),
-  where: vi.fn(),
-  getDocs: vi.fn().mockResolvedValue({
-    empty: true,
-    docs: [],
-  }),
-}))
+vi.mock('firebase/firestore', async () => {
+  const actual = await vi.importActual<typeof import('firebase/firestore')>('firebase/firestore')
+  return {
+    ...actual,
+    getFirestore: vi.fn(),
+    collection: vi.fn(),
+    query: vi.fn(),
+    where: vi.fn(),
+    getDocs: vi.fn(),
+  }
+})
 
 describe('CollectionHeader Component', () => {
   const mockCollection: Config = {
@@ -51,7 +52,7 @@ describe('CollectionHeader Component', () => {
     vi.mocked(getDocs).mockResolvedValue({
       empty: true,
       docs: [],
-    })
+    } as unknown as Awaited<ReturnType<typeof getDocs>>)
   })
 
   it('should render collection name', async () => {
