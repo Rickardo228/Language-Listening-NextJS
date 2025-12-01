@@ -47,7 +47,7 @@ vi.mock('../../../contexts/UserContext', () => ({
 
 // Mock usePresentationConfig
 const mockSetPresentationConfigBase = vi.fn()
-let mockPresentationConfig: PresentationConfig = {
+const mockPresentationConfig: PresentationConfig = {
     name: 'Default',
     bgImage: null,
     containerBg: 'white',
@@ -91,7 +91,6 @@ vi.mock('../../../utils/backgroundUpload', () => {
 
 // Get the mocked functions - will be set in beforeEach
 let mockDeleteBackgroundMedia: ReturnType<typeof vi.fn>
-let mockUploadBackgroundMedia: ReturnType<typeof vi.fn>
 
 // Mock PhrasePlaybackView to capture setPresentationConfig calls
 let capturedSetPresentationConfig: ((config: Partial<PresentationConfig>) => Promise<void>) | null = null
@@ -130,8 +129,7 @@ describe('CollectionPage - Background Removal', () => {
 
         // Get the mocked functions
         const backgroundUploadModule = await import('../../../utils/backgroundUpload')
-        mockDeleteBackgroundMedia = (backgroundUploadModule as any).__mockDeleteBackgroundMedia
-        mockUploadBackgroundMedia = (backgroundUploadModule as any).__mockUploadBackgroundMedia
+        mockDeleteBackgroundMedia = (backgroundUploadModule as unknown as { __mockDeleteBackgroundMedia: ReturnType<typeof vi.fn> }).__mockDeleteBackgroundMedia
 
             // Setup default mocks
             ; (useParams as ReturnType<typeof vi.fn>).mockReturnValue({ id: mockCollectionId })
@@ -297,6 +295,7 @@ describe('CollectionPage - Background Removal', () => {
 
             // Mock user as null/undefined
             vi.mocked(useParams).mockReturnValue({ id: mockCollectionId })
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             mockUserProfile = null as any
 
             render(<CollectionPage />)
