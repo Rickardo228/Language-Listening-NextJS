@@ -26,6 +26,7 @@ interface PresentationViewProps {
   enableSteam?: boolean;
   containerBg?: string; // New prop for container background color (default: 'bg-teal-500')
   textBg?: string;      // New prop for text container background color (default: 'bg-rose-400')
+  backgroundOverlayOpacity?: number; // Optional dark overlay over bg image to improve contrast
   romanizedOutput?: string;
   title?: string;       // New optional prop for a title
   showAllPhrases?: boolean; // New prop to show all phrases simultaneously
@@ -81,6 +82,7 @@ export function PresentationView({
   enableSteam,
   containerBg,
   textBg,
+  backgroundOverlayOpacity,
   romanizedOutput,
   title,
   showAllPhrases,
@@ -146,6 +148,11 @@ export function PresentationView({
     : "font-display text-2xl font-bold mb-2";
 
   const textColorClass = !textBg ? "text-gray-800 dark:text-gray-100" : "text-white";
+
+  const effectiveOverlayOpacity =
+    bgImage && typeof backgroundOverlayOpacity === 'number'
+      ? Math.min(1, Math.max(0, backgroundOverlayOpacity))
+      : 0;
 
   const containerStyle = bgImage
     ? {
@@ -220,6 +227,12 @@ export function PresentationView({
           }
         }}
       >
+        {bgImage && effectiveOverlayOpacity > 0 && (
+          <div
+            className="pointer-events-none absolute inset-0"
+            style={{ backgroundColor: `rgba(0,0,0,${effectiveOverlayOpacity})` }}
+          />
+        )}
         {/* Progress Indicator at the top */}
         {totalPhrases && currentPhraseIndex !== undefined && (
           <div

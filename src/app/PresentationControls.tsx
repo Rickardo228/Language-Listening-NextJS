@@ -17,7 +17,6 @@ interface PresentationControlsProps {
     presentationConfig: PresentationConfig;
     setPresentationConfig: (config: PresentationConfig) => void;
     handleImageUpload?: (e: React.ChangeEvent<HTMLInputElement>) => void;
-    onRemoveBackground?: () => void;
     paused: boolean;
     onPause: () => void;
     onPlay: () => void;
@@ -40,7 +39,6 @@ export function PresentationControls({
     presentationConfig,
     setPresentationConfig,
     handleImageUpload,
-    onRemoveBackground,
     paused,
     onPause,
     onPlay,
@@ -210,7 +208,6 @@ export function PresentationControls({
                 presentationConfig={presentationConfig}
                 setPresentationConfig={setPresentationConfig}
                 handleImageUpload={handleImageUpload}
-                onRemoveBackground={onRemoveBackground}
                 inputLang={inputLang}
                 targetLang={targetLang}
             />

@@ -202,10 +202,17 @@ export function CollectionList({
                                 : null;
 
                             if (itemVariant === 'card') {
+                                const hasBackgroundImage = Boolean(collection.presentationConfig?.bgImage);
                                 const paletteIndex = tileBackgroundPalette.length
                                     ? hashStringToNumber(collection.id) % tileBackgroundPalette.length
                                     : 0;
                                 const tileBackgroundClass = tileBackgroundPalette[paletteIndex] || 'bg-secondary';
+                                const baseBackgroundClass =
+                                    selectedCollection && selectedCollection === collection.id
+                                        ? 'bg-primary text-primary-foreground'
+                                        : hasBackgroundImage
+                                            ? 'bg-black/40 text-white'
+                                            : `${tileBackgroundClass} text-white`;
                                 return (
                                     <div
                                         key={collection.id}
@@ -214,12 +221,21 @@ export function CollectionList({
                                     >
                                         <div
                                             className={
-                                                `relative overflow-hidden rounded-lg p-4 h-40 flex items-end border ${selectedCollection && selectedCollection === collection.id
-                                                    ? 'bg-primary text-primary-foreground'
-                                                    : `${tileBackgroundClass} text-white`}
-                                            `
+                                                `relative overflow-hidden rounded-lg p-4 h-40 flex items-end border ${baseBackgroundClass}`
+                                            }
+                                            style={
+                                                hasBackgroundImage
+                                                    ? {
+                                                        backgroundImage: `url(${collection.presentationConfig?.bgImage})`,
+                                                        backgroundSize: 'cover',
+                                                        backgroundPosition: 'center',
+                                                    }
+                                                    : undefined
                                             }
                                         >
+                                            {hasBackgroundImage && (
+                                                <div className="pointer-events-none absolute inset-0 z-0 bg-black/35" />
+                                            )}
                                             {isCompleted && (
                                                 <div className="absolute top-2 left-2 inline-flex items-center gap-1 rounded-full bg-black/50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide">
                                                     <svg
@@ -248,7 +264,7 @@ export function CollectionList({
                                                 </div>
                                             )}
                                             {(showPlayOnHover ?? true) && (
-                                                <div className="absolute bottom-3 right-3 hidden sm:block">
+                                                <div className="absolute bottom-3 right-3 hidden sm:block z-20">
                                                     <div className="pointer-events-none absolute inset-0 rounded-full bg-white/30 blur-md opacity-0 scale-75 group-hover:opacity-100 group-hover:scale-100 transition-all duration-300"></div>
                                                     <button
                                                         aria-label="Play"
@@ -268,7 +284,7 @@ export function CollectionList({
                                                     </button>
                                                 </div>
                                             )}
-                                            <div className="w-full">
+                                            <div className="w-full relative z-10">
                                                 <div className="text-lg sm:text-xl font-semibold leading-tight break-words line-clamp-2 capitalize">{collection.name}</div>
                                                 {showFlags && (
                                                     <div className="text-[10px] opacity-80 tracking-wider">
@@ -377,7 +393,7 @@ export function CollectionList({
                         <>
                             {canScrollLeft && (
                                 <button
-                                    className="absolute -left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-background/70 backdrop-blur border shadow hover:bg-background"
+                                    className="absolute -left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-background/70 backdrop-blur border shadow hover:bg-background z-30"
                                     onClick={() => containerRef.current?.scrollBy({ left: -260, behavior: 'smooth' })}
                                     aria-label="Scroll left"
                                 >
@@ -388,7 +404,7 @@ export function CollectionList({
                             )}
                             {canScrollRight && (
                                 <button
-                                    className="absolute -right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-background/70 backdrop-blur border shadow hover:bg-background"
+                                    className="absolute -right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-background/70 backdrop-blur border shadow hover:bg-background z-30"
                                     onClick={() => containerRef.current?.scrollBy({ left: 260, behavior: 'smooth' })}
                                     aria-label="Scroll right"
                                 >

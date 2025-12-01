@@ -6,6 +6,7 @@ export type PresentationConfig = {
   bgImage: string | null;
   containerBg: string;
   textBg: string;
+  backgroundOverlayOpacity?: number;
   enableSnow: boolean;
   enableCherryBlossom: boolean;
   enableLeaves: boolean;

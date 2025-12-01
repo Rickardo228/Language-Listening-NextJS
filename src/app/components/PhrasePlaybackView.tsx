@@ -42,7 +42,6 @@ interface PhrasePlaybackViewProps {
     stickyHeaderContent?: React.ReactNode;
     methodsRef?: React.MutableRefObject<PhrasePlaybackMethods | null>;
     handleImageUpload?: (e: React.ChangeEvent<HTMLInputElement>) => void;
-    handleRemoveBackground?: () => void;
     autoplay?: boolean;
     transport?: WebMediaSessionTransport; // Optional transport for testing/external control
     itemType?: 'template' | 'collection';
@@ -59,7 +58,6 @@ export function PhrasePlaybackView({
     stickyHeaderContent,
     methodsRef,
     handleImageUpload,
-    handleRemoveBackground,
     autoplay = false,
     transport: externalTransport,
     itemType,
@@ -1168,6 +1166,7 @@ export function PhrasePlaybackView({
                             containerBg={presentationConfig.containerBg}
                             // Can maybe introduce but might replace with text colour
                             // textBg={presentationConfig.textBg}
+                            backgroundOverlayOpacity={presentationConfig.backgroundOverlayOpacity}
                             enableSnow={presentationConfig.enableSnow}
                             enableCherryBlossom={presentationConfig.enableCherryBlossom}
                             enableLeaves={presentationConfig.enableLeaves}
@@ -1202,7 +1201,6 @@ export function PhrasePlaybackView({
                                 presentationConfig={presentationConfig}
                                 setPresentationConfig={setPresentationConfig || (() => { })}
                                 handleImageUpload={handleImageUpload}
-                                onRemoveBackground={handleRemoveBackground}
                                 paused={paused}
                                 onPause={handlePause}
                                 onPlay={handlePlay}

@@ -169,6 +169,7 @@ export default function TemplateDetailPage() {
     }, [user]);
 
     // Debounced save function for real-time user default persistence
+    // Note: This should only receive user-level config (template-level fields already excluded)
     const debouncedSaveConfig = useCallback((config: PresentationConfig) => {
         if (!user || !userConfigLoaded) return;
 
@@ -424,60 +425,6 @@ export default function TemplateDetailPage() {
         }
     };
 
-    // Admin-only template background removal function
-    const handleTemplateBackgroundRemove = async () => {
-        if (!user || !groupId || !isAdmin) {
-            return;
-        }
-
-        const oldBgImage = presentationConfig?.bgImage || templatePresentationConfig?.bgImage || null;
-        if (!oldBgImage) {
-            return;
-        }
-
-        try {
-            // Delete old background if it exists and is a Firebase Storage URL
-            if (oldBgImage.includes('storage.googleapis.com')) {
-                try {
-                    await deleteBackgroundMedia(user.uid, groupId as string, oldBgImage);
-                } catch (deleteError) {
-                    console.error('Error deleting template background:', deleteError);
-                    // Continue even if deletion fails
-                }
-            }
-
-            // Clear local presentation/background configs without touching user defaults
-            setPresentationConfig(prev => ({
-                ...prev,
-                bgImage: null,
-            }));
-            setTemplatePresentationConfig(prev => (prev ? { ...prev, bgImage: null } : prev));
-
-            // Persist removal to all template docs in this group
-            try {
-                const templatesRef = collection(firestore, 'templates');
-                const groupQuery = query(templatesRef, where('groupId', '==', groupId));
-                const groupSnapshot = await getDocs(groupQuery);
-
-                const updatePromises = groupSnapshot.docs.map(docSnapshot =>
-                    updateDoc(doc(firestore, 'templates', docSnapshot.id), {
-                        presentationConfig: {
-                            ...(docSnapshot.data().presentationConfig || {}),
-                            bgImage: null,
-                        },
-                    })
-                );
-
-                await Promise.all(updatePromises);
-            } catch (persistError) {
-                console.error('Error saving template background removal to Firestore:', persistError);
-                alert('Background removed locally but failed to save for this template. Please try again.');
-            }
-        } catch (error) {
-            console.error('Error removing template background:', error);
-            alert(error instanceof Error ? error.message : 'Failed to remove background. Please try again.');
-        }
-    };
 
     // Clear autoplay parameter from URL after it's been read
     useEffect(() => {
@@ -556,11 +503,65 @@ export default function TemplateDetailPage() {
                     setPresentationConfig={async (config: Partial<PresentationConfig>) => {
                         const newConfig = { ...presentationConfig, ...config };
                         setPresentationConfig(newConfig);
-                        debouncedSaveConfig(newConfig);
+
+                        // Handle template-level fields if admin
+                        if (isAdmin && groupId && user) {
+                            const templateLevelUpdates: Partial<PresentationConfig> = {};
+
+                            // Handle background removal (bgImage set to null)
+                            if ('bgImage' in config && config.bgImage === null && presentationConfig.bgImage) {
+                                const oldBgImage = presentationConfig.bgImage;
+                                // Delete from storage if Firebase URL
+                                if (oldBgImage.includes('storage.googleapis.com')) {
+                                    try {
+                                        await deleteBackgroundMedia(user.uid, groupId as string, oldBgImage);
+                                    } catch (deleteError) {
+                                        console.error('Error deleting template background:', deleteError);
+                                        // Continue even if deletion fails
+                                    }
+                                }
+                                templateLevelUpdates.bgImage = null;
+                            }
+
+                            // Handle overlay opacity change
+                            if ('backgroundOverlayOpacity' in config && config.backgroundOverlayOpacity !== undefined) {
+                                templateLevelUpdates.backgroundOverlayOpacity = config.backgroundOverlayOpacity;
+                            }
+
+                            // Persist template-level fields to Firestore
+                            if (Object.keys(templateLevelUpdates).length > 0) {
+                                try {
+                                    const templatesRef = collection(firestore, 'templates');
+                                    const groupQuery = query(templatesRef, where('groupId', '==', groupId));
+                                    const groupSnapshot = await getDocs(groupQuery);
+
+                                    const updatePromises = groupSnapshot.docs.map(docSnapshot =>
+                                        updateDoc(doc(firestore, 'templates', docSnapshot.id), {
+                                            presentationConfig: {
+                                                ...(docSnapshot.data().presentationConfig || {}),
+                                                ...templateLevelUpdates,
+                                            },
+                                        })
+                                    );
+
+                                    await Promise.all(updatePromises);
+
+                                    // Update template presentation config state
+                                    setTemplatePresentationConfig(prev => prev ? { ...prev, ...templateLevelUpdates } : prev);
+                                } catch (persistError) {
+                                    console.error('Error saving template-level config to Firestore:', persistError);
+                                    alert('Config applied locally but failed to save for this template. Please try again.');
+                                }
+                            }
+                        }
+
+                        // Save user-level config (exclude template-level fields: bgImage, backgroundOverlayOpacity)
+                        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                        const { bgImage, backgroundOverlayOpacity, ...userConfig } = newConfig;
+                        debouncedSaveConfig(userConfig as PresentationConfig);
                     }}
                     methodsRef={methodsRef}
                     handleImageUpload={isAdmin ? handleTemplateBackgroundUpload : undefined}
-                    handleRemoveBackground={isAdmin ? handleTemplateBackgroundRemove : undefined}
                     collectionId={groupId as string}
                     stickyHeaderContent={collectionHeaderContent}
                     showImportPhrases={true}

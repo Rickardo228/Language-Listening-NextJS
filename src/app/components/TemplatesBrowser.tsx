@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { getFirestore, collection, query, where, getDocs, Timestamp, orderBy, limit, QuerySnapshot, DocumentSnapshot, } from 'firebase/firestore';
-import { languageOptions, Config } from '../types';
+import { languageOptions, Config, PresentationConfig } from '../types';
 import { CollectionList } from '../CollectionList';
 import { LanguageSelector } from './LanguageSelector';
 import { useUser } from '../contexts/UserContext';
@@ -35,6 +35,7 @@ interface Template {
     pathId?: string;
     pathIndex?: number;
     is_path?: boolean;
+    presentationConfig?: PresentationConfig;
 }
 
 interface TemplatesBrowserProps {
@@ -390,6 +391,7 @@ export function TemplatesBrowser({
                             name: t.name || t.groupId,
                             phrases: [],
                             created_at: t.createdAt?.toDate?.()?.toISOString(),
+                            presentationConfig: t.presentationConfig,
                         }));
 
                         return (

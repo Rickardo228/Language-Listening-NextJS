@@ -10,7 +10,6 @@ interface ConfigFieldsProps {
     config: PresentationConfig;
     setConfig: (newConfig: Partial<PresentationConfig>) => void;
     handleImageUpload?: (e: React.ChangeEvent<HTMLInputElement>) => void;
-    handleRemoveBackground?: () => void;
     hasBackground?: boolean;
     inputLang?: string;
     targetLang?: string;
@@ -21,14 +20,13 @@ const ConfigFields: React.FC<ConfigFieldsProps> = ({
     config,
     setConfig,
     handleImageUpload,
-    handleRemoveBackground,
     hasBackground,
     inputLang,
     targetLang,
 }) => {
     const handleChange = (key: keyof PresentationConfig, value: boolean | string | number) => {
         const previousValue = config[key];
-        
+
         // Track the setting change
         track('Presentation Setting Changed', {
             settingKey: key,
@@ -36,7 +34,7 @@ const ConfigFields: React.FC<ConfigFieldsProps> = ({
             newValue: value,
             valueType: typeof value
         });
-        
+
         setConfig({ [key]: value });
     };
 
@@ -141,84 +139,202 @@ const ConfigFields: React.FC<ConfigFieldsProps> = ({
         <div className="space-y-4">
             {definition
                 // Filter out background image setting if handleImageUpload is not provided (e.g., for templates)
-                .filter(field => !(field.key === 'bgImage' && !handleImageUpload))
+                // Also hide overlay controls when no background image is set OR when not admin (no handleImageUpload)
+                .filter(field => {
+                    if (field.key === 'bgImage' && !handleImageUpload) return false;
+                    if (field.key === 'backgroundOverlayOpacity' && (!config.bgImage || !handleImageUpload)) return false;
+                    return true;
+                })
                 .map((field) => {
-                const { key, label, inputType, description, decorator } = field;
-                const value = config[key];
-                const dynamicLabel = getDynamicLabel(key, label);
-                const dynamicDescription = getDynamicDescription(key, description);
+                    const { key, label, inputType, description, decorator } = field;
+                    const value = config[key];
+                    const dynamicLabel = getDynamicLabel(key, label);
+                    const dynamicDescription = getDynamicDescription(key, description);
 
-                // Render a file input if the field is for a file (e.g. background image).
-                if (inputType === "file") {
-                    return (
-                        <div key={key} className="flex flex-col">
-                            <label htmlFor={String(key)} className="block font-medium mb-1">
-                                {dynamicLabel}
-                            </label>
-                            <input
-                                type="file"
-                                id={String(key)}
-                                onChange={handleImageUpload}
-                                className="w-full p-2 border border-gray-300 rounded"
-                            />
-                            {hasBackground && handleRemoveBackground && (
-                                <button
-                                    type="button"
-                                    onClick={handleRemoveBackground}
-                                    className="mt-2 text-sm text-red-600 hover:underline self-start"
-                                >
-                                    Remove background
-                                </button>
-                            )}
-                            {dynamicDescription && (
-                                <p className="text-sm text-muted-foreground mt-1">{dynamicDescription}</p>
-                            )}
-                        </div>
-                    );
-                }
-
-                // Render a checkbox input.
-                if (inputType === "checkbox") {
-                    const isDisabled = field.disabledWhen?.(config) ?? false;
-                    return (
-                        <div key={key} className="flex flex-col">
-                            <div className="flex items-center">
-                                <input
-                                    type="checkbox"
-                                    id={String(key)}
-                                    checked={value as boolean}
-                                    onChange={(e) => handleChange(key, e.target.checked)}
-                                    disabled={isDisabled}
-                                    className={`mr-2 ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                />
-                                <label htmlFor={String(key)} className={`font-medium ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                    // Render a file input if the field is for a file (e.g. background image).
+                    if (inputType === "file") {
+                        return (
+                            <div key={key} className="flex flex-col">
+                                <label htmlFor={String(key)} className="block font-medium mb-1">
                                     {dynamicLabel}
                                 </label>
+                                <input
+                                    type="file"
+                                    id={String(key)}
+                                    onChange={handleImageUpload}
+                                    className="w-full p-2 border border-gray-300 rounded"
+                                />
+                                {hasBackground && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setConfig({ bgImage: null })}
+                                        className="mt-2 text-sm text-red-600 hover:underline self-start"
+                                    >
+                                        Remove background
+                                    </button>
+                                )}
+                                {dynamicDescription && (
+                                    <p className="text-sm text-muted-foreground mt-1">{dynamicDescription}</p>
+                                )}
                             </div>
-                            {decorator && (
-                                <div className="ml-6 mt-1">
-                                    {decorator()}
+                        );
+                    }
+
+                    // Render a checkbox input.
+                    if (inputType === "checkbox") {
+                        const isDisabled = field.disabledWhen?.(config) ?? false;
+                        return (
+                            <div key={key} className="flex flex-col">
+                                <div className="flex items-center">
+                                    <input
+                                        type="checkbox"
+                                        id={String(key)}
+                                        checked={value as boolean}
+                                        onChange={(e) => handleChange(key, e.target.checked)}
+                                        disabled={isDisabled}
+                                        className={`mr-2 ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                    />
+                                    <label htmlFor={String(key)} className={`font-medium ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                                        {dynamicLabel}
+                                    </label>
                                 </div>
-                            )}
+                                {decorator && (
+                                    <div className="ml-6 mt-1">
+                                        {decorator()}
+                                    </div>
+                                )}
+                                {dynamicDescription && (
+                                    <p className="text-sm text-muted-foreground mt-1 ml-6">{dynamicDescription}</p>
+                                )}
+                            </div>
+                        );
+                    }
+
+                    // Render a number input.
+                    if (inputType === "number") {
+                        return (
+                            <div key={key} className="flex flex-col">
+                                <label htmlFor={String(key)} className="block font-medium mb-1">
+                                    {dynamicLabel}
+                                </label>
+                                <input
+                                    type="number"
+                                    id={String(key)}
+                                    value={value as number}
+                                    onChange={(e) => handleChange(key, Number(e.target.value))}
+                                    className="w-full p-2 border border-gray-300 rounded"
+                                />
+                                {dynamicDescription && (
+                                    <p className="text-sm text-muted-foreground mt-1">{dynamicDescription}</p>
+                                )}
+                            </div>
+                        );
+                    }
+
+                    // Render a range slider.
+                    if (inputType === "range") {
+                        const min = field.min ?? 0;
+                        const max = field.max ?? 1;
+                        const step = field.step ?? 0.05;
+                        const numericValue =
+                            typeof value === "number" ? value : Number(value) || 0;
+                        const clampedValue = Math.min(max, Math.max(min, numericValue));
+                        const percent = Math.round((clampedValue / max) * 100);
+
+                        return (
+                            <div key={key} className="flex flex-col">
+                                <div className="flex items-center justify-between mb-1">
+                                    <label htmlFor={String(key)} className="block font-medium">
+                                        {dynamicLabel}
+                                    </label>
+                                    <span className="text-xs text-muted-foreground">
+                                        {percent}% ({clampedValue.toFixed(2)})
+                                    </span>
+                                </div>
+                                <input
+                                    type="range"
+                                    id={String(key)}
+                                    min={min}
+                                    max={max}
+                                    step={step}
+                                    value={clampedValue}
+                                    onChange={(e) =>
+                                        handleChange(key, parseFloat(e.target.value) || 0)
+                                    }
+                                    className="w-full accent-primary"
+                                />
+                                {dynamicDescription && (
+                                    <p className="text-sm text-muted-foreground mt-1">
+                                        {dynamicDescription}
+                                    </p>
+                                )}
+                            </div>
+                        );
+                    }
+
+                    if (inputType === "color") {
+                        return <div key={key} className="flex flex-col">
+                            <label htmlFor={String(key)} className="block font-medium mb-1">
+                                {dynamicLabel}
+                            </label>
+                            <input
+                                list="bgColorOptions"
+                                type="text"
+                                id={String(key)}
+                                value={value as string}
+                                onChange={(e) => handleChange(key, e.target.value)}
+                                className="w-full p-2 border border-gray-300 rounded"
+                            />
+                            <datalist id="bgColorOptions">
+                                {bgColorOptions.map((option) => (
+                                    <option key={option.name} value={option.value}>
+                                        {option.name}
+                                    </option>
+                                ))}
+                            </datalist>
                             {dynamicDescription && (
-                                <p className="text-sm text-muted-foreground mt-1 ml-6">{dynamicDescription}</p>
+                                <p className="text-sm text-muted-foreground mt-1">{dynamicDescription}</p>
                             )}
                         </div>
-                    );
-                }
+                    }
 
-                // Render a number input.
-                if (inputType === "number") {
+                    // Render a select input.
+                    if (inputType === "select") {
+                        return (
+                            <div key={key} className="flex flex-col">
+                                <label htmlFor={String(key)} className="block font-medium mb-1">
+                                    {dynamicLabel}
+                                </label>
+                                <select
+                                    id={String(key)}
+                                    value={value as number}
+                                    onChange={(e) => handleChange(key, Number(e.target.value))}
+                                    className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                                >
+                                    {field.options?.map((option) => (
+                                        <option key={option.value} value={option.value}>
+                                            {option.label}
+                                        </option>
+                                    ))}
+                                </select>
+                                {dynamicDescription && (
+                                    <p className="text-sm text-muted-foreground mt-1">{dynamicDescription}</p>
+                                )}
+                            </div>
+                        );
+                    }
+
+                    // Render a text input (this covers text and color types, etc.)
                     return (
                         <div key={key} className="flex flex-col">
                             <label htmlFor={String(key)} className="block font-medium mb-1">
                                 {dynamicLabel}
                             </label>
                             <input
-                                type="number"
+                                type="text"
                                 id={String(key)}
-                                value={value as number}
-                                onChange={(e) => handleChange(key, Number(e.target.value))}
+                                value={value as string}
+                                onChange={(e) => handleChange(key, e.target.value)}
                                 className="w-full p-2 border border-gray-300 rounded"
                             />
                             {dynamicDescription && (
@@ -226,79 +342,7 @@ const ConfigFields: React.FC<ConfigFieldsProps> = ({
                             )}
                         </div>
                     );
-                }
-
-                if (inputType === "color") {
-                    return <div key={key} className="flex flex-col">
-                        <label htmlFor={String(key)} className="block font-medium mb-1">
-                            {dynamicLabel}
-                        </label>
-                        <input
-                            list="bgColorOptions"
-                            type="text"
-                            id={String(key)}
-                            value={value as string}
-                            onChange={(e) => handleChange(key, e.target.value)}
-                            className="w-full p-2 border border-gray-300 rounded"
-                        />
-                        <datalist id="bgColorOptions">
-                            {bgColorOptions.map((option) => (
-                                <option key={option.name} value={option.value}>
-                                    {option.name}
-                                </option>
-                            ))}
-                        </datalist>
-                        {dynamicDescription && (
-                            <p className="text-sm text-muted-foreground mt-1">{dynamicDescription}</p>
-                        )}
-                    </div>
-                }
-
-                // Render a select input.
-                if (inputType === "select") {
-                    return (
-                        <div key={key} className="flex flex-col">
-                            <label htmlFor={String(key)} className="block font-medium mb-1">
-                                {dynamicLabel}
-                            </label>
-                            <select
-                                id={String(key)}
-                                value={value as number}
-                                onChange={(e) => handleChange(key, Number(e.target.value))}
-                                className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-                            >
-                                {field.options?.map((option) => (
-                                    <option key={option.value} value={option.value}>
-                                        {option.label}
-                                    </option>
-                                ))}
-                            </select>
-                            {dynamicDescription && (
-                                <p className="text-sm text-muted-foreground mt-1">{dynamicDescription}</p>
-                            )}
-                        </div>
-                    );
-                }
-
-                // Render a text input (this covers text and color types, etc.)
-                return (
-                    <div key={key} className="flex flex-col">
-                        <label htmlFor={String(key)} className="block font-medium mb-1">
-                            {dynamicLabel}
-                        </label>
-                        <input
-                            type="text"
-                            id={String(key)}
-                            value={value as string}
-                            onChange={(e) => handleChange(key, e.target.value)}
-                            className="w-full p-2 border border-gray-300 rounded"
-                        />
-                        {dynamicDescription && (
-                            <p className="text-sm text-muted-foreground mt-1">{dynamicDescription}</p>
-                        )}
-                    </div>
-                );
-            })}
+                })}
         </div>
     );
 };

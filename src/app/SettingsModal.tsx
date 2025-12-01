@@ -13,7 +13,6 @@ interface SettingsModalProps {
     presentationConfig: PresentationConfig;
     setPresentationConfig: (config: PresentationConfig) => void;
     handleImageUpload?: (e: React.ChangeEvent<HTMLInputElement>) => void;
-    onRemoveBackground?: () => void;
     inputLang?: string;
     targetLang?: string;
 }
@@ -27,7 +26,6 @@ export function SettingsModal({
     presentationConfig,
     setPresentationConfig,
     handleImageUpload,
-    onRemoveBackground,
     inputLang,
     targetLang,
 }: SettingsModalProps) {
@@ -36,29 +34,28 @@ export function SettingsModal({
             <div className="fixed inset-0 bg-black/50" />
             <div className="fixed inset-0 flex items-center justify-center">
                 <Dialog.Panel className="bg-background text-foreground p-4 rounded-lg shadow-lg w-96 max-h-[90vh] flex flex-col">
-                <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-xl font-bold">Settings</h2>
-                    <button
-                        onClick={onClose}
-                        className="p-2 text-muted-foreground hover:text-foreground"
-                        title="Close Settings"
-                    >
-                        <X className="h-6 w-6" />
-                    </button>
-                </div>
-                <div className="overflow-y-auto flex-1 pr-2">
-                    <ConfigFields
-                        definition={presentationConfigDefinition}
-                        config={presentationConfig}
-                        setConfig={(newConfig) => setPresentationConfig({ ...presentationConfig, ...newConfig })}
-                        handleImageUpload={handleImageUpload}
-                        handleRemoveBackground={onRemoveBackground}
-                        hasBackground={Boolean(presentationConfig.bgImage)}
-                        inputLang={inputLang}
-                        targetLang={targetLang}
-                    />
-                </div>
-                {/* <div className="mt-4 border-t pt-4">
+                    <div className="flex justify-between items-center mb-4">
+                        <h2 className="text-xl font-bold">Settings</h2>
+                        <button
+                            onClick={onClose}
+                            className="p-2 text-muted-foreground hover:text-foreground"
+                            title="Close Settings"
+                        >
+                            <X className="h-6 w-6" />
+                        </button>
+                    </div>
+                    <div className="overflow-y-auto flex-1 pr-2">
+                        <ConfigFields
+                            definition={presentationConfigDefinition}
+                            config={presentationConfig}
+                            setConfig={(newConfig) => setPresentationConfig({ ...presentationConfig, ...newConfig })}
+                            handleImageUpload={handleImageUpload}
+                            hasBackground={Boolean(presentationConfig.bgImage)}
+                            inputLang={inputLang}
+                            targetLang={targetLang}
+                        />
+                    </div>
+                    {/* <div className="mt-4 border-t pt-4">
                     <input
                         type="text"
                         id="configName"
@@ -74,7 +71,7 @@ export function SettingsModal({
                         Save Config
                     </button>
                 </div> */}
-                {/* <SavedConfigs onDeleteConfig={} onLoadConfig={}  /> */}
+                    {/* <SavedConfigs onDeleteConfig={} onLoadConfig={}  /> */}
                 </Dialog.Panel>
             </div>
         </Dialog>

@@ -1,15 +1,34 @@
 // configDefinitions.ts
 import { PresentationConfig } from "./types";
 
-export type ConfigFieldDefinition = {
+type BaseConfigFieldDefinition = {
   key: keyof PresentationConfig;
   label: string;
-  inputType: "text" | "number" | "checkbox" | "file" | "color" | "select";
   description?: string;
   decorator?: () => React.ReactElement;
-  options?: { value: number; label: string }[];
   disabledWhen?: (config: PresentationConfig) => boolean;
 };
+
+type RangeConfigFieldDefinition = BaseConfigFieldDefinition & {
+  inputType: "range";
+  min: number;
+  max: number;
+  step: number;
+};
+
+type SelectConfigFieldDefinition = BaseConfigFieldDefinition & {
+  inputType: "select";
+  options: { value: number; label: string }[];
+};
+
+type OtherConfigFieldDefinition = BaseConfigFieldDefinition & {
+  inputType: "text" | "number" | "checkbox" | "file" | "color";
+};
+
+export type ConfigFieldDefinition =
+  | RangeConfigFieldDefinition
+  | SelectConfigFieldDefinition
+  | OtherConfigFieldDefinition;
 
 // Shared speed options to avoid duplication
 export const playbackSpeedOptions = [
@@ -23,6 +42,15 @@ export const playbackSpeedOptions = [
 
 export const presentationConfigDefinition: ConfigFieldDefinition[] = [
   { key: "bgImage", label: "Background Image", inputType: "file" },
+  {
+    key: "backgroundOverlayOpacity",
+    label: "Background Overlay",
+    inputType: "range",
+    min: 0,
+    max: 0.8,
+    step: 0.05,
+    description: "Darken the image behind the text to keep it readable.",
+  },
   {
     key: "enableLoop",
     label: "Loop",

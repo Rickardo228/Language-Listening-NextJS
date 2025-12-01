@@ -6,6 +6,7 @@ const basePresentationConfig: PresentationConfig = {
   bgImage: null,
   containerBg: "",
   textBg: "",
+  backgroundOverlayOpacity: 0.35,
   enableSnow: false,
   enableCherryBlossom: false,
   enableLeaves: false,
