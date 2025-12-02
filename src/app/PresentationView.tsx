@@ -243,6 +243,58 @@ export function PresentationView({
           }
         }}
       >
+        {/* Effects - rendered before overlay so they appear behind it */}
+        {enableOrtonEffect && (
+          <div
+            style={{
+              mixBlendMode: "lighten",
+              filter: "blur(50px)",
+              opacity: "50%",
+              backgroundImage: `url(${bgImage})`,
+              width: "100%",
+              height: "100%",
+            }}
+          ></div>
+        )}
+        {enableSnow && (
+          <div className="wrapper" style={{ position: fullScreen ? "absolute" : "static" }}>
+            <div className="snow layer1 a"></div>
+            <div className="snow layer1"></div>
+            <div className="snow layer2 a"></div>
+            <div className="snow layer2"></div>
+            <div className="snow layer3 a"></div>
+            <div className="snow layer3"></div>
+          </div>
+        )}
+        {enableLeaves && (
+          <div id="leaves" style={{ position: fullScreen ? "absolute" : "static" }}>
+            <i></i>
+            <i></i>
+            <i></i>
+            <i></i>
+            <i></i>
+            <i></i>
+            <i></i>
+            <i></i>
+            <i></i>
+            <i></i>
+            <i></i>
+            <i></i>
+            <i></i>
+            <i></i>
+            <i></i>
+          </div>
+        )}
+        {enableAutumnLeaves && <AutumnLeaves fullScreen={fullScreen} />}
+        {enableCherryBlossom && <CherryBlossom fullScreen={fullScreen} />}
+        {fullScreen && enableParticles && <ParticleAnimation />}
+        {enableSteam && <div style={{ position: 'absolute', width: '100%', height: '100%', top: '410px', left: '710px' }}>
+          <span className="steam" style={{
+
+          }}></span>
+        </div>}
+
+        {/* Background overlay - appears on top of effects but behind UI elements */}
         {bgImage && effectiveOverlayOpacity > 0 && (
           <div
             className="pointer-events-none absolute inset-0"
@@ -388,57 +440,6 @@ export function PresentationView({
           }}
         />
 
-        {enableOrtonEffect && (
-          <div
-            style={{
-              mixBlendMode: "lighten",
-              filter: "blur(50px)",
-              opacity: "50%",
-              backgroundImage: `url(${bgImage})`,
-              width: "100%",
-              height: "100%",
-            }}
-          ></div>
-        )}
-        {enableSnow && (
-          <div className="wrapper" style={{ position: fullScreen ? "absolute" : "static" }}>
-            <div className="snow layer1 a"></div>
-            <div className="snow layer1"></div>
-            <div className="snow layer2 a"></div>
-            <div className="snow layer2"></div>
-            <div className="snow layer3 a"></div>
-            <div className="snow layer3"></div>
-          </div>
-        )}
-        {enableLeaves && (
-          <div id="leaves" style={{ position: fullScreen ? "absolute" : "static" }}>
-            <i></i>
-            <i></i>
-            <i></i>
-            <i></i>
-            <i></i>
-            <i></i>
-            <i></i>
-            <i></i>
-            <i></i>
-            <i></i>
-            <i></i>
-            <i></i>
-            <i></i>
-            <i></i>
-            <i></i>
-          </div>
-        )}
-        {enableAutumnLeaves && <AutumnLeaves fullScreen={fullScreen} />}
-        {enableCherryBlossom && <CherryBlossom fullScreen={fullScreen} />}
-        {/* {<ParticleEffect />} */}
-        {fullScreen && enableParticles && <ParticleAnimation />
-        }
-        {enableSteam && <div style={{ position: 'absolute', width: '100%', height: '100%', top: '410px', left: '710px' }}>
-          <span className="steam" style={{
-
-          }}></span>
-        </div>}
         {/* Animate the title in/out with AnimatePresence */}
         <AnimatePresence mode={'sync'}>
           {title ? (
