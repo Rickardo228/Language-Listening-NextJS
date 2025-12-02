@@ -1,8 +1,13 @@
-export type AbilityLevel = 'beginner' | 'elementary' | 'intermediate' | 'advanced' | 'native';
+export type AbilityLevel =
+  | "beginner"
+  | "elementary"
+  | "intermediate"
+  | "advanced"
+  | "native";
 
 export interface ContentSection {
   id: string;
-  type: 'path' | 'recent' | 'recommended';
+  type: "path" | "recent" | "recommended";
   title: string;
   pathId?: string;
   tags?: string[];
@@ -22,19 +27,27 @@ const ABILITY_HIERARCHY: Record<AbilityLevel, number> = {
 // Learning paths that are filtered by ability level
 const LEARNING_PATHS: ContentSection[] = [
   {
-    id: 'beginner_path',
-    type: 'path',
-    pathId: 'beginner_path',
-    title: 'Learn the Basics',
-    maxAbilityLevel: 'elementary', // Only beginner and elementary
+    id: "beginner_path",
+    type: "path",
+    pathId: "beginner_path",
+    title: "Learn the Basics",
+    maxAbilityLevel: "elementary", // Only beginner and elementary
   },
   {
-    id: 'skyward_gate',
-    type: 'path',
-    pathId: 'skyward_gate_path',
-    title: 'Skyward Gate',
-    minAbilityLevel: 'intermediate',
-    maxAbilityLevel: 'advanced', // Only intermediate and advanced
+    id: "skyward_gate",
+    type: "path",
+    pathId: "skyward_gate_path",
+    title: "Skyward Gate",
+    minAbilityLevel: "intermediate",
+    maxAbilityLevel: "advanced", // Only intermediate and advanced
+  },
+  {
+    id: "platform_in_the_snow",
+    type: "path",
+    pathId: "platform_in_the_snow_path",
+    title: "Platform in the Snow",
+    minAbilityLevel: "intermediate",
+    maxAbilityLevel: "advanced", // Only intermediate and advanced
   },
 ];
 
@@ -53,7 +66,7 @@ export function getRecommendedPaths(
 
   const userLevel = ABILITY_HIERARCHY[userAbilityLevel];
 
-  return LEARNING_PATHS.filter(section => {
+  return LEARNING_PATHS.filter((section) => {
     // Check minimum ability level requirement
     if (section.minAbilityLevel) {
       const minLevel = ABILITY_HIERARCHY[section.minAbilityLevel];
