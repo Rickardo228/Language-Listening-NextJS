@@ -528,6 +528,11 @@ export default function TemplateDetailPage() {
                                 templateLevelUpdates.backgroundOverlayOpacity = config.backgroundOverlayOpacity;
                             }
 
+                            // Handle text color change
+                            if ('textColor' in config) {
+                                templateLevelUpdates.textColor = config.textColor;
+                            }
+
                             // Persist template-level fields to Firestore
                             if (Object.keys(templateLevelUpdates).length > 0) {
                                 try {
@@ -555,9 +560,9 @@ export default function TemplateDetailPage() {
                             }
                         }
 
-                        // Save user-level config (exclude template-level fields: bgImage, backgroundOverlayOpacity)
+                        // Save user-level config (exclude template-level fields: bgImage, backgroundOverlayOpacity, textColor)
                         // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                        const { bgImage, backgroundOverlayOpacity, ...userConfig } = newConfig;
+                        const { bgImage, backgroundOverlayOpacity, textColor, ...userConfig } = newConfig;
 
                         // Update local user config state so the effect doesn't overwrite our changes
                         setUserDefaultConfig(userConfig as PresentationConfig);

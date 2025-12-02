@@ -27,6 +27,7 @@ interface PresentationViewProps {
   containerBg?: string; // New prop for container background color (default: 'bg-teal-500')
   textBg?: string;      // New prop for text container background color (default: 'bg-rose-400')
   backgroundOverlayOpacity?: number; // Optional dark overlay over bg image to improve contrast
+  textColor?: 'dark' | 'light'; // Optional text color override
   romanizedOutput?: string;
   title?: string;       // New optional prop for a title
   showAllPhrases?: boolean; // New prop to show all phrases simultaneously
@@ -83,6 +84,7 @@ export function PresentationView({
   containerBg,
   textBg,
   backgroundOverlayOpacity,
+  textColor,
   romanizedOutput,
   title,
   showAllPhrases,
@@ -147,7 +149,21 @@ export function PresentationView({
     ? "font-display text-8xl font-bold mb-4"
     : "font-display text-2xl font-bold mb-2";
 
-  const textColorClass = !textBg ? "text-gray-800 dark:text-gray-100" : "text-white";
+  // Determine text color based on textColor or default to system preference
+  const getTextColorClass = () => {
+    if (textBg) return "text-white"; // If custom text background, use white text
+
+    // If textColor is set and there's a background image, override system preference
+    if (bgImage && textColor) {
+      if (textColor === 'dark') return "text-gray-800";
+      if (textColor === 'light') return "text-gray-100";
+    }
+
+    // Default: follow system preference
+    return "text-gray-800 dark:text-gray-100";
+  };
+
+  const textColorClass = getTextColorClass();
 
   const effectiveOverlayOpacity =
     bgImage && typeof backgroundOverlayOpacity === 'number'
@@ -230,7 +246,11 @@ export function PresentationView({
         {bgImage && effectiveOverlayOpacity > 0 && (
           <div
             className="pointer-events-none absolute inset-0"
-            style={{ backgroundColor: `rgba(0,0,0,${effectiveOverlayOpacity})` }}
+            style={{
+              backgroundColor: textColor === 'dark'
+                ? `rgba(255,255,255,${effectiveOverlayOpacity})` // Light overlay for dark text
+                : `rgba(0,0,0,${effectiveOverlayOpacity})` // Dark overlay for light text or default
+            }}
           />
         )}
         {/* Progress Indicator at the top */}

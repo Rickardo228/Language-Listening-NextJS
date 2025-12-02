@@ -18,7 +18,7 @@ type RangeConfigFieldDefinition = BaseConfigFieldDefinition & {
 
 type SelectConfigFieldDefinition = BaseConfigFieldDefinition & {
   inputType: "select";
-  options: { value: number; label: string }[];
+  options: { value: number | string; label: string }[];
 };
 
 type OtherConfigFieldDefinition = BaseConfigFieldDefinition & {
@@ -50,6 +50,19 @@ export const presentationConfigDefinition: ConfigFieldDefinition[] = [
     max: 0.8,
     step: 0.05,
     description: "Darken the image behind the text to keep it readable.",
+    disabledWhen: (config) => !config.bgImage,
+  },
+  {
+    key: "textColor",
+    label: "Text Color",
+    inputType: "select",
+    options: [
+      { value: "", label: "Auto (System)" },
+      { value: "dark", label: "Dark Text" },
+      { value: "light", label: "Light Text" },
+    ],
+    description: "Override text color for better readability with your background image.",
+    disabledWhen: (config) => !config.bgImage,
   },
   {
     key: "enableLoop",

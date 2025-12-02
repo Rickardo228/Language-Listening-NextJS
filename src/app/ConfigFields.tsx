@@ -143,6 +143,7 @@ const ConfigFields: React.FC<ConfigFieldsProps> = ({
                 .filter(field => {
                     if (field.key === 'bgImage' && !handleImageUpload) return false;
                     if (field.key === 'backgroundOverlayOpacity' && (!config.bgImage || !handleImageUpload)) return false;
+                    if (field.key === 'textColor' && (!config.bgImage || !handleImageUpload)) return false;
                     return true;
                 })
                 .map((field) => {
@@ -300,16 +301,22 @@ const ConfigFields: React.FC<ConfigFieldsProps> = ({
 
                     // Render a select input.
                     if (inputType === "select") {
+                        const isDisabled = field.disabledWhen?.(config) ?? false;
+                        // Check if options are numeric or string
+                        const firstOptionValue = field.options?.[0]?.value;
+                        const isNumeric = typeof firstOptionValue === 'number';
+
                         return (
                             <div key={key} className="flex flex-col">
-                                <label htmlFor={String(key)} className="block font-medium mb-1">
+                                <label htmlFor={String(key)} className={`block font-medium mb-1 ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}>
                                     {dynamicLabel}
                                 </label>
                                 <select
                                     id={String(key)}
-                                    value={value as number}
-                                    onChange={(e) => handleChange(key, Number(e.target.value))}
-                                    className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                                    value={(value ?? '') as string | number}
+                                    onChange={(e) => handleChange(key, isNumeric ? Number(e.target.value) : e.target.value)}
+                                    disabled={isDisabled}
+                                    className={`w-full p-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
                                 >
                                     {field.options?.map((option) => (
                                         <option key={option.value} value={option.value}>

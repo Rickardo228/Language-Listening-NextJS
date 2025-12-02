@@ -1167,6 +1167,7 @@ export function PhrasePlaybackView({
                             // Can maybe introduce but might replace with text colour
                             // textBg={presentationConfig.textBg}
                             backgroundOverlayOpacity={presentationConfig.backgroundOverlayOpacity}
+                            textColor={presentationConfig.textColor}
                             enableSnow={presentationConfig.enableSnow}
                             enableCherryBlossom={presentationConfig.enableCherryBlossom}
                             enableLeaves={presentationConfig.enableLeaves}
