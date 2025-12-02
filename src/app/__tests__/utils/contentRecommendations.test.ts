@@ -39,13 +39,13 @@ describe("contentRecommendations", () => {
     });
 
     describe("Intermediate users", () => {
-      it('should return only "Skyward Gate" path for intermediate users', () => {
+      it('should return intermediate-level paths for intermediate users', () => {
         const paths = getRecommendedPaths("intermediate");
 
-        expect(paths).toHaveLength(1);
-        expect(paths[0].id).toBe("skyward_gate");
-        expect(paths[0].title).toBe("Skyward Gate");
-        expect(paths[0].pathId).toBe("skyward_gate_path");
+        expect(paths).toHaveLength(2);
+        const pathIds = paths.map((p) => p.id);
+        expect(pathIds).toContain("skyward_gate");
+        expect(pathIds).toContain("platform_in_the_snow");
       });
 
       it('should NOT return "Learn the Basics" path for intermediate users', () => {
@@ -59,12 +59,13 @@ describe("contentRecommendations", () => {
     });
 
     describe("Advanced users", () => {
-      it('should return only "Skyward Gate" path for advanced users', () => {
+      it('should return advanced-level paths for advanced users', () => {
         const paths = getRecommendedPaths("advanced");
 
-        expect(paths).toHaveLength(1);
-        expect(paths[0].id).toBe("skyward_gate");
-        expect(paths[0].title).toBe("Skyward Gate");
+        expect(paths).toHaveLength(2);
+        const pathIds = paths.map((p) => p.id);
+        expect(pathIds).toContain("skyward_gate");
+        expect(pathIds).toContain("platform_in_the_snow");
       });
 
       it('should NOT return "Learn the Basics" path for advanced users', () => {
@@ -102,11 +103,12 @@ describe("contentRecommendations", () => {
       it("should return all available paths when ability level is undefined", () => {
         const paths = getRecommendedPaths(undefined);
 
-        expect(paths).toHaveLength(2);
+        expect(paths).toHaveLength(3);
 
         const pathIds = paths.map((path) => path.id);
         expect(pathIds).toContain("beginner_path");
         expect(pathIds).toContain("skyward_gate");
+        expect(pathIds).toContain("platform_in_the_snow");
       });
 
       it("should return paths in correct order when ability level is undefined", () => {
@@ -114,6 +116,7 @@ describe("contentRecommendations", () => {
 
         expect(paths[0].id).toBe("beginner_path");
         expect(paths[1].id).toBe("skyward_gate");
+        expect(paths[2].id).toBe("platform_in_the_snow");
       });
     });
 
