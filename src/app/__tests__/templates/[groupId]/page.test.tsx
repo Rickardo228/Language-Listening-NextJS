@@ -148,7 +148,7 @@ describe('TemplateDetailPage - Template-Level Config', () => {
                                 },
                                 createdAt: { toDate: () => new Date() },
                                 presentationConfig: {
-                                    bgImage: 'https://storage.googleapis.com/test-bucket/backgrounds/admin-user-id/test-group-id/image.jpg',
+                                    bgImage: 'https://storage.googleapis.com/test-bucket/backgrounds/templates/test-group-id/image.jpg',
                                     backgroundOverlayOpacity: 0.35,
                                 },
                             }),
@@ -176,7 +176,7 @@ describe('TemplateDetailPage - Template-Level Config', () => {
                                 },
                                 createdAt: { toDate: () => new Date() },
                                 presentationConfig: {
-                                    bgImage: 'https://storage.googleapis.com/test-bucket/backgrounds/admin-user-id/test-group-id/image.jpg',
+                                    bgImage: 'https://storage.googleapis.com/test-bucket/backgrounds/templates/test-group-id/image.jpg',
                                     backgroundOverlayOpacity: 0.35,
                                 },
                             }),
@@ -205,7 +205,7 @@ describe('TemplateDetailPage - Template-Level Config', () => {
                                 },
                                 createdAt: { toDate: () => new Date() },
                                 presentationConfig: {
-                                    bgImage: 'https://storage.googleapis.com/test-bucket/backgrounds/admin-user-id/test-group-id/image.jpg',
+                                    bgImage: 'https://storage.googleapis.com/test-bucket/backgrounds/templates/test-group-id/image.jpg',
                                     backgroundOverlayOpacity: 0.35,
                                 },
                             }),
@@ -226,7 +226,7 @@ describe('TemplateDetailPage - Template-Level Config', () => {
                                 },
                                 createdAt: { toDate: () => new Date() },
                                 presentationConfig: {
-                                    bgImage: 'https://storage.googleapis.com/test-bucket/backgrounds/admin-user-id/test-group-id/image.jpg',
+                                    bgImage: 'https://storage.googleapis.com/test-bucket/backgrounds/templates/test-group-id/image.jpg',
                                     backgroundOverlayOpacity: 0.35,
                                 },
                             }),
@@ -263,7 +263,7 @@ describe('TemplateDetailPage - Template-Level Config', () => {
             expect(mockDeleteBackgroundMedia).toHaveBeenCalledWith(
                 'admin-user-id',
                 mockGroupId,
-                'https://storage.googleapis.com/test-bucket/backgrounds/admin-user-id/test-group-id/image.jpg'
+                'https://storage.googleapis.com/test-bucket/backgrounds/templates/test-group-id/image.jpg'
             )
 
             // Verify Firestore update was called for all templates in the group
