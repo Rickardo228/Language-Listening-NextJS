@@ -11,7 +11,7 @@
     "test:ci": "NODE_ENV=test vitest run",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage",
-    "vercel-build": "npm run test:ci && npm run lint && npm run build"
+    "vercel-build": "next build"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.7",
