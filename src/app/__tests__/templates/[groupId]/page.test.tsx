@@ -80,10 +80,12 @@ vi.mock('../../../utils/backgroundUpload', () => ({
 
 // Mock PhrasePlaybackView to capture setPresentationConfig calls
 let capturedSetPresentationConfig: ((config: Partial<PresentationConfig>) => Promise<void>) | null = null
+let capturedPresentationConfig: PresentationConfig | null = null
 
 vi.mock('../../../components/PhrasePlaybackView', () => ({
-    PhrasePlaybackView: ({ setPresentationConfig }: { setPresentationConfig: (config: Partial<PresentationConfig>) => Promise<void> }) => {
+    PhrasePlaybackView: ({ setPresentationConfig, presentationConfig }: { setPresentationConfig: (config: Partial<PresentationConfig>) => Promise<void>, presentationConfig: PresentationConfig }) => {
         capturedSetPresentationConfig = setPresentationConfig
+        capturedPresentationConfig = presentationConfig
         return <div data-testid="phrase-playback-view">PhrasePlaybackView</div>
     },
 }))
@@ -108,6 +110,7 @@ describe('TemplateDetailPage - Template-Level Config', () => {
         mockIsAdmin = false
         mockUserProfile = mockUser
         capturedSetPresentationConfig = null
+        capturedPresentationConfig = null
         getDocsCallCount = 0
 
             // Setup default mocks
@@ -255,6 +258,12 @@ describe('TemplateDetailPage - Template-Level Config', () => {
             await waitFor(() => {
                 expect(capturedSetPresentationConfig).toBeTruthy()
             })
+
+            // Wait for template data to load and presentationConfig to be initialized with bgImage
+            // This ensures the bgImage from the template has been loaded into state
+            await waitFor(() => {
+                expect(capturedPresentationConfig?.bgImage).toBe('https://storage.googleapis.com/test-bucket/backgrounds/templates/test-group-id/image.jpg')
+            }, { timeout: 3000 })
 
             // Call setPresentationConfig with bgImage: null
             await capturedSetPresentationConfig!({ bgImage: null })
