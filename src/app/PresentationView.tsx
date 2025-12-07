@@ -45,6 +45,7 @@ interface PresentationViewProps {
   paused?: boolean; // New prop to indicate if playback is paused
   onPause?: () => void; // New prop for pause functionality
   onPlay?: () => void; // New prop for play functionality
+  onPlayPhrase?: (phase: 'input' | 'output') => void; // New prop to play a specific phrase (input or output)
 }
 
 export const TITLE_ANIMATION_DURATION = 1000
@@ -105,6 +106,7 @@ export function PresentationView({
   paused,
   onPause,
   onPlay,
+  onPlayPhrase,
 }: PresentationViewProps) {
   const [isHovering, setIsHovering] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -529,7 +531,8 @@ export function PresentationView({
           ) : showAllPhrases ? (
             // Show all phrases simultaneously with highlighting
             (currentPhrase || currentTranslated) && (
-              <div className={`text-center px-12 ${alignPhraseTop ? 'pb-4' : ''} absolute flex bg-opacity-90 flex-col ${textColorClass}`}
+              <div
+                className={`text-center px-12 ${alignPhraseTop ? 'pb-4' : ''} absolute flex bg-opacity-90 flex-col ${textColorClass}`}
                 style={{
                   alignItems: "center",
                   justifyContent: "center",
@@ -570,6 +573,13 @@ export function PresentationView({
                           animate={{ opacity: 1, y: 0 }}
                           exit={{ opacity: 0, y: (isSafari && isMobile && !fullScreen) ? 0 : 10 }}
                           transition={{ duration: 0.3, ease: "easeOut" }}
+                          className={paused && onPlayPhrase ? "cursor-pointer" : ""}
+                          onClick={(e) => {
+                            if (paused && onPlayPhrase) {
+                              e.stopPropagation();
+                              onPlayPhrase('input');
+                            }
+                          }}
                         >
                           <h2
                             className="font-bold mb-2"
@@ -599,6 +609,13 @@ export function PresentationView({
                           animate={{ opacity: 1, y: 0 }}
                           exit={{ opacity: 0, y: (isSafari && isMobile && !fullScreen) ? 0 : 10 }}
                           transition={{ duration: 0.3, ease: "easeOut" }}
+                          className={paused && onPlayPhrase ? "cursor-pointer" : ""}
+                          onClick={(e) => {
+                            if (paused && onPlayPhrase) {
+                              e.stopPropagation();
+                              onPlayPhrase('output');
+                            }
+                          }}
                         >
                           <h2
                             className="font-bold"
@@ -681,7 +698,7 @@ export function PresentationView({
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: (isSafari && isMobile && !fullScreen) ? 0 : 10 }}
                 transition={{ duration: 0.3, ease: "easeOut" }}
-                className={`text-center px-12 ${alignPhraseTop ? 'pb-4' : ''} absolute flex bg-opacity-90 flex-col ${textColorClass}`}
+                className={`text-center px-12 ${alignPhraseTop ? 'pb-4' : ''} absolute flex bg-opacity-90 flex-col ${textColorClass} ${paused && onPlayPhrase ? 'cursor-pointer' : ''}`}
                 style={{
                   alignItems: "center",
                   justifyContent: "center",
@@ -691,6 +708,12 @@ export function PresentationView({
                       : textBg)
                     : "rgba(255,255,255,0.9) dark:bg-gray-800",
                   borderRadius: '1rem'
+                }}
+                onClick={(e) => {
+                  if (paused && onPlayPhrase) {
+                    e.stopPropagation();
+                    onPlayPhrase(currentPhase);
+                  }
                 }}
               >
                 <h2

@@ -766,6 +766,11 @@ export function PhrasePlaybackView({
         }
     };
 
+    // Wrapper to play specific phrase phase (for click-to-play in fullscreen)
+    const handlePlayPhrasePhase = useCallback((phase: 'input' | 'output') => {
+        handlePlayPhrase(currentPhraseIndex, phase);
+    }, [handlePlayPhrase, currentPhraseIndex]);
+
     // Removed large commented handlePrevious function - replaced with atomicAdvance
 
     // Removed large commented handleNext function - replaced with atomicAdvance
@@ -1192,6 +1197,7 @@ export function PhrasePlaybackView({
                             paused={paused}
                             onPause={handlePause}
                             onPlay={handlePlay}
+                            onPlayPhrase={handlePlayPhrasePhase}
                         />
                         <div className="py-1 px-1 lg:py-2">
                             <PresentationControls
