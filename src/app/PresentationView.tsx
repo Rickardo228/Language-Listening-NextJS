@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { createPortal } from "react-dom";
-import { ArrowLeft, ArrowRight, Maximize2, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, Maximize2, X, Play, Pause } from "lucide-react";
 import { AutumnLeaves } from "./Effects/AutumnLeaves";
 import CherryBlossom from "./Effects/CherryBlossom";
 import { BLEED_START_DELAY, TITLE_DELAY } from './consts';
@@ -42,6 +42,9 @@ interface PresentationViewProps {
   currentPhraseIndex?: number; // New prop for current phrase index (0-based)
   totalPhrases?: number; // New prop for total number of phrases
   isPlayingAudio?: boolean; // New prop to indicate if audio is actively playing
+  paused?: boolean; // New prop to indicate if playback is paused
+  onPause?: () => void; // New prop for pause functionality
+  onPlay?: () => void; // New prop for play functionality
 }
 
 export const TITLE_ANIMATION_DURATION = 1000
@@ -99,6 +102,9 @@ export function PresentationView({
   currentPhraseIndex,
   totalPhrases,
   isPlayingAudio = false,
+  paused,
+  onPause,
+  onPlay,
 }: PresentationViewProps) {
   const [isHovering, setIsHovering] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -376,6 +382,23 @@ export function PresentationView({
                 >
                   <ArrowLeft className="h-6 w-6 text-gray-700 dark:text-gray-300" />
                 </button>
+                {/* Pause/Play button for mobile fullscreen */}
+                {onPause && onPlay && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      paused ? onPlay() : onPause();
+                    }}
+                    className="p-3 bg-gray-200 dark:bg-gray-700 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 transition-all duration-200"
+                    title={paused ? "Play" : "Pause"}
+                  >
+                    {paused ? (
+                      <Play className="h-6 w-6 text-gray-700 dark:text-gray-300" />
+                    ) : (
+                      <Pause className="h-6 w-6 text-gray-700 dark:text-gray-300" />
+                    )}
+                  </button>
+                )}
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
@@ -424,6 +447,28 @@ export function PresentationView({
               </>
             )}
           </>
+        )}
+
+        {/* Pause/Play button for desktop fullscreen - bottom center */}
+        {fullScreen && !isMobile && onPause && onPlay && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              paused ? onPlay() : onPause();
+            }}
+            className="absolute bottom-8 left-1/2 transform -translate-x-1/2 p-3 bg-gray-200 dark:bg-gray-700 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 transition-all duration-200 z-10"
+            title={paused ? "Play" : "Pause"}
+            style={{
+              opacity: shouldShowNavigationButtons ? 1 : 0,
+              transition: 'opacity 0.3s ease'
+            }}
+          >
+            {paused ? (
+              <Play className="h-6 w-6 text-gray-700 dark:text-gray-300" />
+            ) : (
+              <Pause className="h-6 w-6 text-gray-700 dark:text-gray-300" />
+            )}
+          </button>
         )}
 
         {/* Phrase Counter */}

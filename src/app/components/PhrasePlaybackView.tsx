@@ -1189,6 +1189,9 @@ export function PhrasePlaybackView({
                             currentPhraseIndex={currentPhraseIndex}
                             totalPhrases={phrases.length}
                             isPlayingAudio={isPlayingAudio}
+                            paused={paused}
+                            onPause={handlePause}
+                            onPlay={handlePlay}
                         />
                         <div className="py-1 px-1 lg:py-2">
                             <PresentationControls
