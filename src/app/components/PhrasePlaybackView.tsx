@@ -554,7 +554,8 @@ export function PhrasePlaybackView({
                 }
 
                 setShowTitle(true);
-                setPaused(false);
+                // Respect the user's autoplay preference - if they were playing, resume playing
+                setPaused(!wasPlaying);
 
                 const timeoutId1 = window.setTimeout(() => {
                     setShowTitle(false);
