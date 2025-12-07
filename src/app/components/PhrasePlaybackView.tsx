@@ -410,6 +410,9 @@ export function PhrasePlaybackView({
         const curPhase = phaseRef.current;
         let targetPhase: 'input' | 'output' = curPhase;
 
+        // Track if we're about to complete the list by clicking next on the final phrase
+        let isCompletingList = false;
+
         if (playOutputBeforeInput) {
             if (delta === +1) {
                 if (curPhase === 'output') {
@@ -420,11 +423,19 @@ export function PhrasePlaybackView({
                         targetPhase = 'input';
                     } else {
                         // Skip shadow, jump to next phrase's recall
+                        // Check if we're on the last phrase - if so, list is completed
+                        if (targetIndex === phrases.length - 1) {
+                            isCompletingList = true;
+                        }
                         targetIndex = (targetIndex + 1) % phrases.length;
                         targetPhase = 'output';
                     }
                 } else {
                     // Shadow -> next phrase Recall
+                    // Check if we're on the last phrase - if so, list is completed
+                    if (targetIndex === phrases.length - 1) {
+                        isCompletingList = true;
+                    }
                     targetIndex = (targetIndex + 1) % phrases.length;
                     targetPhase = enableRecall ? 'output' : 'input'; // Start at recall or shadow of next phrase
                 }
@@ -451,11 +462,19 @@ export function PhrasePlaybackView({
                     if (enableRecall) {
                         targetPhase = 'output';
                     } else {
+                        // Check if we're on the last phrase - if so, list is completed
+                        if (targetIndex === phrases.length - 1) {
+                            isCompletingList = true;
+                        }
                         targetIndex = (targetIndex + 1) % phrases.length;
                         targetPhase = 'input';
                     }
                 } else {
                     // Shadow -> next phrase Recall OR Shadow
+                    // Check if we're on the last phrase - if so, list is completed
+                    if (targetIndex === phrases.length - 1) {
+                        isCompletingList = true;
+                    }
                     targetIndex = (targetIndex + 1) % phrases.length;
                     targetPhase = enableRecall ? 'input' : 'output';
                 }
@@ -502,6 +521,74 @@ export function PhrasePlaybackView({
             trackPlaybackEvent(eventType, `${collectionId || 'unknown'}-${targetIndex}`, targetPhase, targetIndex, speed);
         }
 
+        // Handle list completion
+        if (isCompletingList && !presentationConfig.enableLoop) {
+            // Show completion popup (persistent, requires user interaction)
+            // Use the appropriate event type based on whether we were playing or not
+            const completionEventType = wasPlaying ? 'listened' : 'viewed';
+
+            // Pass a callback that will be resolved later when user clicks "Go Again"
+            // We can't reference handleReplay here due to dependency ordering
+            const goAgainCallback = async () => {
+                clearAllTimeouts();
+                setCurrentPhraseIndexWithMetadata(prev => prev < 0 ? prev - 1 : -1);
+
+                // Determine starting phase based on playback order and enableInputPlayback
+                const startPhase = presentationConfig.enableInputPlayback
+                    ? getRecallPhase()  // Start with recall phase (first audio)
+                    : getShadowPhase(); // Skip recall phase, start with shadow phase (second audio)
+                setCurrentPhaseWithMetadata(startPhase);
+
+                if (startPhase === 'input' && audioRef.current && phrases[0]?.inputAudio?.audioUrl) {
+                    setSrcSafely(phrases[0].inputAudio?.audioUrl || '');
+                    const speed = presentationConfig.inputPlaybackSpeed || 1.0;
+                    if (speed !== 1.0 && audioRef.current) {
+                        audioRef.current.playbackRate = speed;
+                    }
+                } else if (startPhase === 'output' && audioRef.current && phrases[0]?.outputAudio?.audioUrl) {
+                    setSrcSafely(phrases[0].outputAudio?.audioUrl || '');
+                    const speed = presentationConfig.outputPlaybackSpeed || 1.0;
+                    if (speed !== 1.0 && audioRef.current) {
+                        audioRef.current.playbackRate = speed;
+                    }
+                }
+
+                setShowTitle(true);
+                setPaused(false);
+
+                const timeoutId1 = window.setTimeout(() => {
+                    setShowTitle(false);
+                }, presentationConfig.postProcessDelay + BLEED_START_DELAY - 1000);
+                timeoutIds.current.push(timeoutId1);
+
+                const timeoutId = window.setTimeout(() => {
+                    setCurrentPhraseIndexWithMetadata(0);
+                }, presentationConfig.postProcessDelay + BLEED_START_DELAY);
+                timeoutIds.current.push(timeoutId);
+
+                // Track replay event
+                if (phrases[0]) {
+                    const speed = startPhase === 'input'
+                        ? (presentationConfig.inputPlaybackSpeed || 1.0)
+                        : (presentationConfig.outputPlaybackSpeed || 1.0);
+                    trackPlaybackEvent('replay', `${collectionId || 'unknown'}-0`, startPhase, 0, speed);
+                }
+            };
+
+            showStatsUpdate(true, completionEventType, true, goAgainCallback);
+
+            // Mark as completed in progress tracking
+            const currentPhrase = phrases[indexRef.current];
+            if (user?.uid && collectionId && currentPhrase?.inputLang && currentPhrase?.targetLang) {
+                markCompleted(user.uid, collectionId, currentPhrase.inputLang, currentPhrase.targetLang);
+            }
+
+            // Don't advance to next phrase, stay paused
+            setPaused(true);
+            setMSState('paused');
+            return;
+        }
+
         // continue only if we were already playing
         if (wasPlaying) {
             setPaused(false);
@@ -511,7 +598,7 @@ export function PhrasePlaybackView({
             setPaused(true);
             setMSState('paused');
         }
-    }, [phrases, presentationConfig.enableOutputBeforeInput, presentationConfig.enableInputPlayback, presentationConfig.inputPlaybackSpeed, presentationConfig.outputPlaybackSpeed, setCurrentPhraseIndexWithMetadata, setCurrentPhaseWithMetadata, collectionId, safePlay]);
+    }, [phrases, presentationConfig.enableOutputBeforeInput, presentationConfig.enableInputPlayback, presentationConfig.inputPlaybackSpeed, presentationConfig.outputPlaybackSpeed, presentationConfig.enableLoop, presentationConfig.postProcessDelay, setCurrentPhraseIndexWithMetadata, setCurrentPhaseWithMetadata, collectionId, safePlay, showStatsUpdate, user?.uid, getRecallPhase, getShadowPhase]);
 
 
     const handleAudioError = useCallback(async (phase: 'input' | 'output', autoPlay?: boolean) => {
