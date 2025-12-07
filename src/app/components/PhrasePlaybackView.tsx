@@ -80,7 +80,7 @@ export function PhrasePlaybackView({
             // Only show if phrases viewed count is over 5
             if (!newVal && prevFullscreen && pausedRef.current && phrasesViewed > 5) {
                 // User is exiting fullscreen while paused (viewing mode)
-                showStatsUpdate(true, 'viewed');
+                showStatsUpdate(false, 'viewed');
             }
 
             return newVal;
@@ -570,7 +570,7 @@ export function PhrasePlaybackView({
         el.pause();
         setPaused(true);
         setMSState('paused');
-        showStatsUpdate(true);
+        showStatsUpdate(false);
 
         if (source === 'external') {
             // 💥 nuke any buffered/decoded audio so unlock can't leak sound
