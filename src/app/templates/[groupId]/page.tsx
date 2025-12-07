@@ -31,6 +31,8 @@ interface Template {
     phraseCount: number;
     name: string;
     presentationConfig?: PresentationConfig;
+    pathId?: string;
+    pathIndex?: number;
 }
 
 // Helper function to get language label from code using Intl.DisplayNames
@@ -144,6 +146,8 @@ export default function TemplateDetailPage() {
     const [templatePresentationConfig, setTemplatePresentationConfig] = useState<PresentationConfig | null>(null);
     const [userConfigLoaded, setUserConfigLoaded] = useState(false);
     const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const [currentPathId, setCurrentPathId] = useState<string | undefined>(undefined);
+    const [currentPathIndex, setCurrentPathIndex] = useState<number | undefined>(undefined);
 
     // Fetch user's default presentation config on mount
     useEffect(() => {
@@ -295,6 +299,10 @@ export default function TemplateDetailPage() {
                     // Store template data for name extraction
                     setTemplateData(inputTemplateData);
 
+                    // Capture path information if this template is part of a learning path
+                    setCurrentPathId(inputTemplateData.pathId);
+                    setCurrentPathIndex(inputTemplateData.pathIndex);
+
                     // Capture template-level presentation config (admin-set)
                     if (inputTemplateData.presentationConfig) {
                         setTemplatePresentationConfig(inputTemplateData.presentationConfig);
@@ -425,6 +433,43 @@ export default function TemplateDetailPage() {
         }
     };
 
+
+    // Navigate to next template in the learning path
+    const handleNavigateToNextInPath = useCallback(async () => {
+        if (!currentPathId || currentPathIndex === undefined) {
+            console.log('No path information available');
+            return;
+        }
+
+        try {
+            // Query for the next template in the path
+            const templatesRef = collection(firestore, 'templates');
+            const nextTemplateQuery = query(
+                templatesRef,
+                where('pathId', '==', currentPathId),
+                where('pathIndex', '==', currentPathIndex + 1)
+            );
+
+            const nextTemplateSnapshot = await getDocs(nextTemplateQuery);
+
+            if (!nextTemplateSnapshot.empty) {
+                // Get the first matching template (there should only be one per pathIndex)
+                const nextTemplateDoc = nextTemplateSnapshot.docs[0];
+                const nextTemplateData = nextTemplateDoc.data() as Template;
+
+                // Navigate to the next template, preserving language preferences and enabling autoplay
+                router.push(
+                    `/templates/${nextTemplateData.groupId}?inputLang=${selectedInputLang}&targetLang=${selectedTargetLang}&autoplay=1`
+                );
+            } else {
+                // End of path - no next template found
+                console.log('Reached end of learning path');
+                // Optionally show a message or redirect to path overview
+            }
+        } catch (error) {
+            console.error('Error navigating to next template in path:', error);
+        }
+    }, [currentPathId, currentPathIndex, selectedInputLang, selectedTargetLang, router]);
 
     // Clear autoplay parameter from URL after it's been read
     useEffect(() => {
@@ -576,6 +621,9 @@ export default function TemplateDetailPage() {
                     showImportPhrases={true}
                     autoplay={shouldAutoplay}
                     itemType="template"
+                    pathId={currentPathId}
+                    pathIndex={currentPathIndex}
+                    onNavigateToNextInPath={currentPathId && currentPathIndex !== undefined ? handleNavigateToNextInPath : undefined}
                 />
             ) : (
                 <div className="flex items-center justify-center h-full">
