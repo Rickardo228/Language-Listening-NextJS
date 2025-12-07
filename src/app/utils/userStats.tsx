@@ -270,6 +270,7 @@ export const useUpdateUserStats = () => {
   const [popupEventType, setPopupEventType] = useState<'listened' | 'viewed'>('listened');
   const [isListCompleted, setIsListCompleted] = useState(false);
   const [onGoAgainCallback, setOnGoAgainCallback] = useState<(() => void | Promise<void>) | null>(null);
+  const [onGoNextCallback, setOnGoNextCallback] = useState<(() => void | Promise<void>) | null>(null);
 
   const phrasesListenedRef = useRef(0);
   const phrasesViewedRef = useRef(0);
@@ -340,7 +341,7 @@ export const useUpdateUserStats = () => {
     fetchInitialTotal();
   }, [user]);
 
-  const showStatsUpdate = useCallback((shouldPersistUntilInteraction: boolean = false, eventType: 'listened' | 'viewed' | 'both' = 'listened', listCompleted: boolean = false, onGoAgain?: () => void | Promise<void>) => {
+  const showStatsUpdate = useCallback((shouldPersistUntilInteraction: boolean = false, eventType: 'listened' | 'viewed' | 'both' = 'listened', listCompleted: boolean = false, onGoAgain?: () => void | Promise<void>, onGoNext?: () => void | Promise<void>) => {
     const listenedCount = phrasesListenedRef.current;
     const viewedCount = phrasesViewedRef.current;
 
@@ -398,6 +399,8 @@ export const useUpdateUserStats = () => {
       isListCompletedRef.current = listCompleted; // Sync ref for guard checks
       // Store the go again callback if provided (wrap in function to avoid React treating it as lazy initializer)
       setOnGoAgainCallback(listCompleted && onGoAgain ? () => onGoAgain : () => null);
+      // Store the go next callback if provided (wrap in function to avoid React treating it as lazy initializer)
+      setOnGoNextCallback(listCompleted && onGoNext ? () => onGoNext : () => null);
 
       // Store the event type for display purposes
       setPopupEventType(displayType as 'listened' | 'viewed');
@@ -425,6 +428,7 @@ export const useUpdateUserStats = () => {
           setIsListCompleted(false);
           isListCompletedRef.current = false; // Reset ref
           setOnGoAgainCallback(() => null);
+          setOnGoNextCallback(() => null);
           popupCloseTimeoutRef.current = null;
         }, 2000);
         popupCloseTimeoutRef.current = timeoutId;
@@ -477,6 +481,7 @@ export const useUpdateUserStats = () => {
     setIsListCompleted(false);
     isListCompletedRef.current = false; // Reset ref
     setOnGoAgainCallback(() => null);
+    setOnGoNextCallback(() => null);
     // Clear recent milestones when user dismisses the popup
     setRecentMilestones([]);
   }, [showPopup, countToShow, persistUntilInteraction, currentStreak]);
@@ -501,6 +506,7 @@ export const useUpdateUserStats = () => {
     setShowPopup(false);
     setPersistUntilInteraction(false);
     isListCompletedRef.current = false; // Reset ref
+    setOnGoNextCallback(() => null);
     // Clear recent milestones when user opens stats modal
     setRecentMilestones([]);
   };
@@ -1120,6 +1126,20 @@ export const useUpdateUserStats = () => {
                           }}
                         >
                           Go Again
+                        </button>
+                      )}
+                      {isListCompleted && onGoNextCallback && (
+                        <button
+                          className={`w-full px-4 py-2 ${useYellowTheme ? 'bg-green-600 hover:bg-green-700' : 'bg-green-600 hover:bg-green-700'} text-white rounded text-sm font-medium transition-colors shadow-md border-2 border-white/30`}
+                          onClick={async () => {
+                            const callback = onGoNextCallback();
+                            if (callback) {
+                              await callback;
+                            }
+                            closeStatsPopup("continue");
+                          }}
+                        >
+                          Go Next →
                         </button>
                       )}
                       <button

@@ -45,6 +45,9 @@ interface PhrasePlaybackViewProps {
     autoplay?: boolean;
     transport?: WebMediaSessionTransport; // Optional transport for testing/external control
     itemType?: 'template' | 'collection';
+    pathId?: string; // Learning path ID if this collection is part of a path
+    pathIndex?: number; // Position in the learning path
+    onNavigateToNextInPath?: () => void; // Callback to navigate to next item in path
 }
 
 export function PhrasePlaybackView({
@@ -61,6 +64,9 @@ export function PhrasePlaybackView({
     autoplay = false,
     transport: externalTransport,
     itemType,
+    pathId,
+    pathIndex,
+    onNavigateToNextInPath,
 }: PhrasePlaybackViewProps) {
     const { user } = useUser();
     const { updateUserStats, StatsPopups, StatsModal, showStatsUpdate, incrementViewedAndCheckMilestone, initializeViewedCounter, phrasesViewed } = useUpdateUserStats();
@@ -576,7 +582,7 @@ export function PhrasePlaybackView({
                 }
             };
 
-            showStatsUpdate(true, completionEventType, true, goAgainCallback);
+            showStatsUpdate(true, completionEventType, true, goAgainCallback, onNavigateToNextInPath);
 
             // Mark as completed in progress tracking
             const currentPhrase = phrases[indexRef.current];
@@ -962,7 +968,7 @@ export function PhrasePlaybackView({
                             // If looping is enabled, restart from beginning
                             setCurrentPhraseIndexWithMetadata(0);
                         } else {
-                            showStatsUpdate(true, 'listened', true, handleReplay)
+                            showStatsUpdate(true, 'listened', true, handleReplay, onNavigateToNextInPath)
                             setPaused(true);
                             // Mark template/collection as completed
                             if (user && collectionId) {
@@ -1005,7 +1011,7 @@ export function PhrasePlaybackView({
                                 setCurrentPhraseIndexWithMetadata(0);
                                 setCurrentPhaseWithMetadata('output');
                             } else {
-                                showStatsUpdate(true, 'listened', true, handleReplay)
+                                showStatsUpdate(true, 'listened', true, handleReplay, onNavigateToNextInPath)
                                 setPaused(true);
                                 // Mark template/collection as completed
                                 if (user?.uid && collectionId && currentPhrase?.inputLang && currentPhrase?.targetLang) {
@@ -1034,7 +1040,7 @@ export function PhrasePlaybackView({
                                 setCurrentPhaseWithMetadata('output');
                             }
                         } else {
-                            showStatsUpdate(true, 'listened', true, handleReplay)
+                            showStatsUpdate(true, 'listened', true, handleReplay, onNavigateToNextInPath)
                             setPaused(true);
                             // Mark template/collection as completed
                             if (user?.uid && collectionId && currentPhrase?.inputLang && currentPhrase?.targetLang) {
