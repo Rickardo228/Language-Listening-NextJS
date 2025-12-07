@@ -305,11 +305,13 @@ export function PresentationView({
         {/* Background overlay - appears on top of effects but behind UI elements */}
         {bgImage && effectiveOverlayOpacity > 0 && (
           <div
-            className="pointer-events-none absolute inset-0"
+            className="pointer-events-none absolute inset-0 bg-white dark:bg-black"
             style={{
-              backgroundColor: textColor === 'dark'
-                ? `rgba(255,255,255,${effectiveOverlayOpacity})` // Light overlay for dark text
-                : `rgba(0,0,0,${effectiveOverlayOpacity})` // Dark overlay for light text or default
+              opacity: textColor === 'dark'
+                ? effectiveOverlayOpacity // Light overlay (white bg) for dark text
+                : textColor === 'light'
+                  ? effectiveOverlayOpacity // Dark overlay (black bg) for light text
+                  : effectiveOverlayOpacity // Auto: light overlay in light mode, dark overlay in dark mode
             }}
           />
         )}
