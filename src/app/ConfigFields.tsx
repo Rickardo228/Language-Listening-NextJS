@@ -162,6 +162,7 @@ const ConfigFields: React.FC<ConfigFieldsProps> = ({
                                 <input
                                     type="file"
                                     id={String(key)}
+                                    accept="image/*"
                                     onChange={handleImageUpload}
                                     className="w-full p-2 border border-gray-300 rounded"
                                 />
