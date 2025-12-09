@@ -295,7 +295,7 @@ export function PresentationView({
         )}
         {enableAutumnLeaves && <AutumnLeaves fullScreen={fullScreen} />}
         {enableCherryBlossom && <CherryBlossom fullScreen={fullScreen} />}
-        {fullScreen && enableParticles && <ParticleAnimation />}
+        {enableParticles && <ParticleAnimation />}
         {enableSteam && <div style={{ position: 'absolute', width: '100%', height: '100%', top: '410px', left: '710px' }}>
           <span className="steam" style={{
 

@@ -850,24 +850,9 @@ h2 {
   }
 }
 
-#nc-main {
-  position: relative;
-  height: 100vh;
-  overflow-x: hidden;
-  -webkit-box-shadow: 0 0 30px #241d20;
-  box-shadow: 0 0 30px #241d20;
-  -webkit-transition: -webkit-transform 0.4s;
-  transition: -webkit-transform 0.4s;
-  transition: transform 0.4s;
-  transition: transform 0.4s, -webkit-transform 0.4s;
-}
-
-#nc-main {
-  background-image: url("https://images.unsplash.com/photo-1486241975555-382b4ae9e12f?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=1567&q=80");
-}
-
 .full-wh {
   position: absolute;
+  overflow: hidden;
   top: 0px;
   left: 0px;
   bottom: 0px;
@@ -875,7 +860,7 @@ h2 {
 }
 
 .bg-animation {
-  position: fixed;
+  position: absolute;
   top: 0;
   left: 0;
   width: 100%;
@@ -883,7 +868,7 @@ h2 {
 }
 
 .bg-animation {
-  position: fixed;
+  position: absolute;
   top: 0;
   left: 0;
   width: 100%;
