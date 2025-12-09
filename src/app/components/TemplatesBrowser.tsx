@@ -65,7 +65,8 @@ export function TemplatesBrowser({
     const { user, userProfile } = useUser();
     const [templates, setTemplates] = useState<Template[]>([]);
     const [loading, setLoading] = useState(true);
-    const [isShowingAll, setIsShowingAll] = useState(false);
+    // For learning paths, we fetch all items initially, so isShowingAll should start as true
+    const [isShowingAll, setIsShowingAll] = useState(Boolean(pathId));
     const [templateProgress, setTemplateProgress] = useState<Record<string, { completedAt?: string; listenedCount: number; lastPhraseIndex?: number }>>({});
 
     // Use user preferences if available, otherwise fall back to props
