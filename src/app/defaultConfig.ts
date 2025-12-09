@@ -13,6 +13,7 @@ const basePresentationConfig: PresentationConfig = {
   enableAutumnLeaves: false,
   enableOrtonEffect: false,
   enableParticles: false,
+  particleRotation: 0,
   enableSteam: false,
   enableLoop: true,
   postProcessDelay: 0,

@@ -4,6 +4,7 @@ import { PresentationConfig } from "./types";
 import { ConfigFieldDefinition } from "./configDefinitions";
 import bgColorOptions from "./utils/bgColorOptions";
 import { track } from "../lib/mixpanelClient";
+import { useUser } from "./contexts/UserContext";
 
 interface ConfigFieldsProps {
     definition: ConfigFieldDefinition[];
@@ -24,6 +25,7 @@ const ConfigFields: React.FC<ConfigFieldsProps> = ({
     inputLang,
     targetLang,
 }) => {
+    const { isAdmin } = useUser();
     const handleChange = (key: keyof PresentationConfig, value: boolean | string | number) => {
         const previousValue = config[key];
 
@@ -140,10 +142,12 @@ const ConfigFields: React.FC<ConfigFieldsProps> = ({
             {definition
                 // Filter out background image setting if handleImageUpload is not provided (e.g., for templates)
                 // Also hide overlay controls when no background image is set OR when not admin (no handleImageUpload)
+                // Filter out admin-only fields for non-admin users
                 .filter(field => {
                     if (field.key === 'bgImage' && !handleImageUpload) return false;
                     if (field.key === 'backgroundOverlayOpacity' && (!config.bgImage || !handleImageUpload)) return false;
                     if (field.key === 'textColor' && (!config.bgImage || !handleImageUpload)) return false;
+                    if (field.adminOnly && !isAdmin) return false;
                     return true;
                 })
                 .map((field) => {

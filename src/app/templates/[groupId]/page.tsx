@@ -578,6 +578,44 @@ export default function TemplateDetailPage() {
                                 templateLevelUpdates.textColor = config.textColor;
                             }
 
+                            // Handle visual effect fields (admin-only template-level settings)
+                            if ('containerBg' in config) {
+                                templateLevelUpdates.containerBg = config.containerBg;
+                            }
+                            if ('textBg' in config) {
+                                templateLevelUpdates.textBg = config.textBg;
+                            }
+                            if ('enableSnow' in config) {
+                                templateLevelUpdates.enableSnow = config.enableSnow;
+                            }
+                            if ('enableCherryBlossom' in config) {
+                                templateLevelUpdates.enableCherryBlossom = config.enableCherryBlossom;
+                            }
+                            if ('enableLeaves' in config) {
+                                templateLevelUpdates.enableLeaves = config.enableLeaves;
+                            }
+                            if ('enableAutumnLeaves' in config) {
+                                templateLevelUpdates.enableAutumnLeaves = config.enableAutumnLeaves;
+                            }
+                            if ('enableOrtonEffect' in config) {
+                                templateLevelUpdates.enableOrtonEffect = config.enableOrtonEffect;
+                            }
+                            if ('enableParticles' in config) {
+                                templateLevelUpdates.enableParticles = config.enableParticles;
+                            }
+                            if ('particleRotation' in config) {
+                                templateLevelUpdates.particleRotation = config.particleRotation;
+                            }
+                            if ('enableSteam' in config) {
+                                templateLevelUpdates.enableSteam = config.enableSteam;
+                            }
+                            if ('postProcessDelay' in config) {
+                                templateLevelUpdates.postProcessDelay = config.postProcessDelay;
+                            }
+                            if ('delayBetweenPhrases' in config) {
+                                templateLevelUpdates.delayBetweenPhrases = config.delayBetweenPhrases;
+                            }
+
                             // Persist template-level fields to Firestore
                             if (Object.keys(templateLevelUpdates).length > 0) {
                                 try {
@@ -605,9 +643,26 @@ export default function TemplateDetailPage() {
                             }
                         }
 
-                        // Save user-level config (exclude template-level fields: bgImage, backgroundOverlayOpacity, textColor)
+                        // Save user-level config (exclude template-level fields)
                         // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                        const { bgImage, backgroundOverlayOpacity, textColor, ...userConfig } = newConfig;
+                        const {
+                            bgImage,
+                            backgroundOverlayOpacity,
+                            textColor,
+                            containerBg,
+                            textBg,
+                            enableSnow,
+                            enableCherryBlossom,
+                            enableLeaves,
+                            enableAutumnLeaves,
+                            enableOrtonEffect,
+                            enableParticles,
+                            particleRotation,
+                            enableSteam,
+                            postProcessDelay,
+                            delayBetweenPhrases,
+                            ...userConfig
+                        } = newConfig;
 
                         // Update local user config state so the effect doesn't overwrite our changes
                         setUserDefaultConfig(userConfig as PresentationConfig);

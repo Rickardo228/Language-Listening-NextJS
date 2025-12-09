@@ -1273,6 +1273,7 @@ export function PhrasePlaybackView({
                             enableAutumnLeaves={presentationConfig.enableAutumnLeaves}
                             enableOrtonEffect={presentationConfig.enableOrtonEffect}
                             enableParticles={presentationConfig.enableParticles}
+                            particleRotation={presentationConfig.particleRotation}
                             enableSteam={presentationConfig.enableSteam}
                             romanizedOutput={phrases[currentPhraseIndex]?.romanized}
                             title={showTitle ? (collectionName || configName) : undefined}

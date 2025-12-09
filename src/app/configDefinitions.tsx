@@ -7,6 +7,7 @@ type BaseConfigFieldDefinition = {
   description?: string;
   decorator?: () => React.ReactElement;
   disabledWhen?: (config: PresentationConfig) => boolean;
+  adminOnly?: boolean;
 };
 
 type RangeConfigFieldDefinition = BaseConfigFieldDefinition & {
@@ -137,54 +138,79 @@ export const presentationConfigDefinition: ConfigFieldDefinition[] = [
     options: playbackSpeedOptions,
     description: "Control the playback speed of output language audio.",
   },
-  // {
-  //   key: "containerBg",
-  //   label: "Video Background Color",
-  //   inputType: "color",
-  //   description: "The background color of the video container",
-  // },
-  // {
-  //   key: "textBg",
-  //   label: "Text Background Color",
-  //   inputType: "color",
-  //   description: "The background color behind the text",
-  // },
-  // { key: "enableSnow", label: "Enable Snow Effect", inputType: "checkbox" },
-  // {
-  //   key: "enableCherryBlossom",
-  //   label: "Enable Cherry Blossom Effect",
-  //   inputType: "checkbox",
-  // },
-  // { key: "enableLeaves", label: "Enable Leaves Effect", inputType: "checkbox" },
-  // {
-  //   key: "enableAutumnLeaves",
-  //   label: "Enable Autumn Leaves Effect",
-  //   inputType: "checkbox",
-  // },
-  // {
-  //   key: "enableOrtonEffect",
-  //   label: "Enable Orton Effect",
-  //   inputType: "checkbox",
-  // },
-  // {
-  //   key: "enableParticles",
-  //   label: "Enable Particle Effect",
-  //   inputType: "checkbox",
-  // },
-  // {
-  //   key: "enableSteam",
-  //   label: "Enable Steam Effect",
-  //   inputType: "checkbox",
-  // },
-  // {
-  //   key: "postProcessDelay",
-  //   label: "Delay After Processing (ms)",
-  //   inputType: "number",
-  // },
-  // {
-  //   key: "delayBetweenPhrases",
-  //   label: "Delay Between Phrases (ms)",
-  //   inputType: "number",
-  //   description: "Fixed delay between phrases in milliseconds",
-  // },
+  {
+    key: "containerBg",
+    label: "Video Background Color",
+    inputType: "color",
+    description: "The background color of the video container",
+  },
+  {
+    key: "textBg",
+    label: "Text Background Color",
+    inputType: "color",
+    description: "The background color behind the text",
+  },
+  { key: "enableSnow", label: "Enable Snow Effect", inputType: "checkbox", adminOnly: true },
+  {
+    key: "enableCherryBlossom",
+    label: "Enable Cherry Blossom Effect",
+    inputType: "checkbox",
+    adminOnly: true,
+  },
+  { key: "enableLeaves", label: "Enable Leaves Effect", inputType: "checkbox", adminOnly: true },
+  {
+    key: "enableAutumnLeaves",
+    label: "Enable Autumn Leaves Effect",
+    inputType: "checkbox",
+    adminOnly: true,
+  },
+  {
+    key: "enableOrtonEffect",
+    label: "Enable Orton Effect",
+    inputType: "checkbox",
+    adminOnly: true,
+  },
+  {
+    key: "enableParticles",
+    label: "Enable Particle Effect",
+    inputType: "checkbox",
+    adminOnly: true,
+  },
+  {
+    key: "particleRotation",
+    label: "Particle Rotation",
+    inputType: "select",
+    options: [
+      { value: 0, label: "0°" },
+      { value: 45, label: "45°" },
+      { value: 90, label: "90°" },
+      { value: 135, label: "135°" },
+      { value: 180, label: "180°" },
+      { value: 225, label: "225°" },
+      { value: 270, label: "270°" },
+      { value: 315, label: "315°" },
+    ],
+    description: "Rotate the particle effect animation",
+    adminOnly: true,
+    disabledWhen: (config) => !config.enableParticles,
+  },
+  {
+    key: "enableSteam",
+    label: "Enable Steam Effect",
+    inputType: "checkbox",
+    adminOnly: true,
+  },
+  {
+    key: "postProcessDelay",
+    label: "Delay After Processing (ms)",
+    inputType: "number",
+    adminOnly: true,
+  },
+  {
+    key: "delayBetweenPhrases",
+    label: "Delay Between Phrases (ms)",
+    inputType: "number",
+    description: "Fixed delay between phrases in milliseconds",
+    adminOnly: true,
+  },
 ];

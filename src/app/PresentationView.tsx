@@ -23,6 +23,7 @@ interface PresentationViewProps {
   enableCherryBlossom?: boolean;
   enableOrtonEffect?: boolean;
   enableParticles?: boolean;
+  particleRotation?: number;
   enableSteam?: boolean;
   containerBg?: string; // New prop for container background color (default: 'bg-teal-500')
   textBg?: string;      // New prop for text container background color (default: 'bg-rose-400')
@@ -84,6 +85,7 @@ export function PresentationView({
   enableCherryBlossom,
   enableOrtonEffect,
   enableParticles,
+  particleRotation,
   enableSteam,
   containerBg,
   textBg,
@@ -295,7 +297,7 @@ export function PresentationView({
         )}
         {enableAutumnLeaves && <AutumnLeaves fullScreen={fullScreen} />}
         {enableCherryBlossom && <CherryBlossom fullScreen={fullScreen} />}
-        {enableParticles && <ParticleAnimation />}
+        {enableParticles && <ParticleAnimation rotation={particleRotation} />}
         {enableSteam && <div style={{ position: 'absolute', width: '100%', height: '100%', top: '410px', left: '710px' }}>
           <span className="steam" style={{
 
