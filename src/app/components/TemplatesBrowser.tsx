@@ -329,6 +329,26 @@ export function TemplatesBrowser({
         fetchCompletionStatus();
     }, [user?.uid, templates, inputLang, targetLang]);
 
+    // Calculate the first incomplete item index for learning paths
+    const getFirstIncompleteIndex = (): number | undefined => {
+        if (!pathId || loading || templates.length === 0) return undefined;
+        if (Object.keys(templateProgress).length === 0) return undefined;
+
+        const firstIncompleteIndex = templates.findIndex((template) => {
+            const progress = templateProgress[template.groupId];
+            const total = template.phraseCount || 0;
+
+            if (!progress || !total) return true; // No progress means incomplete
+
+            // Check if incomplete (not explicitly completed AND haven't listened to all phrases)
+            const isCompleted = Boolean(progress.completedAt) || progress.listenedCount >= total;
+            return !isCompleted;
+        });
+
+        // Only return if we found an incomplete item that's not the first one
+        return firstIncompleteIndex > 0 ? firstIncompleteIndex : undefined;
+    };
+
     // No separate loader branch; `CollectionList` will show skeletons when loading is true
 
     return (
@@ -460,6 +480,8 @@ export function TemplatesBrowser({
                                 }}
                                 hideScrollbar
                                 enableCarouselControls
+                                scrollToIndex={getFirstIncompleteIndex()}
+                                scrollBehavior="instant"
                                 onShowAllClick={async () => {
                                     track('Show All Templates Clicked', { pathId: pathId || null });
                                     if (showAllOverride) {

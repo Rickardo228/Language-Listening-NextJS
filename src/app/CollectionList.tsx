@@ -33,6 +33,10 @@ interface CollectionListProps {
     getCompletionStatus?: (collection: Config) => boolean;
     // Optional callback to provide progress for incomplete collections
     getProgressSummary?: (collection: Config) => { completedCount: number; totalCount: number } | null;
+    // Optional index to scroll to (for horizontal layout)
+    scrollToIndex?: number;
+    // Optional scroll behavior when scrolling to index (defaults to 'smooth')
+    scrollBehavior?: ScrollBehavior;
 }
 
 export function CollectionList({
@@ -56,6 +60,8 @@ export function CollectionList({
     getLanguagePair,
     getCompletionStatus,
     getProgressSummary,
+    scrollToIndex,
+    scrollBehavior = 'smooth',
 }: CollectionListProps) {
     const router = useRouter();
     const containerRef = useRef<HTMLDivElement | null>(null);
@@ -83,6 +89,30 @@ export function CollectionList({
             ro.disconnect();
         };
     }, [layout, savedCollections.length]);
+
+    // Handle scrolling to a specific index
+    useEffect(() => {
+        if (layout !== 'horizontal' || scrollToIndex === undefined || loading) return;
+        if (scrollToIndex < 0 || scrollToIndex >= savedCollections.length) return;
+
+        const el = containerRef.current;
+        if (!el) return;
+
+        // Wait for the DOM to be fully rendered
+        const timer = setTimeout(() => {
+            // Card width (220px) + gap (16px from gap-4)
+            const cardWidth = 220;
+            const gap = 16;
+            const scrollPosition = scrollToIndex * (cardWidth + gap);
+
+            el.scrollTo({
+                left: scrollPosition,
+                behavior: scrollBehavior
+            });
+        }, 100);
+
+        return () => clearTimeout(timer);
+    }, [layout, scrollToIndex, savedCollections.length, loading, scrollBehavior]);
 
     // Deterministic hash to map collections to palette indices
     const hashStringToNumber = (value: string): number => {
