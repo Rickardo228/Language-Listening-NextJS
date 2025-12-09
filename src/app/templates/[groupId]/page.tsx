@@ -10,8 +10,22 @@ import { CollectionHeader } from '../../CollectionHeader';
 import { useUser } from '../../contexts/UserContext';
 import { getUserProfile, createOrUpdateUserProfile } from '../../utils/userPreferences';
 import { uploadBackgroundMedia, deleteBackgroundMedia } from '../../utils/backgroundUpload';
+import { presentationConfigDefinition } from '../../configDefinitions';
 
 const firestore = getFirestore();
+
+// Get all admin-only field keys from config definitions
+const adminOnlyFields = presentationConfigDefinition
+    .filter(field => field.adminOnly)
+    .map(field => field.key);
+
+// Template-level fields include admin-only fields plus background-related fields
+const templateLevelFields: (keyof PresentationConfig)[] = [
+    'bgImage',
+    'backgroundOverlayOpacity',
+    'textColor',
+    ...adminOnlyFields as (keyof PresentationConfig)[]
+];
 
 interface TemplatePhrase {
     translated?: string;
@@ -568,53 +582,12 @@ export default function TemplateDetailPage() {
                                 templateLevelUpdates.bgImage = null;
                             }
 
-                            // Handle overlay opacity change
-                            if ('backgroundOverlayOpacity' in config && config.backgroundOverlayOpacity !== undefined) {
-                                templateLevelUpdates.backgroundOverlayOpacity = config.backgroundOverlayOpacity;
-                            }
-
-                            // Handle text color change
-                            if ('textColor' in config) {
-                                templateLevelUpdates.textColor = config.textColor;
-                            }
-
-                            // Handle visual effect fields (admin-only template-level settings)
-                            if ('containerBg' in config) {
-                                templateLevelUpdates.containerBg = config.containerBg;
-                            }
-                            if ('textBg' in config) {
-                                templateLevelUpdates.textBg = config.textBg;
-                            }
-                            if ('enableSnow' in config) {
-                                templateLevelUpdates.enableSnow = config.enableSnow;
-                            }
-                            if ('enableCherryBlossom' in config) {
-                                templateLevelUpdates.enableCherryBlossom = config.enableCherryBlossom;
-                            }
-                            if ('enableLeaves' in config) {
-                                templateLevelUpdates.enableLeaves = config.enableLeaves;
-                            }
-                            if ('enableAutumnLeaves' in config) {
-                                templateLevelUpdates.enableAutumnLeaves = config.enableAutumnLeaves;
-                            }
-                            if ('enableOrtonEffect' in config) {
-                                templateLevelUpdates.enableOrtonEffect = config.enableOrtonEffect;
-                            }
-                            if ('enableParticles' in config) {
-                                templateLevelUpdates.enableParticles = config.enableParticles;
-                            }
-                            if ('particleRotation' in config) {
-                                templateLevelUpdates.particleRotation = config.particleRotation;
-                            }
-                            if ('enableSteam' in config) {
-                                templateLevelUpdates.enableSteam = config.enableSteam;
-                            }
-                            if ('postProcessDelay' in config) {
-                                templateLevelUpdates.postProcessDelay = config.postProcessDelay;
-                            }
-                            if ('delayBetweenPhrases' in config) {
-                                templateLevelUpdates.delayBetweenPhrases = config.delayBetweenPhrases;
-                            }
+                            // Dynamically handle all template-level fields
+                            templateLevelFields.forEach(field => {
+                                if (field in config && config[field] !== undefined) {
+                                    (templateLevelUpdates as any)[field] = config[field];
+                                }
+                            });
 
                             // Persist template-level fields to Firestore
                             if (Object.keys(templateLevelUpdates).length > 0) {
@@ -644,25 +617,12 @@ export default function TemplateDetailPage() {
                         }
 
                         // Save user-level config (exclude template-level fields)
-                        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                        const {
-                            bgImage,
-                            backgroundOverlayOpacity,
-                            textColor,
-                            containerBg,
-                            textBg,
-                            enableSnow,
-                            enableCherryBlossom,
-                            enableLeaves,
-                            enableAutumnLeaves,
-                            enableOrtonEffect,
-                            enableParticles,
-                            particleRotation,
-                            enableSteam,
-                            postProcessDelay,
-                            delayBetweenPhrases,
-                            ...userConfig
-                        } = newConfig;
+                        const userConfig = Object.keys(newConfig).reduce((acc, key) => {
+                            if (!templateLevelFields.includes(key as keyof PresentationConfig)) {
+                                (acc as any)[key] = (newConfig as any)[key];
+                            }
+                            return acc;
+                        }, {} as Partial<PresentationConfig>);
 
                         // Update local user config state so the effect doesn't overwrite our changes
                         setUserDefaultConfig(userConfig as PresentationConfig);
