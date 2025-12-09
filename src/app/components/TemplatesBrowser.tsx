@@ -334,7 +334,7 @@ export function TemplatesBrowser({
         fetchCompletionStatus();
     }, [user?.uid, templates, inputLang, targetLang]);
 
-    // Calculate the first incomplete item index for learning paths
+    // Calculate the item before the first incomplete item index for learning paths
     const getFirstIncompleteIndex = (): number | undefined => {
         if (!pathId || loading || templates.length === 0) return undefined;
         if (Object.keys(templateProgress).length === 0) return undefined;
@@ -350,8 +350,8 @@ export function TemplatesBrowser({
             return !isCompleted;
         });
 
-        // Only return if we found an incomplete item that's not the first one
-        return firstIncompleteIndex > 0 ? firstIncompleteIndex : undefined;
+        // Return the item before the first incomplete one, if it exists and is not the first item
+        return firstIncompleteIndex > 1 ? firstIncompleteIndex - 1 : undefined;
     };
 
     // No separate loader branch; `CollectionList` will show skeletons when loading is true
