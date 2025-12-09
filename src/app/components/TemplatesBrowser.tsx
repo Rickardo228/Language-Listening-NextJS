@@ -269,7 +269,12 @@ export function TemplatesBrowser({
     useEffect(() => {
         if (!hasInitialFetch.current) {
             hasInitialFetch.current = true;
-            fetchTemplates(undefined, undefined, { fetchAll: false, limitCount: 10 });
+            // For learning paths, load all items to ensure scroll-to-incomplete works
+            // For regular templates, load limited set for performance
+            fetchTemplates(undefined, undefined, {
+                fetchAll: Boolean(pathId),
+                limitCount: pathId ? undefined : 10
+            });
         }
     }, [pathId, fetchTemplates]);
 
