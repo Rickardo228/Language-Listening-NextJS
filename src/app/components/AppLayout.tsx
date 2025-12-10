@@ -18,6 +18,8 @@ import { createCollection } from '../utils/collectionService';
 import { TemplatesBrowser } from './TemplatesBrowser';
 import { SignInPage } from '../SignInPage';
 import { OnboardingGuard } from './OnboardingGuard';
+import { BottomNavigation } from './BottomNavigation';
+import { shouldHideSidebar, shouldHideBottomNav, getCollectionIdFromPath, ROUTES } from '../routes';
 
 
 const firestore = getFirestore();
@@ -57,17 +59,10 @@ export function AppLayout({ children }: AppLayoutProps) {
   const [loading, setLoading] = useState<boolean>(false);
 
   // Don't show sidebar for certain routes
-  const hideSidebar = pathname?.startsWith('/share/') || pathname?.startsWith('/privacy') || pathname?.startsWith('/terms');
+  const hideSidebar = shouldHideSidebar(pathname);
 
   // Extract current collection ID from URL for highlighting in sidebar
-  const getCurrentCollectionId = () => {
-    if (pathname?.startsWith('/collection/')) {
-      return pathname.split('/collection/')[1] || '';
-    }
-    return '';
-  };
-
-  const currentCollectionId = getCurrentCollectionId();
+  const currentCollectionId = getCollectionIdFromPath(pathname);
 
   // Load saved collections from Firestore on mount or when user changes
   const initialiseCollections = useCallback(async (user: User) => {
@@ -280,7 +275,7 @@ export function AppLayout({ children }: AppLayoutProps) {
 
   const handleHome = () => {
     track('Home Button Clicked', { source: 'header' });
-    router.push('/');
+    router.push(ROUTES.HOME);
   };
 
   if (isAuthLoading) {
@@ -365,22 +360,7 @@ export function AppLayout({ children }: AppLayoutProps) {
 
               {!isCollapsed && (
                 <>
-                  {/* Mobile: Featured Templates above the list */}
-                  <div className="lg:hidden mb-4">
-                    <TemplatesBrowser showHeader={false} showAllOverride={true} />
-                  </div>
-                  <div className={`fixed bottom-0 left-0 z-10 w-full lg:w-[420px] lg:bg-secondary/50 p-5 ${pathname !== '/' ? 'hidden lg:block' : ''}`}>
-                    <ImportPhrases
-                      inputLang={newCollectionInputLang}
-                      setInputLang={setNewCollectionInputLang}
-                      targetLang={newCollectionTargetLang}
-                      setTargetLang={setNewCollectionTargetLang}
-                      phrasesInput={phrasesInput}
-                      setPhrasesInput={setPhrasesInput}
-                      loading={loading}
-                      onProcess={handleProcess}
-                    />
-                  </div>
+
                   <CollectionList
                     savedCollections={savedCollections}
                     onLoadCollection={handleLoadCollection}
@@ -389,6 +369,18 @@ export function AppLayout({ children }: AppLayoutProps) {
                     selectedCollection={currentCollectionId}
                     loading={collectionsLoading}
                     showAllButton={collectionsLimited}
+                    actionButton={
+                      <ImportPhrases
+                        inputLang={newCollectionInputLang}
+                        setInputLang={setNewCollectionInputLang}
+                        targetLang={newCollectionTargetLang}
+                        setTargetLang={setNewCollectionTargetLang}
+                        phrasesInput={phrasesInput}
+                        setPhrasesInput={setPhrasesInput}
+                        loading={loading}
+                        onProcess={handleProcess}
+                      />
+                    }
                     title={
                       <div className="flex items-center">
                         <button
@@ -471,6 +463,9 @@ export function AppLayout({ children }: AppLayoutProps) {
             {children}
           </div>
         </div>
+
+        {/* Bottom Navigation for Mobile */}
+        {!shouldHideBottomNav(pathname) && user && <BottomNavigation />}
       </div>
     </OnboardingGuard>
   );

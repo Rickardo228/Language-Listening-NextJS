@@ -13,6 +13,8 @@ interface CollectionListProps {
     title?: string | React.ReactNode;
     showAllButton?: boolean;
     onShowAllClick?: () => void;
+    // Optional action button (e.g. import) rendered in the header
+    actionButton?: React.ReactNode;
     // Controls the presentation style of each item
     itemVariant?: 'list' | 'card';
     // Controls the flow/layout of the list container
@@ -49,6 +51,7 @@ export function CollectionList({
     title,
     showAllButton = true,
     onShowAllClick,
+    actionButton,
     itemVariant = 'list',
     layout = 'vertical',
     showFlags = true,
@@ -152,29 +155,33 @@ export function CollectionList({
                         <h2 className="text-xl font-semibold">Your Library</h2>
                     )}
                 </div>
-                {showAllButton && (
-                    <button
-                        onClick={() => (onShowAllClick ? onShowAllClick() : router.push('/templates'))}
-                        className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors lg:mr-10"
-                        title="Show all"
-                    >
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            strokeWidth={1.5}
-                            stroke="currentColor"
-                            className="w-3 h-3"
+                <div className="flex items-center gap-2">
+                    {actionButton}
+                    {/* Show All button only in header for horizontal layout */}
+                    {layout === 'horizontal' && showAllButton && (
+                        <button
+                            onClick={() => (onShowAllClick ? onShowAllClick() : router.push('/templates'))}
+                            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors lg:mr-10"
+                            title="Show all"
                         >
-                            <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"
-                            />
-                        </svg>
-                        Show all
-                    </button>
-                )}
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                strokeWidth={1.5}
+                                stroke="currentColor"
+                                className="w-3 h-3"
+                            >
+                                <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"
+                                />
+                            </svg>
+                            Show all
+                        </button>
+                    )}
+                </div>
             </div>
             {loading ? (
                 <div
@@ -446,6 +453,30 @@ export function CollectionList({
                         </>
                     )}
                 </div>
+            )}
+            {/* Show All button at bottom for vertical layout */}
+            {layout === 'vertical' && showAllButton && !loading && (
+                <button
+                    onClick={() => (onShowAllClick ? onShowAllClick() : router.push('/templates'))}
+                    className="flex items-center justify-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors w-full py-3 rounded-lg hover:bg-secondary/50"
+                    title="Show all"
+                >
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        strokeWidth={1.5}
+                        stroke="currentColor"
+                        className="w-4 h-4"
+                    >
+                        <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"
+                        />
+                    </svg>
+                    Show all
+                </button>
             )}
         </div>
     );
