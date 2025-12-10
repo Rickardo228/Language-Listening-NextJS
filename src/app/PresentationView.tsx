@@ -151,7 +151,7 @@ export function PresentationView({
   const alignPhraseTop = totalPhraseLength > 165 && isMobile;
 
   const containerClass =
-    `inset-0 flex flex-col items-center ${alignPhraseTop ? '' : 'justify-center'} ` +
+    `inset-0 flex flex-col items-center overflow-hidden ${alignPhraseTop ? '' : 'justify-center'} ` +
     (fullScreen ? "fixed z-50" : "relative p-4 lg:rounded shadow w-full h-48 lg:h-[70vh] lg:max-h-[80vh]") +
     (!containerBg ? " bg-gray-100 dark:bg-gray-900" : "");
 
