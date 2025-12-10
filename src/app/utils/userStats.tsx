@@ -580,6 +580,11 @@ export const useUpdateUserStats = () => {
       return;
     }
 
+    // Skip updating stats in development environment
+    if (process.env.NODE_ENV === 'development') {
+      return;
+    }
+
     // Smart sync: every N phrases or when forced
     await syncTotalIfNeeded();
 
