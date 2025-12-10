@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { getFirestore, collection, query, where, getDocs, Timestamp, orderBy, limit, QuerySnapshot, DocumentSnapshot, } from 'firebase/firestore';
 import { languageOptions, Config, PresentationConfig } from '../types';
-import { CollectionList } from '../CollectionList';
+import { CollectionList, CollectionStatus } from '../CollectionList';
 import { LanguageSelector } from './LanguageSelector';
 import { useUser } from '../contexts/UserContext';
 import { track } from '../../lib/mixpanelClient';
@@ -432,14 +432,35 @@ export function TemplatesBrowser({
                                 loading={loading}
                                 getPhraseCount={(c) => templateByGroup.get(c.id)?.phraseCount || 0}
                                 getLanguagePair={() => ({ inputLang, targetLang })}
-                                getCompletionStatus={(c) => {
+                                getStatus={(c) => {
                                     const t = templateByGroup.get(c.id);
                                     const progress = templateProgress[c.id];
                                     const total = t?.phraseCount || 0;
-                                    if (!progress || !total) return false;
+
+                                    // No progress at all
+                                    if (!progress || !total) return 'not-started';
+
                                     // Treat as completed if we have an explicit completedAt
                                     // OR if we've listened to all phrases in this template
-                                    return Boolean(progress.completedAt) || progress.listenedCount >= total;
+                                    const isCompleted = Boolean(progress.completedAt) || progress.listenedCount >= total;
+                                    if (isCompleted) return 'completed';
+
+                                    // Check if this is the first incomplete template in the path (i.e., "next")
+                                    if (pathId) {
+                                        const firstIncompleteIndex = templates.findIndex((template) => {
+                                            const prog = templateProgress[template.groupId];
+                                            const tot = template.phraseCount || 0;
+                                            if (!prog || !tot) return true;
+                                            const completed = Boolean(prog.completedAt) || prog.listenedCount >= tot;
+                                            return !completed;
+                                        });
+
+                                        const currentIndex = templates.findIndex(template => template.groupId === c.id);
+                                        if (currentIndex === firstIncompleteIndex) return 'next';
+                                    }
+
+                                    // Has progress but not complete
+                                    return 'in-progress';
                                 }}
                                 getProgressSummary={(c) => {
                                     const t = templateByGroup.get(c.id);

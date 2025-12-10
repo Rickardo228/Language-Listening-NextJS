@@ -3,6 +3,8 @@ import { LanguageFlags } from './components/LanguageFlags';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 
+export type CollectionStatus = 'completed' | 'next' | 'in-progress' | 'not-started';
+
 interface CollectionListProps {
     savedCollections: Config[];
     onLoadCollection: (config: Config) => void;
@@ -31,8 +33,8 @@ interface CollectionListProps {
     enableCarouselControls?: boolean;
     getPhraseCount?: (collection: Config) => number;
     getLanguagePair?: (collection: Config) => { inputLang: string; targetLang: string } | null;
-    // Optional callback to determine if a collection is completed
-    getCompletionStatus?: (collection: Config) => boolean;
+    // Optional callback to determine the status of a collection
+    getStatus?: (collection: Config) => CollectionStatus;
     // Optional callback to provide progress for incomplete collections
     getProgressSummary?: (collection: Config) => { completedCount: number; totalCount: number } | null;
     // Optional index to scroll to (for horizontal layout)
@@ -61,7 +63,7 @@ export function CollectionList({
     enableCarouselControls = false,
     getPhraseCount,
     getLanguagePair,
-    getCompletionStatus,
+    getStatus,
     getProgressSummary,
     scrollToIndex,
     scrollBehavior = 'smooth',
@@ -233,7 +235,7 @@ export function CollectionList({
                             const languages = getLanguagePair ? getLanguagePair(collection) : (collection.phrases[0]
                                 ? { inputLang: collection.phrases[0].inputLang, targetLang: collection.phrases[0].targetLang }
                                 : null);
-                            const isCompleted = getCompletionStatus ? getCompletionStatus(collection) : false;
+                            const status = getStatus ? getStatus(collection) : 'not-started';
                             const progress = getProgressSummary
                                 ? getProgressSummary(collection)
                                 : null;
@@ -273,7 +275,7 @@ export function CollectionList({
                                             {hasBackgroundImage && (
                                                 <div className="pointer-events-none absolute inset-0 z-0 bg-black/35" />
                                             )}
-                                            {isCompleted && (
+                                            {status === 'completed' && (
                                                 <div className="absolute top-2 left-2 inline-flex items-center gap-1 rounded-full bg-black/50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide">
                                                     <svg
                                                         xmlns="http://www.w3.org/2000/svg"
@@ -288,6 +290,23 @@ export function CollectionList({
                                                         <path d="M20 6L9 17l-5-5" />
                                                     </svg>
                                                     <span>Completed</span>
+                                                </div>
+                                            )}
+                                            {status === 'next' && (
+                                                <div className="absolute top-2 left-2 inline-flex items-center gap-1 rounded-full bg-primary/90 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary-foreground">
+                                                    <svg
+                                                        xmlns="http://www.w3.org/2000/svg"
+                                                        viewBox="0 0 24 24"
+                                                        fill="none"
+                                                        stroke="currentColor"
+                                                        strokeWidth={2}
+                                                        strokeLinecap="round"
+                                                        strokeLinejoin="round"
+                                                        className="w-3 h-3"
+                                                    >
+                                                        <path d="M5 12h14M12 5l7 7-7 7" />
+                                                    </svg>
+                                                    <span>Next</span>
                                                 </div>
                                             )}
                                             {progress && progress.totalCount > 0 && (
