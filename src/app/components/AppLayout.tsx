@@ -466,7 +466,7 @@ export function AppLayout({ children }: AppLayoutProps) {
           )}
 
           {/* Main Content Area */}
-          <div className="flex-1">
+          <div className={`flex-1 ${!shouldHideBottomNav(pathname) && user ? 'pb-20 lg:pb-0' : ''}`}>
             {children}
           </div>
         </div>
