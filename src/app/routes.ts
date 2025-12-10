@@ -5,6 +5,7 @@
 export const ROUTES = {
   HOME: '/',
   TEMPLATES: '/templates',
+  LIBRARY: '/library',
   SHARE: '/share',
   PRIVACY: '/privacy',
   TERMS: '/terms',
@@ -43,6 +44,7 @@ export function isCollectionDetailPage(pathname: string | null): boolean {
  */
 export function shouldHideSidebar(pathname: string | null): boolean {
   return !!pathname && (
+    pathname.startsWith(ROUTES.LIBRARY) ||
     pathname.startsWith(ROUTES.SHARE) ||
     pathname.startsWith(ROUTES.PRIVACY) ||
     pathname.startsWith(ROUTES.TERMS)
@@ -53,6 +55,9 @@ export function shouldHideSidebar(pathname: string | null): boolean {
  * Check if bottom navigation should be hidden for the current route
  */
 export function shouldHideBottomNav(pathname: string | null): boolean {
+  // Don't hide bottom nav on library page
+  if (pathname === ROUTES.LIBRARY) return false;
+
   return shouldHideSidebar(pathname) ||
     isCollectionDetailPage(pathname) ||
     isTemplateDetailPage(pathname);

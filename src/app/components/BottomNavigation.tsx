@@ -2,23 +2,23 @@
 
 import { usePathname, useRouter } from 'next/navigation';
 import { track } from '../../lib/mixpanelClient';
-import { ROUTES, isTemplatesPage, isHomePage } from '../routes';
+import { ROUTES } from '../routes';
 
 export function BottomNavigation() {
   const pathname = usePathname();
   const router = useRouter();
 
-  const isHomePath = isTemplatesPage(pathname);
-  const isLibraryPath = isHomePage(pathname);
+  const isHomePath = pathname === ROUTES.HOME || pathname === ROUTES.TEMPLATES;
+  const isLibraryPath = pathname === ROUTES.LIBRARY;
 
   const handleHomeClick = () => {
     track('Bottom Nav Home Clicked');
-    router.push(ROUTES.TEMPLATES);
+    router.push(ROUTES.HOME);
   };
 
   const handleLibraryClick = () => {
     track('Bottom Nav Library Clicked');
-    router.push(ROUTES.HOME);
+    router.push(ROUTES.LIBRARY);
   };
 
   return (
