@@ -4,6 +4,16 @@ import { usePathname, useRouter } from 'next/navigation';
 import { track } from '../../lib/mixpanelClient';
 import { ROUTES } from '../routes';
 
+/**
+ * YouTube-style Bottom Navigation Component
+ *
+ * Key features:
+ * - Solid backgrounds (no blur, no transparency): bg-white / dark:bg-[#1C1C1E]
+ * - Clear active states: active = black/white, inactive = grey
+ * - Accessible: proper ARIA labels, aria-current, large touch targets (min 44x44px)
+ * - Safe area aware for notched devices
+ */
+
 export function BottomNavigation() {
   const pathname = usePathname();
   const router = useRouter();
@@ -21,14 +31,29 @@ export function BottomNavigation() {
     router.push(ROUTES.LIBRARY);
   };
 
+  // Shared classes for nav items
+  // Touch target: h-full ensures ~64px height (16 * 4 = 64px base container)
+  const navItemBase = "flex flex-col items-center justify-center flex-1 h-full min-h-[44px] transition-colors";
+
+  // Active state: black in light mode, white in dark mode
+  const activeClasses = "text-black dark:text-white";
+
+  // Inactive state: medium grey in light mode, light grey in dark mode
+  const inactiveClasses = "text-gray-600 dark:text-gray-400";
+
   return (
-    <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-background border-t border-border z-50 safe-area-inset-bottom">
+    <div
+      className="lg:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-[#1C1C1E] border-t border-gray-200 dark:border-gray-800 z-50 pb-[env(safe-area-inset-bottom)]"
+      role="navigation"
+      aria-label="Main navigation"
+    >
       <div className="flex items-center justify-around h-16">
+        {/* Home Tab */}
         <button
           onClick={handleHomeClick}
-          className={`flex flex-col items-center justify-center flex-1 h-full transition-colors ${
-            isHomePath ? 'text-primary' : 'text-muted-foreground'
-          }`}
+          className={`${navItemBase} ${isHomePath ? activeClasses : inactiveClasses}`}
+          aria-label="Home"
+          aria-current={isHomePath ? 'page' : undefined}
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -37,6 +62,7 @@ export function BottomNavigation() {
             strokeWidth={1.5}
             stroke="currentColor"
             className="w-6 h-6"
+            aria-hidden="true"
           >
             <path
               strokeLinecap="round"
@@ -44,14 +70,17 @@ export function BottomNavigation() {
               d="m2.25 12 8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25"
             />
           </svg>
-          <span className="text-xs mt-1">Home</span>
+          <span className={`text-xs mt-1 ${isHomePath ? 'font-medium' : 'font-normal'}`}>
+            Home
+          </span>
         </button>
 
+        {/* Library Tab */}
         <button
           onClick={handleLibraryClick}
-          className={`flex flex-col items-center justify-center flex-1 h-full transition-colors ${
-            isLibraryPath ? 'text-primary' : 'text-muted-foreground'
-          }`}
+          className={`${navItemBase} ${isLibraryPath ? activeClasses : inactiveClasses}`}
+          aria-label="Library"
+          aria-current={isLibraryPath ? 'page' : undefined}
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -60,12 +89,15 @@ export function BottomNavigation() {
             strokeWidth={1.5}
             stroke="currentColor"
             className="w-6 h-6"
+            aria-hidden="true"
           >
             <rect x="4" y="6" width="3" height="12" rx="0.5" />
             <rect x="9" y="4" width="3" height="16" rx="0.5" />
             <rect x="14" y="8" width="3" height="8" rx="0.5" />
           </svg>
-          <span className="text-xs mt-1">Library</span>
+          <span className={`text-xs mt-1 ${isLibraryPath ? 'font-medium' : 'font-normal'}`}>
+            Library
+          </span>
         </button>
       </div>
     </div>
