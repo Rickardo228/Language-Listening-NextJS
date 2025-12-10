@@ -351,8 +351,8 @@ export function TemplatesBrowser({
             return !isCompleted;
         });
 
-        // Return the item before the first incomplete one, if it exists and is not the first item
-        return firstIncompleteIndex > 1 ? firstIncompleteIndex - 1 : undefined;
+        // Return the first incomplete item if it exists
+        return firstIncompleteIndex >= 0 ? firstIncompleteIndex : undefined;
     };
 
     // No separate loader branch; `CollectionList` will show skeletons when loading is true
