@@ -192,7 +192,7 @@ export function CollectionList({
                             : 'space-y-2'
                     }
                 >
-                    {Array.from({ length: layout === 'horizontal' || itemVariant === 'card' ? 6 : 5 }).map((_, index) => (
+                    {Array.from({ length: layout === 'horizontal' || itemVariant === 'card' ? 6 : 10 }).map((_, index) => (
                         itemVariant === 'card' ? (
                             <div
                                 key={`skeleton-card-${index}`}
@@ -205,8 +205,8 @@ export function CollectionList({
                             <div key={`skeleton-row-${index}`} className="p-4 rounded-lg border bg-secondary/40 animate-pulse">
                                 <div className="flex items-center justify-between">
                                     <div className="flex-1 min-w-0">
-                                        <div className="h-4 w-1/3 bg-secondary/60 rounded mb-2" />
-                                        <div className="h-3 w-1/4 bg-secondary/50 rounded" />
+                                        <div className="h-5 w-1/3 bg-secondary/60 rounded mb-2" />
+                                        <div className="h-4 w-1/4 bg-secondary/50 rounded" />
                                     </div>
                                     <div className="flex items-center gap-2 ml-4">
                                         <div className="w-4 h-4 bg-secondary/60 rounded" />
