@@ -273,7 +273,7 @@ export default function LibraryPage() {
         onLoadCollection={handleLoadCollection}
         onRenameCollection={handleRenameCollection}
         onDeleteCollection={handleDeleteCollection}
-        selectedCollection={null}
+        selectedCollection={undefined}
         loading={collectionsLoading}
         showAllButton={collectionsLimited}
         actionButton={
