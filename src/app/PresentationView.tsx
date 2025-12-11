@@ -671,6 +671,7 @@ export function PresentationView({
                             style={{
                               margin: 0,
                               padding: 0,
+                              marginBottom: isMobileInline && !enableOutputBeforeInput ? '12px' : undefined,
                               fontSize: isMobileInline ? '16px' : (enableOutputBeforeInput ? commonFontSize : inputFontSize),
                               opacity: currentPhase !== "input" ? 0.6 : 1,
                               transform: isPlayingAudio && currentPhase === "input" ? "scale(1.02)" : "scale(1)",
@@ -717,6 +718,7 @@ export function PresentationView({
                             style={{
                               margin: 0,
                               padding: 0,
+                              marginBottom: isMobileInline && enableOutputBeforeInput ? '12px' : undefined,
                               fontSize: isMobileInline ? '16px' : (enableOutputBeforeInput ? inputFontSize : commonFontSize),
                               opacity: currentPhase !== "output" ? 0.6 : 1,
                               transform: isPlayingAudio && currentPhase === "output" ? "scale(1.02)" : "scale(1)",
