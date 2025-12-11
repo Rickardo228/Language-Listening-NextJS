@@ -229,39 +229,220 @@ describe('PresentationView Component', () => {
         const portalContainer = document.getElementById('presentation-portal')
         expect(portalContainer).toBeInTheDocument()
 
-        const presentationDiv = portalContainer!.querySelector('.inset-0')
+        const presentationDiv = portalContainer!.querySelector('.inset-0') as HTMLElement
         expect(presentationDiv).toBeInTheDocument()
 
-        // Mock offsetWidth for click position calculation
-        Object.defineProperty(presentationDiv, 'offsetWidth', {
-            writable: true,
-            configurable: true,
-            value: 900, // 900px wide
-        })
+        // Mock getBoundingClientRect for click position calculation
+        // Container is 900px wide, positioned at left: 0, top: 0
+        const mockRect = {
+            left: 0,
+            top: 0,
+            right: 900,
+            bottom: 600,
+            width: 900,
+            height: 600,
+            x: 0,
+            y: 0,
+            toJSON: vi.fn()
+        }
+        vi.spyOn(presentationDiv, 'getBoundingClientRect').mockReturnValue(mockRect as DOMRect)
 
         // Click on LEFT third (should trigger onPrevious)
-        // 200/900 = 22% (left third is < 33%)
-        // For framer-motion, we need to create a proper synthetic event
-        
-        // Get the onClick handler from the motion.div
-        const motionDiv = presentationDiv as HTMLElement & { __reactInternalInstance?: unknown; _reactInternalFiber?: unknown }
-        if (motionDiv.__reactInternalInstance || motionDiv._reactInternalFiber) {
-            // Try to trigger the click handler directly
-            const syntheticEvent = new MouseEvent('click', { bubbles: true, cancelable: true })
-            Object.defineProperty(syntheticEvent, 'nativeEvent', { value: { offsetX: 200 }, writable: true })
-            Object.defineProperty(syntheticEvent, 'currentTarget', { value: presentationDiv, writable: true })
-            presentationDiv!.dispatchEvent(syntheticEvent)
-        }
+        // Click at x=200, which is 200/900 = 22% (left third is < 33%)
+        const clickEvent = new MouseEvent('click', {
+            bubbles: true,
+            cancelable: true,
+            clientX: 200, // Click at 200px from viewport left
+            clientY: 300
+        })
 
-        // Since framer-motion wraps events, verify the callbacks exist and test the logic
-        // The actual click handling is complex with framer-motion, so we verify the structure
-        expect(onPrevious).toBeDefined()
-        expect(onNext).toBeDefined()
-        expect(presentationDiv).toBeInTheDocument()
-        
-        // The click position logic is: clickX < 33.33% triggers onPrevious, > 66.66% triggers onNext
-        // We verify the component has the correct structure and that navigation props are passed
-        // The actual click simulation with framer-motion is complex, so we verify the setup is correct
+        // Simulate the click on the container
+        presentationDiv.dispatchEvent(clickEvent)
+
+        // Wait for the click handler to process
+        await waitFor(() => {
+            expect(onPrevious).toHaveBeenCalledTimes(1)
+        })
+
+        expect(onNext).not.toHaveBeenCalled()
+    })
+
+    it('should navigate on click in fullscreen mode (right third)', async () => {
+        const onPrevious = vi.fn()
+        const onNext = vi.fn()
+
+        render(
+            <PresentationView
+                {...defaultProps}
+                fullScreen={true}
+                onPrevious={onPrevious}
+                onNext={onNext}
+                canGoBack={true}
+                canGoForward={true}
+            />
+        )
+
+        // Wait for portal to be created and content to render
+        await waitFor(() => {
+            const portalContainer = document.getElementById('presentation-portal')
+            expect(portalContainer).toBeInTheDocument()
+        })
+
+        const portalContainer = document.getElementById('presentation-portal')
+        const presentationDiv = portalContainer!.querySelector('.inset-0') as HTMLElement
+
+        // Mock getBoundingClientRect for click position calculation
+        // Container is 900px wide, positioned at left: 0, top: 0
+        const mockRect = {
+            left: 0,
+            top: 0,
+            right: 900,
+            bottom: 600,
+            width: 900,
+            height: 600,
+            x: 0,
+            y: 0,
+            toJSON: vi.fn()
+        }
+        vi.spyOn(presentationDiv, 'getBoundingClientRect').mockReturnValue(mockRect as DOMRect)
+
+        // Click on RIGHT third (should trigger onNext)
+        // Click at x=800, which is 800/900 = 89% (right third is > 66.66%)
+        const clickEvent = new MouseEvent('click', {
+            bubbles: true,
+            cancelable: true,
+            clientX: 800, // Click at 800px from viewport left
+            clientY: 300
+        })
+
+        // Simulate the click on the container
+        presentationDiv.dispatchEvent(clickEvent)
+
+        // Wait for the click handler to process
+        await waitFor(() => {
+            expect(onNext).toHaveBeenCalledTimes(1)
+        })
+
+        expect(onPrevious).not.toHaveBeenCalled()
+    })
+
+    it('should not navigate on click in fullscreen mode (center third)', async () => {
+        const onPrevious = vi.fn()
+        const onNext = vi.fn()
+
+        render(
+            <PresentationView
+                {...defaultProps}
+                fullScreen={true}
+                onPrevious={onPrevious}
+                onNext={onNext}
+                canGoBack={true}
+                canGoForward={true}
+            />
+        )
+
+        // Wait for portal to be created and content to render
+        await waitFor(() => {
+            const portalContainer = document.getElementById('presentation-portal')
+            expect(portalContainer).toBeInTheDocument()
+        })
+
+        const portalContainer = document.getElementById('presentation-portal')
+        const presentationDiv = portalContainer!.querySelector('.inset-0') as HTMLElement
+
+        // Mock getBoundingClientRect for click position calculation
+        // Container is 900px wide, positioned at left: 0, top: 0
+        const mockRect = {
+            left: 0,
+            top: 0,
+            right: 900,
+            bottom: 600,
+            width: 900,
+            height: 600,
+            x: 0,
+            y: 0,
+            toJSON: vi.fn()
+        }
+        vi.spyOn(presentationDiv, 'getBoundingClientRect').mockReturnValue(mockRect as DOMRect)
+
+        // Click on CENTER third (should not trigger navigation)
+        // Click at x=500, which is 500/900 = 56% (center third is 33.33-66.66%)
+        const clickEvent = new MouseEvent('click', {
+            bubbles: true,
+            cancelable: true,
+            clientX: 500, // Click at 500px from viewport left
+            clientY: 300
+        })
+
+        // Simulate the click on the container
+        presentationDiv.dispatchEvent(clickEvent)
+
+        // Wait a bit to ensure handlers have processed
+        await waitFor(() => {
+            // Neither should be called
+            expect(onPrevious).not.toHaveBeenCalled()
+            expect(onNext).not.toHaveBeenCalled()
+        }, { timeout: 100 })
+    })
+
+    it('should navigate correctly when clicking on child elements (bug fix)', async () => {
+        const onPrevious = vi.fn()
+        const onNext = vi.fn()
+
+        render(
+            <PresentationView
+                {...defaultProps}
+                fullScreen={true}
+                onPrevious={onPrevious}
+                onNext={onNext}
+                canGoBack={true}
+                canGoForward={true}
+            />
+        )
+
+        // Wait for portal to be created and content to render
+        await waitFor(() => {
+            const portalContainer = document.getElementById('presentation-portal')
+            expect(portalContainer).toBeInTheDocument()
+        })
+
+        const portalContainer = document.getElementById('presentation-portal')
+        const presentationDiv = portalContainer!.querySelector('.inset-0') as HTMLElement
+
+        // Mock getBoundingClientRect for click position calculation
+        // Container is 900px wide, positioned at left: 100, top: 50 (not at origin)
+        const mockRect = {
+            left: 100,
+            top: 50,
+            right: 1000,
+            bottom: 650,
+            width: 900,
+            height: 600,
+            x: 100,
+            y: 50,
+            toJSON: vi.fn()
+        }
+        vi.spyOn(presentationDiv, 'getBoundingClientRect').mockReturnValue(mockRect as DOMRect)
+
+        // Click on a child element (like text) in the LEFT third
+        // Even though we click on a child, clientX should be relative to viewport
+        // Click at x=200 (viewport), which is 200-100=100px from container left = 11% (left third)
+        const clickEvent = new MouseEvent('click', {
+            bubbles: true,
+            cancelable: true,
+            clientX: 200, // Click at 200px from viewport left
+            clientY: 300
+        })
+
+        // Simulate the click on the container (event bubbles from child)
+        presentationDiv.dispatchEvent(clickEvent)
+
+        // Wait for the click handler to process
+        await waitFor(() => {
+            expect(onPrevious).toHaveBeenCalledTimes(1)
+        })
+
+        expect(onNext).not.toHaveBeenCalled()
     })
 
     it('should render title when provided', () => {

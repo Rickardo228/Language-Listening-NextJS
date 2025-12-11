@@ -224,8 +224,10 @@ export function PresentationView({
           if (!isDragging) {
             if (fullScreen) {
               // In fullscreen: navigate based on click position
-              const clickX = e.nativeEvent.offsetX;
-              const containerWidth = e.currentTarget.offsetWidth;
+              // Use getBoundingClientRect to get accurate container position
+              const rect = e.currentTarget.getBoundingClientRect();
+              const clickX = e.clientX - rect.left;
+              const containerWidth = rect.width;
               const clickPercentage = (clickX / containerWidth) * 100;
 
               if (clickPercentage < 33.33 && onPrevious && canGoBack) {
@@ -390,25 +392,21 @@ export function PresentationView({
               </button>
             )}
 
-            {/* Fullscreen/Close Button - hidden on mobile inline */}
-            {!isMobileInline && (
+            {/* Fullscreen/Close Button - hidden on mobile inline and when not in fullscreen */}
+            {!isMobileInline && fullScreen && (
               <button
                 onClick={(e) => {
                   e.stopPropagation();
                   setFullscreen(prev => !prev);
                 }}
                 className="p-2 bg-gray-200/80 dark:bg-gray-700/80 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 transition-all duration-200"
-                title={fullScreen ? "Exit Presentation Mode" : "Enter Presentation Mode"}
+                title="Exit Presentation Mode"
                 style={{
                   opacity: shouldShowNavigationButtons ? 1 : 0,
                   transition: 'opacity 0.3s ease'
                 }}
               >
-                {fullScreen ? (
-                  <X className="h-5 w-5 text-gray-700 dark:text-gray-300" />
-                ) : (
-                  <Maximize2 className="h-5 w-5 text-gray-700 dark:text-gray-300" />
-                )}
+                <X className="h-5 w-5 text-gray-700 dark:text-gray-300" />
               </button>
             )}
           </div>
