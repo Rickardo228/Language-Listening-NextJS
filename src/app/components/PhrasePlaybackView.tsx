@@ -77,18 +77,6 @@ export function PhrasePlaybackView({
     const [paused, setPaused] = useState(true);
     const [isPlayingAudio, setIsPlayingAudio] = useState(false);
     const [fullscreen, setFullscreenBase] = useState(false);
-    const fullscreenInitializedRef = useRef(false);
-
-    // Default to fullscreen on mobile
-    useEffect(() => {
-        if (!fullscreenInitializedRef.current && typeof window !== 'undefined') {
-            const isMobile = window.innerWidth < 768;
-            if (isMobile) {
-                setFullscreenBase(true);
-            }
-            fullscreenInitializedRef.current = true;
-        }
-    }, []);
 
     const setFullscreen = useCallback((value: boolean | ((prevState: boolean) => boolean)) => {
         setFullscreenBase(prevFullscreen => {
