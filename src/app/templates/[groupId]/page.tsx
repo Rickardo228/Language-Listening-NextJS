@@ -12,6 +12,7 @@ import { getUserProfile, createOrUpdateUserProfile } from '../../utils/userPrefe
 import { uploadBackgroundMedia, deleteBackgroundMedia } from '../../utils/backgroundUpload';
 import { presentationConfigDefinition } from '../../configDefinitions';
 import { Select } from '../../components/ui';
+import { toast } from 'sonner';
 
 const firestore = getFirestore();
 

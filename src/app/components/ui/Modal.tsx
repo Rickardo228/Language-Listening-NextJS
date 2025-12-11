@@ -11,7 +11,7 @@ export interface ModalProps {
   onClose: () => void;
 
   // Content
-  title?: string;
+  title?: ReactNode;
   children: ReactNode;
 
   // Layout
@@ -19,7 +19,7 @@ export interface ModalProps {
 
   // Header customization
   icon?: ReactNode;
-  subtitle?: string;
+  subtitle?: ReactNode;
   showCloseButton?: boolean;
   headerActions?: ReactNode;
 
@@ -88,7 +88,7 @@ export function Modal({
         <Dialog
           static
           open={isOpen}
-          onClose={closeOnBackdropClick ? onClose : () => {}}
+          onClose={closeOnBackdropClick ? onClose : () => { }}
           className="relative z-50"
         >
           {/* Backdrop */}

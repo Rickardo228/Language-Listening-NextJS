@@ -421,7 +421,7 @@ export function TemplatesBrowser({
                                 loading={loading}
                                 getPhraseCount={(c) => templateByGroup.get(c.id)?.phraseCount || 0}
                                 getLanguagePair={() => ({ inputLang, targetLang })}
-                                getStatus={(c) => {
+                                getStatus={(c): CollectionStatus => {
                                     const t = templateByGroup.get(c.id);
                                     const progress = templateProgress[c.id];
                                     const total = t?.phraseCount || 0;
