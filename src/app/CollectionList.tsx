@@ -3,8 +3,6 @@ import { LanguageFlags } from './components/LanguageFlags';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 
-export type CollectionStatus = 'completed' | 'next' | 'in-progress' | 'not-started';
-
 interface CollectionListProps {
     savedCollections: Config[];
     onLoadCollection: (config: Config) => void;
@@ -15,8 +13,6 @@ interface CollectionListProps {
     title?: string | React.ReactNode;
     showAllButton?: boolean;
     onShowAllClick?: () => void;
-    // Optional action button (e.g. import) rendered in the header
-    actionButton?: React.ReactNode;
     // Controls the presentation style of each item
     itemVariant?: 'list' | 'card';
     // Controls the flow/layout of the list container
@@ -33,8 +29,8 @@ interface CollectionListProps {
     enableCarouselControls?: boolean;
     getPhraseCount?: (collection: Config) => number;
     getLanguagePair?: (collection: Config) => { inputLang: string; targetLang: string } | null;
-    // Optional callback to determine the status of a collection
-    getStatus?: (collection: Config) => CollectionStatus;
+    // Optional callback to determine if a collection is completed
+    getCompletionStatus?: (collection: Config) => boolean;
     // Optional callback to provide progress for incomplete collections
     getProgressSummary?: (collection: Config) => { completedCount: number; totalCount: number } | null;
     // Optional index to scroll to (for horizontal layout)
@@ -53,7 +49,6 @@ export function CollectionList({
     title,
     showAllButton = true,
     onShowAllClick,
-    actionButton,
     itemVariant = 'list',
     layout = 'vertical',
     showFlags = true,
@@ -63,7 +58,7 @@ export function CollectionList({
     enableCarouselControls = false,
     getPhraseCount,
     getLanguagePair,
-    getStatus,
+    getCompletionStatus,
     getProgressSummary,
     scrollToIndex,
     scrollBehavior = 'smooth',
@@ -157,33 +152,29 @@ export function CollectionList({
                         <h2 className="text-xl font-semibold">Your Library</h2>
                     )}
                 </div>
-                <div className="flex items-center gap-2">
-                    {actionButton}
-                    {/* Show All button only in header for horizontal layout */}
-                    {layout === 'horizontal' && showAllButton && (
-                        <button
-                            onClick={() => (onShowAllClick ? onShowAllClick() : router.push('/templates'))}
-                            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors lg:mr-10"
-                            title="Show all"
+                {showAllButton && (
+                    <button
+                        onClick={() => (onShowAllClick ? onShowAllClick() : router.push('/templates'))}
+                        className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors lg:mr-10"
+                        title="Show all"
+                    >
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            strokeWidth={1.5}
+                            stroke="currentColor"
+                            className="w-3 h-3"
                         >
-                            <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                strokeWidth={1.5}
-                                stroke="currentColor"
-                                className="w-3 h-3"
-                            >
-                                <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"
-                                />
-                            </svg>
-                            Show all
-                        </button>
-                    )}
-                </div>
+                            <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"
+                            />
+                        </svg>
+                        Show all
+                    </button>
+                )}
             </div>
             {loading ? (
                 <div
@@ -194,7 +185,7 @@ export function CollectionList({
                             : 'space-y-2'
                     }
                 >
-                    {Array.from({ length: layout === 'horizontal' || itemVariant === 'card' ? 6 : 10 }).map((_, index) => (
+                    {Array.from({ length: layout === 'horizontal' || itemVariant === 'card' ? 6 : 5 }).map((_, index) => (
                         itemVariant === 'card' ? (
                             <div
                                 key={`skeleton-card-${index}`}
@@ -207,8 +198,8 @@ export function CollectionList({
                             <div key={`skeleton-row-${index}`} className="p-4 rounded-lg border bg-secondary/40 animate-pulse">
                                 <div className="flex items-center justify-between">
                                     <div className="flex-1 min-w-0">
-                                        <div className="h-5 w-1/3 bg-secondary/60 rounded mb-2" />
-                                        <div className="h-4 w-1/4 bg-secondary/50 rounded" />
+                                        <div className="h-4 w-1/3 bg-secondary/60 rounded mb-2" />
+                                        <div className="h-3 w-1/4 bg-secondary/50 rounded" />
                                     </div>
                                     <div className="flex items-center gap-2 ml-4">
                                         <div className="w-4 h-4 bg-secondary/60 rounded" />
@@ -235,7 +226,7 @@ export function CollectionList({
                             const languages = getLanguagePair ? getLanguagePair(collection) : (collection.phrases[0]
                                 ? { inputLang: collection.phrases[0].inputLang, targetLang: collection.phrases[0].targetLang }
                                 : null);
-                            const status = getStatus ? getStatus(collection) : 'not-started';
+                            const isCompleted = getCompletionStatus ? getCompletionStatus(collection) : false;
                             const progress = getProgressSummary
                                 ? getProgressSummary(collection)
                                 : null;
@@ -275,7 +266,7 @@ export function CollectionList({
                                             {hasBackgroundImage && (
                                                 <div className="pointer-events-none absolute inset-0 z-0 bg-black/35" />
                                             )}
-                                            {status === 'completed' && (
+                                            {isCompleted && (
                                                 <div className="absolute top-2 left-2 inline-flex items-center gap-1 rounded-full bg-black/50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide">
                                                     <svg
                                                         xmlns="http://www.w3.org/2000/svg"
@@ -290,23 +281,6 @@ export function CollectionList({
                                                         <path d="M20 6L9 17l-5-5" />
                                                     </svg>
                                                     <span>Completed</span>
-                                                </div>
-                                            )}
-                                            {status === 'next' && (
-                                                <div className="absolute top-2 left-2 inline-flex items-center gap-1 rounded-full bg-primary/90 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary-foreground">
-                                                    <svg
-                                                        xmlns="http://www.w3.org/2000/svg"
-                                                        viewBox="0 0 24 24"
-                                                        fill="none"
-                                                        stroke="currentColor"
-                                                        strokeWidth={2}
-                                                        strokeLinecap="round"
-                                                        strokeLinejoin="round"
-                                                        className="w-3 h-3"
-                                                    >
-                                                        <path d="M5 12h14M12 5l7 7-7 7" />
-                                                    </svg>
-                                                    <span>Next</span>
                                                 </div>
                                             )}
                                             {progress && progress.totalCount > 0 && (
@@ -472,30 +446,6 @@ export function CollectionList({
                         </>
                     )}
                 </div>
-            )}
-            {/* Show All button at bottom for vertical layout */}
-            {layout === 'vertical' && showAllButton && !loading && (
-                <button
-                    onClick={() => (onShowAllClick ? onShowAllClick() : router.push('/templates'))}
-                    className="flex items-center justify-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors w-full py-3 rounded-lg hover:bg-secondary/50"
-                    title="Show all"
-                >
-                    <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        strokeWidth={1.5}
-                        stroke="currentColor"
-                        className="w-4 h-4"
-                    >
-                        <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"
-                        />
-                    </svg>
-                    Show all
-                </button>
             )}
         </div>
     );

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { API_BASE_URL } from './consts';
 import { Phrase } from './types';
-import { Dialog } from '@headlessui/react';
+import { Modal, Select, Button } from './components/ui';
 
 interface Voice {
     name: string;
@@ -90,86 +90,66 @@ export function VoiceSelectionModal({ isOpen, onClose, inputLang, targetLang, on
 
 
     return (
-        <Dialog open={isOpen} onClose={onClose} className="relative z-50 font-sans">
-            <div className="fixed inset-0 bg-black/50" />
-            <div className="fixed inset-0 flex items-center justify-center">
-                <Dialog.Panel className="bg-background rounded-lg p-6 w-96">
-                <h2 className="text-xl font-semibold mb-4">Select Voices</h2>
+        <Modal
+            isOpen={isOpen}
+            onClose={onClose}
+            title="Select Voices"
+            size="sm"
+        >
+            {isLoading ? (
+                <div className="flex justify-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                </div>
+            ) : (
+                <>
+                    <div className="space-y-4">
+                        <Select
+                            label={`Input Language Voice (${inputLang})`}
+                            value={selectedInputVoice}
+                            onChange={(e) => setSelectedInputVoice(e.target.value)}
+                            options={inputVoices.map(voice => ({
+                                value: voice.name,
+                                label: `${voice.name} (${voice.gender})`
+                            }))}
+                        />
 
-                {isLoading ? (
-                    <div className="flex justify-center">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                        <Select
+                            label={`Target Language Voice (${targetLang})`}
+                            value={selectedTargetVoice}
+                            onChange={(e) => setSelectedTargetVoice(e.target.value)}
+                            options={targetVoices.map(voice => ({
+                                value: voice.name,
+                                label: `${voice.name} (${voice.gender})`
+                            }))}
+                        />
                     </div>
-                ) : (
-                    <>
-                        <div className="mb-4">
-                            <label className="block text-sm font-medium mb-2">
-                                Input Language Voice ({inputLang})
-                            </label>
-                            <select
-                                value={selectedInputVoice}
-                                onChange={(e) => setSelectedInputVoice(e.target.value)}
-                                className="w-full p-2 rounded border border-border bg-background"
-                            >
-                                {inputVoices.map((voice) => (
-                                    <option key={voice.name} value={voice.name}>
-                                        {voice.name} ({voice.gender})
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
 
-                        <div className="mb-6">
-                            <label className="block text-sm font-medium mb-2">
-                                Target Language Voice ({targetLang})
-                            </label>
-                            <select
-                                value={selectedTargetVoice}
-                                onChange={(e) => setSelectedTargetVoice(e.target.value)}
-                                className="w-full p-2 rounded border border-border bg-background"
-                            >
-                                {targetVoices.map((voice) => (
-                                    <option key={voice.name} value={voice.name}>
-                                        {voice.name} ({voice.gender})
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-
-                        <div className="flex justify-end gap-2">
-                            <button
-                                onClick={onClose}
-                                disabled={isSaving}
-                                className="px-4 py-2 text-sm rounded hover:bg-secondary disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={async () => {
-                                    setIsSaving(true);
-                                    try {
-                                        await onSave(selectedInputVoice, selectedTargetVoice);
-                                    } finally {
-                                        setIsSaving(false);
-                                    }
-                                }}
-                                disabled={isSaving}
-                                className="px-4 py-2 text-sm bg-primary text-primary-foreground rounded hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                            >
-                                {isSaving ? (
-                                    <>
-                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-foreground"></div>
-                                        Saving...
-                                    </>
-                                ) : (
-                                    'Save Changes'
-                                )}
-                            </button>
-                        </div>
-                    </>
-                )}
-                </Dialog.Panel>
-            </div>
-        </Dialog>
+                    <div className="flex justify-end gap-2 mt-6">
+                        <Button
+                            variant="secondary"
+                            onClick={onClose}
+                            disabled={isSaving}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            variant="primary"
+                            onClick={async () => {
+                                setIsSaving(true);
+                                try {
+                                    await onSave(selectedInputVoice, selectedTargetVoice);
+                                } finally {
+                                    setIsSaving(false);
+                                }
+                            }}
+                            isLoading={isSaving}
+                            loadingText="Saving..."
+                        >
+                            Save Changes
+                        </Button>
+                    </div>
+                </>
+            )}
+        </Modal>
     );
 } 

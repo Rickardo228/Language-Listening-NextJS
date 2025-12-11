@@ -11,6 +11,7 @@ import { useUser } from '../../contexts/UserContext';
 import { getUserProfile, createOrUpdateUserProfile } from '../../utils/userPreferences';
 import { uploadBackgroundMedia, deleteBackgroundMedia } from '../../utils/backgroundUpload';
 import { presentationConfigDefinition } from '../../configDefinitions';
+import { Select } from '../../components/ui';
 
 const firestore = getFirestore();
 
@@ -357,7 +358,7 @@ export default function TemplateDetailPage() {
     // Admin-only template deletion function
     const handleDeleteTemplate = async (templateGroupId: string) => {
         if (!isAdmin) {
-            alert('Only administrators can delete templates.');
+            toast.error('Only administrators can delete templates.');
             return;
         }
 
@@ -378,14 +379,14 @@ export default function TemplateDetailPage() {
 
             await Promise.all(deletePromises);
 
-            alert(`Template group "${templateGroupId}" has been successfully deleted.`);
+            toast.success(`Template group "${templateGroupId}" has been successfully deleted.`);
 
             // Redirect back to templates list or home
             window.location.href = '/templates';
 
         } catch (error) {
             console.error('Error deleting template:', error);
-            alert('Failed to delete template. Please try again.');
+            toast.error('Failed to delete template. Please try again.');
         }
     };
 
@@ -436,11 +437,11 @@ export default function TemplateDetailPage() {
                 await Promise.all(updatePromises);
             } catch (persistError) {
                 console.error('Error saving template background to Firestore:', persistError);
-                alert('Background image applied locally but failed to save for this template. Please try again.');
+                toast.error('Background image applied locally but failed to save for this template. Please try again.');
             }
         } catch (error) {
             console.error('Error uploading template background:', error);
-            alert(error instanceof Error ? error.message : 'Failed to upload background. Please try again.');
+            toast.error(error instanceof Error ? error.message : 'Failed to upload background. Please try again.');
         } finally {
             // Reset file input
             e.target.value = '';
@@ -611,7 +612,7 @@ export default function TemplateDetailPage() {
                                     setTemplatePresentationConfig(prev => prev ? { ...prev, ...templateLevelUpdates } : prev);
                                 } catch (persistError) {
                                     console.error('Error saving template-level config to Firestore:', persistError);
-                                    alert('Config applied locally but failed to save for this template. Please try again.');
+                                    toast.error('Config applied locally but failed to save for this template. Please try again.');
                                 }
                             }
                         }
@@ -649,29 +650,25 @@ export default function TemplateDetailPage() {
                         </p>
                         {availableLanguages.length > 1 && (
                             <div className="flex items-center gap-4 mt-4 justify-center">
-                                <select
+                                <Select
                                     value={selectedInputLang}
                                     onChange={(e) => setSelectedInputLang(e.target.value)}
-                                    className="px-3 py-2 border rounded-lg bg-background"
-                                >
-                                    {availableLanguages.map(lang => (
-                                        <option key={`input-${lang}`} value={lang}>
-                                            {getLanguageLabel(lang)}
-                                        </option>
-                                    ))}
-                                </select>
+                                    options={availableLanguages.map(lang => ({
+                                        value: lang,
+                                        label: getLanguageLabel(lang)
+                                    }))}
+                                    className="min-w-[200px]"
+                                />
                                 <span className="text-sm">→</span>
-                                <select
+                                <Select
                                     value={selectedTargetLang}
                                     onChange={(e) => setSelectedTargetLang(e.target.value)}
-                                    className="px-3 py-2 border rounded-lg bg-background"
-                                >
-                                    {availableLanguages.map(lang => (
-                                        <option key={`target-${lang}`} value={lang}>
-                                            {getLanguageLabel(lang)}
-                                        </option>
-                                    ))}
-                                </select>
+                                    options={availableLanguages.map(lang => ({
+                                        value: lang,
+                                        label: getLanguageLabel(lang)
+                                    }))}
+                                    className="min-w-[200px]"
+                                />
                             </div>
                         )}
                     </div>

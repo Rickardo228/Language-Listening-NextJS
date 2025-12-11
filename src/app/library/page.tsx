@@ -12,6 +12,7 @@ import { useUser } from '../contexts/UserContext';
 import { trackSelectList, trackCreatePhrase, track } from '../../lib/mixpanelClient';
 import { createCollection } from '../utils/collectionService';
 import { defaultPresentationConfig, defaultPresentationConfigs } from '../defaultConfig';
+import { toast } from 'sonner';
 
 const firestore = getFirestore();
 
@@ -180,7 +181,7 @@ export default function LibraryPage() {
 
     } catch (err) {
       console.error('Processing error:', err);
-      alert(err)
+      toast.error(String(err))
     }
     setLoading(false);
   };
@@ -203,7 +204,7 @@ export default function LibraryPage() {
 
     } catch (err) {
       console.error('Loading error:', err);
-      alert('Error loading configuration: ' + err);
+      toast.error('Error loading configuration: ' + err);
     } finally {
       setLoading(false);
     }
@@ -224,7 +225,7 @@ export default function LibraryPage() {
         )
       );
     } catch (err) {
-      alert("Failed to rename list: " + err);
+      toast.error("Failed to rename list: " + err);
     }
   };
 
@@ -242,7 +243,7 @@ export default function LibraryPage() {
       // Navigate back to library if we deleted the current collection
       router.push('/library');
     } catch (err) {
-      alert("Failed to delete list: " + err);
+      toast.error("Failed to delete list: " + err);
     }
   };
 

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { ArrowLeft } from 'lucide-react';
 import { getFirestore, collection, query, where, getDocs, Timestamp, orderBy, limit, QuerySnapshot, DocumentSnapshot, } from 'firebase/firestore';
 import { languageOptions, Config, PresentationConfig } from '../types';
 import { CollectionList, CollectionStatus } from '../CollectionList';
@@ -371,19 +372,7 @@ export function TemplatesBrowser({
                                 }}
                                 className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-primary hover:text-primary/80 transition-colors"
                             >
-                                <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    width="16"
-                                    height="16"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    strokeWidth="2"
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                >
-                                    <path d="M19 12H5M12 19l-7-7 7-7" />
-                                </svg>
+                                <ArrowLeft className="w-4 h-4" strokeWidth={2} />
                                 Back to Home
                             </button>
                         </div>

@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react';
 import { User } from 'firebase/auth';
 import { getFirestore, doc, getDoc, collection, getDocs, query, orderBy, limit } from 'firebase/firestore';
-import { Settings } from 'lucide-react';
-import { Dialog } from '@headlessui/react';
+import { Settings, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { getFlagEmoji, getLanguageName } from '../utils/languageUtils';
 import { useUser } from '../contexts/UserContext';
 import { getPhraseRankTitle, getLanguageRankTitle, PRODUCTION_PHRASE_RANKS } from '../utils/rankingSystem';
 import { StatsSettingsModal } from './StatsSettingsModal';
 import { track } from '../../lib/mixpanelClient';
+import { Modal } from './ui';
 import {
     Chart as ChartJS,
     CategoryScale,
@@ -573,38 +573,34 @@ export function UserStatsModal({ isOpen, onClose, user }: UserStatsModalProps) {
     const totalPhrases = mainStats ? (mainStats.phrasesListened || 0) + (mainStats.phrasesViewed || 0) : 0;
 
     return (
-        <Dialog open={isOpen} onClose={onClose} className="relative z-50">
-            <div className="fixed inset-0 bg-black/50" />
-            <div className="fixed inset-0 flex items-center justify-center">
-                <Dialog.Panel className="bg-background p-6 rounded-lg shadow-lg max-w-2xl w-full max-h-[80vh] overflow-y-auto">
-                    <div className="flex justify-between items-center mb-6">
-                        <div className="flex items-center gap-3">
-                            <h2 className="text-xl font-bold">Your Stats</h2>
-                            {DEBUG_PERSONAL_BEST_MODE && (
-                                <div className="bg-yellow-500 text-black text-xs px-2 py-1 rounded-full font-bold animate-pulse">
-                                    🐛 DEBUG: PB Test Mode
-                                </div>
-                            )}
+        <Modal
+            isOpen={isOpen}
+            onClose={onClose}
+            title={
+                <div className="flex items-center gap-3">
+                    <span>Your Stats</span>
+                    {DEBUG_PERSONAL_BEST_MODE && (
+                        <div className="bg-yellow-500 text-black text-xs px-2 py-1 rounded-full font-bold animate-pulse">
+                            🐛 DEBUG: PB Test Mode
                         </div>
-                        <div className="flex items-center gap-2">
-                            <button
-                                onClick={() => {
-                                    track('Stats Settings Opened');
-                                    setSettingsModalOpen(true);
-                                }}
-                                className="text-foreground/60 hover:text-foreground p-1 rounded"
-                                title="Settings"
-                            >
-                                <Settings className="w-5 h-5" />
-                            </button>
-                            <button
-                                onClick={onClose}
-                                className="text-foreground/60 hover:text-foreground"
-                            >
-                                ✕
-                            </button>
-                        </div>
-                    </div>
+                    )}
+                </div>
+            }
+            size="lg"
+            headerActions={
+                <button
+                    onClick={() => {
+                        track('Stats Settings Opened');
+                        setSettingsModalOpen(true);
+                    }}
+                    className="text-muted-foreground hover:text-foreground p-1 rounded"
+                    title="Settings"
+                >
+                    <Settings className="w-5 h-5" />
+                </button>
+            }
+            panelClassName="max-h-[80vh]"
+        >
 
                     {loading ? (
                         <div className="text-center py-4">Loading stats...</div>
@@ -749,9 +745,7 @@ export function UserStatsModal({ isOpen, onClose, user }: UserStatsModalProps) {
                                     {trend === 'up' && (
                                         <div className="text-center">
                                             <div className="text-lg font-semibold">
-                                                <svg className="w-6 h-6 text-green-500 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                                                </svg>
+                                                <TrendingUp className="w-6 h-6 text-green-500 mx-auto" strokeWidth={2} />
                                             </div>
                                             <div className="text-sm text-foreground/60">
                                                 vs Yesterday (+{difference})
@@ -764,9 +758,7 @@ export function UserStatsModal({ isOpen, onClose, user }: UserStatsModalProps) {
                                     {trend === 'down' && (
                                         <div className="text-center">
                                             <div className="text-lg font-semibold">
-                                                <svg className="w-6 h-6 text-red-500 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 17h8m0 0v-8m0 8l-8-8-4 4-6-6" />
-                                                </svg>
+                                                <TrendingDown className="w-6 h-6 text-red-500 mx-auto" strokeWidth={2} />
                                             </div>
                                             <div className="text-sm text-foreground/60">
                                                 vs Yesterday ({difference})
@@ -779,9 +771,7 @@ export function UserStatsModal({ isOpen, onClose, user }: UserStatsModalProps) {
                                     {trend === 'same' && (
                                         <div className="text-center">
                                             <div className="text-lg font-semibold">
-                                                <svg className="w-6 h-6 text-blue-500 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14" />
-                                                </svg>
+                                                <Minus className="w-6 h-6 text-blue-500 mx-auto" strokeWidth={2} />
                                             </div>
                                             <div className="text-sm text-foreground/60">
                                                 vs Yesterday ({difference >= 0 ? '+' : ''}{difference})
@@ -920,8 +910,6 @@ export function UserStatsModal({ isOpen, onClose, user }: UserStatsModalProps) {
                     ) : (
                         <div className="text-center py-4">No stats available yet</div>
                     )}
-                </Dialog.Panel>
-            </div>
 
             {/* Settings Modal */}
             <StatsSettingsModal
@@ -929,6 +917,6 @@ export function UserStatsModal({ isOpen, onClose, user }: UserStatsModalProps) {
                 onClose={() => setSettingsModalOpen(false)}
                 user={user}
             />
-        </Dialog>
+        </Modal>
     );
 }

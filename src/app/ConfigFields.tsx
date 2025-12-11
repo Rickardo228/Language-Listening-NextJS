@@ -5,6 +5,7 @@ import { ConfigFieldDefinition } from "./configDefinitions";
 import bgColorOptions from "./utils/bgColorOptions";
 import { track } from "../lib/mixpanelClient";
 import { useUser } from "./contexts/UserContext";
+import { Input, Select } from "./components/ui";
 
 interface ConfigFieldsProps {
     definition: ConfigFieldDefinition[];
@@ -159,28 +160,23 @@ const ConfigFields: React.FC<ConfigFieldsProps> = ({
                     // Render a file input if the field is for a file (e.g. background image).
                     if (inputType === "file") {
                         return (
-                            <div key={key} className="flex flex-col">
-                                <label htmlFor={String(key)} className="block font-medium mb-1">
-                                    {dynamicLabel}
-                                </label>
-                                <input
+                            <div key={key}>
+                                <Input
                                     type="file"
                                     id={String(key)}
+                                    label={dynamicLabel}
                                     accept="image/*"
                                     onChange={handleImageUpload}
-                                    className="w-full p-2 border border-gray-300 rounded"
+                                    helperText={dynamicDescription}
                                 />
                                 {hasBackground && (
                                     <button
                                         type="button"
                                         onClick={() => setConfig({ bgImage: null })}
-                                        className="mt-2 text-sm text-red-600 hover:underline self-start"
+                                        className="mt-2 text-sm text-red-600 hover:underline"
                                     >
                                         Remove background
                                     </button>
-                                )}
-                                {dynamicDescription && (
-                                    <p className="text-sm text-muted-foreground mt-1">{dynamicDescription}</p>
                                 )}
                             </div>
                         );
@@ -219,21 +215,15 @@ const ConfigFields: React.FC<ConfigFieldsProps> = ({
                     // Render a number input.
                     if (inputType === "number") {
                         return (
-                            <div key={key} className="flex flex-col">
-                                <label htmlFor={String(key)} className="block font-medium mb-1">
-                                    {dynamicLabel}
-                                </label>
-                                <input
-                                    type="number"
-                                    id={String(key)}
-                                    value={value as number}
-                                    onChange={(e) => handleChange(key, Number(e.target.value))}
-                                    className="w-full p-2 border border-gray-300 rounded"
-                                />
-                                {dynamicDescription && (
-                                    <p className="text-sm text-muted-foreground mt-1">{dynamicDescription}</p>
-                                )}
-                            </div>
+                            <Input
+                                key={key}
+                                type="number"
+                                id={String(key)}
+                                label={dynamicLabel}
+                                value={value as number}
+                                onChange={(e) => handleChange(key, Number(e.target.value))}
+                                helperText={dynamicDescription}
+                            />
                         );
                     }
 
@@ -279,17 +269,15 @@ const ConfigFields: React.FC<ConfigFieldsProps> = ({
                     }
 
                     if (inputType === "color") {
-                        return <div key={key} className="flex flex-col">
-                            <label htmlFor={String(key)} className="block font-medium mb-1">
-                                {dynamicLabel}
-                            </label>
-                            <input
+                        return <div key={key}>
+                            <Input
                                 list="bgColorOptions"
                                 type="text"
                                 id={String(key)}
+                                label={dynamicLabel}
                                 value={value as string}
                                 onChange={(e) => handleChange(key, e.target.value)}
-                                className="w-full p-2 border border-gray-300 rounded"
+                                helperText={dynamicDescription}
                             />
                             <datalist id="bgColorOptions">
                                 {bgColorOptions.map((option) => (
@@ -298,9 +286,6 @@ const ConfigFields: React.FC<ConfigFieldsProps> = ({
                                     </option>
                                 ))}
                             </datalist>
-                            {dynamicDescription && (
-                                <p className="text-sm text-muted-foreground mt-1">{dynamicDescription}</p>
-                            )}
                         </div>
                     }
 
@@ -312,47 +297,33 @@ const ConfigFields: React.FC<ConfigFieldsProps> = ({
                         const isNumeric = typeof firstOptionValue === 'number';
 
                         return (
-                            <div key={key} className="flex flex-col">
-                                <label htmlFor={String(key)} className={`block font-medium mb-1 ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}>
-                                    {dynamicLabel}
-                                </label>
-                                <select
-                                    id={String(key)}
-                                    value={(value ?? '') as string | number}
-                                    onChange={(e) => handleChange(key, isNumeric ? Number(e.target.value) : e.target.value)}
-                                    disabled={isDisabled}
-                                    className={`w-full p-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                >
-                                    {field.options?.map((option) => (
-                                        <option key={option.value} value={option.value}>
-                                            {option.label}
-                                        </option>
-                                    ))}
-                                </select>
-                                {dynamicDescription && (
-                                    <p className="text-sm text-muted-foreground mt-1">{dynamicDescription}</p>
-                                )}
-                            </div>
+                            <Select
+                                key={key}
+                                id={String(key)}
+                                label={dynamicLabel}
+                                value={(value ?? '') as string | number}
+                                onChange={(e) => handleChange(key, isNumeric ? Number(e.target.value) : e.target.value)}
+                                disabled={isDisabled}
+                                options={(field.options ?? []).map(opt => ({
+                                    value: String(opt.value),
+                                    label: opt.label
+                                }))}
+                                helperText={dynamicDescription}
+                            />
                         );
                     }
 
                     // Render a text input (this covers text and color types, etc.)
                     return (
-                        <div key={key} className="flex flex-col">
-                            <label htmlFor={String(key)} className="block font-medium mb-1">
-                                {dynamicLabel}
-                            </label>
-                            <input
-                                type="text"
-                                id={String(key)}
-                                value={value as string}
-                                onChange={(e) => handleChange(key, e.target.value)}
-                                className="w-full p-2 border border-gray-300 rounded"
-                            />
-                            {dynamicDescription && (
-                                <p className="text-sm text-muted-foreground mt-1">{dynamicDescription}</p>
-                            )}
-                        </div>
+                        <Input
+                            key={key}
+                            type="text"
+                            id={String(key)}
+                            label={dynamicLabel}
+                            value={value as string}
+                            onChange={(e) => handleChange(key, e.target.value)}
+                            helperText={dynamicDescription}
+                        />
                     );
                 })}
         </div>

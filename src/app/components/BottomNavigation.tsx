@@ -1,6 +1,7 @@
 'use client'
 
 import { usePathname, useRouter } from 'next/navigation';
+import { Home, Library } from 'lucide-react';
 import { track } from '../../lib/mixpanelClient';
 import { ROUTES } from '../routes';
 
@@ -55,21 +56,12 @@ export function BottomNavigation() {
           aria-label="Home"
           aria-current={isHomePath ? 'page' : undefined}
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            fill={isHomePath ? 'currentColor' : 'none'}
-            viewBox="0 0 24 24"
-            strokeWidth={1.5}
-            stroke="currentColor"
+          <Home
             className="w-6 h-6"
+            fill={isHomePath ? 'currentColor' : 'none'}
+            strokeWidth={1.5}
             aria-hidden="true"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="m2.25 12 8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25"
-            />
-          </svg>
+          />
           <span className={`text-xs mt-1 ${isHomePath ? 'font-medium' : 'font-normal'}`}>
             Home
           </span>
@@ -82,19 +74,12 @@ export function BottomNavigation() {
           aria-label="Library"
           aria-current={isLibraryPath ? 'page' : undefined}
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            fill={isLibraryPath ? 'currentColor' : 'none'}
-            viewBox="0 0 24 24"
-            strokeWidth={1.5}
-            stroke="currentColor"
+          <Library
             className="w-6 h-6"
+            fill={isLibraryPath ? 'currentColor' : 'none'}
+            strokeWidth={1.5}
             aria-hidden="true"
-          >
-            <rect x="4" y="6" width="3" height="12" rx="0.5" />
-            <rect x="9" y="4" width="3" height="16" rx="0.5" />
-            <rect x="14" y="8" width="3" height="8" rx="0.5" />
-          </svg>
+          />
           <span className={`text-xs mt-1 ${isLibraryPath ? 'font-medium' : 'font-normal'}`}>
             Library
           </span>
