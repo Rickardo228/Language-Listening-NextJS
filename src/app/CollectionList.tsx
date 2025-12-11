@@ -185,7 +185,7 @@ export function CollectionList({
                             : 'space-y-2'
                     }
                 >
-                    {Array.from({ length: layout === 'horizontal' || itemVariant === 'card' ? 6 : 5 }).map((_, index) => (
+                    {Array.from({ length: layout === 'horizontal' || itemVariant === 'card' ? 6 : 8 }).map((_, index) => (
                         itemVariant === 'card' ? (
                             <div
                                 key={`skeleton-card-${index}`}
