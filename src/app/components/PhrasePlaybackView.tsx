@@ -107,6 +107,7 @@ export function PhrasePlaybackView({
     }, [phrasesViewed, showStatsUpdate]);
     const [showTitle, setShowTitle] = useState(false);
     const [configName, setConfigName] = useState('Default');
+    const [settingsOpen, setSettingsOpen] = useState(false);
 
     // Debouncing refs for spam prevention
     const updateUserStatsTimeout = useRef<NodeJS.Timeout | null>(null);
@@ -1267,7 +1268,7 @@ export function PhrasePlaybackView({
 
                 {/* Presentation View and Controls */}
                 {Boolean(typeof currentPhraseIndex === "number" && phrases?.length) && (
-                    <div className="xl:flex-1 sticky top-[64px] bg-background lg:p-2 z-1 lg:order-1">
+                    <div className="xl:flex-1 sticky top-[61px] lg:top-[64px] bg-background lg:p-2 z-1 lg:order-1">
                         <PresentationView
                             currentPhrase={phrases[currentPhraseIndex]?.input || ''}
                             currentTranslated={phrases[currentPhraseIndex]?.translated || ''}
@@ -1306,6 +1307,7 @@ export function PhrasePlaybackView({
                             onPause={handlePause}
                             onPlay={handlePlay}
                             onPlayPhrase={handlePlayPhrasePhase}
+                            onSettingsOpen={() => setSettingsOpen(true)}
                         />
                         <div className="py-1 px-1 lg:py-2">
                             <PresentationControls
@@ -1328,6 +1330,9 @@ export function PhrasePlaybackView({
                                 canGoForward={true}
                                 inputLang={phrases[0]?.inputLang}
                                 targetLang={phrases[0]?.targetLang}
+                                setFullscreen={setFullscreen}
+                                settingsOpen={settingsOpen}
+                                setSettingsOpen={setSettingsOpen}
                             />
                         </div>
                     </div>

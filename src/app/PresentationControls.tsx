@@ -1,4 +1,4 @@
-import { Pause, Play, Repeat, ArrowLeft, ArrowRight, Settings } from 'lucide-react';
+import { Pause, Play, ArrowLeft, ArrowRight, Maximize2 } from 'lucide-react';
 import { SettingsModal } from './SettingsModal';
 import { PresentationConfig } from './types';
 import { useState } from 'react';
@@ -26,6 +26,9 @@ interface PresentationControlsProps {
     canGoForward: boolean;
     inputLang?: string;
     targetLang?: string;
+    setFullscreen?: (fullscreen: boolean) => void;
+    settingsOpen?: boolean;
+    setSettingsOpen?: (open: boolean) => void;
 }
 
 export function PresentationControls({
@@ -48,8 +51,15 @@ export function PresentationControls({
     canGoForward,
     inputLang,
     targetLang,
+    setFullscreen,
+    settingsOpen: externalSettingsOpen,
+    setSettingsOpen: externalSetSettingsOpen,
 }: PresentationControlsProps) {
-    const [settingsOpen, setSettingsOpen] = useState(false);
+    const [internalSettingsOpen, setInternalSettingsOpen] = useState(false);
+
+    // Use external state if provided, otherwise use internal state
+    const settingsOpen = externalSetSettingsOpen ? externalSettingsOpen : internalSettingsOpen;
+    const setSettingsOpen = externalSetSettingsOpen || setInternalSettingsOpen;
 
     // Function to get language names from language codes
     const getLanguageName = (langCode: string): string => {
@@ -105,9 +115,20 @@ export function PresentationControls({
         return playbackSpeedOptions.find(option => option.value === speed)?.label || '1.0x';
     };
 
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+
+    const handleControlsClick = () => {
+        if (isMobile && setFullscreen) {
+            setFullscreen(true);
+        }
+    };
+
     return (
         <>
-            <div className="flex mb-2 mt-2 md:mt-0 items-center gap-2">
+            <div
+                className="flex mb-2 mt-2 md:mt-0 items-center gap-2"
+                onClick={handleControlsClick}
+            >
                 <button
                     onClick={() => paused ? onPlay() : onPause()}
                     className="px-4 h-[50px] mx-1 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white font-medium rounded-lg transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105"
@@ -123,15 +144,6 @@ export function PresentationControls({
                         </span>
                     </div>
                 </button>
-                {hasPhrasesLoaded && (
-                    <button
-                        onClick={handleReplay}
-                        className="p-2 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 dark:hover:bg-gray-600"
-                        title="Replay"
-                    >
-                        <Repeat className="h-8 w-8 text-gray-700 dark:text-gray-300" />
-                    </button>
-                )}
                 <button
                     onClick={() => handleSpeedToggle('input')}
                     className="hidden md:flex p-2 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 dark:hover:bg-gray-600 items-center gap-1 h-12"
@@ -172,16 +184,6 @@ export function PresentationControls({
                     </button>
                 }
                 <button
-                    onClick={() => {
-                        track('Presentation Settings Opened');
-                        setSettingsOpen(true);
-                    }}
-                    className="p-2 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 dark:hover:bg-gray-600"
-                    title="Settings"
-                >
-                    <Settings className="h-8 w-8 text-gray-700 dark:text-gray-300" />
-                </button>
-                <button
                     onClick={onPrevious}
                     disabled={!canGoBack}
                     className="hidden md:flex p-2 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -197,6 +199,15 @@ export function PresentationControls({
                 >
                     <ArrowRight className="h-8 w-8 text-gray-700 dark:text-gray-300" />
                 </button>
+                {setFullscreen && (
+                    <button
+                        onClick={() => setFullscreen(true)}
+                        className="ml-auto p-2 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 dark:hover:bg-gray-600"
+                        title="Enter Fullscreen"
+                    >
+                        <Maximize2 className="h-8 w-8 text-gray-700 dark:text-gray-300" />
+                    </button>
+                )}
             </div>
 
             <SettingsModal
