@@ -19,7 +19,7 @@ export function Label({
       {...props}
     >
       {children}
-      {required && <span className="text-destructive ml-1">*</span>}
+      {required && <span className="text-muted-foreground ml-1">*</span>}
     </label>
   );
 }
