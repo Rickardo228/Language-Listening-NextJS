@@ -2,6 +2,7 @@ import { Config } from './types';
 import { LanguageFlags } from './components/LanguageFlags';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
+import { ArrowRight } from 'lucide-react';
 
 export type CollectionStatus = 'not-started' | 'in-progress' | 'completed' | 'next';
 
@@ -259,6 +260,7 @@ export function CollectionList({
                                             )}
                                             {isNext && (
                                                 <div className="absolute top-2 left-2 inline-flex items-center gap-1 rounded-full bg-primary/90 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide">
+                                                    <ArrowRight className="w-3 h-3" strokeWidth={2} />
                                                     <span>Next</span>
                                                 </div>
                                             )}
