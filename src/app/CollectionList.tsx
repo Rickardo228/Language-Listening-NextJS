@@ -313,7 +313,7 @@ export function CollectionList({
                                                 </div>
                                             )}
                                             <div className="w-full relative z-10">
-                                                <div className="text-lg sm:text-xl font-semibold leading-tight break-words line-clamp-2 capitalize">{collection.name}</div>
+                                                <div className="text-lg sm:text-xl font-semibold leading-tight break-words line-clamp-2 capitalize">{collection.name.replace(/_/g, ' ')}</div>
                                                 {showFlags && (
                                                     <div className="text-[10px] opacity-80 tracking-wider">
                                                         {languages ? (
@@ -344,7 +344,7 @@ export function CollectionList({
                                 >
                                     <div className="flex items-center justify-between">
                                         <div className="flex-1 min-w-0">
-                                            <h3 className="text-sm font-medium truncate capitalize">{collection.name}</h3>
+                                            <h3 className="text-sm font-medium truncate capitalize">{collection.name.replace(/_/g, ' ')}</h3>
                                             <p className="text-xs opacity-80 flex items-center gap-1">
                                                 <span>{phraseCount} phrases</span>
                                                 {showFlags && languages && (
