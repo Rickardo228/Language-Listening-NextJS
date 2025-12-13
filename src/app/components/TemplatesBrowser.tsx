@@ -145,7 +145,8 @@ export function TemplatesBrowser({
                         querySnapshot.forEach((doc: DocumentSnapshot) => {
                             if (!seenIds.has(doc.id)) {
                                 seenIds.add(doc.id);
-                                templatesData.push({ id: doc.id, ...doc.data() } as Template);
+                                const templateData = { id: doc.id, ...doc.data() } as Template;
+                                templatesData.push(templateData);
                             }
                         });
                     });
@@ -167,8 +168,10 @@ export function TemplatesBrowser({
                         })
                         .map((groupTemplates) => groupTemplates.find((t) => t.lang === inputLangToUse) || groupTemplates[0]);
 
+                    // Randomize templates to ensure variety
+                    const randomizedTemplates = uniqueTemplates.sort(() => Math.random() - 0.5);
 
-                    setTemplates(options?.fetchAll ? uniqueTemplates : uniqueTemplates.slice(0, FETCH_LIMIT));
+                    setTemplates(options?.fetchAll ? randomizedTemplates : randomizedTemplates.slice(0, FETCH_LIMIT));
                     return;
                 }
 
@@ -240,9 +243,11 @@ export function TemplatesBrowser({
                     }
                 });
 
-                setTemplates(options?.fetchAll ? sortedTemplates : sortedTemplates.slice(0, FETCH_LIMIT));
+                const finalTemplates = options?.fetchAll ? sortedTemplates : sortedTemplates.slice(0, FETCH_LIMIT);
+
+                setTemplates(finalTemplates);
             } catch (err) {
-                console.error('Error fetching templates:', err);
+                console.error('[TemplatesBrowser] Error fetching templates:', err);
                 setTemplates([]);
             } finally {
                 setLoading(false);
