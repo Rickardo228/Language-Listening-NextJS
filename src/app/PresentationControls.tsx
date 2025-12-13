@@ -73,7 +73,14 @@ export function PresentationControls({
                 onClick={handleControlsClick}
             >
                 <button
-                    onClick={() => paused ? onPlay() : onPause()}
+                    onClick={(e) => {
+                        if (paused) {
+                            onPlay();
+                        } else {
+                            e.stopPropagation(); // Prevent fullscreen on pause
+                            onPause();
+                        }
+                    }}
                     className="px-4 h-[50px] mx-1 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white font-medium rounded-lg transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105"
                     title={paused ? "Start Presentation" : "Complete Current Phrase"}
                 >
