@@ -16,6 +16,9 @@ export type PresentationConfig = {
   enableParticles?: boolean;
   particleRotation?: number;
   enableSteam?: boolean;
+  enableDust?: boolean;
+  particleColor?: string;
+  particleSpeed?: number;
   postProcessDelay: number;
   delayBetweenPhrases: number;
   enableLoop: boolean;

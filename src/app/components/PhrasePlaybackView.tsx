@@ -1277,6 +1277,9 @@ export function PhrasePlaybackView({
                             enableParticles={presentationConfig.enableParticles}
                             particleRotation={presentationConfig.particleRotation}
                             enableSteam={presentationConfig.enableSteam}
+                            enableDust={presentationConfig.enableDust}
+                            particleColor={presentationConfig.particleColor}
+                            particleSpeed={presentationConfig.particleSpeed}
                             romanizedOutput={phrases[currentPhraseIndex]?.romanized}
                             title={showTitle ? (collectionName || configName) : undefined}
                             showAllPhrases={presentationConfig.showAllPhrases}

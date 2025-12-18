@@ -1,6 +1,10 @@
 import { useEffect, useState } from 'react';
 
-const ParticleEffect = () => {
+interface ParticleEffectProps {
+  speed?: number; // Speed multiplier (default 1.0)
+}
+
+const ParticleEffect = ({ speed = 1.0 }: ParticleEffectProps) => {
   const [dynamicStyles, setDynamicStyles] = useState('');
 
   useEffect(() => {
@@ -10,9 +14,9 @@ const ParticleEffect = () => {
     const random = (max: number) => Math.floor(Math.random() * max);
 
     for (let i = 1; i <= particleNum; i++) {
-      const circleSize = random(particleWidth) + 10; // add a minimum size so it isn’t 0
+      const circleSize = random(particleWidth) + 10; // add a minimum size so it isn't 0
       const startPositionY = random(10) + 100;
-      const moveDuration = 7000 + random(4000);
+      const moveDuration = (7000 + random(4000)) / speed; // Adjusted by speed
       const animationDelay = random(11000);
       const circleAnimationDelay = random(4000);
       const vwVal = random(100);
@@ -42,7 +46,7 @@ const ParticleEffect = () => {
       `;
     }
     setDynamicStyles(styles);
-  }, []);
+  }, [speed]);
 
   return (
     <>
