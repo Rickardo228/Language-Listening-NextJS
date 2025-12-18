@@ -82,22 +82,34 @@ export function DustEffect({
         pathX = Array.from({ length: numWaypoints }, () => Math.random() * dimensions.width);
         pathY = Array.from({ length: numWaypoints }, () => Math.random() * dimensions.height);
       } else {
-        // Directional path - continuous movement in one direction
+        // Directional path - continuous movement in one direction with wrapping
         const rad = (direction * Math.PI) / 180;
         const dx = Math.cos(rad);
         const dy = Math.sin(rad);
-        const distance = Math.sqrt(dimensions.width ** 2 + dimensions.height ** 2);
 
-        pathX = [
-          initialX + dx * (distance * 0.33),
-          initialX + dx * (distance * 0.66),
-          initialX + dx * distance,
-        ];
-        pathY = [
-          initialY + dy * (distance * 0.33),
-          initialY + dy * (distance * 0.66),
-          initialY + dy * distance,
-        ];
+        // Use a smaller distance for smoother, continuous flow
+        const distance = Math.max(dimensions.width, dimensions.height) * 1.5;
+
+        // Create waypoints for a flowing directional movement
+        const numWaypoints = 5;
+        pathX = [];
+        pathY = [];
+
+        for (let j = 1; j <= numWaypoints; j++) {
+          const progress = j / numWaypoints;
+          let nextX = initialX + dx * distance * progress;
+          let nextY = initialY + dy * distance * progress;
+
+          // Wrap around screen edges for continuous flow
+          nextX = nextX % dimensions.width;
+          if (nextX < 0) nextX += dimensions.width;
+
+          nextY = nextY % dimensions.height;
+          if (nextY < 0) nextY += dimensions.height;
+
+          pathX.push(nextX);
+          pathY.push(nextY);
+        }
       }
 
       newParticles.push({
@@ -105,7 +117,7 @@ export function DustEffect({
         initialX,
         initialY,
         duration: (Math.random() * 25 + 15) / safeSpeed, // 15-40 seconds with more variance, adjusted by speed
-        delay: Math.random() * 10, // 0-10 seconds delay for more staggered starts
+        delay: i < particleCount * 0.3 ? -(Math.random() * 20) : Math.random() * 10, // First 30% start mid-cycle (negative delay), rest are staggered
         scale: Math.random() * 1.2 + 0.3, // 0.3-1.5 scale with more variance
         opacity: Math.random() * 0.8 + 0.2, // 0.2-1.0 opacity (min 0.2 to keep visible)
         pathX,
@@ -137,18 +149,18 @@ export function DustEffect({
             opacity: 0,
             scale: 0,
           }}
-          animate={{
-            x: particle.pathX,
-            y: particle.pathY,
-            opacity: [0, particle.opacity * 0.3, particle.opacity * 0.7, particle.opacity, particle.opacity * 0.7, particle.opacity * 0.3, 0],
-            scale: [0, particle.scale * 0.5, particle.scale * 0.8, particle.scale, particle.scale * 0.8, particle.scale * 0.5, 0],
-          }}
-          transition={{
-            duration: particle.duration,
-            delay: particle.delay,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
+            animate={{
+              x: particle.pathX,
+              y: particle.pathY,
+              opacity: [0, particle.opacity * 0.3, particle.opacity * 0.7, particle.opacity, particle.opacity * 0.7, particle.opacity * 0.3, 0],
+              scale: [0, particle.scale * 0.5, particle.scale * 0.8, particle.scale, particle.scale * 0.8, particle.scale * 0.5, 0],
+            }}
+            transition={{
+              duration: particle.duration,
+              delay: particle.delay,
+              repeat: Infinity,
+              ease: "easeInOut",
+            }}
           style={{
             position: 'absolute',
             width: '3px',
