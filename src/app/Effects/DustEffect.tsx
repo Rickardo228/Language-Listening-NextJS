@@ -46,6 +46,9 @@ export function DustEffect({
   // Get the actual color hex value
   const actualColor = colorMap[color] || color;
 
+  // Ensure speed is valid (prevent division by zero or NaN)
+  const safeSpeed = Math.max(0.1, speed || 1.0);
+
   // Initialize dimensions
   useEffect(() => {
     const updateDimensions = () => {
@@ -74,17 +77,10 @@ export function DustEffect({
       let pathY: number[];
 
       if (direction === -1 || direction === undefined) {
-        // Random path - let repeat handle the loop
-        pathX = [
-          Math.random() * dimensions.width,
-          Math.random() * dimensions.width,
-          Math.random() * dimensions.width,
-        ];
-        pathY = [
-          Math.random() * dimensions.height,
-          Math.random() * dimensions.height,
-          Math.random() * dimensions.height,
-        ];
+        // Random path with more waypoints for less predictable movement
+        const numWaypoints = 5 + Math.floor(Math.random() * 3); // 5-7 waypoints
+        pathX = Array.from({ length: numWaypoints }, () => Math.random() * dimensions.width);
+        pathY = Array.from({ length: numWaypoints }, () => Math.random() * dimensions.height);
       } else {
         // Directional path - continuous movement in one direction
         const rad = (direction * Math.PI) / 180;
@@ -108,16 +104,16 @@ export function DustEffect({
         id: i,
         initialX,
         initialY,
-        duration: (Math.random() * 20 + 10) / speed, // 10-30 seconds, adjusted by speed
-        delay: Math.random() * 5, // 0-5 seconds delay
-        scale: Math.random() * 1 + 0.5, // 0.5-1.5 scale
-        opacity: Math.random() * 1, // 0-1 opacity
+        duration: (Math.random() * 25 + 15) / safeSpeed, // 15-40 seconds with more variance, adjusted by speed
+        delay: Math.random() * 10, // 0-10 seconds delay for more staggered starts
+        scale: Math.random() * 1.2 + 0.3, // 0.3-1.5 scale with more variance
+        opacity: Math.random() * 0.8 + 0.2, // 0.2-1.0 opacity (min 0.2 to keep visible)
         pathX,
         pathY,
       });
     }
     setParticles(newParticles);
-  }, [dimensions, particleCount, direction, speed]);
+  }, [dimensions, particleCount, direction, safeSpeed]);
 
   return (
     <div

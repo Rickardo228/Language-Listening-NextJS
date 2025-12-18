@@ -209,7 +209,7 @@ export const presentationConfigDefinition: ConfigFieldDefinition[] = [
   },
   {
     key: "particleColor",
-    label: "Particle Color",
+    label: "Dust Color",
     inputType: "select",
     options: [
       { value: "green", label: "Green" },
@@ -219,13 +219,13 @@ export const presentationConfigDefinition: ConfigFieldDefinition[] = [
       { value: "white", label: "White" },
       { value: "red", label: "Red" },
     ],
-    description: "Set the color of dust/particle effects",
+    description: "Set the color of dust effect particles",
     adminOnly: true,
-    disabledWhen: (config) => !config.enableDust && !config.enableParticles,
+    disabledWhen: (config) => !config.enableDust,
   },
   {
     key: "particleSpeed",
-    label: "Particle/Dust Speed",
+    label: "Effect Speed",
     inputType: "range",
     min: 0.25,
     max: 3.0,
