@@ -21,6 +21,7 @@ interface DustEffectProps {
   color?: string;
   direction?: number; // -1 for random, 0-360 for specific direction
   speed?: number; // Speed multiplier (default 1.0)
+  opacity?: number; // Opacity multiplier (0-1, default 1.0)
 }
 
 // Color mapping
@@ -31,14 +32,16 @@ const colorMap: Record<string, string> = {
   gold: "#FFD700",
   white: "#FFFFFF",
   red: "#FF4444",
+  orange: "#FF8C00",
 };
 
 export function DustEffect({
   fullScreen = false,
-  particleCount = 40,
+  particleCount = 20,
   color = "green",
   direction = -1, // Default to random
-  speed = 1.0 // Default speed multiplier
+  speed = 1.0, // Default speed multiplier
+  opacity = 1.0 // Default opacity multiplier
 }: DustEffectProps) {
   const [particles, setParticles] = useState<DustParticle[]>([]);
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
@@ -119,13 +122,13 @@ export function DustEffect({
         duration: (Math.random() * 25 + 15) / safeSpeed, // 15-40 seconds with more variance, adjusted by speed
         delay: i < particleCount * 0.3 ? -(Math.random() * 20) : Math.random() * 10, // First 30% start mid-cycle (negative delay), rest are staggered
         scale: Math.random() * 1.2 + 0.3, // 0.3-1.5 scale with more variance
-        opacity: Math.random() * 0.8 + 0.2, // 0.2-1.0 opacity (min 0.2 to keep visible)
+        opacity: (Math.random() * 0.8 + 0.2) * opacity, // 0.2-1.0 opacity multiplied by opacity setting
         pathX,
         pathY,
       });
     }
     setParticles(newParticles);
-  }, [dimensions, particleCount, direction, safeSpeed]);
+  }, [dimensions, particleCount, direction, safeSpeed, opacity]);
 
   return (
     <div
@@ -149,18 +152,18 @@ export function DustEffect({
             opacity: 0,
             scale: 0,
           }}
-            animate={{
-              x: particle.pathX,
-              y: particle.pathY,
-              opacity: [0, particle.opacity * 0.3, particle.opacity * 0.7, particle.opacity, particle.opacity * 0.7, particle.opacity * 0.3, 0],
-              scale: [0, particle.scale * 0.5, particle.scale * 0.8, particle.scale, particle.scale * 0.8, particle.scale * 0.5, 0],
-            }}
-            transition={{
-              duration: particle.duration,
-              delay: particle.delay,
-              repeat: Infinity,
-              ease: "easeInOut",
-            }}
+          animate={{
+            x: particle.pathX,
+            y: particle.pathY,
+            opacity: [0, particle.opacity * 0.3, particle.opacity * 0.7, particle.opacity, particle.opacity * 0.7, particle.opacity * 0.3, 0],
+            scale: [0, particle.scale * 0.5, particle.scale * 0.8, particle.scale, particle.scale * 0.8, particle.scale * 0.5, 0],
+          }}
+          transition={{
+            duration: particle.duration,
+            delay: particle.delay,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
           style={{
             position: 'absolute',
             width: '3px',

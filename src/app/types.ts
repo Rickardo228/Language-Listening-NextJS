@@ -19,6 +19,7 @@ export type PresentationConfig = {
   enableDust?: boolean;
   particleColor?: string;
   particleSpeed?: number;
+  dustOpacity?: number;
   postProcessDelay: number;
   delayBetweenPhrases: number;
   enableLoop: boolean;

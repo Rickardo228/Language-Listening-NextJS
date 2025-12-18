@@ -29,6 +29,7 @@ interface PresentationViewProps {
   enableDust?: boolean;
   particleColor?: string;
   particleSpeed?: number;
+  dustOpacity?: number;
   containerBg?: string; // New prop for container background color (default: 'bg-teal-500')
   textBg?: string;      // New prop for text container background color (default: 'bg-rose-400')
   backgroundOverlayOpacity?: number; // Optional dark overlay over bg image to improve contrast
@@ -95,6 +96,7 @@ export function PresentationView({
   enableDust,
   particleColor,
   particleSpeed,
+  dustOpacity,
   containerBg,
   textBg,
   backgroundOverlayOpacity,
@@ -312,7 +314,7 @@ export function PresentationView({
         {enableAutumnLeaves && <AutumnLeaves fullScreen={fullScreen} />}
         {enableCherryBlossom && <CherryBlossom fullScreen={fullScreen} />}
         {enableParticles && <ParticleAnimation rotation={particleRotation} speed={particleSpeed} />}
-        {enableDust && <DustEffect fullScreen={fullScreen} color={particleColor} direction={particleRotation} speed={particleSpeed} />}
+        {enableDust && <DustEffect fullScreen={fullScreen} color={particleColor} direction={particleRotation} speed={particleSpeed} opacity={dustOpacity} />}
         {enableSteam && <div style={{ position: 'absolute', width: '100%', height: '100%', top: '410px', left: '710px' }}>
           <span className="steam" style={{
 
