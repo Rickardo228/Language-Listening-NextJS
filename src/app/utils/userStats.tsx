@@ -352,13 +352,22 @@ export const useUpdateUserStats = () => {
 
     // List completion popups should always show, regardless of counter
     if (listCompleted) {
-      console.log('📊 List completed - showing completion popup with count:', listenedCount);
       shouldShowPopup = true;
-      // Use counter if available, otherwise default to 1 to show something
-      displayCount = listenedCount > 0 ? listenedCount : 1;
-      displayType = 'listened';
-      if (shouldPersistUntilInteraction) {
-        phrasesListenedRef.current = 0;
+
+      // Respect the eventType parameter - use appropriate counter and display type
+      if (eventType === 'viewed') {
+        displayCount = viewedCount > 0 ? viewedCount : 1;
+        displayType = 'viewed';
+        console.log('📊 List completed - showing completion popup with count:', viewedCount, '(viewed)');
+        // Don't reset viewed counter
+      } else {
+        // Default to listened for 'listened' or 'both' event types
+        displayCount = listenedCount > 0 ? listenedCount : 1;
+        displayType = 'listened';
+        console.log('📊 List completed - showing completion popup with count:', listenedCount, '(listened)');
+        if (shouldPersistUntilInteraction) {
+          phrasesListenedRef.current = 0;
+        }
       }
     } else if (eventType === 'listened' && listenedCount > 0) {
       shouldShowPopup = true;
