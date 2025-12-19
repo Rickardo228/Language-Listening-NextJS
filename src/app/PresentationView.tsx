@@ -619,9 +619,9 @@ export function PresentationView({
             // Show all phrases simultaneously with highlighting
             (currentPhrase || currentTranslated) && (
               <div
-                className={`${isMobileInline ? 'text-left px-4' : 'text-center px-12'} ${alignPhraseTop ? 'pb-4' : ''} absolute flex bg-opacity-90 flex-col ${textColorClass}`}
+                className={`text-left ${isMobileInline ? 'px-4' : 'px-12'} ${alignPhraseTop ? 'pb-4' : ''} absolute flex bg-opacity-90 flex-col ${textColorClass}`}
                 style={{
-                  alignItems: isMobileInline ? "flex-start" : "center",
+                  alignItems: "flex-start",
                   justifyContent: "center",
                   backgroundColor: textBg
                     ? (textBg.includes("rgb")
@@ -781,22 +781,12 @@ export function PresentationView({
                     />
                   );
 
-                  // Render in order based on enableOutputBeforeInput
+                  // Always render output first, then input
                   return (
                     <>
-                      {enableOutputBeforeInput ? (
-                        <>
-                          {outputPhrase}
-                          {divider}
-                          {inputPhrase}
-                        </>
-                      ) : (
-                        <>
-                          {inputPhrase}
-                          {divider}
-                          {outputPhrase}
-                        </>
-                      )}
+                      {outputPhrase}
+                      {divider}
+                      {inputPhrase}
                     </>
                   );
                 })()}
