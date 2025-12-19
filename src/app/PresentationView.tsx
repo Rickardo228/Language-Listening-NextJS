@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { createPortal } from "react-dom";
-import { ArrowLeft, ArrowRight, Maximize2, X, Play, Pause, Settings } from "lucide-react";
+import { ArrowLeft, ArrowRight, ArrowUp, ArrowDown, Maximize2, X, Play, Pause, Settings } from "lucide-react";
 import { AutumnLeaves } from "./Effects/AutumnLeaves";
 import CherryBlossom from "./Effects/CherryBlossom";
 import { BLEED_START_DELAY, TITLE_DELAY } from './consts';
@@ -53,6 +53,7 @@ interface PresentationViewProps {
   onPlay?: () => void; // New prop for play functionality
   onPlayPhrase?: (phase: 'input' | 'output') => void; // New prop to play a specific phrase (input or output)
   onSettingsOpen?: () => void; // New prop for opening settings
+  verticalScroll?: boolean; // New prop to enable vertical scroll mode with top/bottom navigation
 }
 
 export const TITLE_ANIMATION_DURATION = 1000
@@ -120,6 +121,7 @@ export function PresentationView({
   onPlay,
   onPlayPhrase,
   onSettingsOpen,
+  verticalScroll = false,
 }: PresentationViewProps) {
   const [isHovering, setIsHovering] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -235,18 +237,36 @@ export function PresentationView({
               // In fullscreen: navigate based on click position
               // Use getBoundingClientRect to get accurate container position
               const rect = e.currentTarget.getBoundingClientRect();
-              const clickX = e.clientX - rect.left;
-              const containerWidth = rect.width;
-              const clickPercentage = (clickX / containerWidth) * 100;
 
-              if (clickPercentage < 33.33 && onPrevious && canGoBack) {
-                // Left third: go back
-                onPrevious();
-              } else if (clickPercentage > 66.66 && onNext && canGoForward) {
-                // Right third: go forward
-                onNext();
+              if (verticalScroll) {
+                // Vertical mode: top/bottom navigation
+                const clickY = e.clientY - rect.top;
+                const containerHeight = rect.height;
+                const clickPercentage = (clickY / containerHeight) * 100;
+
+                if (clickPercentage < 33.33 && onPrevious && canGoBack) {
+                  // Top third: go back
+                  onPrevious();
+                } else if (clickPercentage > 66.66 && onNext && canGoForward) {
+                  // Bottom third: go forward
+                  onNext();
+                }
+                // Center third (33.33-66.66%): do nothing
+              } else {
+                // Horizontal mode: left/right navigation
+                const clickX = e.clientX - rect.left;
+                const containerWidth = rect.width;
+                const clickPercentage = (clickX / containerWidth) * 100;
+
+                if (clickPercentage < 33.33 && onPrevious && canGoBack) {
+                  // Left third: go back
+                  onPrevious();
+                } else if (clickPercentage > 66.66 && onNext && canGoForward) {
+                  // Right third: go forward
+                  onNext();
+                }
+                // Center third (33.33-66.66%): do nothing
               }
-              // Center third (33.33-66.66%): do nothing
             } else {
               // Not in fullscreen: enter fullscreen
               setFullscreen(true);
@@ -255,17 +275,28 @@ export function PresentationView({
         }}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
-        drag={isMobile && onPrevious && onNext ? "x" : false}
-        dragConstraints={{ left: 0, right: 0 }}
+        drag={isMobile && onPrevious && onNext ? (verticalScroll ? "y" : "x") : false}
+        dragConstraints={verticalScroll ? { top: 0, bottom: 0 } : { left: 0, right: 0 }}
         dragElastic={0.2}
         onDragStart={() => setIsDragging(true)}
         onDragEnd={(e, info) => {
           setIsDragging(false);
           const swipeThreshold = 50;
-          if (info.offset.x > swipeThreshold && canGoBack) {
-            onPrevious?.();
-          } else if (info.offset.x < -swipeThreshold && canGoForward) {
-            onNext?.();
+
+          if (verticalScroll) {
+            // Vertical swipe: up to go forward, down to go back
+            if (info.offset.y > swipeThreshold && canGoBack) {
+              onPrevious?.();
+            } else if (info.offset.y < -swipeThreshold && canGoForward) {
+              onNext?.();
+            }
+          } else {
+            // Horizontal swipe: right to go back, left to go forward
+            if (info.offset.x > swipeThreshold && canGoBack) {
+              onPrevious?.();
+            } else if (info.offset.x < -swipeThreshold && canGoForward) {
+              onNext?.();
+            }
           }
         }}
       >
@@ -425,8 +456,8 @@ export function PresentationView({
         {/* Navigation Buttons - Spotify-style bottom center on mobile fullscreen, hidden on mobile inline */}
         {onPrevious && onNext && !isMobileInline && (
           <>
-            {fullScreen && isMobile ? (
-              // Mobile fullscreen: Spotify-style bottom center layout
+            {fullScreen && isMobile && !verticalScroll ? (
+              // Mobile fullscreen horizontal: Spotify-style bottom center layout
               <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex items-center gap-8 z-10"
                 style={{
                   opacity: shouldShowNavigationButtons ? 1 : 0,
@@ -473,8 +504,42 @@ export function PresentationView({
                   <ArrowRight className="h-6 w-6 text-gray-700 dark:text-gray-300" />
                 </button>
               </div>
+            ) : verticalScroll ? (
+              // Vertical scroll mode: top/bottom layout
+              <>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onPrevious();
+                  }}
+                  disabled={!canGoBack}
+                  className="absolute top-20 left-1/2 transform -translate-x-1/2 p-3 bg-gray-200 dark:bg-gray-700 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 z-10"
+                  title="Previous Phrase"
+                  style={{
+                    opacity: shouldShowNavigationButtons ? 1 : 0,
+                    transition: 'opacity 0.3s ease'
+                  }}
+                >
+                  <ArrowUp className="h-6 w-6 text-gray-700 dark:text-gray-300" />
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onNext();
+                  }}
+                  disabled={!canGoForward}
+                  className="absolute bottom-20 left-1/2 transform -translate-x-1/2 p-3 bg-gray-200 dark:bg-gray-700 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 z-10"
+                  title="Next Phrase"
+                  style={{
+                    opacity: shouldShowNavigationButtons ? 1 : 0,
+                    transition: 'opacity 0.3s ease'
+                  }}
+                >
+                  <ArrowDown className="h-6 w-6 text-gray-700 dark:text-gray-300" />
+                </button>
+              </>
             ) : (
-              // Desktop or inline: side-by-side layout
+              // Desktop or inline horizontal: side-by-side layout
               <>
                 <button
                   onClick={(e) => {

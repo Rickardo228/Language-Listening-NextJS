@@ -1265,6 +1265,7 @@ export function PhrasePlaybackView({
                             setFullscreen={setFullscreen}
                             bgImage={presentationConfig.bgImage}
                             containerBg={presentationConfig.containerBg}
+                            verticalScroll={true}
                             // Can maybe introduce but might replace with text colour
                             // textBg={presentationConfig.textBg}
                             backgroundOverlayOpacity={presentationConfig.backgroundOverlayOpacity}
