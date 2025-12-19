@@ -445,7 +445,7 @@ export function CollectionList({
                     )}
                 </div>
             )}
-            {layout === 'vertical' && showAllButton && (
+            {showAllButton && (
                 <button
                     onClick={() => (onShowAllClick ? onShowAllClick() : router.push('/templates'))}
                     className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors w-full justify-center py-2"
