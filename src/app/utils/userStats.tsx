@@ -350,7 +350,17 @@ export const useUpdateUserStats = () => {
     let displayCount = 0;
     let displayType = '';
 
-    if (eventType === 'listened' && listenedCount > 0) {
+    // List completion popups should always show, regardless of counter
+    if (listCompleted) {
+      console.log('📊 List completed - showing completion popup with count:', listenedCount);
+      shouldShowPopup = true;
+      // Use counter if available, otherwise default to 1 to show something
+      displayCount = listenedCount > 0 ? listenedCount : 1;
+      displayType = 'listened';
+      if (shouldPersistUntilInteraction) {
+        phrasesListenedRef.current = 0;
+      }
+    } else if (eventType === 'listened' && listenedCount > 0) {
       shouldShowPopup = true;
       displayCount = listenedCount;
       displayType = 'listened';
@@ -581,7 +591,25 @@ export const useUpdateUserStats = () => {
       return;
     }
 
-    // Skip updating stats in development environment
+    // Increment the session ref counter FIRST (before dev check) to ensure UI popups work in dev mode
+    if (!skipSessionIncrement) {
+      if (eventType === 'listened') {
+        phrasesListenedRef.current += 1;
+        const newListenedCount = phrasesListenedRef.current;
+
+        // Show snackbar popup every 5 phrases listened
+        if (newListenedCount % 5 === 0) {
+          // Use setTimeout to avoid showing popup during the same render cycle
+          setTimeout(() => {
+            showStatsUpdate(false, 'listened');
+          }, 100);
+        }
+      } else if (eventType === 'viewed') {
+        phrasesViewedRef.current += 1;
+      }
+    }
+
+    // Skip Firestore updates in development environment (but keep session counters above)
     if (process.env.NODE_ENV === 'development') {
       return;
     }
@@ -619,24 +647,6 @@ export const useUpdateUserStats = () => {
 
     // Track phrases since last sync for smart syncing
     phraseCountSinceLastSync.current += 1;
-
-    // Increment the session ref counter based on event type (unless skipped)
-    if (!skipSessionIncrement) {
-      if (eventType === 'listened') {
-        phrasesListenedRef.current += 1;
-        const newListenedCount = phrasesListenedRef.current;
-
-        // Show snackbar popup every 5 phrases listened
-        if (newListenedCount % 5 === 0) {
-          // Use setTimeout to avoid showing popup during the same render cycle
-          setTimeout(() => {
-            showStatsUpdate(false, 'listened');
-          }, 100);
-        }
-      } else if (eventType === 'viewed') {
-        phrasesViewedRef.current += 1;
-      }
-    }
 
     const now = new Date();
     const userTimezone = getUserTimezone();
