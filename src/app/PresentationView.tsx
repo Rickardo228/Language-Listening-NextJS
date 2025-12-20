@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useLayoutEffect } from "react";
 import { motion, AnimatePresence, useMotionValue, animate } from "framer-motion";
 import { createPortal } from "react-dom";
 import { ArrowLeft, ArrowRight, ArrowUp, ArrowDown, Maximize2, X, Play, Pause, Settings } from "lucide-react";
@@ -512,8 +512,8 @@ export function PresentationView({
 
   // Reset drag position when currentPhrase changes
   useEffect(() => {
-    dragY.set(0, false);
-    dragX.set(0, false);
+    setTimeout(() => dragY.set(0, false), 0);
+    setTimeout(() => dragX.set(0, false), 0);
   }, [currentPhrase, dragY, dragX]);
 
   // Create portal container on mount
@@ -729,107 +729,6 @@ export function PresentationView({
           />
         )}
 
-        {/* Transparent draggable overlay for swipe detection */}
-        {isMobile && onPrevious && onNext && (
-          <motion.div
-            className="absolute inset-0 z-[5]"
-            style={{ touchAction: 'none' }}
-            drag={verticalScroll ? "y" : "x"}
-            dragConstraints={verticalScroll ? { top: 0, bottom: 0 } : { left: 0, right: 0 }}
-            dragElastic={0.2}
-            onDragStart={() => setIsDragging(true)}
-            onDrag={(e, info) => {
-              if (verticalScroll) {
-                dragY.set(info.offset.y);
-              } else {
-                dragX.set(info.offset.x);
-              }
-            }}
-            onDragEnd={async (e, info) => {
-              setIsDragging(false);
-              const swipeThreshold = 50;
-              const windowWidth = typeof window !== 'undefined' ? window.innerWidth : 1000;
-              const windowHeight = typeof window !== 'undefined' ? window.innerHeight : 1000;
-
-              // Check if we have 3-phrase stack enabled
-              const has3PhraseStack = (previousPhrase || previousTranslated) || (nextPhrase || nextTranslated);
-
-              if (verticalScroll) {
-                // Vertical swipe: down to go back, up to go forward
-                if (info.offset.y > swipeThreshold && canGoBack) {
-                  // Swipe down - Spotify-style: slide all cards down together
-                  setAnimationDirection('down');
-                  if (has3PhraseStack) {
-                    // All 3 cards slide down together
-                    await animate(dragY, windowHeight, { duration: 0.3, ease: "easeOut" });
-                    onPrevious?.();
-                  } else {
-                    // Fallback to old animation
-                    await animate(dragY, windowHeight, { duration: 0.2, ease: "easeOut" });
-                    onPrevious?.();
-                    dragY.set(-windowHeight);
-                    await animate(dragY, 0, { duration: 0.3, ease: "easeOut" });
-                  }
-                  setAnimationDirection(null);
-                } else if (info.offset.y < -swipeThreshold && onNext) {
-                  // Swipe up - allow even on last phrase (atomicAdvance will handle completion popup)
-                  setAnimationDirection('up');
-                  if (has3PhraseStack) {
-                    // All 3 cards slide up together
-                    await animate(dragY, -windowHeight, { duration: 0.3, ease: "easeOut" });
-                    onNext?.();
-                  } else {
-                    // Fallback to old animation
-                    await animate(dragY, -windowHeight, { duration: 0.2, ease: "easeOut" });
-                    onNext?.();
-                    dragY.set(windowHeight);
-                    await animate(dragY, 0, { duration: 0.3, ease: "easeOut" });
-                  }
-                  setAnimationDirection(null);
-                } else {
-                  // Snap back
-                  animate(dragY, 0, { duration: 0.2, ease: "easeOut" });
-                }
-              } else {
-                // Horizontal swipe: right to go back, left to go forward
-                if (info.offset.x > swipeThreshold && canGoBack) {
-                  // Swipe right - Spotify-style: slide all cards right together
-                  setAnimationDirection('right');
-                  if (has3PhraseStack) {
-                    // All 3 cards slide right together
-                    await animate(dragX, windowWidth, { duration: 0.3, ease: "easeOut" });
-                    onPrevious?.();
-                  } else {
-                    // Fallback to old animation
-                    await animate(dragX, windowWidth, { duration: 0.2, ease: "easeOut" });
-                    onPrevious?.();
-                    dragX.set(-windowWidth);
-                    await animate(dragX, 0, { duration: 0.3, ease: "easeOut" });
-                  }
-                  setAnimationDirection(null);
-                } else if (info.offset.x < -swipeThreshold && onNext) {
-                  // Swipe left - allow even on last phrase (atomicAdvance will handle completion popup)
-                  setAnimationDirection('left');
-                  if (has3PhraseStack) {
-                    // All 3 cards slide left together
-                    await animate(dragX, -windowWidth, { duration: 0.3, ease: "easeOut" });
-                    onNext?.();
-                  } else {
-                    // Fallback to old animation
-                    await animate(dragX, -windowWidth, { duration: 0.2, ease: "easeOut" });
-                    onNext?.();
-                    dragX.set(windowWidth);
-                    await animate(dragX, 0, { duration: 0.3, ease: "easeOut" });
-                  }
-                  setAnimationDirection(null);
-                } else {
-                  // Snap back
-                  animate(dragX, 0, { duration: 0.2, ease: "easeOut" });
-                }
-              }
-            }}
-          />
-        )}
 
         {/* Progress Indicator at the top */}
         {totalPhrases && currentPhraseIndex !== undefined && (
@@ -1155,9 +1054,117 @@ export function PresentationView({
             disableAnimation: disableAnimation || verticalScroll,
           };
 
+          // Check if we have 3-phrase stack enabled
+          const has3PhraseStack = (previousPhrase || previousTranslated) && (nextPhrase || nextTranslated);
+
+          // Drag handlers for swipe navigation
+          const handleDragStart = () => setIsDragging(true);
+
+          const handleDrag = (e: any, info: any) => {
+            if (verticalScroll) {
+              dragY.set(info.offset.y);
+            } else {
+              dragX.set(info.offset.x);
+            }
+          };
+
+          const handleDragEnd = async (e: any, info: any) => {
+            setIsDragging(false);
+            const swipeThreshold = 50;
+
+            if (verticalScroll) {
+              // Vertical swipe: down to go back, up to go forward
+              if (info.offset.y > swipeThreshold && canGoBack) {
+                // Swipe down - Spotify-style: slide all cards down together
+                setAnimationDirection('down');
+                if (has3PhraseStack) {
+                  // All 3 cards slide down together
+                  await animate(dragY, windowHeight, { duration: 0.3, ease: "easeOut" });
+                  onPrevious?.();
+                } else {
+                  // Fallback to old animation
+                  await animate(dragY, windowHeight, { duration: 0.2, ease: "easeOut" });
+                  onPrevious?.();
+                  dragY.set(-windowHeight);
+                  await animate(dragY, 0, { duration: 0.3, ease: "easeOut" });
+                }
+                setAnimationDirection(null);
+              } else if (info.offset.y < -swipeThreshold && onNext) {
+                // Swipe up - allow even on last phrase (atomicAdvance will handle completion popup)
+                setAnimationDirection('up');
+                if (has3PhraseStack) {
+                  // All 3 cards slide up together
+                  await animate(dragY, -windowHeight, { duration: 0.3, ease: "easeOut" });
+                  onNext?.();
+                } else {
+                  // Fallback to old animation
+                  await animate(dragY, -windowHeight, { duration: 0.2, ease: "easeOut" });
+                  onNext?.();
+                  dragY.set(windowHeight);
+                  await animate(dragY, 0, { duration: 0.3, ease: "easeOut" });
+                }
+                setAnimationDirection(null);
+              } else {
+                // Snap back
+                animate(dragY, 0, { duration: 0.2, ease: "easeOut" });
+              }
+            } else {
+              // Horizontal swipe: right to go back, left to go forward
+              if (info.offset.x > swipeThreshold && canGoBack) {
+                // Swipe right - Spotify-style: slide all cards right together
+                setAnimationDirection('right');
+                if (has3PhraseStack) {
+                  // All 3 cards slide right together
+                  await animate(dragX, windowWidth, { duration: 0.3, ease: "easeOut" });
+                  onPrevious?.();
+                } else {
+                  // Fallback to old animation
+                  await animate(dragX, windowWidth, { duration: 0.2, ease: "easeOut" });
+                  onPrevious?.();
+                  dragX.set(-windowWidth);
+                  await animate(dragX, 0, { duration: 0.3, ease: "easeOut" });
+                }
+                setAnimationDirection(null);
+              } else if (info.offset.x < -swipeThreshold && onNext) {
+                // Swipe left - allow even on last phrase (atomicAdvance will handle completion popup)
+                setAnimationDirection('left');
+                if (has3PhraseStack) {
+                  // All 3 cards slide left together
+                  await animate(dragX, -windowWidth, { duration: 0.3, ease: "easeOut" });
+                  onNext?.();
+                } else {
+                  // Fallback to old animation
+                  await animate(dragX, -windowWidth, { duration: 0.2, ease: "easeOut" });
+                  onNext?.();
+                  dragX.set(windowWidth);
+                  await animate(dragX, 0, { duration: 0.3, ease: "easeOut" });
+                }
+                setAnimationDirection(null);
+              } else {
+                // Snap back
+                animate(dragX, 0, { duration: 0.2, ease: "easeOut" });
+              }
+            }
+          };
+
+          // Determine if we should make this draggable
+          const shouldBeDraggable = isMobile && onPrevious && onNext;
+          const dragProps = shouldBeDraggable ? {
+            drag: verticalScroll ? "y" as const : "x" as const,
+            dragConstraints: verticalScroll ? { top: 0, bottom: 0 } : { left: 0, right: 0 },
+            dragElastic: 0.2,
+            onDragStart: handleDragStart,
+            onDrag: handleDrag,
+            onDragEnd: handleDragEnd,
+            style: { touchAction: 'none' as const }
+          } : {};
+
+          // Render phrase content
+          let phraseContent;
+
           // If title is present, render only title (no 3-phrase stack)
           if (title) {
-            return (
+            phraseContent = (
               <AnimatePresence mode={'sync'}>
                 <PhraseCard
                   key="title"
@@ -1168,14 +1175,9 @@ export function PresentationView({
                 />
               </AnimatePresence>
             );
-          }
-
-          // Determine if we should render 3-phrase stack
-          const has3PhraseStack = (previousPhrase || previousTranslated) && (nextPhrase || nextTranslated);
-
-          if (has3PhraseStack) {
+          } else if (has3PhraseStack) {
             // Render 3-phrase stack for seamless swipe
-            return (
+            phraseContent = (
               <>
                 {/* Previous phrase - offset left/top */}
                 {(previousPhrase || previousTranslated) && (
@@ -1217,7 +1219,7 @@ export function PresentationView({
             );
           } else {
             // Fallback to single phrase with AnimatePresence for enter/exit animations
-            return (
+            phraseContent = (
               <AnimatePresence mode={'sync'}>
                 <PhraseCard
                   key={`${currentPhase}-${currentPhrase || currentTranslated}`}
@@ -1231,6 +1233,20 @@ export function PresentationView({
               </AnimatePresence>
             );
           }
+
+          // Wrap in draggable container if on mobile with navigation
+          if (shouldBeDraggable) {
+            return (
+              <motion.div
+                className={`absolute inset-0 flex flex-col items-center ${alignPhraseTop ? '' : 'justify-center'}`}
+                {...dragProps}
+              >
+                {phraseContent}
+              </motion.div>
+            );
+          }
+
+          return phraseContent;
         })()}
         {/* Progress Bar for Recall/Shadow */}
         <div
