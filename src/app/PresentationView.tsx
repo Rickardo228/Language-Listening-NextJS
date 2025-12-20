@@ -634,8 +634,8 @@ export function PresentationView({
                 if (clickPercentage < 33.33 && onPrevious && canGoBack) {
                   // Top third: go back
                   onPrevious();
-                } else if (clickPercentage > 66.66 && onNext && canGoForward) {
-                  // Bottom third: go forward
+                } else if (clickPercentage > 66.66 && onNext) {
+                  // Bottom third: go forward (atomicAdvance will handle completion popup)
                   onNext();
                 }
                 // Center third (33.33-66.66%): do nothing
@@ -648,8 +648,8 @@ export function PresentationView({
                 if (clickPercentage < 33.33 && onPrevious && canGoBack) {
                   // Left third: go back
                   onPrevious();
-                } else if (clickPercentage > 66.66 && onNext && canGoForward) {
-                  // Right third: go forward
+                } else if (clickPercentage > 66.66 && onNext) {
+                  // Right third: go forward (atomicAdvance will handle completion popup)
                   onNext();
                 }
                 // Center third (33.33-66.66%): do nothing
@@ -771,8 +771,8 @@ export function PresentationView({
                     await animate(dragY, 0, { duration: 0.3, ease: "easeOut" });
                   }
                   setAnimationDirection(null);
-                } else if (info.offset.y < -swipeThreshold && canGoForward) {
-                  // Swipe up - Spotify-style: slide all cards up together
+                } else if (info.offset.y < -swipeThreshold && onNext) {
+                  // Swipe up - allow even on last phrase (atomicAdvance will handle completion popup)
                   setAnimationDirection('up');
                   if (has3PhraseStack) {
                     // All 3 cards slide up together
@@ -807,8 +807,8 @@ export function PresentationView({
                     await animate(dragX, 0, { duration: 0.3, ease: "easeOut" });
                   }
                   setAnimationDirection(null);
-                } else if (info.offset.x < -swipeThreshold && canGoForward) {
-                  // Swipe left - Spotify-style: slide all cards left together
+                } else if (info.offset.x < -swipeThreshold && onNext) {
+                  // Swipe left - allow even on last phrase (atomicAdvance will handle completion popup)
                   setAnimationDirection('left');
                   if (has3PhraseStack) {
                     // All 3 cards slide left together
@@ -959,18 +959,16 @@ export function PresentationView({
                     )}
                   </button>
                 )}
-                {canGoForward && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onNext();
-                    }}
-                    className="p-3 bg-gray-200 dark:bg-gray-700 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 transition-all duration-200"
-                    title="Next Phrase"
-                  >
-                    <ArrowRight className="h-6 w-6 text-gray-700 dark:text-gray-300" />
-                  </button>
-                )}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onNext();
+                  }}
+                  className="p-3 bg-gray-200 dark:bg-gray-700 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 transition-all duration-200"
+                  title="Next Phrase"
+                >
+                  <ArrowRight className="h-6 w-6 text-gray-700 dark:text-gray-300" />
+                </button>
               </div>
             ) : verticalScroll ? (
               // Vertical scroll mode: top/bottom layout
@@ -1012,22 +1010,20 @@ export function PresentationView({
                     )}
                   </button>
                 )}
-                {canGoForward && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onNext();
-                    }}
-                    className="absolute bottom-8 left-1/2 transform -translate-x-1/2 p-3 bg-gray-200 dark:bg-gray-700 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 transition-all duration-200 z-10"
-                    title="Next Phrase"
-                    style={{
-                      opacity: shouldShowNavigationButtons ? 1 : 0,
-                      transition: 'opacity 0.3s ease'
-                    }}
-                  >
-                    <ArrowDown className="h-6 w-6 text-gray-700 dark:text-gray-300" />
-                  </button>
-                )}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onNext();
+                  }}
+                  className="absolute bottom-8 left-1/2 transform -translate-x-1/2 p-3 bg-gray-200 dark:bg-gray-700 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 transition-all duration-200 z-10"
+                  title="Next Phrase"
+                  style={{
+                    opacity: shouldShowNavigationButtons ? 1 : 0,
+                    transition: 'opacity 0.3s ease'
+                  }}
+                >
+                  <ArrowDown className="h-6 w-6 text-gray-700 dark:text-gray-300" />
+                </button>
               </>
             ) : (
               // Desktop or inline horizontal: side-by-side layout
@@ -1048,22 +1044,20 @@ export function PresentationView({
                     <ArrowLeft className="h-6 w-6 text-gray-700 dark:text-gray-300" />
                   </button>
                 )}
-                {canGoForward && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onNext();
-                    }}
-                    className="absolute right-4 top-1/2 transform -translate-y-1/2 p-3 bg-gray-200 dark:bg-gray-700 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 transition-all duration-200 z-10"
-                    title="Next Phrase"
-                    style={{
-                      opacity: shouldShowNavigationButtons ? 1 : 0,
-                      transition: 'opacity 0.3s ease'
-                    }}
-                  >
-                    <ArrowRight className="h-6 w-6 text-gray-700 dark:text-gray-300" />
-                  </button>
-                )}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onNext();
+                  }}
+                  className="absolute right-4 top-1/2 transform -translate-y-1/2 p-3 bg-gray-200 dark:bg-gray-700 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 transition-all duration-200 z-10"
+                  title="Next Phrase"
+                  style={{
+                    opacity: shouldShowNavigationButtons ? 1 : 0,
+                    transition: 'opacity 0.3s ease'
+                  }}
+                >
+                  <ArrowRight className="h-6 w-6 text-gray-700 dark:text-gray-300" />
+                </button>
               </>
             )}
           </>
