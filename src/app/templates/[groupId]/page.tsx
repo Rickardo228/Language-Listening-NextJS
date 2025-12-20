@@ -553,6 +553,9 @@ export default function TemplateDetailPage() {
         </div>
     );
 
+    // Detect mobile device
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+
     return (
         <div className="h-full">
             {phrases.length > 0 ? (
@@ -561,6 +564,7 @@ export default function TemplateDetailPage() {
                     presentationConfig={presentationConfig}
                     collectionName={`${templateData?.name || groupId} (${selectedInputLang} → ${selectedTargetLang})`}
                     setPhrases={async (phrases: Phrase[]) => setPhrases(phrases)}
+                    initialFullscreen={isMobile}
                     setPresentationConfig={async (config: Partial<PresentationConfig>) => {
                         const newConfig = { ...presentationConfig, ...config };
                         setPresentationConfig(newConfig);

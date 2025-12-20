@@ -48,6 +48,7 @@ interface PhrasePlaybackViewProps {
     pathId?: string; // Learning path ID if this collection is part of a path
     pathIndex?: number; // Position in the learning path
     onNavigateToNextInPath?: () => void; // Callback to navigate to next item in path
+    initialFullscreen?: boolean; // Start in fullscreen mode
 }
 
 export function PhrasePlaybackView({
@@ -67,6 +68,7 @@ export function PhrasePlaybackView({
     pathId,
     pathIndex,
     onNavigateToNextInPath,
+    initialFullscreen = false,
 }: PhrasePlaybackViewProps) {
     const { user } = useUser();
     const { updateUserStats, StatsPopups, StatsModal, showStatsUpdate, incrementViewedAndCheckMilestone, initializeViewedCounter, phrasesViewed } = useUpdateUserStats();
@@ -76,7 +78,7 @@ export function PhrasePlaybackView({
     );
     const [paused, setPaused] = useState(true);
     const [isPlayingAudio, setIsPlayingAudio] = useState(false);
-    const [fullscreen, setFullscreenBase] = useState(false);
+    const [fullscreen, setFullscreenBase] = useState(initialFullscreen);
 
     const setFullscreen = useCallback((value: boolean | ((prevState: boolean) => boolean)) => {
         setFullscreenBase(prevFullscreen => {
