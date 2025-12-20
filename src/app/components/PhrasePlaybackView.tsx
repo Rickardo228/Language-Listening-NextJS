@@ -172,6 +172,7 @@ export function PhrasePlaybackView({
     const [showProgressBar, setShowProgressBar] = useState(false);
     const [progressDuration, setProgressDuration] = useState(0);
     const [progressDelay, setProgressDelay] = useState(0);
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
     const audioRef = useRef<HTMLAudioElement>(null);
     const timeoutIds = useRef<number[]>([]);
     const transportRef = useRef<WebMediaSessionTransport | null>(null);
@@ -1265,7 +1266,7 @@ export function PhrasePlaybackView({
                             setFullscreen={setFullscreen}
                             bgImage={presentationConfig.bgImage}
                             containerBg={presentationConfig.containerBg}
-                            verticalScroll={true}
+                            verticalScroll={isMobile}
                             // Can maybe introduce but might replace with text colour
                             // textBg={presentationConfig.textBg}
                             backgroundOverlayOpacity={presentationConfig.backgroundOverlayOpacity}

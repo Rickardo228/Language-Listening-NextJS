@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useMotionValue, animate } from "framer-motion";
 import { createPortal } from "react-dom";
 import { ArrowLeft, ArrowRight, ArrowUp, ArrowDown, Maximize2, X, Play, Pause, Settings } from "lucide-react";
 import { AutumnLeaves } from "./Effects/AutumnLeaves";
@@ -129,6 +129,9 @@ export function PresentationView({
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
   const isSafari = typeof window !== 'undefined' && /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
   const [isDragging, setIsDragging] = useState(false);
+  const dragX = useMotionValue(0);
+  const dragY = useMotionValue(0);
+  const [animationDirection, setAnimationDirection] = useState<'left' | 'right' | 'up' | 'down' | null>(null);
   // Create portal container on mount
   useEffect(() => {
     if (typeof document !== 'undefined') {
@@ -275,30 +278,6 @@ export function PresentationView({
         }}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
-        drag={isMobile && onPrevious && onNext ? (verticalScroll ? "y" : "x") : false}
-        dragConstraints={verticalScroll ? { top: 0, bottom: 0 } : { left: 0, right: 0 }}
-        dragElastic={0.2}
-        onDragStart={() => setIsDragging(true)}
-        onDragEnd={(e, info) => {
-          setIsDragging(false);
-          const swipeThreshold = 50;
-
-          if (verticalScroll) {
-            // Vertical swipe: up to go forward, down to go back
-            if (info.offset.y > swipeThreshold && canGoBack) {
-              onPrevious?.();
-            } else if (info.offset.y < -swipeThreshold && canGoForward) {
-              onNext?.();
-            }
-          } else {
-            // Horizontal swipe: right to go back, left to go forward
-            if (info.offset.x > swipeThreshold && canGoBack) {
-              onPrevious?.();
-            } else if (info.offset.x < -swipeThreshold && canGoForward) {
-              onNext?.();
-            }
-          }
-        }}
       >
         {/* Effects - rendered before overlay so they appear behind it */}
         {enableOrtonEffect && (
@@ -365,6 +344,78 @@ export function PresentationView({
             }}
           />
         )}
+
+        {/* Transparent draggable overlay for swipe detection */}
+        {isMobile && onPrevious && onNext && (
+          <motion.div
+            className="absolute inset-0 z-[5]"
+            style={{ touchAction: 'none' }}
+            drag={verticalScroll ? "y" : "x"}
+            dragConstraints={verticalScroll ? { top: 0, bottom: 0 } : { left: 0, right: 0 }}
+            dragElastic={0.2}
+            onDragStart={() => setIsDragging(true)}
+            onDrag={(e, info) => {
+              if (verticalScroll) {
+                dragY.set(info.offset.y);
+              } else {
+                dragX.set(info.offset.x);
+              }
+            }}
+            onDragEnd={async (e, info) => {
+              setIsDragging(false);
+              const swipeThreshold = 50;
+              const windowWidth = typeof window !== 'undefined' ? window.innerWidth : 1000;
+              const windowHeight = typeof window !== 'undefined' ? window.innerHeight : 1000;
+
+              if (verticalScroll) {
+                // Vertical swipe: down to go back, up to go forward
+                if (info.offset.y > swipeThreshold && canGoBack) {
+                  // Swipe down - animate out downward
+                  setAnimationDirection('down');
+                  await animate(dragY, windowHeight, { duration: 0.2, ease: "easeOut" });
+                  onPrevious?.();
+                  dragY.set(-windowHeight); // Reset to opposite side for entry animation
+                  await animate(dragY, 0, { duration: 0.3, ease: "easeOut" });
+                  setAnimationDirection(null);
+                } else if (info.offset.y < -swipeThreshold && canGoForward) {
+                  // Swipe up - animate out upward
+                  setAnimationDirection('up');
+                  await animate(dragY, -windowHeight, { duration: 0.2, ease: "easeOut" });
+                  onNext?.();
+                  dragY.set(windowHeight); // Reset to opposite side for entry animation
+                  await animate(dragY, 0, { duration: 0.3, ease: "easeOut" });
+                  setAnimationDirection(null);
+                } else {
+                  // Snap back
+                  animate(dragY, 0, { duration: 0.2, ease: "easeOut" });
+                }
+              } else {
+                // Horizontal swipe: right to go back, left to go forward
+                if (info.offset.x > swipeThreshold && canGoBack) {
+                  // Swipe right - animate out to the right
+                  setAnimationDirection('right');
+                  await animate(dragX, windowWidth, { duration: 0.2, ease: "easeOut" });
+                  onPrevious?.();
+                  dragX.set(-windowWidth); // Reset to opposite side for entry animation
+                  await animate(dragX, 0, { duration: 0.3, ease: "easeOut" });
+                  setAnimationDirection(null);
+                } else if (info.offset.x < -swipeThreshold && canGoForward) {
+                  // Swipe left - animate out to the left
+                  setAnimationDirection('left');
+                  await animate(dragX, -windowWidth, { duration: 0.2, ease: "easeOut" });
+                  onNext?.();
+                  dragX.set(windowWidth); // Reset to opposite side for entry animation
+                  await animate(dragX, 0, { duration: 0.3, ease: "easeOut" });
+                  setAnimationDirection(null);
+                } else {
+                  // Snap back
+                  animate(dragX, 0, { duration: 0.2, ease: "easeOut" });
+                }
+              }
+            }}
+          />
+        )}
+
         {/* Progress Indicator at the top */}
         {totalPhrases && currentPhraseIndex !== undefined && (
           <div
@@ -486,7 +537,7 @@ export function PresentationView({
                     title={paused ? "Play" : "Pause"}
                   >
                     {paused ? (
-                      <Play className="h-6 w-6 text-gray-700 dark:text-gray-300" />
+                      <Play className="h-6 w-6 text-gray-700 dark:text-gray-300" fill="currentColor" />
                     ) : (
                       <Pause className="h-6 w-6 text-gray-700 dark:text-gray-300" />
                     )}
@@ -513,7 +564,7 @@ export function PresentationView({
                     onPrevious();
                   }}
                   disabled={!canGoBack}
-                  className="absolute top-20 left-1/2 transform -translate-x-1/2 p-3 bg-gray-200 dark:bg-gray-700 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 z-10"
+                  className="absolute top-4 left-1/2 transform -translate-x-1/2 p-3 bg-gray-200 dark:bg-gray-700 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 z-10"
                   title="Previous Phrase"
                   style={{
                     opacity: shouldShowNavigationButtons ? 1 : 0,
@@ -522,13 +573,34 @@ export function PresentationView({
                 >
                   <ArrowUp className="h-6 w-6 text-gray-700 dark:text-gray-300" />
                 </button>
+                {/* Pause/Play button for vertical scroll - bottom left */}
+                {onPause && onPlay && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      paused ? onPlay() : onPause();
+                    }}
+                    className="absolute left-8 bottom-8 p-3 bg-gray-200 dark:bg-gray-700 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 transition-all duration-200 z-10"
+                    title={paused ? "Play" : "Pause"}
+                    style={{
+                      opacity: shouldShowNavigationButtons ? 1 : 0,
+                      transition: 'opacity 0.3s ease'
+                    }}
+                  >
+                    {paused ? (
+                      <Play className="h-6 w-6 text-gray-700 dark:text-gray-300" fill="currentColor" />
+                    ) : (
+                      <Pause className="h-6 w-6 text-gray-700 dark:text-gray-300" />
+                    )}
+                  </button>
+                )}
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
                     onNext();
                   }}
                   disabled={!canGoForward}
-                  className="absolute bottom-20 left-1/2 transform -translate-x-1/2 p-3 bg-gray-200 dark:bg-gray-700 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 z-10"
+                  className="absolute bottom-8 left-1/2 transform -translate-x-1/2 p-3 bg-gray-200 dark:bg-gray-700 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 z-10"
                   title="Next Phrase"
                   style={{
                     opacity: shouldShowNavigationButtons ? 1 : 0,
@@ -577,7 +649,7 @@ export function PresentationView({
         )}
 
         {/* Pause/Play button for desktop fullscreen - bottom center */}
-        {fullScreen && !isMobile && onPause && onPlay && (
+        {fullScreen && !isMobile && !verticalScroll && onPause && onPlay && (
           <button
             onClick={(e) => {
               e.stopPropagation();
@@ -591,7 +663,7 @@ export function PresentationView({
             }}
           >
             {paused ? (
-              <Play className="h-6 w-6 text-gray-700 dark:text-gray-300" />
+              <Play className="h-6 w-6 text-gray-700 dark:text-gray-300" fill="currentColor" />
             ) : (
               <Pause className="h-6 w-6 text-gray-700 dark:text-gray-300" />
             )}
@@ -669,7 +741,9 @@ export function PresentationView({
                     ? (textBg.slice(0, -1) + " 0.7)").replaceAll(" ", ",")
                     : textBg)
                   : "rgba(255,255,255,0.9) dark:bg-gray-800",
-                borderRadius: "1rem"
+                borderRadius: "1rem",
+                x: dragX,
+                y: dragY
               }}
             >
               <h1 className={titlePropClass} style={{
@@ -683,7 +757,7 @@ export function PresentationView({
           ) : showAllPhrases ? (
             // Show all phrases simultaneously with highlighting
             (currentPhrase || currentTranslated) && (
-              <div
+              <motion.div
                 className={`text-left ${isMobileInline ? 'px-4' : 'px-12'} ${alignPhraseTop ? 'pb-4' : ''} absolute flex bg-opacity-90 flex-col ${textColorClass}`}
                 style={{
                   alignItems: "flex-start",
@@ -694,6 +768,8 @@ export function PresentationView({
                       : textBg)
                     : "rgba(255,255,255,0.9) dark:bg-gray-800",
                   borderRadius: '1rem',
+                  x: dragX,
+                  y: dragY,
                   ...(isMobileInline && {
                     maxWidth: 'calc(100% - 2rem)',
                     overflow: 'hidden'
@@ -728,7 +804,7 @@ export function PresentationView({
                           initial={{ opacity: 0, y: (isSafari && isMobile && !fullScreen) ? 0 : -10 }}
                           animate={{ opacity: 1, y: 0 }}
                           exit={{ opacity: 0, y: (isSafari && isMobile && !fullScreen) ? 0 : 10 }}
-                          transition={{ duration: 0.3, ease: "easeOut" }}
+                          transition={{ duration: animationDirection ? 0 : 0.3, ease: "easeOut" }}
                           className={paused && onPlayPhrase && !isMobileInline ? "cursor-pointer" : ""}
                           onClick={(e) => {
                             if (isMobileInline) {
@@ -775,7 +851,7 @@ export function PresentationView({
                           initial={{ opacity: 0, y: (isSafari && isMobile && !fullScreen) ? 0 : -10 }}
                           animate={{ opacity: 1, y: 0 }}
                           exit={{ opacity: 0, y: (isSafari && isMobile && !fullScreen) ? 0 : 10 }}
-                          transition={{ duration: 0.3, ease: "easeOut" }}
+                          transition={{ duration: animationDirection ? 0 : 0.3, ease: "easeOut" }}
                           className={paused && onPlayPhrase && !isMobileInline ? "cursor-pointer" : ""}
                           onClick={(e) => {
                             if (isMobileInline) {
@@ -855,7 +931,7 @@ export function PresentationView({
                     </>
                   );
                 })()}
-              </div>
+              </motion.div>
             )
           ) : (
             // Original single phrase display
@@ -865,7 +941,7 @@ export function PresentationView({
                 initial={{ opacity: 0, y: (isSafari && isMobile && !fullScreen) ? 0 : -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: (isSafari && isMobile && !fullScreen) ? 0 : 10 }}
-                transition={{ duration: 0.3, ease: "easeOut" }}
+                transition={{ duration: animationDirection ? 0 : 0.3, ease: "easeOut" }}
                 className={`${isMobileInline ? 'text-left px-4' : 'text-center px-12'} ${alignPhraseTop ? 'pb-4' : ''} absolute flex bg-opacity-90 flex-col ${textColorClass} ${paused && onPlayPhrase && !isMobileInline ? 'cursor-pointer' : ''}`}
                 style={{
                   alignItems: isMobileInline ? "flex-start" : "center",
@@ -876,6 +952,8 @@ export function PresentationView({
                       : textBg)
                     : "rgba(255,255,255,0.9) dark:bg-gray-800",
                   borderRadius: '1rem',
+                  x: dragX,
+                  y: dragY,
                   ...(isMobileInline && {
                     maxWidth: 'calc(100% - 2rem)',
                     overflow: 'hidden'
