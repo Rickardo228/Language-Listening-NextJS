@@ -856,7 +856,7 @@ export const useUpdateUserStats = () => {
         <motion.div
           key="pause-popup"
           className={`fixed z-50 ${!persistUntilInteraction
-            ? 'top-4 left-1/2 -translate-x-1/2' // Snackbar position for both viewed and listened (moved to top to avoid nav buttons)
+            ? 'top-20 sm:top-4 left-1/2 -translate-x-1/2' // Snackbar position - lower on mobile, top on desktop
             : 'inset-0 flex items-center justify-center md:items-center md:justify-center sm:items-end sm:justify-end sm:p-4' // Full popup
             }`}
           initial={{ opacity: 0 }}
@@ -874,7 +874,7 @@ export const useUpdateUserStats = () => {
                   } text-white rounded-lg shadow-lg ${isListCompleted
                     ? 'px-8 py-6 max-w-md' // Bigger for list completion
                     : !persistUntilInteraction
-                      ? 'px-5 py-3 max-w-xs' // Compact snackbar for both types
+                      ? 'px-5 py-3 max-w-sm' // Compact snackbar for both types
                       : 'px-6 py-4 max-w-sm' // Regular popup
                   } mx-4 sm:mx-0`}
                 initial={{ scale: 0.8, opacity: 0, y: 20 }}
