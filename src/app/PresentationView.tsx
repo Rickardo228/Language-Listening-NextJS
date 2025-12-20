@@ -288,7 +288,7 @@ function PhraseCard({
           const inputPhrase = disableAnimation ? (
             <>{inputPhraseContent}</>
           ) : (
-            <AnimatePresence mode="wait">
+            <AnimatePresence mode="wait" initial={false}>
               {inputPhraseContent}
             </AnimatePresence>
           );
@@ -352,7 +352,7 @@ function PhraseCard({
           const outputPhrase = disableAnimation ? (
             <>{outputPhraseContent}</>
           ) : (
-            <AnimatePresence mode="wait">
+            <AnimatePresence mode="wait" initial={false}>
               {outputPhraseContent}
             </AnimatePresence>
           );
@@ -518,11 +518,18 @@ export function PresentationView({
   const dragX = useMotionValue(0);
   const dragY = useMotionValue(0);
   const [animationDirection, setAnimationDirection] = useState<'left' | 'right' | 'up' | 'down' | null>(null);
+  const isSwipeTransitionRef = useRef(false); // Track if we're in a swipe transition
 
   // Reset drag position when currentPhrase changes
   useLayoutEffect(() => {
     dragY.set(0, false);
     dragX.set(0, false);
+
+    // Reset swipe transition flag after the new phrase has been rendered
+    // This ensures the next non-swipe change will animate properly
+    if (isSwipeTransitionRef.current) {
+      isSwipeTransitionRef.current = false;
+    }
   }, [currentPhrase]);
 
   // Create portal container on mount
@@ -1060,7 +1067,7 @@ export function PresentationView({
             dragY,
             titlePropClass,
             verticalScroll,
-            disableAnimation: disableAnimation || verticalScroll, // TODO - somehow keep track of whether current phrase just changed due to swipe and if so, don't animate. Then we can remove the verticalScroll condition here
+            disableAnimation: disableAnimation || isSwipeTransitionRef.current,
           };
 
           // Check if we have 3-phrase stack enabled
@@ -1086,6 +1093,7 @@ export function PresentationView({
               if (info.offset.y > swipeThreshold && canGoBack) {
                 // Swipe down - Spotify-style: slide all cards down together
                 setAnimationDirection('down');
+                isSwipeTransitionRef.current = true;
                 if (has3PhraseStack) {
                   // All 3 cards slide down together
                   await animate(dragY, windowHeight, { duration: 0.3, ease: "easeOut" });
@@ -1101,6 +1109,7 @@ export function PresentationView({
               } else if (info.offset.y < -swipeThreshold && onNext) {
                 // Swipe up - allow even on last phrase (atomicAdvance will handle completion popup)
                 setAnimationDirection('up');
+                isSwipeTransitionRef.current = true;
                 if (has3PhraseStack) {
                   // All 3 cards slide up together
                   await animate(dragY, -windowHeight, { duration: 0.3, ease: "easeOut" });
@@ -1125,6 +1134,7 @@ export function PresentationView({
               if (info.offset.x > swipeThreshold && canGoBack) {
                 // Swipe right - Spotify-style: slide all cards right together
                 setAnimationDirection('right');
+                isSwipeTransitionRef.current = true;
                 if (has3PhraseStack) {
                   // All 3 cards slide right together
                   await animate(dragX, windowWidth, { duration: 0.3, ease: "easeOut" });
@@ -1140,6 +1150,7 @@ export function PresentationView({
               } else if (info.offset.x < -swipeThreshold && onNext) {
                 // Swipe left - allow even on last phrase (atomicAdvance will handle completion popup)
                 setAnimationDirection('left');
+                isSwipeTransitionRef.current = true;
                 if (has3PhraseStack) {
                   // All 3 cards slide left together
                   await animate(dragX, -windowWidth, { duration: 0.3, ease: "easeOut" });
