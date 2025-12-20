@@ -1291,8 +1291,8 @@ export function PhrasePlaybackView({
                             progressDelay={progressDelay}
                             onPrevious={() => atomicAdvance(-1)}
                             onNext={() => atomicAdvance(+1)}
-                            canGoBack={true}
-                            canGoForward={true}
+                            canGoBack={presentationConfig.enableLoop || currentPhraseIndex > 0}
+                            canGoForward={presentationConfig.enableLoop || currentPhraseIndex < phrases.length - 1}
                             currentPhraseIndex={currentPhraseIndex}
                             totalPhrases={phrases.length}
                             isPlayingAudio={isPlayingAudio}
@@ -1301,6 +1301,12 @@ export function PhrasePlaybackView({
                             onPlay={handlePlay}
                             onPlayPhrase={handlePlayPhrasePhase}
                             onSettingsOpen={() => setSettingsOpen(true)}
+                            nextPhrase={phrases[currentPhraseIndex + 1]?.input}
+                            nextTranslated={phrases[currentPhraseIndex + 1]?.translated}
+                            nextRomanized={phrases[currentPhraseIndex + 1]?.romanized}
+                            previousPhrase={phrases[currentPhraseIndex - 1]?.input}
+                            previousTranslated={phrases[currentPhraseIndex - 1]?.translated}
+                            previousRomanized={phrases[currentPhraseIndex - 1]?.romanized}
                         />
                         <div className="py-1 px-1 lg:py-2">
                             <PresentationControls
@@ -1319,8 +1325,8 @@ export function PhrasePlaybackView({
                                 onPlay={handlePlay}
                                 onPrevious={() => atomicAdvance(-1)}
                                 onNext={() => atomicAdvance(+1)}
-                                canGoBack={true}
-                                canGoForward={true}
+                                canGoBack={presentationConfig.enableLoop || currentPhraseIndex > 0}
+                                canGoForward={presentationConfig.enableLoop || currentPhraseIndex < phrases.length - 1}
                                 inputLang={phrases[0]?.inputLang}
                                 targetLang={phrases[0]?.targetLang}
                                 setFullscreen={setFullscreen}

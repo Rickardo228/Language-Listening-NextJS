@@ -930,17 +930,18 @@ export function PresentationView({
                   transition: 'opacity 0.3s ease'
                 }}
               >
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onPrevious();
-                  }}
-                  disabled={!canGoBack}
-                  className="p-3 bg-gray-200 dark:bg-gray-700 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
-                  title="Previous Phrase"
-                >
-                  <ArrowLeft className="h-6 w-6 text-gray-700 dark:text-gray-300" />
-                </button>
+                {canGoBack && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onPrevious();
+                    }}
+                    className="p-3 bg-gray-200 dark:bg-gray-700 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 transition-all duration-200"
+                    title="Previous Phrase"
+                  >
+                    <ArrowLeft className="h-6 w-6 text-gray-700 dark:text-gray-300" />
+                  </button>
+                )}
                 {/* Pause/Play button for mobile fullscreen */}
                 {onPause && onPlay && (
                   <button
@@ -958,36 +959,38 @@ export function PresentationView({
                     )}
                   </button>
                 )}
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onNext();
-                  }}
-                  disabled={!canGoForward}
-                  className="p-3 bg-gray-200 dark:bg-gray-700 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
-                  title="Next Phrase"
-                >
-                  <ArrowRight className="h-6 w-6 text-gray-700 dark:text-gray-300" />
-                </button>
+                {canGoForward && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onNext();
+                    }}
+                    className="p-3 bg-gray-200 dark:bg-gray-700 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 transition-all duration-200"
+                    title="Next Phrase"
+                  >
+                    <ArrowRight className="h-6 w-6 text-gray-700 dark:text-gray-300" />
+                  </button>
+                )}
               </div>
             ) : verticalScroll ? (
               // Vertical scroll mode: top/bottom layout
               <>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onPrevious();
-                  }}
-                  disabled={!canGoBack}
-                  className="absolute top-4 left-1/2 transform -translate-x-1/2 p-3 bg-gray-200 dark:bg-gray-700 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 z-10"
-                  title="Previous Phrase"
-                  style={{
-                    opacity: shouldShowNavigationButtons ? 1 : 0,
-                    transition: 'opacity 0.3s ease'
-                  }}
-                >
-                  <ArrowUp className="h-6 w-6 text-gray-700 dark:text-gray-300" />
-                </button>
+                {canGoBack && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onPrevious();
+                    }}
+                    className="absolute top-4 left-1/2 transform -translate-x-1/2 p-3 bg-gray-200 dark:bg-gray-700 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 transition-all duration-200 z-10"
+                    title="Previous Phrase"
+                    style={{
+                      opacity: shouldShowNavigationButtons ? 1 : 0,
+                      transition: 'opacity 0.3s ease'
+                    }}
+                  >
+                    <ArrowUp className="h-6 w-6 text-gray-700 dark:text-gray-300" />
+                  </button>
+                )}
                 {/* Pause/Play button for vertical scroll - bottom left */}
                 {onPause && onPlay && (
                   <button
@@ -1009,55 +1012,58 @@ export function PresentationView({
                     )}
                   </button>
                 )}
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onNext();
-                  }}
-                  disabled={!canGoForward}
-                  className="absolute bottom-8 left-1/2 transform -translate-x-1/2 p-3 bg-gray-200 dark:bg-gray-700 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 z-10"
-                  title="Next Phrase"
-                  style={{
-                    opacity: shouldShowNavigationButtons ? 1 : 0,
-                    transition: 'opacity 0.3s ease'
-                  }}
-                >
-                  <ArrowDown className="h-6 w-6 text-gray-700 dark:text-gray-300" />
-                </button>
+                {canGoForward && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onNext();
+                    }}
+                    className="absolute bottom-8 left-1/2 transform -translate-x-1/2 p-3 bg-gray-200 dark:bg-gray-700 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 transition-all duration-200 z-10"
+                    title="Next Phrase"
+                    style={{
+                      opacity: shouldShowNavigationButtons ? 1 : 0,
+                      transition: 'opacity 0.3s ease'
+                    }}
+                  >
+                    <ArrowDown className="h-6 w-6 text-gray-700 dark:text-gray-300" />
+                  </button>
+                )}
               </>
             ) : (
               // Desktop or inline horizontal: side-by-side layout
               <>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onPrevious();
-                  }}
-                  disabled={!canGoBack}
-                  className="absolute left-4 top-1/2 transform -translate-y-1/2 p-3 bg-gray-200 dark:bg-gray-700 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 z-10"
-                  title="Previous Phrase"
-                  style={{
-                    opacity: shouldShowNavigationButtons ? 1 : 0,
-                    transition: 'opacity 0.3s ease'
-                  }}
-                >
-                  <ArrowLeft className="h-6 w-6 text-gray-700 dark:text-gray-300" />
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onNext();
-                  }}
-                  disabled={!canGoForward}
-                  className="absolute right-4 top-1/2 transform -translate-y-1/2 p-3 bg-gray-200 dark:bg-gray-700 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 z-10"
-                  title="Next Phrase"
-                  style={{
-                    opacity: shouldShowNavigationButtons ? 1 : 0,
-                    transition: 'opacity 0.3s ease'
-                  }}
-                >
-                  <ArrowRight className="h-6 w-6 text-gray-700 dark:text-gray-300" />
-                </button>
+                {canGoBack && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onPrevious();
+                    }}
+                    className="absolute left-4 top-1/2 transform -translate-y-1/2 p-3 bg-gray-200 dark:bg-gray-700 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 transition-all duration-200 z-10"
+                    title="Previous Phrase"
+                    style={{
+                      opacity: shouldShowNavigationButtons ? 1 : 0,
+                      transition: 'opacity 0.3s ease'
+                    }}
+                  >
+                    <ArrowLeft className="h-6 w-6 text-gray-700 dark:text-gray-300" />
+                  </button>
+                )}
+                {canGoForward && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onNext();
+                    }}
+                    className="absolute right-4 top-1/2 transform -translate-y-1/2 p-3 bg-gray-200 dark:bg-gray-700 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 transition-all duration-200 z-10"
+                    title="Next Phrase"
+                    style={{
+                      opacity: shouldShowNavigationButtons ? 1 : 0,
+                      transition: 'opacity 0.3s ease'
+                    }}
+                  >
+                    <ArrowRight className="h-6 w-6 text-gray-700 dark:text-gray-300" />
+                  </button>
+                )}
               </>
             )}
           </>
