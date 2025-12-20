@@ -1301,12 +1301,12 @@ export function PhrasePlaybackView({
                             onPlay={handlePlay}
                             onPlayPhrase={handlePlayPhrasePhase}
                             onSettingsOpen={() => setSettingsOpen(true)}
-                            nextPhrase={phrases[currentPhraseIndex + 1]?.input}
-                            nextTranslated={phrases[currentPhraseIndex + 1]?.translated}
-                            nextRomanized={phrases[currentPhraseIndex + 1]?.romanized}
-                            previousPhrase={phrases[currentPhraseIndex - 1]?.input}
-                            previousTranslated={phrases[currentPhraseIndex - 1]?.translated}
-                            previousRomanized={phrases[currentPhraseIndex - 1]?.romanized}
+                            nextPhrase={phrases[currentPhraseIndex + 1]?.input || ' '}
+                            nextTranslated={phrases[currentPhraseIndex + 1]?.translated || ' '}
+                            nextRomanized={phrases[currentPhraseIndex + 1]?.romanized || ' '}
+                            previousPhrase={phrases[currentPhraseIndex - 1]?.input || ' '}
+                            previousTranslated={phrases[currentPhraseIndex - 1]?.translated || ' '}
+                            previousRomanized={phrases[currentPhraseIndex - 1]?.romanized || ' '}
                         />
                         <div className="py-1 px-1 lg:py-2">
                             <PresentationControls

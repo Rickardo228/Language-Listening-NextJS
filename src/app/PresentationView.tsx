@@ -752,7 +752,7 @@ export function PresentationView({
               const windowHeight = typeof window !== 'undefined' ? window.innerHeight : 1000;
 
               // Check if we have 3-phrase stack enabled
-              const has3PhraseStack = (previousPhrase || previousTranslated) && (nextPhrase || nextTranslated);
+              const has3PhraseStack = (previousPhrase || previousTranslated) || (nextPhrase || nextTranslated);
 
               if (verticalScroll) {
                 // Vertical swipe: down to go back, up to go forward
