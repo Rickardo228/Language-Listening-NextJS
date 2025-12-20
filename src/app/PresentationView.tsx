@@ -1060,7 +1060,7 @@ export function PresentationView({
             dragY,
             titlePropClass,
             verticalScroll,
-            disableAnimation: disableAnimation || verticalScroll,
+            disableAnimation: disableAnimation || verticalScroll, // TODO - somehow keep track of whether current phrase just changed due to swipe and if so, don't animate. Then we can remove the verticalScroll condition here
           };
 
           // Check if we have 3-phrase stack enabled
