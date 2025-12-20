@@ -159,6 +159,7 @@ function PhraseCard({
       unsubY();
     };
   }, [dragX, dragY, offsetX, offsetY, finalX, finalY]);
+
   // Render title if provided
   if (title) {
     return (
@@ -244,107 +245,115 @@ function PhraseCard({
             ? `${Math.floor(Math.min(phraseSize, translatedSize) * 0.85)}px`
             : phrase ? phraseFontSize : translatedFontSize;
 
-          const inputPhrase = (
+          const inputPhraseContent = phrase && (
+            <motion.div
+              key={phrase.trim()}
+              initial={disableAnimation ? { opacity: 1, y: 0 } : { opacity: animationDirection ? 1 : 0, y: (isSafari && isMobile && !fullScreen) ? 0 : -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={disableAnimation ? { opacity: 1, y: 0 } : { opacity: animationDirection ? 1 : 0, y: (isSafari && isMobile && !fullScreen) ? 0 : 10 }}
+              transition={{ duration: disableAnimation ? 0 : (animationDirection ? 0 : 0.3), ease: "easeOut" }}
+              className={paused && onPlayPhrase && !isMobileInline ? "cursor-pointer" : ""}
+              onClick={(e) => {
+                if (isMobileInline) return;
+                if (paused && onPlayPhrase) {
+                  e.stopPropagation();
+                  onPlayPhrase('input');
+                }
+              }}
+            >
+              <h2
+                className="font-bold mb-2"
+                style={{
+                  margin: 0,
+                  padding: 0,
+                  marginBottom: isMobileInline && !enableOutputBeforeInput ? '12px' : undefined,
+                  fontSize: isMobileInline ? '16px' : (enableOutputBeforeInput ? commonFontSize : inputFontSize),
+                  opacity: phase !== "input" ? 0.6 : 1,
+                  transform: isPlayingAudio && phase === "input" ? "scale(1.02)" : "scale(1)",
+                  filter: isPlayingAudio && phase === "input" ? "drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3))" : "none",
+                  transition: "opacity 0.3s ease, transform 0.3s ease, filter 0.3s ease",
+                  ...(isMobileInline && {
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    maxWidth: '85vw'
+                  })
+                }}
+              >
+                {phrase.trim()}
+              </h2>
+            </motion.div>
+          );
+
+          const inputPhrase = disableAnimation ? (
+            <>{inputPhraseContent}</>
+          ) : (
             <AnimatePresence mode="wait">
-              {phrase && (
-                <motion.div
-                  key={phrase.trim()}
-                  initial={disableAnimation ? { opacity: 1, y: 0 } : { opacity: animationDirection ? 1 : 0, y: (isSafari && isMobile && !fullScreen) ? 0 : -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={disableAnimation ? { opacity: 1, y: 0 } : { opacity: animationDirection ? 1 : 0, y: (isSafari && isMobile && !fullScreen) ? 0 : 10 }}
-                  transition={{ duration: disableAnimation ? 0 : (animationDirection ? 0 : 0.3), ease: "easeOut" }}
-                  className={paused && onPlayPhrase && !isMobileInline ? "cursor-pointer" : ""}
-                  onClick={(e) => {
-                    if (isMobileInline) return;
-                    if (paused && onPlayPhrase) {
-                      e.stopPropagation();
-                      onPlayPhrase('input');
-                    }
-                  }}
-                >
-                  <h2
-                    className="font-bold mb-2"
-                    style={{
-                      margin: 0,
-                      padding: 0,
-                      marginBottom: isMobileInline && !enableOutputBeforeInput ? '12px' : undefined,
-                      fontSize: isMobileInline ? '16px' : (enableOutputBeforeInput ? commonFontSize : inputFontSize),
-                      opacity: phase !== "input" ? 0.6 : 1,
-                      transform: isPlayingAudio && phase === "input" ? "scale(1.02)" : "scale(1)",
-                      filter: isPlayingAudio && phase === "input" ? "drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3))" : "none",
-                      transition: "opacity 0.3s ease, transform 0.3s ease, filter 0.3s ease",
-                      ...(isMobileInline && {
-                        whiteSpace: 'nowrap',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        maxWidth: '85vw'
-                      })
-                    }}
-                  >
-                    {phrase.trim()}
-                  </h2>
-                </motion.div>
-              )}
+              {inputPhraseContent}
             </AnimatePresence>
           );
 
-          const outputPhrase = (
-            <AnimatePresence mode="wait">
-              {translated && (
-                <motion.div
-                  key={translated.trim()}
-                  initial={disableAnimation ? { opacity: 1, y: 0 } : { opacity: 0, y: (isSafari && isMobile && !fullScreen) ? 0 : -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={disableAnimation ? { opacity: 1, y: 0 } : { opacity: 0, y: (isSafari && isMobile && !fullScreen) ? 0 : 10 }}
-                  transition={{ duration: disableAnimation ? 0 : (animationDirection ? 0 : 0.3), ease: "easeOut" }}
-                  className={paused && onPlayPhrase && !isMobileInline ? "cursor-pointer" : ""}
-                  onClick={(e) => {
-                    if (isMobileInline) return;
-                    if (paused && onPlayPhrase) {
-                      e.stopPropagation();
-                      onPlayPhrase('output');
-                    }
+          const outputPhraseContent = translated && (
+            <motion.div
+              key={translated.trim()}
+              initial={disableAnimation ? { opacity: 1, y: 0 } : { opacity: 0, y: (isSafari && isMobile && !fullScreen) ? 0 : -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={disableAnimation ? { opacity: 1, y: 0 } : { opacity: 0, y: (isSafari && isMobile && !fullScreen) ? 0 : 10 }}
+              transition={{ duration: disableAnimation ? 0 : (animationDirection ? 0 : 0.3), ease: "easeOut" }}
+              className={paused && onPlayPhrase && !isMobileInline ? "cursor-pointer" : ""}
+              onClick={(e) => {
+                if (isMobileInline) return;
+                if (paused && onPlayPhrase) {
+                  e.stopPropagation();
+                  onPlayPhrase('output');
+                }
+              }}
+            >
+              <h2
+                className="font-bold"
+                style={{
+                  margin: 0,
+                  padding: 0,
+                  marginBottom: isMobileInline && enableOutputBeforeInput ? '12px' : undefined,
+                  fontSize: isMobileInline ? '16px' : (enableOutputBeforeInput ? inputFontSize : commonFontSize),
+                  opacity: phase !== "output" ? 0.6 : 1,
+                  transform: isPlayingAudio && phase === "output" ? "scale(1.02)" : "scale(1)",
+                  filter: isPlayingAudio && phase === "output" ? "drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3))" : "none",
+                  transition: "opacity 0.3s ease, transform 0.3s ease, filter 0.3s ease",
+                  ...(isMobileInline && {
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    maxWidth: '85vw'
+                  })
+                }}
+              >
+                {translated.trim()}
+              </h2>
+              {romanized && !isMobileInline && (
+                <h2
+                  className="font-bold mt-3"
+                  style={{
+                    margin: 0,
+                    padding: 0,
+                    fontSize: enableOutputBeforeInput ? inputFontSize : commonFontSize,
+                    opacity: phase !== "output" ? 0.6 : 1,
+                    transform: isPlayingAudio && phase === "output" ? "scale(1.02)" : "scale(1)",
+                    filter: isPlayingAudio && phase === "output" ? "drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3))" : "none",
+                    transition: "opacity 0.3s ease, transform 0.3s ease, filter 0.3s ease"
                   }}
                 >
-                  <h2
-                    className="font-bold"
-                    style={{
-                      margin: 0,
-                      padding: 0,
-                      marginBottom: isMobileInline && enableOutputBeforeInput ? '12px' : undefined,
-                      fontSize: isMobileInline ? '16px' : (enableOutputBeforeInput ? inputFontSize : commonFontSize),
-                      opacity: phase !== "output" ? 0.6 : 1,
-                      transform: isPlayingAudio && phase === "output" ? "scale(1.02)" : "scale(1)",
-                      filter: isPlayingAudio && phase === "output" ? "drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3))" : "none",
-                      transition: "opacity 0.3s ease, transform 0.3s ease, filter 0.3s ease",
-                      ...(isMobileInline && {
-                        whiteSpace: 'nowrap',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        maxWidth: '85vw'
-                      })
-                    }}
-                  >
-                    {translated.trim()}
-                  </h2>
-                  {romanized && !isMobileInline && (
-                    <h2
-                      className="font-bold mt-3"
-                      style={{
-                        margin: 0,
-                        padding: 0,
-                        fontSize: enableOutputBeforeInput ? inputFontSize : commonFontSize,
-                        opacity: phase !== "output" ? 0.6 : 1,
-                        transform: isPlayingAudio && phase === "output" ? "scale(1.02)" : "scale(1)",
-                        filter: isPlayingAudio && phase === "output" ? "drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3))" : "none",
-                        transition: "opacity 0.3s ease, transform 0.3s ease, filter 0.3s ease"
-                      }}
-                    >
-                      {romanized}
-                    </h2>
-                  )}
-                </motion.div>
+                  {romanized}
+                </h2>
               )}
+            </motion.div>
+          );
+
+          const outputPhrase = disableAnimation ? (
+            <>{outputPhraseContent}</>
+          ) : (
+            <AnimatePresence mode="wait">
+              {outputPhraseContent}
             </AnimatePresence>
           );
 
@@ -511,10 +520,10 @@ export function PresentationView({
   const [animationDirection, setAnimationDirection] = useState<'left' | 'right' | 'up' | 'down' | null>(null);
 
   // Reset drag position when currentPhrase changes
-  useEffect(() => {
-    setTimeout(() => dragY.set(0, false), 0);
-    setTimeout(() => dragX.set(0, false), 0);
-  }, [currentPhrase, dragY, dragX]);
+  useLayoutEffect(() => {
+    dragY.set(0, false);
+    dragX.set(0, false);
+  }, [currentPhrase]);
 
   // Create portal container on mount
   useEffect(() => {
@@ -1095,10 +1104,13 @@ export function PresentationView({
                 if (has3PhraseStack) {
                   // All 3 cards slide up together
                   await animate(dragY, -windowHeight, { duration: 0.3, ease: "easeOut" });
+                  console.log("On next")
                   onNext?.();
                 } else {
                   // Fallback to old animation
                   await animate(dragY, -windowHeight, { duration: 0.2, ease: "easeOut" });
+                  console.log("On next 2")
+
                   onNext?.();
                   dragY.set(windowHeight);
                   await animate(dragY, 0, { duration: 0.3, ease: "easeOut" });
