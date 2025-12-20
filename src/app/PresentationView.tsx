@@ -54,6 +54,14 @@ interface PresentationViewProps {
   onPlayPhrase?: (phase: 'input' | 'output') => void; // New prop to play a specific phrase (input or output)
   onSettingsOpen?: () => void; // New prop for opening settings
   verticalScroll?: boolean; // New prop to enable vertical scroll mode with top/bottom navigation
+  // New props for seamless swipe animation (Spotify-style)
+  nextPhrase?: string;
+  nextTranslated?: string;
+  nextRomanized?: string;
+  previousPhrase?: string;
+  previousTranslated?: string;
+  previousRomanized?: string;
+  disableAnimation?: boolean; // New prop to disable all animations in PhraseCard
 }
 
 export const TITLE_ANIMATION_DURATION = 1000
@@ -77,6 +85,368 @@ function calculateFontSize(text: string, isFullScreen: boolean, hasRomanized: bo
   const fontSize = Math.max(baseSize * scale, isFullScreen ? 30 : 20); // increased minimum size for non-fullscreen
 
   return `${fontSize}px`;
+}
+
+// Internal component to render a phrase card
+interface PhraseCardProps {
+  phrase: string;
+  translated: string;
+  romanized?: string;
+  phase: "input" | "output";
+  fullScreen: boolean;
+  isMobile: boolean;
+  isMobileInline: boolean;
+  isSafari: boolean;
+  textColorClass: string;
+  textBg?: string;
+  alignPhraseTop: boolean;
+  showAllPhrases?: boolean;
+  enableOutputBeforeInput?: boolean;
+  isPlayingAudio?: boolean;
+  paused?: boolean;
+  onPlayPhrase?: (phase: 'input' | 'output') => void;
+  animationDirection: 'left' | 'right' | 'up' | 'down' | null;
+  dragX: any;
+  dragY: any;
+  offsetX?: number; // Base offset in pixels (for prev/next positioning)
+  offsetY?: number; // Base offset in pixels (for prev/next positioning)
+  title?: string;
+  titlePropClass: string;
+  verticalScroll?: boolean;
+  disableAnimation?: boolean;
+}
+
+function PhraseCard({
+  phrase,
+  translated,
+  romanized,
+  phase,
+  fullScreen,
+  isMobile,
+  isMobileInline,
+  isSafari,
+  textColorClass,
+  textBg,
+  alignPhraseTop,
+  showAllPhrases,
+  enableOutputBeforeInput,
+  isPlayingAudio,
+  paused,
+  onPlayPhrase,
+  animationDirection,
+  dragX,
+  dragY,
+  offsetX = 0,
+  offsetY = 0,
+  title,
+  titlePropClass,
+  verticalScroll = false,
+  disableAnimation = false,
+}: PhraseCardProps) {
+  // Combine drag values with base offset for final position
+  const finalX = useMotionValue(offsetX);
+  const finalY = useMotionValue(offsetY);
+
+  // Update final position when drag or offset changes
+  useEffect(() => {
+    const unsubX = dragX.on('change', (latest: number) => finalX.set(offsetX + latest));
+    const unsubY = dragY.on('change', (latest: number) => finalY.set(offsetY + latest));
+    // Also update when offset changes
+    finalX.set(offsetX + dragX.get());
+    finalY.set(offsetY + dragY.get());
+    return () => {
+      unsubX();
+      unsubY();
+    };
+  }, [dragX, dragY, offsetX, offsetY, finalX, finalY]);
+  // Render title if provided
+  if (title) {
+    return (
+      <motion.div
+        key="title"
+        initial={disableAnimation ? { opacity: 1, y: 0, scale: 1 } : { opacity: 0, y: -20, scale: 0.98 }}
+        animate={{
+          opacity: 1,
+          y: 0,
+          scale: 1,
+          transition: { duration: disableAnimation ? 0 : TITLE_ANIMATION_DURATION / 1000, ease: "easeOut", delay: disableAnimation ? 0 : (BLEED_START_DELAY + TITLE_DELAY) / 1000 }
+        }}
+        exit={disableAnimation ? { opacity: 1, y: 0, scale: 1 } : {
+          opacity: 0,
+          y: 20,
+          scale: 0.98,
+          transition: { duration: TITLE_ANIMATION_DURATION / 1000, ease: "easeOut" }
+        }}
+        className={`text-center absolute flex flex-col ${textColorClass}`}
+        style={{
+          maxWidth: "600px",
+          padding: 20,
+          alignItems: "center",
+          justifyContent: "center",
+          textShadow: textBg ? `2px 2px 2px ${textBg}` : "2px 2px 2px rgba(0,0,0,0.2)",
+          backgroundColor: textBg
+            ? (textBg.includes("rgb")
+              ? (textBg.slice(0, -1) + " 0.7)").replaceAll(" ", ",")
+              : textBg)
+            : "rgba(255,255,255,0.9) dark:bg-gray-800",
+          borderRadius: "1rem",
+          x: finalX,
+          y: finalY
+        }}
+      >
+        <h1 className={titlePropClass} style={{
+          margin: 0,
+          padding: 0,
+          fontFamily: 'var(--font-playpen-sans), "Playpen Sans", system-ui, sans-serif'
+        }}>
+          {title}
+        </h1>
+      </motion.div>
+    );
+  }
+
+  // Render showAllPhrases mode
+  if (showAllPhrases) {
+    if (!phrase && !translated) return null;
+
+    return (
+      <motion.div
+        className={`text-left ${isMobileInline ? 'px-4' : 'px-12'} ${alignPhraseTop ? 'pb-4' : ''} absolute flex bg-opacity-90 flex-col ${textColorClass}`}
+        style={{
+          alignItems: "flex-start",
+          justifyContent: "center",
+          backgroundColor: textBg
+            ? (textBg.includes("rgb")
+              ? (textBg.slice(0, -1) + " 0.9)").replaceAll(" ", ",")
+              : textBg)
+            : "rgba(255,255,255,0.9) dark:bg-gray-800",
+          borderRadius: '1rem',
+          x: finalX,
+          y: finalY,
+          ...(isMobileInline && {
+            maxWidth: 'calc(100% - 2rem)',
+            overflow: 'hidden'
+          })
+        }}
+      >
+        {(() => {
+          const phraseFontSize = phrase ? calculateFontSize(phrase, fullScreen, false) : '0px';
+          const translatedFontSize = translated ? calculateFontSize(translated, fullScreen, romanized ? true : false) : '0px';
+
+          const phraseSize = parseInt(phraseFontSize);
+          const translatedSize = parseInt(translatedFontSize);
+
+          const commonFontSize = phrase && translated
+            ? `${Math.min(phraseSize, translatedSize)}px`
+            : phrase ? phraseFontSize : translatedFontSize;
+
+          const inputFontSize = phrase && translated
+            ? `${Math.floor(Math.min(phraseSize, translatedSize) * 0.85)}px`
+            : phrase ? phraseFontSize : translatedFontSize;
+
+          const inputPhrase = (
+            <AnimatePresence mode="wait">
+              {phrase && (
+                <motion.div
+                  key={phrase.trim()}
+                  initial={disableAnimation ? { opacity: 1, y: 0 } : { opacity: animationDirection ? 1 : 0, y: (isSafari && isMobile && !fullScreen) ? 0 : -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={disableAnimation ? { opacity: 1, y: 0 } : { opacity: animationDirection ? 1 : 0, y: (isSafari && isMobile && !fullScreen) ? 0 : 10 }}
+                  transition={{ duration: disableAnimation ? 0 : (animationDirection ? 0 : 0.3), ease: "easeOut" }}
+                  className={paused && onPlayPhrase && !isMobileInline ? "cursor-pointer" : ""}
+                  onClick={(e) => {
+                    if (isMobileInline) return;
+                    if (paused && onPlayPhrase) {
+                      e.stopPropagation();
+                      onPlayPhrase('input');
+                    }
+                  }}
+                >
+                  <h2
+                    className="font-bold mb-2"
+                    style={{
+                      margin: 0,
+                      padding: 0,
+                      marginBottom: isMobileInline && !enableOutputBeforeInput ? '12px' : undefined,
+                      fontSize: isMobileInline ? '16px' : (enableOutputBeforeInput ? commonFontSize : inputFontSize),
+                      opacity: phase !== "input" ? 0.6 : 1,
+                      transform: isPlayingAudio && phase === "input" ? "scale(1.02)" : "scale(1)",
+                      filter: isPlayingAudio && phase === "input" ? "drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3))" : "none",
+                      transition: "opacity 0.3s ease, transform 0.3s ease, filter 0.3s ease",
+                      ...(isMobileInline && {
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        maxWidth: '85vw'
+                      })
+                    }}
+                  >
+                    {phrase.trim()}
+                  </h2>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          );
+
+          const outputPhrase = (
+            <AnimatePresence mode="wait">
+              {translated && (
+                <motion.div
+                  key={translated.trim()}
+                  initial={disableAnimation ? { opacity: 1, y: 0 } : { opacity: 0, y: (isSafari && isMobile && !fullScreen) ? 0 : -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={disableAnimation ? { opacity: 1, y: 0 } : { opacity: 0, y: (isSafari && isMobile && !fullScreen) ? 0 : 10 }}
+                  transition={{ duration: disableAnimation ? 0 : (animationDirection ? 0 : 0.3), ease: "easeOut" }}
+                  className={paused && onPlayPhrase && !isMobileInline ? "cursor-pointer" : ""}
+                  onClick={(e) => {
+                    if (isMobileInline) return;
+                    if (paused && onPlayPhrase) {
+                      e.stopPropagation();
+                      onPlayPhrase('output');
+                    }
+                  }}
+                >
+                  <h2
+                    className="font-bold"
+                    style={{
+                      margin: 0,
+                      padding: 0,
+                      marginBottom: isMobileInline && enableOutputBeforeInput ? '12px' : undefined,
+                      fontSize: isMobileInline ? '16px' : (enableOutputBeforeInput ? inputFontSize : commonFontSize),
+                      opacity: phase !== "output" ? 0.6 : 1,
+                      transform: isPlayingAudio && phase === "output" ? "scale(1.02)" : "scale(1)",
+                      filter: isPlayingAudio && phase === "output" ? "drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3))" : "none",
+                      transition: "opacity 0.3s ease, transform 0.3s ease, filter 0.3s ease",
+                      ...(isMobileInline && {
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        maxWidth: '85vw'
+                      })
+                    }}
+                  >
+                    {translated.trim()}
+                  </h2>
+                  {romanized && !isMobileInline && (
+                    <h2
+                      className="font-bold mt-3"
+                      style={{
+                        margin: 0,
+                        padding: 0,
+                        fontSize: enableOutputBeforeInput ? inputFontSize : commonFontSize,
+                        opacity: phase !== "output" ? 0.6 : 1,
+                        transform: isPlayingAudio && phase === "output" ? "scale(1.02)" : "scale(1)",
+                        filter: isPlayingAudio && phase === "output" ? "drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3))" : "none",
+                        transition: "opacity 0.3s ease, transform 0.3s ease, filter 0.3s ease"
+                      }}
+                    >
+                      {romanized}
+                    </h2>
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          );
+
+          const divider = phrase && translated && !isMobileInline && (
+            <div
+              style={{
+                width: '80px',
+                height: '1px',
+                margin: '16px auto',
+                background: textBg
+                  ? (textBg.includes("rgb")
+                    ? (textBg.slice(0, -1) + " 0.3)").replaceAll(" ", ",")
+                    : textBg + "4D")
+                  : "rgba(255,255,255,0.3)",
+                borderRadius: '1px'
+              }}
+            />
+          );
+
+          return (
+            <>
+              {outputPhrase}
+              {divider}
+              {inputPhrase}
+            </>
+          );
+        })()}
+      </motion.div>
+    );
+  }
+
+  // Render single phrase mode
+  if (!translated && !phrase) return null;
+
+  return (
+    <motion.div
+      key={phase === "input" ? phrase : translated}
+      initial={disableAnimation ? { opacity: 1, y: 0 } : { opacity: 0, y: (isSafari && isMobile && !fullScreen) ? 0 : -10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={disableAnimation ? { opacity: 1, y: 0 } : { opacity: 0, y: (isSafari && isMobile && !fullScreen) ? 0 : 10 }}
+      transition={{ duration: disableAnimation ? 0 : (animationDirection ? 0 : 0.3), ease: "easeOut" }}
+      className={`${isMobileInline ? 'text-left px-4' : 'text-center px-12'} ${alignPhraseTop ? 'pb-4' : ''} absolute flex bg-opacity-90 flex-col ${textColorClass} ${paused && onPlayPhrase && !isMobileInline ? 'cursor-pointer' : ''}`}
+      style={{
+        alignItems: isMobileInline ? "flex-start" : "center",
+        justifyContent: "center",
+        backgroundColor: textBg
+          ? (textBg.includes("rgb")
+            ? (textBg.slice(0, -1) + " 0.9)").replaceAll(" ", ",")
+            : textBg)
+          : "rgba(255,255,255,0.9) dark:bg-gray-800",
+        borderRadius: '1rem',
+        x: finalX,
+        y: finalY,
+        ...(isMobileInline && {
+          maxWidth: 'calc(100% - 2rem)',
+          overflow: 'hidden'
+        })
+      }}
+      onClick={(e) => {
+        if (isMobileInline) return;
+        if (paused && onPlayPhrase) {
+          e.stopPropagation();
+          onPlayPhrase(phase);
+        }
+      }}
+    >
+      <h2
+        key={phase === "input" ? phrase : translated}
+        className="font-bold"
+        style={{
+          margin: 0,
+          padding: 0,
+          fontSize: isMobileInline ? '16px' : calculateFontSize(
+            phase === "input" ? phrase : translated,
+            fullScreen,
+            romanized ? true : false
+          ),
+          ...(isMobileInline && {
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            maxWidth: '85vw'
+          })
+        }}
+      >
+        {phase === "input"
+          ? phrase?.trim()
+          : translated?.trim()}
+      </h2>
+      {phase === "output" && romanized && !isMobileInline && (
+        <h2
+          key={phase}
+          className="font-bold mt-3"
+          style={{
+            fontSize: calculateFontSize(romanized, fullScreen, true)
+          }}
+        >
+          {romanized}
+        </h2>
+      )}
+    </motion.div>
+  );
 }
 
 export function PresentationView({
@@ -122,6 +492,13 @@ export function PresentationView({
   onPlayPhrase,
   onSettingsOpen,
   verticalScroll = false,
+  nextPhrase,
+  nextTranslated,
+  nextRomanized,
+  previousPhrase,
+  previousTranslated,
+  previousRomanized,
+  disableAnimation = false,
 }: PresentationViewProps) {
   const [isHovering, setIsHovering] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -132,6 +509,13 @@ export function PresentationView({
   const dragX = useMotionValue(0);
   const dragY = useMotionValue(0);
   const [animationDirection, setAnimationDirection] = useState<'left' | 'right' | 'up' | 'down' | null>(null);
+
+  // Reset drag position when currentPhrase changes
+  useEffect(() => {
+    dragY.set(0, false);
+    dragX.set(0, false);
+  }, [currentPhrase, dragY, dragX]);
+
   // Create portal container on mount
   useEffect(() => {
     if (typeof document !== 'undefined') {
@@ -367,23 +751,40 @@ export function PresentationView({
               const windowWidth = typeof window !== 'undefined' ? window.innerWidth : 1000;
               const windowHeight = typeof window !== 'undefined' ? window.innerHeight : 1000;
 
+              // Check if we have 3-phrase stack enabled
+              const has3PhraseStack = (previousPhrase || previousTranslated) && (nextPhrase || nextTranslated);
+
               if (verticalScroll) {
                 // Vertical swipe: down to go back, up to go forward
                 if (info.offset.y > swipeThreshold && canGoBack) {
-                  // Swipe down - animate out downward
+                  // Swipe down - Spotify-style: slide all cards down together
                   setAnimationDirection('down');
-                  await animate(dragY, windowHeight, { duration: 0.2, ease: "easeOut" });
-                  onPrevious?.();
-                  dragY.set(-windowHeight); // Reset to opposite side for entry animation
-                  await animate(dragY, 0, { duration: 0.3, ease: "easeOut" });
+                  if (has3PhraseStack) {
+                    // All 3 cards slide down together
+                    await animate(dragY, windowHeight, { duration: 0.3, ease: "easeOut" });
+                    onPrevious?.();
+                  } else {
+                    // Fallback to old animation
+                    await animate(dragY, windowHeight, { duration: 0.2, ease: "easeOut" });
+                    onPrevious?.();
+                    dragY.set(-windowHeight);
+                    await animate(dragY, 0, { duration: 0.3, ease: "easeOut" });
+                  }
                   setAnimationDirection(null);
                 } else if (info.offset.y < -swipeThreshold && canGoForward) {
-                  // Swipe up - animate out upward
+                  // Swipe up - Spotify-style: slide all cards up together
                   setAnimationDirection('up');
-                  await animate(dragY, -windowHeight, { duration: 0.2, ease: "easeOut" });
-                  onNext?.();
-                  dragY.set(windowHeight); // Reset to opposite side for entry animation
-                  await animate(dragY, 0, { duration: 0.3, ease: "easeOut" });
+                  if (has3PhraseStack) {
+                    // All 3 cards slide up together
+                    await animate(dragY, -windowHeight, { duration: 0.3, ease: "easeOut" });
+                    onNext?.();
+                  } else {
+                    // Fallback to old animation
+                    await animate(dragY, -windowHeight, { duration: 0.2, ease: "easeOut" });
+                    onNext?.();
+                    dragY.set(windowHeight);
+                    await animate(dragY, 0, { duration: 0.3, ease: "easeOut" });
+                  }
                   setAnimationDirection(null);
                 } else {
                   // Snap back
@@ -392,20 +793,34 @@ export function PresentationView({
               } else {
                 // Horizontal swipe: right to go back, left to go forward
                 if (info.offset.x > swipeThreshold && canGoBack) {
-                  // Swipe right - animate out to the right
+                  // Swipe right - Spotify-style: slide all cards right together
                   setAnimationDirection('right');
-                  await animate(dragX, windowWidth, { duration: 0.2, ease: "easeOut" });
-                  onPrevious?.();
-                  dragX.set(-windowWidth); // Reset to opposite side for entry animation
-                  await animate(dragX, 0, { duration: 0.3, ease: "easeOut" });
+                  if (has3PhraseStack) {
+                    // All 3 cards slide right together
+                    await animate(dragX, windowWidth, { duration: 0.3, ease: "easeOut" });
+                    onPrevious?.();
+                  } else {
+                    // Fallback to old animation
+                    await animate(dragX, windowWidth, { duration: 0.2, ease: "easeOut" });
+                    onPrevious?.();
+                    dragX.set(-windowWidth);
+                    await animate(dragX, 0, { duration: 0.3, ease: "easeOut" });
+                  }
                   setAnimationDirection(null);
                 } else if (info.offset.x < -swipeThreshold && canGoForward) {
-                  // Swipe left - animate out to the left
+                  // Swipe left - Spotify-style: slide all cards left together
                   setAnimationDirection('left');
-                  await animate(dragX, -windowWidth, { duration: 0.2, ease: "easeOut" });
-                  onNext?.();
-                  dragX.set(windowWidth); // Reset to opposite side for entry animation
-                  await animate(dragX, 0, { duration: 0.3, ease: "easeOut" });
+                  if (has3PhraseStack) {
+                    // All 3 cards slide left together
+                    await animate(dragX, -windowWidth, { duration: 0.3, ease: "easeOut" });
+                    onNext?.();
+                  } else {
+                    // Fallback to old animation
+                    await animate(dragX, -windowWidth, { duration: 0.2, ease: "easeOut" });
+                    onNext?.();
+                    dragX.set(windowWidth);
+                    await animate(dragX, 0, { duration: 0.3, ease: "easeOut" });
+                  }
                   setAnimationDirection(null);
                 } else {
                   // Snap back
@@ -711,303 +1126,112 @@ export function PresentationView({
           />
         )}
 
-        {/* Animate the title in/out with AnimatePresence */}
-        <AnimatePresence mode={'sync'}>
-          {title ? (
-            <motion.div
-              key="title"
-              initial={{ opacity: 0, y: -20, scale: 0.98 }}
-              animate={{
-                opacity: 1,
-                y: 0,
-                scale: 1,
-                transition: { duration: TITLE_ANIMATION_DURATION / 1000, ease: "easeOut", delay: (BLEED_START_DELAY + TITLE_DELAY) / 1000 }
-              }}
-              exit={{
-                opacity: 0,
-                y: 20,
-                scale: 0.98,
-                transition: { duration: TITLE_ANIMATION_DURATION / 1000, ease: "easeOut" }
-              }}
-              className={`text-center absolute flex flex-col ${textColorClass}`}
-              style={{
-                maxWidth: "600px",
-                padding: 20,
-                alignItems: "center",
-                justifyContent: "center",
-                textShadow: textBg ? `2px 2px 2px ${textBg}` : "2px 2px 2px rgba(0,0,0,0.2)",
-                backgroundColor: textBg
-                  ? (textBg.includes("rgb")
-                    ? (textBg.slice(0, -1) + " 0.7)").replaceAll(" ", ",")
-                    : textBg)
-                  : "rgba(255,255,255,0.9) dark:bg-gray-800",
-                borderRadius: "1rem",
-                x: dragX,
-                y: dragY
-              }}
-            >
-              <h1 className={titlePropClass} style={{
-                margin: 0,
-                padding: 0,
-                fontFamily: 'var(--font-playpen-sans), "Playpen Sans", system-ui, sans-serif'
-              }}>
-                {title}
-              </h1>
-            </motion.div>
-          ) : showAllPhrases ? (
-            // Show all phrases simultaneously with highlighting
-            (currentPhrase || currentTranslated) && (
-              <motion.div
-                className={`text-left ${isMobileInline ? 'px-4' : 'px-12'} ${alignPhraseTop ? 'pb-4' : ''} absolute flex bg-opacity-90 flex-col ${textColorClass}`}
-                style={{
-                  alignItems: "flex-start",
-                  justifyContent: "center",
-                  backgroundColor: textBg
-                    ? (textBg.includes("rgb")
-                      ? (textBg.slice(0, -1) + " 0.9)").replaceAll(" ", ",")
-                      : textBg)
-                    : "rgba(255,255,255,0.9) dark:bg-gray-800",
-                  borderRadius: '1rem',
-                  x: dragX,
-                  y: dragY,
-                  ...(isMobileInline && {
-                    maxWidth: 'calc(100% - 2rem)',
-                    overflow: 'hidden'
-                  })
-                }}
-              >
-                {/* Calculate the smaller font size for all phrases */}
-                {(() => {
-                  const phraseFontSize = currentPhrase ? calculateFontSize(currentPhrase, fullScreen, false) : '0px';
-                  const translatedFontSize = currentTranslated ? calculateFontSize(currentTranslated, fullScreen, romanizedOutput ? true : false) : '0px';
+        {/* Render 3-phrase stack for Spotify-style swipe (or single phrase if no next/prev available) */}
+        {(() => {
+          // Calculate window dimensions for offset positioning
+          const windowWidth = typeof window !== 'undefined' ? window.innerWidth : 1000;
+          const windowHeight = typeof window !== 'undefined' ? window.innerHeight : 1000;
 
-                  // Extract numeric values for comparison
-                  const phraseSize = parseInt(phraseFontSize);
-                  const translatedSize = parseInt(translatedFontSize);
+          // Common props for all phrase cards
+          const commonCardProps = {
+            phase: currentPhase,
+            fullScreen,
+            isMobile,
+            isMobileInline,
+            isSafari,
+            textColorClass,
+            textBg,
+            alignPhraseTop,
+            showAllPhrases,
+            enableOutputBeforeInput,
+            isPlayingAudio,
+            paused,
+            onPlayPhrase,
+            animationDirection,
+            dragX,
+            dragY,
+            titlePropClass,
+            verticalScroll,
+            disableAnimation: disableAnimation || verticalScroll,
+          };
 
-                  // Use the smaller font size, or fallback to translated size if phrase is empty
-                  const commonFontSize = currentPhrase && currentTranslated
-                    ? `${Math.min(phraseSize, translatedSize)}px`
-                    : currentPhrase ? phraseFontSize : translatedFontSize;
+          // If title is present, render only title (no 3-phrase stack)
+          if (title) {
+            return (
+              <AnimatePresence mode={'sync'}>
+                <PhraseCard
+                  key="title"
+                  phrase=""
+                  translated=""
+                  title={title}
+                  {...commonCardProps}
+                />
+              </AnimatePresence>
+            );
+          }
 
-                  // Make currentPhrase slightly smaller (85% of common size)
-                  const inputFontSize = currentPhrase && currentTranslated
-                    ? `${Math.floor(Math.min(phraseSize, translatedSize) * 0.85)}px`
-                    : currentPhrase ? phraseFontSize : translatedFontSize;
+          // Determine if we should render 3-phrase stack
+          const has3PhraseStack = (previousPhrase || previousTranslated) && (nextPhrase || nextTranslated);
 
-                  // Extract phrase components for conditional ordering
-                  const inputPhrase = (
-                    <AnimatePresence mode="wait">
-                      {currentPhrase && (
-                        <motion.div
-                          key={currentPhrase.trim()}
-                          initial={{ opacity: 0, y: (isSafari && isMobile && !fullScreen) ? 0 : -10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: (isSafari && isMobile && !fullScreen) ? 0 : 10 }}
-                          transition={{ duration: animationDirection ? 0 : 0.3, ease: "easeOut" }}
-                          className={paused && onPlayPhrase && !isMobileInline ? "cursor-pointer" : ""}
-                          onClick={(e) => {
-                            if (isMobileInline) {
-                              // On mobile inline, let click bubble up to trigger fullscreen
-                              return;
-                            }
-                            if (paused && onPlayPhrase) {
-                              e.stopPropagation();
-                              onPlayPhrase('input');
-                            }
-                          }}
-                        >
-                          <h2
-                            className="font-bold mb-2"
-                            style={{
-                              margin: 0,
-                              padding: 0,
-                              marginBottom: isMobileInline && !enableOutputBeforeInput ? '12px' : undefined,
-                              fontSize: isMobileInline ? '16px' : (enableOutputBeforeInput ? commonFontSize : inputFontSize),
-                              opacity: currentPhase !== "input" ? 0.6 : 1,
-                              transform: isPlayingAudio && currentPhase === "input" ? "scale(1.02)" : "scale(1)",
-                              filter: isPlayingAudio && currentPhase === "input" ? "drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3))" : "none",
-                              transition: "opacity 0.3s ease, transform 0.3s ease, filter 0.3s ease",
-                              ...(isMobileInline && {
-                                whiteSpace: 'nowrap',
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                                maxWidth: '85vw'
-                              })
-                            }}
-                          >
-                            {currentPhrase.trim()}
-                          </h2>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  );
-
-                  const outputPhrase = (
-                    <AnimatePresence mode="wait">
-                      {currentTranslated && (
-                        <motion.div
-                          key={currentTranslated.trim()}
-                          initial={{ opacity: 0, y: (isSafari && isMobile && !fullScreen) ? 0 : -10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: (isSafari && isMobile && !fullScreen) ? 0 : 10 }}
-                          transition={{ duration: animationDirection ? 0 : 0.3, ease: "easeOut" }}
-                          className={paused && onPlayPhrase && !isMobileInline ? "cursor-pointer" : ""}
-                          onClick={(e) => {
-                            if (isMobileInline) {
-                              // On mobile inline, let click bubble up to trigger fullscreen
-                              return;
-                            }
-                            if (paused && onPlayPhrase) {
-                              e.stopPropagation();
-                              onPlayPhrase('output');
-                            }
-                          }}
-                        >
-                          <h2
-                            className="font-bold"
-                            style={{
-                              margin: 0,
-                              padding: 0,
-                              marginBottom: isMobileInline && enableOutputBeforeInput ? '12px' : undefined,
-                              fontSize: isMobileInline ? '16px' : (enableOutputBeforeInput ? inputFontSize : commonFontSize),
-                              opacity: currentPhase !== "output" ? 0.6 : 1,
-                              transform: isPlayingAudio && currentPhase === "output" ? "scale(1.02)" : "scale(1)",
-                              filter: isPlayingAudio && currentPhase === "output" ? "drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3))" : "none",
-                              transition: "opacity 0.3s ease, transform 0.3s ease, filter 0.3s ease",
-                              ...(isMobileInline && {
-                                whiteSpace: 'nowrap',
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                                maxWidth: '85vw'
-                              })
-                            }}
-                          >
-                            {currentTranslated.trim()}
-                          </h2>
-                          {romanizedOutput && !isMobileInline && (
-                            <h2
-                              className="font-bold mt-3"
-                              style={{
-                                margin: 0,
-                                padding: 0,
-                                fontSize: enableOutputBeforeInput ? inputFontSize : commonFontSize,
-                                opacity: currentPhase !== "output" ? 0.6 : 1,
-                                transform: isPlayingAudio && currentPhase === "output" ? "scale(1.02)" : "scale(1)",
-                                filter: isPlayingAudio && currentPhase === "output" ? "drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3))" : "none",
-                                transition: "opacity 0.3s ease, transform 0.3s ease, filter 0.3s ease"
-                              }}
-                            >
-                              {romanizedOutput}
-                            </h2>
-                          )}
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  );
-
-                  const divider = currentPhrase && currentTranslated && !isMobileInline && (
-                    <div
-                      style={{
-                        width: '80px',
-                        height: '1px',
-                        margin: '16px auto',
-                        background: textBg
-                          ? (textBg.includes("rgb")
-                            ? (textBg.slice(0, -1) + " 0.3)").replaceAll(" ", ",")
-                            : textBg + "4D")
-                          : "rgba(255,255,255,0.3)",
-                        borderRadius: '1px'
-                      }}
-                    />
-                  );
-
-                  // Always render output first, then input
-                  return (
-                    <>
-                      {outputPhrase}
-                      {divider}
-                      {inputPhrase}
-                    </>
-                  );
-                })()}
-              </motion.div>
-            )
-          ) : (
-            // Original single phrase display
-            (currentTranslated || currentPhrase) && (
-              <motion.div
-                key={currentPhase === "input" ? currentPhrase : currentTranslated}
-                initial={{ opacity: 0, y: (isSafari && isMobile && !fullScreen) ? 0 : -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: (isSafari && isMobile && !fullScreen) ? 0 : 10 }}
-                transition={{ duration: animationDirection ? 0 : 0.3, ease: "easeOut" }}
-                className={`${isMobileInline ? 'text-left px-4' : 'text-center px-12'} ${alignPhraseTop ? 'pb-4' : ''} absolute flex bg-opacity-90 flex-col ${textColorClass} ${paused && onPlayPhrase && !isMobileInline ? 'cursor-pointer' : ''}`}
-                style={{
-                  alignItems: isMobileInline ? "flex-start" : "center",
-                  justifyContent: "center",
-                  backgroundColor: textBg
-                    ? (textBg.includes("rgb")
-                      ? (textBg.slice(0, -1) + " 0.9)").replaceAll(" ", ",")
-                      : textBg)
-                    : "rgba(255,255,255,0.9) dark:bg-gray-800",
-                  borderRadius: '1rem',
-                  x: dragX,
-                  y: dragY,
-                  ...(isMobileInline && {
-                    maxWidth: 'calc(100% - 2rem)',
-                    overflow: 'hidden'
-                  })
-                }}
-                onClick={(e) => {
-                  if (isMobileInline) {
-                    // On mobile inline, let click bubble up to trigger fullscreen
-                    return;
-                  }
-                  if (paused && onPlayPhrase) {
-                    e.stopPropagation();
-                    onPlayPhrase(currentPhase);
-                  }
-                }}
-              >
-                <h2
-                  key={currentPhase === "input" ? currentPhrase : currentTranslated}
-                  className="font-bold"
-                  style={{
-                    margin: 0,
-                    padding: 0,
-                    fontSize: isMobileInline ? '16px' : calculateFontSize(
-                      currentPhase === "input" ? currentPhrase : currentTranslated,
-                      fullScreen,
-                      romanizedOutput ? true : false
-                    ),
-                    ...(isMobileInline && {
-                      whiteSpace: 'nowrap',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      maxWidth: '85vw'
-                    })
-                  }}
-                >
-                  {currentPhase === "input"
-                    ? currentPhrase?.trim()
-                    : currentTranslated?.trim()}
-                </h2>
-                {currentPhase === "output" && romanizedOutput && !isMobileInline && (
-                  <h2
-                    key={currentPhase}
-                    className="font-bold mt-3"
-                    style={{
-                      fontSize: calculateFontSize(romanizedOutput, fullScreen, true)
-                    }}
-                  >
-                    {romanizedOutput}
-                  </h2>
+          if (has3PhraseStack) {
+            // Render 3-phrase stack for seamless swipe
+            return (
+              <>
+                {/* Previous phrase - offset left/top */}
+                {(previousPhrase || previousTranslated) && (
+                  <PhraseCard
+                    key="previous"
+                    phrase={previousPhrase || ""}
+                    translated={previousTranslated || ""}
+                    romanized={previousRomanized}
+                    offsetX={verticalScroll ? 0 : -windowWidth}
+                    offsetY={verticalScroll ? -windowHeight : 0}
+                    {...commonCardProps}
+                  />
                 )}
-              </motion.div>
-            )
-          )}
-        </AnimatePresence>
+
+                {/* Current phrase - at center */}
+                <PhraseCard
+                  key="current"
+                  phrase={currentPhrase}
+                  translated={currentTranslated}
+                  romanized={romanizedOutput}
+                  offsetX={0}
+                  offsetY={0}
+                  {...commonCardProps}
+                />
+
+                {/* Next phrase - offset right/bottom */}
+                {(nextPhrase || nextTranslated) && (
+                  <PhraseCard
+                    key="next"
+                    phrase={nextPhrase || ""}
+                    translated={nextTranslated || ""}
+                    romanized={nextRomanized}
+                    offsetX={verticalScroll ? 0 : windowWidth}
+                    offsetY={verticalScroll ? windowHeight : 0}
+                    {...commonCardProps}
+                  />
+                )}
+              </>
+            );
+          } else {
+            // Fallback to single phrase with AnimatePresence for enter/exit animations
+            return (
+              <AnimatePresence mode={'sync'}>
+                <PhraseCard
+                  key={`${currentPhase}-${currentPhrase || currentTranslated}`}
+                  phrase={currentPhrase}
+                  translated={currentTranslated}
+                  romanized={romanizedOutput}
+                  offsetX={0}
+                  offsetY={0}
+                  {...commonCardProps}
+                />
+              </AnimatePresence>
+            );
+          }
+        })()}
         {/* Progress Bar for Recall/Shadow */}
         <div
           className="absolute bottom-0 left-0 w-full h-1 overflow-hidden"
