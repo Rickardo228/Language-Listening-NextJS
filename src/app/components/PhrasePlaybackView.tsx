@@ -1342,9 +1342,9 @@ export function PhrasePlaybackView({
                                             // currentPhase === 'input'
                                             // Next is next phrase's output
                                             // When currentPhase is 'input', cards display 'phrase' prop
-                                            // If enableInputPlayback, skip output - next should be next phrase's input
+                                            // If enableInputPlayback, normal flow - next should be next phrase's output
                                             if (presentationConfig.enableInputPlayback) {
-                                                return phrases[currentPhraseIndex + 1]?.input || ' ';
+                                                return phrases[currentPhraseIndex + 1]?.translated || ' ';
                                             }
                                             // !enableInputPlayback: this case shouldn't happen (input phase skipped)
                                             return phrases[currentPhraseIndex + 1]?.translated || ' ';
@@ -1394,9 +1394,9 @@ export function PhrasePlaybackView({
                                         } else {
                                             // currentPhase === 'input'
                                             // Cards display 'phrase' prop
-                                            // If enableInputPlayback, skip output - next shows next phrase's input
+                                            // If enableInputPlayback, normal flow - next shows next phrase's output (in phrase prop since phase is input)
                                             if (presentationConfig.enableInputPlayback) {
-                                                return phrases[currentPhraseIndex + 1]?.input || ' ';
+                                                return phrases[currentPhraseIndex + 1]?.translated || ' ';
                                             }
                                             // !enableInputPlayback: this case shouldn't happen (input phase skipped)
                                             return phrases[currentPhraseIndex + 1]?.translated || ' ';
@@ -1483,9 +1483,9 @@ export function PhrasePlaybackView({
                                             // currentPhase === 'input'
                                             // Previous is same phrase's output
                                             // Cards display 'phrase' when currentPhase is 'input'
-                                            // If enableInputPlayback, skip output - previous should be prev phrase's input
+                                            // If enableInputPlayback, normal flow - previous should be current phrase's output
                                             if (presentationConfig.enableInputPlayback) {
-                                                return phrases[currentPhraseIndex - 1]?.input || ' ';
+                                                return phrases[currentPhraseIndex]?.translated || ' ';
                                             }
                                             // !enableInputPlayback: this case shouldn't happen (input phase skipped)
                                             return phrases[currentPhraseIndex - 1]?.translated || ' ';
@@ -1534,9 +1534,9 @@ export function PhrasePlaybackView({
                                         } else {
                                             // currentPhase === 'input'
                                             // Cards display 'phrase' prop
-                                            // If enableInputPlayback, skip output - previous shows prev phrase's input
+                                            // If enableInputPlayback, normal flow - previous shows current phrase's output (in phrase prop since phase is input)
                                             if (presentationConfig.enableInputPlayback) {
-                                                return phrases[currentPhraseIndex - 1]?.input || ' ';
+                                                return phrases[currentPhraseIndex]?.translated || ' ';
                                             }
                                             // !enableInputPlayback: this case shouldn't happen (input phase skipped)
                                             return phrases[currentPhraseIndex - 1]?.translated || ' ';
