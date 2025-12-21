@@ -62,6 +62,7 @@ interface PresentationViewProps {
   previousTranslated?: string;
   previousRomanized?: string;
   disableAnimation?: boolean; // New prop to disable all animations in PhraseCard
+  enableSwipe?: boolean; // New prop to enable swipe gestures
 }
 
 export const TITLE_ANIMATION_DURATION = 1000
@@ -508,6 +509,7 @@ export function PresentationView({
   previousTranslated,
   previousRomanized,
   disableAnimation = false,
+  enableSwipe = false,
 }: PresentationViewProps) {
   const [isHovering, setIsHovering] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -520,6 +522,7 @@ export function PresentationView({
   const [animationDirection, setAnimationDirection] = useState<'left' | 'right' | 'up' | 'down' | null>(null);
   const isSwipeTransitionRef = useRef(false); // Track if we're in a swipe transition
 
+  const resetDrag = showAllPhrases ? false : currentPhase
   // Reset drag position when currentPhrase changes
   useLayoutEffect(() => {
     dragY.set(0, false);
@@ -530,7 +533,7 @@ export function PresentationView({
     if (isSwipeTransitionRef.current) {
       isSwipeTransitionRef.current = false;
     }
-  }, [currentPhrase]);
+  }, [currentPhrase, resetDrag]);
 
   // Create portal container on mount
   useEffect(() => {
@@ -1171,7 +1174,7 @@ export function PresentationView({
           };
 
           // Determine if we should make this draggable
-          const shouldBeDraggable = isMobile && onPrevious && onNext;
+          const shouldBeDraggable = enableSwipe && isMobile && onPrevious && onNext;
           const dragProps = shouldBeDraggable ? {
             drag: verticalScroll ? "y" as const : "x" as const,
             dragConstraints: verticalScroll ? { top: 0, bottom: 0 } : { left: 0, right: 0 },
