@@ -37,7 +37,7 @@ const LEARNING_PATHS: ContentSection[] = [
     id: "wolf_beneath_the_stars",
     type: "path",
     pathId: "wolf_beneath_the_stars_path",
-    title: "Wolf Beneath the Stars",
+    title: "Wolfling Beneath the Stars",
     minAbilityLevel: "beginner",
     maxAbilityLevel: "intermediate", // Beginner level (adult content)
   },
@@ -54,6 +54,14 @@ const LEARNING_PATHS: ContentSection[] = [
     type: "path",
     pathId: "platform_in_the_snow_path",
     title: "Platform in the Snow",
+    minAbilityLevel: "intermediate",
+    maxAbilityLevel: "advanced", // Only intermediate and advanced
+  },
+  {
+    id: "salt_line",
+    type: "path",
+    pathId: "salt_line_path",
+    title: "Salt Line",
     minAbilityLevel: "intermediate",
     maxAbilityLevel: "advanced", // Only intermediate and advanced
   },
