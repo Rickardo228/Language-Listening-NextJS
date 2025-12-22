@@ -817,6 +817,24 @@ export function PresentationView({
               </button>
             )}
 
+            {/* Fullscreen Button - hidden on mobile fullscreen */}
+            {!fullScreen && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setFullscreen(true);
+                }}
+                className="p-2 bg-gray-200/80 dark:bg-gray-700/80 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 transition-all duration-200"
+                title="Enter Presentation Mode"
+                style={{
+                  opacity: isMobileInline ? 1 : (shouldShowNavigationButtons ? 1 : 0),
+                  transition: 'opacity 0.3s ease'
+                }}
+              >
+                <Maximize2 className="h-5 w-5 text-gray-700 dark:text-gray-300" />
+              </button>
+            )}
+
             {/* Fullscreen/Close Button - hidden on mobile inline and when not in fullscreen */}
             {!isMobileInline && fullScreen && (
               <button
@@ -994,6 +1012,24 @@ export function PresentationView({
               opacity: shouldShowNavigationButtons ? 1 : 0,
               transition: 'opacity 0.3s ease'
             }}
+          >
+            {paused ? (
+              <Play className="h-6 w-6 text-gray-700 dark:text-gray-300" fill="currentColor" />
+            ) : (
+              <Pause className="h-6 w-6 text-gray-700 dark:text-gray-300" />
+            )}
+          </button>
+        )}
+
+        {/* Pause/Play button for inline presentation - bottom center */}
+        {!fullScreen && onPause && onPlay && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              paused ? onPlay() : onPause();
+            }}
+            className="absolute bottom-4 left-4 p-3 bg-gray-200 dark:bg-gray-700 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 transition-all duration-200 z-10"
+            title={paused ? "Play" : "Pause"}
           >
             {paused ? (
               <Play className="h-6 w-6 text-gray-700 dark:text-gray-300" fill="currentColor" />

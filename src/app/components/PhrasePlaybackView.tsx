@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { PresentationView } from '../PresentationView';
-import { PresentationControls } from '../PresentationControls';
 import { EditablePhrases } from '../EditablePhrases';
+import { SettingsModal } from '../SettingsModal';
 import { Phrase, PresentationConfig } from '../types';
 import { generateAudio } from '../utils/audioUtils';
 import { BLEED_START_DELAY, DELAY_AFTER_INPUT_PHRASES_MULTIPLIER, DELAY_AFTER_OUTPUT_PHRASES_MULTIPLIER, } from '../consts';
@@ -1600,42 +1600,20 @@ export function PhrasePlaybackView({
                             })()}
                         />
 
-                        <PresentationControls
-                            recordScreen={false}
-                            stopScreenRecording={() => { }}
-                            handleReplay={handleReplay}
-                            hasPhrasesLoaded={phrases.length > 0}
-                            configName={configName}
-                            setConfigName={setConfigName}
-                            onSaveConfig={() => { }}
-                            presentationConfig={presentationConfig}
-                            setPresentationConfig={setPresentationConfig || (() => { })}
-                            handleImageUpload={handleImageUpload}
-                            paused={paused}
-                            onPause={handlePause}
-                            onPlay={handlePlay}
-                            onPrevious={() => atomicAdvance(-1)}
-                            onNext={() => atomicAdvance(+1)}
-                            canGoBack={
-                                presentationConfig.enableLoop ||
-                                currentPhraseIndex > 0 ||
-                                (!presentationConfig.showAllPhrases && presentationConfig.enableInputPlayback && !isRecallPhase(currentPhase))
-                            }
-                            canGoForward={
-                                presentationConfig.enableLoop ||
-                                currentPhraseIndex < phrases.length - 1 ||
-                                (!presentationConfig.showAllPhrases && presentationConfig.enableInputPlayback && isRecallPhase(currentPhase))
-                            }
-                            inputLang={phrases[0]?.inputLang}
-                            targetLang={phrases[0]?.targetLang}
-                            setFullscreen={setFullscreen}
-                            settingsOpen={settingsOpen}
-                            setSettingsOpen={setSettingsOpen}
-                        />
-
-
                     </div>
                 )}
             </div>
+            <SettingsModal
+                isOpen={settingsOpen}
+                onClose={() => setSettingsOpen(false)}
+                configName={configName}
+                setConfigName={setConfigName}
+                onSaveConfig={() => { }}
+                presentationConfig={presentationConfig}
+                setPresentationConfig={setPresentationConfig || (() => { })}
+                handleImageUpload={handleImageUpload}
+                inputLang={phrases[0]?.inputLang}
+                targetLang={phrases[0]?.targetLang}
+            />
         </div>);
 } 
