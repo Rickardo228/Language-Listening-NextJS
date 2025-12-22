@@ -305,9 +305,99 @@ export function AppLayout({ children }: AppLayoutProps) {
     );
   }
 
+  const sidebarOffsetClass = pathname !== '/templates' && !hideSidebar && user
+    ? (isCollapsed ? 'lg:pl-[60px]' : 'lg:pl-[460px]')
+    : '';
+
   return (
     <OnboardingGuard>
-      <div className="font-sans lg:h-[100vh] flex flex-col bg-background text-foreground">
+      {/* Saved Configs List - hide for certain routes */}
+      {pathname !== '/templates' && !hideSidebar && user && (
+        <div className={`fixed top-0 h-screen pt-[74px] z-20 group hidden lg:flex flex-col gap-10 bg-background lg:bg-secondary/50 p-5 ${isCollapsed ? 'lg:w-[60px] overflow-hidden' : 'lg:w-[460px] min-w-[300px]'} max-w-[100vw] overflow-visible lg:overflow-y-auto transition-all duration-300`}>
+
+          {!isCollapsed && (
+            <>
+
+              <CollectionList
+                savedCollections={savedCollections}
+                onLoadCollection={handleLoadCollection}
+                onRenameCollection={handleRenameCollection}
+                onDeleteCollection={handleDeleteCollection}
+                selectedCollection={currentCollectionId}
+                loading={collectionsLoading}
+                showAllButton={collectionsLimited}
+                actionButton={
+                  <ImportPhrases
+                    inputLang={newCollectionInputLang}
+                    setInputLang={setNewCollectionInputLang}
+                    targetLang={newCollectionTargetLang}
+                    setTargetLang={setNewCollectionTargetLang}
+                    phrasesInput={phrasesInput}
+                    setPhrasesInput={setPhrasesInput}
+                    loading={loading}
+                    onProcess={handleProcess}
+                  />
+                }
+                title={
+                  <div className="flex items-center">
+                    <button
+                      onClick={() => {
+                        track('Sidebar Collapsed');
+                        setIsCollapsed(true);
+                      }}
+                      className="hidden lg:block p-1 rounded-lg bg-secondary hover:bg-secondary/80 transition-all duration-200 opacity-0 group-hover:opacity-100 w-0 group-hover:w-6 overflow-hidden group-hover:mr-2"
+                      title="Collapse"
+                    >
+                      <ChevronRight
+                        className="w-4 h-4 transition-transform duration-200 min-w-4 rotate-180"
+                        strokeWidth={1.5}
+                      />
+                    </button>
+                    <span>Your Library</span>
+                  </div>
+                }
+                onShowAllClick={async () => {
+                  if (!user) return;
+                  track('Show All Collections Clicked');
+                  setCollectionsLoading(true);
+                  const colRef = collection(firestore, 'users', user.uid, 'collections');
+                  const q = query(colRef, orderBy('created_at', 'desc'));
+                  const snapshot = await getDocs(q);
+                  const loaded: Config[] = [];
+                  snapshot.forEach(docSnap => {
+                    const data = docSnap.data();
+                    const phrases = data.phrases.map((phrase: Phrase) => ({
+                      ...phrase,
+                      created_at: phrase.created_at || data.created_at
+                    }));
+                    loaded.push({ ...data, phrases, id: docSnap.id } as Config);
+                  });
+                  setSavedCollections(loaded);
+                  setCollectionsLimited(false);
+                  setCollectionsLoading(false);
+                }}
+              />
+            </>
+          )}
+
+          {isCollapsed && (
+            <div className="flex flex-col items-center pt-2 px-2">
+              <button
+                onClick={() => {
+                  track('Sidebar Expanded');
+                  setIsCollapsed(false);
+                }}
+                className="p-2 rounded-lg bg-secondary hover:bg-secondary/80 transition-colors"
+                title="Open Library"
+              >
+                <Library className="w-5 h-5" fill="currentColor" />
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      <div className="font-sans min-h-screen flex flex-col bg-background text-foreground">
         {/* Nav */}
         <div className="flex items-center justify-between shadow-md lg:mb-0 p-3 sticky top-0 bg-background border-b z-50">
           <div className="flex items-center gap-4">
@@ -356,92 +446,7 @@ export function AppLayout({ children }: AppLayoutProps) {
         </div>
 
         {/* Main content */}
-        <div className={`flex lg:flex-row flex-col-reverse w-full lg:h-[92vh] ${hideSidebar ? '' : ''}`}>
-          {/* Saved Configs List - hide for certain routes */}
-          {pathname !== '/templates' && !hideSidebar && user && (
-            <div className={`group hidden lg:flex flex-col gap-10 bg-background lg:bg-secondary/50 p-5 ${isCollapsed ? 'lg:w-[60px] overflow-hidden' : 'lg:w-[460px] min-w-[300px]'} max-w-[100vw] h-[100%] overflow-visible lg:overflow-y-auto mb-[80px] relative transition-all duration-300`}>
-
-              {!isCollapsed && (
-                <>
-
-                  <CollectionList
-                    savedCollections={savedCollections}
-                    onLoadCollection={handleLoadCollection}
-                    onRenameCollection={handleRenameCollection}
-                    onDeleteCollection={handleDeleteCollection}
-                    selectedCollection={currentCollectionId}
-                    loading={collectionsLoading}
-                    showAllButton={collectionsLimited}
-                    actionButton={
-                      <ImportPhrases
-                        inputLang={newCollectionInputLang}
-                        setInputLang={setNewCollectionInputLang}
-                        targetLang={newCollectionTargetLang}
-                        setTargetLang={setNewCollectionTargetLang}
-                        phrasesInput={phrasesInput}
-                        setPhrasesInput={setPhrasesInput}
-                        loading={loading}
-                        onProcess={handleProcess}
-                      />
-                    }
-                    title={
-                      <div className="flex items-center">
-                        <button
-                          onClick={() => {
-                            track('Sidebar Collapsed');
-                            setIsCollapsed(true);
-                          }}
-                          className="hidden lg:block p-1 rounded-lg bg-secondary hover:bg-secondary/80 transition-all duration-200 opacity-0 group-hover:opacity-100 w-0 group-hover:w-6 overflow-hidden group-hover:mr-2"
-                          title="Collapse"
-                        >
-                          <ChevronRight
-                            className="w-4 h-4 transition-transform duration-200 min-w-4 rotate-180"
-                            strokeWidth={1.5}
-                          />
-                        </button>
-                        <span>Your Library</span>
-                      </div>
-                    }
-                    onShowAllClick={async () => {
-                      if (!user) return;
-                      track('Show All Collections Clicked');
-                      setCollectionsLoading(true);
-                      const colRef = collection(firestore, 'users', user.uid, 'collections');
-                      const q = query(colRef, orderBy('created_at', 'desc'));
-                      const snapshot = await getDocs(q);
-                      const loaded: Config[] = [];
-                      snapshot.forEach(docSnap => {
-                        const data = docSnap.data();
-                        const phrases = data.phrases.map((phrase: Phrase) => ({
-                          ...phrase,
-                          created_at: phrase.created_at || data.created_at
-                        }));
-                        loaded.push({ ...data, phrases, id: docSnap.id } as Config);
-                      });
-                      setSavedCollections(loaded);
-                      setCollectionsLimited(false);
-                      setCollectionsLoading(false);
-                    }}
-                  />
-                </>
-              )}
-
-              {isCollapsed && (
-                <div className="flex flex-col items-center pt-2 px-2">
-                  <button
-                    onClick={() => {
-                      track('Sidebar Expanded');
-                      setIsCollapsed(false);
-                    }}
-                    className="p-2 rounded-lg bg-secondary hover:bg-secondary/80 transition-colors"
-                    title="Open Library"
-                  >
-                    <Library className="w-5 h-5" fill="currentColor" />
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
+        <div className={`flex flex-col-reverse w-full ${sidebarOffsetClass}`}>
 
           {/* Main Content Area */}
           <div className={`flex-1 ${!shouldHideBottomNav(pathname) && user ? 'pb-20 lg:pb-0' : ''}`}>

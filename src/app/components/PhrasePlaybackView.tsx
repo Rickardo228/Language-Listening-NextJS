@@ -1176,7 +1176,7 @@ export function PhrasePlaybackView({
     };
 
     return (
-        <div className="flex-1 lg:overflow-y-auto lg:relative">
+        <div className="flex-1">
             {/* All Stats Popups (unified portal) */}
             {StatsPopups}
 
@@ -1200,11 +1200,11 @@ export function PhrasePlaybackView({
             />
 
             {/* Main content */}
-            <div className="flex lg:flex-row flex-col-reverse w-full lg:h-[92vh]">
+            <div className="flex flex-col-reverse lg:flex-col w-full lg:px-2">
                 {/* Phrases List */}
-                <div className="flex-1 lg:overflow-y-auto lg:relative lg:order-2">
+                <div className="flex-1 lg:relative lg:order-2">
                     {showImportPhrases && collectionId && stickyHeaderContent && (
-                        <div className={`sticky lg:px-0 lg:pb-3 px-1 py-2 top-[320px] lg:top-[0px] lg:bg-background bg-gray-50 dark:bg-gray-900 z-1`}>
+                        <div className={`sticky lg:pb-3 px-0 py-2 top-[60px] z-10 bg-background`}>
                             {stickyHeaderContent}
                         </div>
                     )}
@@ -1259,7 +1259,7 @@ export function PhrasePlaybackView({
 
                 {/* Presentation View and Controls */}
                 {Boolean(typeof currentPhraseIndex === "number" && phrases?.length) && (
-                    <div className="xl:flex-1 sticky top-[61px] lg:top-[64px] bg-background lg:p-2 z-1 lg:order-1">
+                    <div className="xl:flex-1 lg:top-[64px] bg-background lg:p-2 z-1 lg:order-1">
                         <PresentationView
                             currentPhrase={phrases[currentPhraseIndex]?.input || ''}
                             currentTranslated={phrases[currentPhraseIndex]?.translated || ''}
@@ -1599,40 +1599,41 @@ export function PhrasePlaybackView({
                                 }
                             })()}
                         />
-                        <div className="py-1 px-1 lg:py-2">
-                            <PresentationControls
-                                recordScreen={false}
-                                stopScreenRecording={() => { }}
-                                handleReplay={handleReplay}
-                                hasPhrasesLoaded={phrases.length > 0}
-                                configName={configName}
-                                setConfigName={setConfigName}
-                                onSaveConfig={() => { }}
-                                presentationConfig={presentationConfig}
-                                setPresentationConfig={setPresentationConfig || (() => { })}
-                                handleImageUpload={handleImageUpload}
-                                paused={paused}
-                                onPause={handlePause}
-                                onPlay={handlePlay}
-                                onPrevious={() => atomicAdvance(-1)}
-                                onNext={() => atomicAdvance(+1)}
-                                canGoBack={
-                                    presentationConfig.enableLoop ||
-                                    currentPhraseIndex > 0 ||
-                                    (!presentationConfig.showAllPhrases && presentationConfig.enableInputPlayback && !isRecallPhase(currentPhase))
-                                }
-                                canGoForward={
-                                    presentationConfig.enableLoop ||
-                                    currentPhraseIndex < phrases.length - 1 ||
-                                    (!presentationConfig.showAllPhrases && presentationConfig.enableInputPlayback && isRecallPhase(currentPhase))
-                                }
-                                inputLang={phrases[0]?.inputLang}
-                                targetLang={phrases[0]?.targetLang}
-                                setFullscreen={setFullscreen}
-                                settingsOpen={settingsOpen}
-                                setSettingsOpen={setSettingsOpen}
-                            />
-                        </div>
+
+                        <PresentationControls
+                            recordScreen={false}
+                            stopScreenRecording={() => { }}
+                            handleReplay={handleReplay}
+                            hasPhrasesLoaded={phrases.length > 0}
+                            configName={configName}
+                            setConfigName={setConfigName}
+                            onSaveConfig={() => { }}
+                            presentationConfig={presentationConfig}
+                            setPresentationConfig={setPresentationConfig || (() => { })}
+                            handleImageUpload={handleImageUpload}
+                            paused={paused}
+                            onPause={handlePause}
+                            onPlay={handlePlay}
+                            onPrevious={() => atomicAdvance(-1)}
+                            onNext={() => atomicAdvance(+1)}
+                            canGoBack={
+                                presentationConfig.enableLoop ||
+                                currentPhraseIndex > 0 ||
+                                (!presentationConfig.showAllPhrases && presentationConfig.enableInputPlayback && !isRecallPhase(currentPhase))
+                            }
+                            canGoForward={
+                                presentationConfig.enableLoop ||
+                                currentPhraseIndex < phrases.length - 1 ||
+                                (!presentationConfig.showAllPhrases && presentationConfig.enableInputPlayback && isRecallPhase(currentPhase))
+                            }
+                            inputLang={phrases[0]?.inputLang}
+                            targetLang={phrases[0]?.targetLang}
+                            setFullscreen={setFullscreen}
+                            settingsOpen={settingsOpen}
+                            setSettingsOpen={setSettingsOpen}
+                        />
+
+
                     </div>
                 )}
             </div>
