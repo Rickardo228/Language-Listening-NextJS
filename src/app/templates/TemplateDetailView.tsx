@@ -58,6 +58,7 @@ interface TemplateDetailViewProps {
     initialInputLang?: string;
     initialTargetLang?: string;
     autoplay?: boolean;
+    readOnly?: boolean;
 }
 
 // Helper function to get language label from code using Intl.DisplayNames
@@ -151,6 +152,7 @@ export default function TemplateDetailView({
     initialInputLang = 'en-GB',
     initialTargetLang = 'it-IT',
     autoplay = false,
+    readOnly = false,
 }: TemplateDetailViewProps) {
     const router = useRouter();
     const { user, isAuthLoading, isAdmin } = useUser();
@@ -580,6 +582,7 @@ export default function TemplateDetailView({
                     collectionName={`${templateData?.name || groupId} (${selectedInputLang} → ${selectedTargetLang})`}
                     setPhrases={async (phrases: Phrase[]) => setPhrases(phrases)}
                     initialFullscreen={isMobile}
+                    readOnly={readOnly}
                     setPresentationConfig={async (config: Partial<PresentationConfig>) => {
                         const newConfig = { ...presentationConfig, ...config };
                         setPresentationConfig(newConfig);

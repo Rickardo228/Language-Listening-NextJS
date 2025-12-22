@@ -1,4 +1,4 @@
-import { ROUTES } from '../routes';
+import { ROUTES } from "../routes";
 
 export type TemplateUrlOptions = {
   groupId: string;
@@ -13,6 +13,11 @@ export const buildTemplateUrl = ({
   targetLang,
   autoplay = false,
 }: TemplateUrlOptions): string => {
-  const base = `${ROUTES.TEMPLATE_PUBLIC}/${encodeURIComponent(groupId)}/${encodeURIComponent(inputLang)}/${encodeURIComponent(targetLang)}`;
-  return autoplay ? `${base}?autoplay=1` : base;
+  const base = `${ROUTES.TEMPLATE_PUBLIC}/${encodeURIComponent(
+    groupId
+  )}/${encodeURIComponent(inputLang)}/${encodeURIComponent(targetLang)}`;
+  const params = new URLSearchParams();
+  if (autoplay) params.set("autoplay", "1");
+  const query = params.toString();
+  return query ? `${base}?${query}` : base;
 };

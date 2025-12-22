@@ -13,6 +13,7 @@ import { trackSelectList, trackCreatePhrase, track } from '../../lib/mixpanelCli
 import { createCollection } from '../utils/collectionService';
 import { defaultPresentationConfig, defaultPresentationConfigs } from '../defaultConfig';
 import { toast } from 'sonner';
+import { resetMainScroll } from '../utils/scroll';
 
 const firestore = getFirestore();
 
@@ -200,6 +201,7 @@ export default function LibraryPage() {
       }
 
       // Navigate to the collection route
+      resetMainScroll();
       router.push(`/collection/${config.id}`);
 
     } catch (err) {

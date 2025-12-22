@@ -49,6 +49,7 @@ interface PhrasePlaybackViewProps {
     pathIndex?: number; // Position in the learning path
     onNavigateToNextInPath?: () => void; // Callback to navigate to next item in path
     initialFullscreen?: boolean; // Start in fullscreen mode
+    readOnly?: boolean;
 }
 
 export function PhrasePlaybackView({
@@ -69,6 +70,7 @@ export function PhrasePlaybackView({
     pathIndex,
     onNavigateToNextInPath,
     initialFullscreen = false,
+    readOnly = false,
 }: PhrasePlaybackViewProps) {
     const { user } = useUser();
     const { updateUserStats, StatsPopups, StatsModal, showStatsUpdate, incrementViewedAndCheckMilestone, initializeViewedCounter, phrasesViewed } = useUpdateUserStats();
@@ -1219,6 +1221,7 @@ export function PhrasePlaybackView({
                                 outputLanguage={phrases[0]?.targetLang}
                                 currentPhraseIndex={currentPhraseIndex}
                                 currentPhase={currentPhase}
+                                readOnly={readOnly}
                                 onPhraseClick={(index) => {
                                     setCurrentPhraseIndexWithMetadata(index);
                                     clearAllTimeouts();

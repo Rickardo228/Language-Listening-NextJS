@@ -11,6 +11,7 @@ import { useUser } from '../contexts/UserContext';
 import { track } from '../../lib/mixpanelClient';
 import { loadProgress } from '../utils/progressService';
 import { buildTemplateUrl } from '../utils/templateRoutes';
+import { resetMainScroll } from '../utils/scroll';
 
 const firestore = getFirestore();
 
@@ -481,6 +482,7 @@ export function TemplatesBrowser({
                                         inputLang,
                                         targetLang
                                     });
+                                    resetMainScroll();
                                     router.push(buildTemplateUrl({
                                         groupId: c.id,
                                         inputLang,
@@ -500,6 +502,7 @@ export function TemplatesBrowser({
                                         inputLang,
                                         targetLang
                                     });
+                                    resetMainScroll();
                                     router.push(buildTemplateUrl({
                                         groupId: c.id,
                                         inputLang,

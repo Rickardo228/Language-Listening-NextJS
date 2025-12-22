@@ -18,6 +18,7 @@ export default function PublicTemplatePage() {
             initialInputLang={decodedInputLang}
             initialTargetLang={decodedTargetLang}
             autoplay={shouldAutoplay}
+            readOnly={true}
         />
     );
 }

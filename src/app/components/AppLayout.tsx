@@ -22,6 +22,7 @@ import { SignInPage } from '../SignInPage';
 import { OnboardingGuard } from './OnboardingGuard';
 import { BottomNavigation } from './BottomNavigation';
 import { shouldHideSidebar, shouldHideBottomNav, getCollectionIdFromPath, ROUTES } from '../routes';
+import { resetMainScroll } from '../utils/scroll';
 
 
 const firestore = getFirestore();
@@ -227,6 +228,7 @@ export function AppLayout({ children }: AppLayoutProps) {
       }
 
       // Navigate to the collection route
+      resetMainScroll();
       router.push(`/collection/${config.id}`);
 
     } catch (err) {
