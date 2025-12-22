@@ -878,23 +878,6 @@ export function PresentationView({
                     <ArrowLeft className="h-6 w-6 text-gray-700 dark:text-gray-300" />
                   </button>
                 )}
-                {/* Pause/Play button for mobile fullscreen */}
-                {onPause && onPlay && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      paused ? onPlay() : onPause();
-                    }}
-                    className="p-3 bg-gray-200 dark:bg-gray-700 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 transition-all duration-200"
-                    title={paused ? "Play" : "Pause"}
-                  >
-                    {paused ? (
-                      <Play className="h-6 w-6 text-gray-700 dark:text-gray-300" fill="currentColor" />
-                    ) : (
-                      <Pause className="h-6 w-6 text-gray-700 dark:text-gray-300" />
-                    )}
-                  </button>
-                )}
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
@@ -999,14 +982,14 @@ export function PresentationView({
           </>
         )}
 
-        {/* Pause/Play button for desktop fullscreen - bottom center */}
-        {fullScreen && !isMobile && !verticalScroll && onPause && onPlay && (
+        {/* Pause/Play button for fullscreen - bottom left */}
+        {fullScreen && !verticalScroll && onPause && onPlay && (
           <button
             onClick={(e) => {
               e.stopPropagation();
               paused ? onPlay() : onPause();
             }}
-            className="absolute bottom-8 left-1/2 transform -translate-x-1/2 p-3 bg-gray-200 dark:bg-gray-700 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 transition-all duration-200 z-10"
+            className="absolute bottom-8 left-8 p-3 bg-gray-200 dark:bg-gray-700 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 transition-all duration-200 z-10"
             title={paused ? "Play" : "Pause"}
             style={{
               opacity: shouldShowNavigationButtons ? 1 : 0,
