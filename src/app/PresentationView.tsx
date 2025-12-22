@@ -213,7 +213,7 @@ function PhraseCard({
 
     return (
       <motion.div
-        className={`text-left ${isMobileInline ? 'px-4' : 'px-12'} ${alignPhraseTop ? 'pb-4' : ''} absolute flex bg-opacity-90 flex-col ${textColorClass}`}
+        className={`text-left ${isMobileInline ? 'px-4' : 'px-12'} ${alignPhraseTop ? 'pb-4' : ''} absolute flex bg-opacity-90 flex-col ${textColorClass} group`}
         style={{
           alignItems: "flex-start",
           justifyContent: "center",
@@ -263,13 +263,12 @@ function PhraseCard({
               }}
             >
               <h2
-                className="font-bold mb-2"
+                className={`font-bold mb-2 transition-opacity duration-300 ${phase !== "input" ? "opacity-60 hover:opacity-50" : "opacity-100 hover:opacity-90"}`}
                 style={{
                   margin: 0,
                   padding: 0,
                   marginBottom: isMobileInline && !enableOutputBeforeInput ? '12px' : undefined,
                   fontSize: isMobileInline ? '16px' : (enableOutputBeforeInput ? commonFontSize : inputFontSize),
-                  opacity: phase !== "input" ? 0.6 : 1,
                   transform: isPlayingAudio && phase === "input" ? "scale(1.02)" : "scale(1)",
                   filter: isPlayingAudio && phase === "input" ? "drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3))" : "none",
                   transition: "opacity 0.3s ease, transform 0.3s ease, filter 0.3s ease",
@@ -311,13 +310,12 @@ function PhraseCard({
               }}
             >
               <h2
-                className="font-bold"
+                className={`font-bold transition-opacity duration-300 ${phase !== "output" ? "opacity-60 hover:opacity-50" : "opacity-100 hover:opacity-90"}`}
                 style={{
                   margin: 0,
                   padding: 0,
                   marginBottom: isMobileInline && enableOutputBeforeInput ? '12px' : undefined,
                   fontSize: isMobileInline ? '16px' : (enableOutputBeforeInput ? inputFontSize : commonFontSize),
-                  opacity: phase !== "output" ? 0.6 : 1,
                   transform: isPlayingAudio && phase === "output" ? "scale(1.02)" : "scale(1)",
                   filter: isPlayingAudio && phase === "output" ? "drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3))" : "none",
                   transition: "opacity 0.3s ease, transform 0.3s ease, filter 0.3s ease",
@@ -333,12 +331,11 @@ function PhraseCard({
               </h2>
               {romanized && !isMobileInline && (
                 <h2
-                  className="font-bold mt-3"
+                  className={`font-bold mt-3 transition-opacity duration-300 ${phase !== "output" ? "opacity-60 hover:opacity-50" : "opacity-100 hover:opacity-90"}`}
                   style={{
                     margin: 0,
                     padding: 0,
                     fontSize: enableOutputBeforeInput ? inputFontSize : commonFontSize,
-                    opacity: phase !== "output" ? 0.6 : 1,
                     transform: isPlayingAudio && phase === "output" ? "scale(1.02)" : "scale(1)",
                     filter: isPlayingAudio && phase === "output" ? "drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3))" : "none",
                     transition: "opacity 0.3s ease, transform 0.3s ease, filter 0.3s ease"
@@ -423,7 +420,7 @@ function PhraseCard({
     >
       <h2
         key={phase === "input" ? phrase : translated}
-        className="font-bold"
+        className="font-bold transition-opacity duration-300 opacity-100 hover:opacity-90"
         style={{
           margin: 0,
           padding: 0,
@@ -447,7 +444,7 @@ function PhraseCard({
       {phase === "output" && romanized && !isMobileInline && (
         <h2
           key={phase}
-          className="font-bold mt-3"
+          className="font-bold mt-3 transition-opacity duration-300 opacity-100 hover:opacity-90"
           style={{
             fontSize: calculateFontSize(romanized, fullScreen, true)
           }}
@@ -635,7 +632,7 @@ export function PresentationView({
       `}</style>
       <motion.div
         ref={containerRef}
-        className={`${containerClass} ${isMobile ? "" : (isHovering ? "" : "cursor-none")}`}
+        className={`${containerClass} cursor-pointer`}
         style={containerStyle}
         onClick={(e) => {
           if (!isDragging) {
