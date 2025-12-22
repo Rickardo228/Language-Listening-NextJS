@@ -14,6 +14,7 @@ import { presentationConfigDefinition } from '../configDefinitions';
 import { Select } from '../components/ui';
 import { Share2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { buildTemplateUrl } from '../utils/templateRoutes';
 
 const firestore = getFirestore();
 
@@ -482,9 +483,12 @@ export default function TemplateDetailView({
                 const nextTemplateData = nextTemplateDoc.data() as Template;
 
                 // Navigate to the next template, preserving language preferences and enabling autoplay
-                router.push(
-                    `/templates/${nextTemplateData.groupId}?inputLang=${selectedInputLang}&targetLang=${selectedTargetLang}&autoplay=1`
-                );
+                router.push(buildTemplateUrl({
+                    groupId: nextTemplateData.groupId,
+                    inputLang: selectedInputLang,
+                    targetLang: selectedTargetLang,
+                    autoplay: true,
+                }));
             } else {
                 // End of path - no next template found
                 console.log('Reached end of learning path');
@@ -498,7 +502,11 @@ export default function TemplateDetailView({
     const handleCopyShareLink = async () => {
         if (!groupId) return;
 
-        const shareUrl = `${window.location.origin}/t/${encodeURIComponent(groupId)}/${encodeURIComponent(selectedInputLang)}/${encodeURIComponent(selectedTargetLang)}`;
+        const shareUrl = `${window.location.origin}${buildTemplateUrl({
+            groupId,
+            inputLang: selectedInputLang,
+            targetLang: selectedTargetLang,
+        })}`;
         try {
             await navigator.clipboard.writeText(shareUrl);
             toast.success('Share link copied to clipboard!');

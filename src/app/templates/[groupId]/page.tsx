@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
-import TemplateDetailView from '@/app/templates/TemplateDetailView';
+import { buildTemplateUrl } from '@/app/utils/templateRoutes';
 
 export default function TemplateDetailPage() {
     const { groupId: rawGroupId } = useParams();
@@ -15,21 +15,21 @@ export default function TemplateDetailPage() {
     const initialTargetLang = searchParams.get('targetLang') || 'it-IT';
     const shouldAutoplay = searchParams.get('autoplay') === '1' || searchParams.get('autoplay') === 'true';
 
-    // Clear autoplay parameter from URL after it's been read
+    // Redirect legacy query-param route to canonical path
     useEffect(() => {
-        if (!shouldAutoplay) return;
-        const params = new URLSearchParams(searchParams.toString());
-        params.delete('autoplay');
-        const newUrl = params.toString() ? `?${params.toString()}` : window.location.pathname;
-        router.replace(newUrl, { scroll: false });
-    }, [shouldAutoplay, searchParams, router]);
+        if (!groupId) return;
+        const canonicalUrl = buildTemplateUrl({
+            groupId,
+            inputLang: initialInputLang,
+            targetLang: initialTargetLang,
+            autoplay: shouldAutoplay,
+        });
+        router.replace(canonicalUrl, { scroll: false });
+    }, [groupId, initialInputLang, initialTargetLang, shouldAutoplay, router]);
 
     return (
-        <TemplateDetailView
-            groupId={groupId}
-            initialInputLang={initialInputLang}
-            initialTargetLang={initialTargetLang}
-            autoplay={shouldAutoplay}
-        />
+        <div className="flex items-center justify-center min-h-screen bg-background">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+        </div>
     );
 }

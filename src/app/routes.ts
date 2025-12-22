@@ -5,6 +5,7 @@
 export const ROUTES = {
   HOME: '/',
   TEMPLATES: '/templates',
+  TEMPLATE_PUBLIC: '/t',
   LIBRARY: '/library',
   SHARE: '/share',
   PRIVACY: '/privacy',
@@ -29,7 +30,9 @@ export function isTemplatesPage(pathname: string | null): boolean {
  * Check if the current path is a specific template detail page
  */
 export function isTemplateDetailPage(pathname: string | null): boolean {
-  return !!pathname && pathname.startsWith('/templates/') && pathname !== ROUTES.TEMPLATES;
+  if (!pathname) return false;
+  if (pathname.startsWith(`${ROUTES.TEMPLATE_PUBLIC}/`)) return true;
+  return pathname.startsWith('/templates/') && pathname !== ROUTES.TEMPLATES;
 }
 
 /**
