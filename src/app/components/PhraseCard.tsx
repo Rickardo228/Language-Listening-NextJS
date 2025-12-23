@@ -562,6 +562,10 @@ export function PhraseCard({
       audioRef.current.pause();
       audioRef.current = null;
     }
+    if (typeof document !== "undefined" && document.activeElement instanceof HTMLElement) {
+      // Prevent iOS Safari from carrying focus styles onto the next phrase.
+      document.activeElement.blur();
+    }
   };
 
   useEffect(() => {
@@ -572,6 +576,7 @@ export function PhraseCard({
   useEffect(() => {
     if (typeof window === "undefined") return;
     window.dispatchEvent(
+      // Notify the PresentationView that the tooltip is open or closed. Prevents progressing phrase of entering fullscreen mode.
       new CustomEvent("word-tooltip", { detail: { open: Boolean(openTokenId) } })
     );
   }, [openTokenId]);
