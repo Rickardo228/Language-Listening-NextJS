@@ -86,6 +86,7 @@ type ActiveWord = {
 type TooltipCacheEntry = {
   translation?: string;
   audioUrl?: string;
+  audioPromise?: Promise<{ audioUrl: string; duration: number }>;
   context?: string;
 };
 
@@ -181,6 +182,24 @@ function WordTooltipPanel({ payload, cacheRef, audioRef, autoPlayOnOpen }: WordT
     error: null,
   }));
   const requestIdRef = useRef(0);
+  const audioRequestIdRef = useRef(0);
+  const isMountedRef = useRef(true);
+  const isOpenRef = useRef(autoPlayOnOpen);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    isOpenRef.current = autoPlayOnOpen;
+    if (!autoPlayOnOpen) {
+      // Invalidate any in-flight audio request when the tooltip closes.
+      audioRequestIdRef.current += 1;
+    }
+  }, [autoPlayOnOpen]);
 
   useEffect(() => {
     if (cached?.translation) return;
@@ -254,42 +273,74 @@ function WordTooltipPanel({ payload, cacheRef, audioRef, autoPlayOnOpen }: WordT
   const handlePlayAudio = async () => {
     if (tooltipState.audioLoading) return;
 
-    if (tooltipState.audioUrl) {
-      playAudioUrl(tooltipState.audioUrl);
+    const requestId = ++audioRequestIdRef.current;
+    const cachedEntry = cacheRef.current.get(cacheKey);
+    const cachedTranslation = cachedEntry?.translation || tooltipState.translation;
+
+    if (cachedEntry?.audioUrl || tooltipState.audioUrl) {
+      const url = cachedEntry?.audioUrl || tooltipState.audioUrl;
+      if (isOpenRef.current && isMountedRef.current) {
+        playAudioUrl(url);
+      }
       return;
     }
 
     setTooltipState((prev) => ({ ...prev, audioLoading: true }));
-
-    try {
-      const audio = await generateAudio(
+    let audioPromise = cachedEntry?.audioPromise;
+    if (!audioPromise) {
+      // Reuse a shared promise to avoid duplicate audio fetches on rapid remounts.
+      audioPromise = generateAudio(
         payload.lookupWord,
         payload.sourceLang,
         payload.voice || ""
       );
-
-      const cachedEntry = cacheRef.current.get(cacheKey);
-      const cachedTranslation = cachedEntry?.translation || tooltipState.translation;
       cacheRef.current.set(cacheKey, {
         ...cachedEntry,
         translation: cachedTranslation,
-        audioUrl: audio.audioUrl,
+        audioPromise,
       });
+    }
 
-      setTooltipState((prev) => ({
-        ...prev,
+    try {
+      const audio = await audioPromise;
+
+      const latestCachedEntry = cacheRef.current.get(cacheKey);
+      cacheRef.current.set(cacheKey, {
+        ...latestCachedEntry,
         translation: cachedTranslation,
         audioUrl: audio.audioUrl,
-        audioLoading: false,
-      }));
+        audioPromise: undefined,
+      });
 
-      playAudioUrl(audio.audioUrl);
+      if (isMountedRef.current) {
+        setTooltipState((prev) => ({
+          ...prev,
+          translation: cachedTranslation,
+          audioUrl: audio.audioUrl,
+          audioLoading: false,
+        }));
+      }
+
+      if (
+        audioRequestIdRef.current === requestId &&
+        isOpenRef.current &&
+        isMountedRef.current
+      ) {
+        playAudioUrl(audio.audioUrl);
+      }
     } catch (error) {
-      setTooltipState((prev) => ({
-        ...prev,
-        audioLoading: false,
-        error: "Audio failed to load.",
-      }));
+      const latestCachedEntry = cacheRef.current.get(cacheKey);
+      cacheRef.current.set(cacheKey, {
+        ...latestCachedEntry,
+        audioPromise: undefined,
+      });
+      if (isMountedRef.current) {
+        setTooltipState((prev) => ({
+          ...prev,
+          audioLoading: false,
+          error: "Audio failed to load.",
+        }));
+      }
     }
   };
 
@@ -297,7 +348,7 @@ function WordTooltipPanel({ payload, cacheRef, audioRef, autoPlayOnOpen }: WordT
     if (!autoPlayOnOpen) return;
     handlePlayAudio();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [autoPlayOnOpen]);
 
   const handleContextRequest = async () => {
     if (tooltipState.contextLoading) return;
