@@ -403,12 +403,6 @@ function WordTokenContent({
       >
         {payload.word}
       </Popover.Button>
-      {open && (
-        <Popover.Backdrop
-          className="fixed inset-0 z-[150] bg-transparent"
-          onClick={(event) => event.stopPropagation()}
-        />
-      )}
       <Transition
         show={open}
         enter="transition duration-150 ease-out"
