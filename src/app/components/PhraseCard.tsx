@@ -130,7 +130,7 @@ function tokenizePhrase(text: string, locale?: string): PhraseToken[] {
     const segmenter = new Intl.Segmenter(locale, { granularity: "word" });
     const tokens = Array.from(segmenter.segment(text), (segment) => ({
       value: segment.segment,
-      isWordLike: segment.isWordLike,
+      isWordLike: Boolean(segment.isWordLike),
     }));
     return mergeTrailingPunctuation(tokens);
   }
