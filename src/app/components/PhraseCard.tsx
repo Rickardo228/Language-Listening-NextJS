@@ -98,9 +98,29 @@ type TooltipState = {
   error: string | null;
 };
 
-function tokenizePhrase(text: string): string[] {
+type PhraseToken = {
+  value: string;
+  isWordLike: boolean;
+};
+
+function tokenizePhrase(text: string, locale?: string): PhraseToken[] {
+  if (typeof Intl !== "undefined" && typeof Intl.Segmenter !== "undefined") {
+    const segmenter = new Intl.Segmenter(locale, { granularity: "word" });
+    return Array.from(segmenter.segment(text), (segment) => ({
+      value: segment.segment,
+      isWordLike: segment.isWordLike,
+    }));
+  }
+
   const matches = text.match(/\s+|\p{L}[\p{L}\p{M}\p{Nd}'-]*|[^\s]/gu);
-  return matches ? matches : [text];
+  if (!matches) {
+    return [{ value: text, isWordLike: isWordToken(text) }];
+  }
+
+  return matches.map((value) => ({
+    value,
+    isWordLike: isWordToken(value),
+  }));
 }
 
 function isWordToken(token: string): boolean {
@@ -547,15 +567,15 @@ export function PhraseCard({
     // If tooltips are disabled, return the text without the tooltips
     if (!enableTooltips) return text.trim();
 
-    const tokens = tokenizePhrase(text);
+    const tokens = tokenizePhrase(text, sourceLang);
 
-    return tokens.map((token, index) => {
-      if (!token) return null;
-      if (/^\s+$/.test(token)) return token;
+    return tokens.map(({ value, isWordLike }, index) => {
+      if (!value) return null;
+      if (/^\s+$/.test(value)) return value;
 
-      if (!isWordToken(token)) {
+      if (!isWordLike) {
         return (
-          <span key={`${sentence}-punct-${index}`}>{token}</span>
+          <span key={`${sentence}-punct-${index}`}>{value}</span>
         );
       }
 
@@ -564,7 +584,7 @@ export function PhraseCard({
       return (
         <WordToken
           key={tokenId}
-          token={token}
+          token={value}
           tokenId={tokenId}
           sentence={sentence}
           sourceLang={sourceLang}
