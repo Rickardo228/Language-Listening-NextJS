@@ -497,7 +497,7 @@ function WordTokenContent({
     <>
       <Popover.Button
         type="button"
-        className="inline-flex items-baseline rounded-sm px-0 transition-opacity duration-150 hover:opacity-70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/60"
+        className={`inline-flex items-baseline rounded-sm px-0 transition-opacity duration-150 [@media(hover:hover)]:hover:opacity-70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/60 ${open ? "opacity-70" : ""}`}
         onClick={handleButtonClick}
       >
         {payload.displayWord}
@@ -612,10 +612,6 @@ export function PhraseCard({
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current = null;
-    }
-    if (typeof document !== "undefined" && document.activeElement instanceof HTMLElement) {
-      // Prevent iOS Safari from carrying focus styles onto the next phrase.
-      document.activeElement.blur();
     }
   };
 
