@@ -202,7 +202,17 @@ function WordTooltipPanel({ payload, cacheRef, audioRef, autoPlayOnOpen }: WordT
   }, [autoPlayOnOpen]);
 
   useEffect(() => {
-    if (cached?.translation) return;
+    // Avoid re-triggering translation fetches from unrelated cache updates (e.g., audio).
+    const cachedEntry = cacheRef.current.get(cacheKey);
+    if (cachedEntry?.translation) {
+      setTooltipState((prev) => ({
+        ...prev,
+        translation: cachedEntry.translation || prev.translation,
+        translationLoading: false,
+      }));
+      return;
+    }
+
     let isActive = true;
     const requestId = ++requestIdRef.current;
 
@@ -232,8 +242,9 @@ function WordTooltipPanel({ payload, cacheRef, audioRef, autoPlayOnOpen }: WordT
 
         if (!isActive || requestId !== requestIdRef.current) return;
 
+        const latestCachedEntry = cacheRef.current.get(cacheKey);
         cacheRef.current.set(cacheKey, {
-          ...cached,
+          ...latestCachedEntry,
           translation: translationText,
         });
 
@@ -257,7 +268,7 @@ function WordTooltipPanel({ payload, cacheRef, audioRef, autoPlayOnOpen }: WordT
     return () => {
       isActive = false;
     };
-  }, [cacheKey, cached, payload.targetLang, payload.lookupWord, cacheRef]);
+  }, [cacheKey, payload.targetLang, payload.lookupWord, cacheRef]);
 
   const playAudioUrl = (url: string) => {
     if (!url) return;
@@ -296,7 +307,6 @@ function WordTooltipPanel({ payload, cacheRef, audioRef, autoPlayOnOpen }: WordT
       );
       cacheRef.current.set(cacheKey, {
         ...cachedEntry,
-        translation: cachedTranslation,
         audioPromise,
       });
     }
@@ -305,9 +315,10 @@ function WordTooltipPanel({ payload, cacheRef, audioRef, autoPlayOnOpen }: WordT
       const audio = await audioPromise;
 
       const latestCachedEntry = cacheRef.current.get(cacheKey);
+      const resolvedTranslation = latestCachedEntry?.translation || cachedTranslation;
       cacheRef.current.set(cacheKey, {
         ...latestCachedEntry,
-        translation: cachedTranslation,
+        translation: resolvedTranslation,
         audioUrl: audio.audioUrl,
         audioPromise: undefined,
       });
@@ -315,7 +326,7 @@ function WordTooltipPanel({ payload, cacheRef, audioRef, autoPlayOnOpen }: WordT
       if (isMountedRef.current) {
         setTooltipState((prev) => ({
           ...prev,
-          translation: cachedTranslation,
+          translation: resolvedTranslation,
           audioUrl: audio.audioUrl,
           audioLoading: false,
         }));
