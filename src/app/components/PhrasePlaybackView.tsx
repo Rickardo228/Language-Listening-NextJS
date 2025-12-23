@@ -1134,13 +1134,15 @@ export function PhrasePlaybackView({
         // to avoid disrupting the user's current state
     }, [presentationConfig.enableInputPlayback, presentationConfig.enableOutputBeforeInput, currentPhase, setCurrentPhaseWithMetadata, isRecallPhase, getShadowPhase]);
 
-    // Keyboard navigation - only when in fullscreen
+    // Keyboard navigation
     useEffect(() => {
-        if (!fullscreen) return;
-
         const handleKeyDown = (e: KeyboardEvent) => {
-            // Only handle keys when fullscreen
-            if (!fullscreen) return;
+            const target = e.target as HTMLElement | null;
+            const isEditableTarget = target instanceof HTMLInputElement
+                || target instanceof HTMLTextAreaElement
+                || target instanceof HTMLSelectElement
+                || (target?.isContentEditable ?? false);
+            if (isEditableTarget) return;
 
             switch (e.key) {
                 case 'ArrowLeft':
@@ -1152,8 +1154,10 @@ export function PhrasePlaybackView({
                     atomicAdvance(1);
                     break;
                 case 'Escape':
-                    e.preventDefault();
-                    setFullscreen(false);
+                    if (fullscreen) {
+                        e.preventDefault();
+                        setFullscreen(false);
+                    }
                     break;
             }
         };
@@ -1267,6 +1271,10 @@ export function PhrasePlaybackView({
                             currentPhrase={phrases[currentPhraseIndex]?.input || ''}
                             currentTranslated={phrases[currentPhraseIndex]?.translated || ''}
                             currentPhase={currentPhase}
+                            inputLang={phrases[currentPhraseIndex]?.inputLang}
+                            targetLang={phrases[currentPhraseIndex]?.targetLang}
+                            inputVoice={phrases[currentPhraseIndex]?.inputVoice}
+                            targetVoice={phrases[currentPhraseIndex]?.targetVoice}
                             fullScreen={fullscreen}
                             setFullscreen={setFullscreen}
                             bgImage={presentationConfig.bgImage}

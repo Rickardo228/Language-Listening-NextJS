@@ -17,6 +17,10 @@ interface PresentationViewProps {
   currentPhrase: string;
   currentTranslated: string;
   currentPhase: "input" | "output";
+  inputLang?: string;
+  targetLang?: string;
+  inputVoice?: string;
+  targetVoice?: string;
   fullScreen: boolean; // if true, use fullscreen styles; if false, use inline styles
   setFullscreen: React.Dispatch<React.SetStateAction<boolean>>;
   bgImage?: string | null;
@@ -71,6 +75,10 @@ export function PresentationView({
   currentPhrase,
   currentTranslated,
   currentPhase,
+  inputLang,
+  targetLang,
+  inputVoice,
+  targetVoice,
   fullScreen,
   setFullscreen,
   bgImage,
@@ -246,6 +254,9 @@ export function PresentationView({
         className={`${containerClass} cursor-pointer`}
         style={containerStyle}
         onClick={(e) => {
+          if (typeof document !== "undefined" && document.body.dataset.wordTooltipOpen === "true") {
+            return;
+          }
           if (!isDragging) {
             if (fullScreen) {
               // In fullscreen: navigate based on click position
@@ -680,6 +691,10 @@ export function PresentationView({
           // Common props for all phrase cards
           const commonCardProps = {
             phase: currentPhase,
+            inputLang,
+            targetLang,
+            inputVoice,
+            targetVoice,
             fullScreen,
             isMobile,
             isMobileInline,
