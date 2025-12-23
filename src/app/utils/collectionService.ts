@@ -1,8 +1,9 @@
 import { getFirestore, collection, addDoc } from 'firebase/firestore';
 import { User } from 'firebase/auth';
-import { Phrase, CollectionType as CollectionTypeEnum } from '../types';
+import { Phrase, CollectionType as CollectionTypeEnum, PresentationConfig } from '../types';
 import { defaultPresentationConfig, defaultPresentationConfigs } from '../defaultConfig';
 import { trackCreateList } from '../../lib/mixpanelClient';
+import { getUserProfile } from './userPreferences';
 
 const firestore = getFirestore();
 
@@ -23,8 +24,22 @@ export const createCollection = async (
     throw new Error('User ID is required to create a collection');
   }
 
+  let userDefaultConfig: PresentationConfig | null = null;
+  try {
+    // Pull user default presentation config (AB-test driven) for new collections.
+    const userProfile = await getUserProfile(userId);
+    if (userProfile?.defaultPresentationConfig) {
+      userDefaultConfig = userProfile.defaultPresentationConfig;
+    }
+  } catch (error) {
+    console.error('Error loading user default presentation config:', error);
+  }
+
   const generatedName = prompt || 'New List';
   const now = new Date().toISOString();
+  const baseConfig = collectionType
+    ? defaultPresentationConfigs[collectionType]
+    : defaultPresentationConfig;
 
   const newCollection = {
     name: generatedName,
@@ -35,7 +50,9 @@ export const createCollection = async (
     created_at: now,
     collectionType: collectionType || 'phrases',
     presentationConfig: {
-      ...(collectionType ? defaultPresentationConfigs[collectionType] : defaultPresentationConfig),
+      ...baseConfig,
+      // Let user defaults override system defaults, then name stays explicit.
+      ...(userDefaultConfig || {}),
       name: generatedName
     }
   };

@@ -9,6 +9,7 @@ import { PhrasePlaybackView, PhrasePlaybackMethods } from '../components/PhraseP
 import { CollectionHeader } from '../CollectionHeader';
 import { useUser } from '../contexts/UserContext';
 import { getUserProfile, createOrUpdateUserProfile } from '../utils/userPreferences';
+import { getVariantConfig } from '../utils/abTesting';
 import { uploadBackgroundMedia, deleteBackgroundMedia } from '../utils/backgroundUpload';
 import { presentationConfigDefinition } from '../configDefinitions';
 import { Select } from '../components/ui';
@@ -180,6 +181,8 @@ export default function TemplateDetailView({
     useEffect(() => {
         const loadUserConfig = async () => {
             if (!user) {
+                // If no user, use variant B config
+                setUserDefaultConfig(getVariantConfig('variantB'));
                 setUserConfigLoaded(true);
                 return;
             }
