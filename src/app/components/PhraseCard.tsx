@@ -75,7 +75,8 @@ interface PhraseCardProps {
 
 type ActiveWord = {
   tokenId: string;
-  word: string;
+  displayWord: string;
+  lookupWord: string;
   sentence: string;
   sourceLang: string;
   targetLang: string;
@@ -104,12 +105,33 @@ type PhraseToken = {
 };
 
 function tokenizePhrase(text: string, locale?: string): PhraseToken[] {
+  const mergeTrailingPunctuation = (tokens: PhraseToken[]) => {
+    return tokens.reduce<PhraseToken[]>((acc, token) => {
+      const prev = acc[acc.length - 1];
+      const isWhitespace = /^\s+$/.test(token.value);
+      const shouldMerge =
+        prev &&
+        prev.isWordLike &&
+        !token.isWordLike &&
+        !isWhitespace;
+
+      if (shouldMerge) {
+        prev.value += token.value;
+        return acc;
+      }
+
+      acc.push({ ...token });
+      return acc;
+    }, []);
+  };
+
   if (typeof Intl !== "undefined" && typeof Intl.Segmenter !== "undefined") {
     const segmenter = new Intl.Segmenter(locale, { granularity: "word" });
-    return Array.from(segmenter.segment(text), (segment) => ({
+    const tokens = Array.from(segmenter.segment(text), (segment) => ({
       value: segment.segment,
       isWordLike: segment.isWordLike,
     }));
+    return mergeTrailingPunctuation(tokens);
   }
 
   const matches = text.match(/\s+|\p{L}[\p{L}\p{M}\p{Nd}'-]*|[^\s]/gu);
@@ -117,18 +139,23 @@ function tokenizePhrase(text: string, locale?: string): PhraseToken[] {
     return [{ value: text, isWordLike: isWordToken(text) }];
   }
 
-  return matches.map((value) => ({
+  const tokens = matches.map((value) => ({
     value,
     isWordLike: isWordToken(value),
   }));
+  return mergeTrailingPunctuation(tokens);
 }
 
 function isWordToken(token: string): boolean {
   return /^(\p{L}|\p{Nd})/u.test(token);
 }
 
+function stripEdgePunctuation(token: string): string {
+  return token.replace(/^[^\p{L}\p{Nd}]+|[^\p{L}\p{Nd}]+$/gu, "");
+}
+
 function buildCacheKey(payload: ActiveWord) {
-  return `${payload.sourceLang}|${payload.targetLang}|${payload.word}|${payload.sentence}`;
+  return `${payload.sourceLang}|${payload.targetLang}|${payload.lookupWord}|${payload.sentence}`;
 }
 
 type WordTooltipPanelProps = {
@@ -141,7 +168,7 @@ type WordTooltipPanelProps = {
 function WordTooltipPanel({ payload, cacheRef, audioRef, autoPlayOnOpen }: WordTooltipPanelProps) {
   const cacheKey = useMemo(
     () => buildCacheKey(payload),
-    [payload.sourceLang, payload.targetLang, payload.word, payload.sentence]
+    [payload.sourceLang, payload.targetLang, payload.lookupWord, payload.sentence]
   );
   const cached = cacheRef.current.get(cacheKey);
   const [tooltipState, setTooltipState] = useState<TooltipState>(() => ({
@@ -172,7 +199,7 @@ function WordTooltipPanel({ payload, cacheRef, audioRef, autoPlayOnOpen }: WordT
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            text: payload.word,
+            text: payload.lookupWord,
             targetLang: payload.targetLang,
           }),
         });
@@ -211,7 +238,7 @@ function WordTooltipPanel({ payload, cacheRef, audioRef, autoPlayOnOpen }: WordT
     return () => {
       isActive = false;
     };
-  }, [cacheKey, cached, payload.targetLang, payload.word, cacheRef]);
+  }, [cacheKey, cached, payload.targetLang, payload.lookupWord, cacheRef]);
 
   const playAudioUrl = (url: string) => {
     if (!url) return;
@@ -236,7 +263,7 @@ function WordTooltipPanel({ payload, cacheRef, audioRef, autoPlayOnOpen }: WordT
 
     try {
       const audio = await generateAudio(
-        payload.word,
+        payload.lookupWord,
         payload.sourceLang,
         payload.voice || ""
       );
@@ -283,7 +310,7 @@ function WordTooltipPanel({ payload, cacheRef, audioRef, autoPlayOnOpen }: WordT
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          word: payload.word,
+          word: payload.lookupWord,
           sentence: payload.sentence,
           sourceLang: payload.sourceLang,
           targetLang: payload.targetLang,
@@ -323,7 +350,7 @@ function WordTooltipPanel({ payload, cacheRef, audioRef, autoPlayOnOpen }: WordT
   return (
     <>
       <div className="text-sm font-semibold text-slate-900 dark:text-slate-50">
-        {payload.word}
+        {payload.lookupWord}
       </div>
       <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
         {tooltipState.translationLoading
@@ -377,6 +404,7 @@ function WordTooltipPanel({ payload, cacheRef, audioRef, autoPlayOnOpen }: WordT
 
 type WordTokenProps = {
   token: string;
+  lookupToken: string;
   tokenId: string;
   sentence: string;
   sourceLang: string;
@@ -421,7 +449,7 @@ function WordTokenContent({
         className="inline-flex items-baseline rounded-sm px-0 transition-opacity duration-150 hover:opacity-70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/60"
         onClick={handleButtonClick}
       >
-        {payload.word}
+        {payload.displayWord}
       </Popover.Button>
       <Transition
         show={open}
@@ -456,6 +484,7 @@ function WordTokenContent({
 
 function WordToken({
   token,
+  lookupToken,
   tokenId,
   sentence,
   sourceLang,
@@ -467,7 +496,8 @@ function WordToken({
 }: WordTokenProps) {
   const payload: ActiveWord = {
     tokenId,
-    word: token,
+    displayWord: token,
+    lookupWord: lookupToken,
     sentence,
     sourceLang,
     targetLang,
@@ -580,11 +610,13 @@ export function PhraseCard({
       }
 
       const tokenId = `${sourceLang}-${targetLang}-${sentence}-${index}`;
+      const lookupToken = stripEdgePunctuation(value) || value;
 
       return (
         <WordToken
           key={tokenId}
           token={value}
+          lookupToken={lookupToken}
           tokenId={tokenId}
           sentence={sentence}
           sourceLang={sourceLang}
