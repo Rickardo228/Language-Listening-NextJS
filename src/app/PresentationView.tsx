@@ -44,6 +44,7 @@ interface PresentationViewProps {
   title?: string;       // New optional prop for a title
   showAllPhrases?: boolean; // New prop to show all phrases simultaneously
   enableOutputBeforeInput?: boolean; // New prop to indicate if output plays before input
+  enableInputPlayback?: boolean; // New prop to indicate if input playback is enabled
   showProgressBar?: boolean; // New prop to show progress bar during recall/shadow
   progressDuration?: number; // New prop for progress bar duration in milliseconds
   progressDelay?: number; // New prop for delay before progress bar starts
@@ -102,6 +103,7 @@ export function PresentationView({
   title,
   showAllPhrases,
   enableOutputBeforeInput,
+  enableInputPlayback,
   showProgressBar,
   progressDuration,
   progressDelay,
@@ -137,6 +139,8 @@ export function PresentationView({
   const dragY = useMotionValue(0);
   const [animationDirection, setAnimationDirection] = useState<'left' | 'right' | 'up' | 'down' | null>(null);
   const isSwipeTransitionRef = useRef(false); // Track if we're in a swipe transition
+  const ignorePresentationClickRef = useRef(false);
+  const tooltipOpenRef = useRef(false);
 
   const resetDrag = showAllPhrases ? false : currentPhase
   // Reset drag position when currentPhrase changes
@@ -163,6 +167,20 @@ export function PresentationView({
         document.body.removeChild(container);
       };
     }
+  }, []);
+
+  useEffect(() => {
+    const handleTooltipEvent = (event: Event) => {
+      const customEvent = event as CustomEvent<{ open?: boolean }>;
+      if (typeof customEvent.detail?.open === "boolean") {
+        tooltipOpenRef.current = customEvent.detail.open;
+      }
+    };
+
+    window.addEventListener("word-tooltip", handleTooltipEvent);
+    return () => {
+      window.removeEventListener("word-tooltip", handleTooltipEvent);
+    };
   }, []);
 
   // Handle hover events for the presentation container
@@ -253,8 +271,17 @@ export function PresentationView({
         ref={containerRef}
         className={`${containerClass} cursor-pointer`}
         style={containerStyle}
+        onPointerDown={() => {
+          if (tooltipOpenRef.current) {
+            ignorePresentationClickRef.current = true;
+          }
+        }}
         onClick={(e) => {
-          if (typeof document !== "undefined" && document.body.dataset.wordTooltipOpen === "true") {
+          if (ignorePresentationClickRef.current) {
+            ignorePresentationClickRef.current = false;
+            return;
+          }
+          if (tooltipOpenRef.current) {
             return;
           }
           if (!isDragging) {
@@ -717,6 +744,7 @@ export function PresentationView({
 
           // Check if we have 3-phrase stack enabled
           const has3PhraseStack = (previousPhrase || previousTranslated) && (nextPhrase || nextTranslated);
+          const inputTooltipsEnabled = enableInputPlayback ?? true;
 
           // Drag handlers for swipe navigation
           const handleDragStart = () => setIsDragging(true);
@@ -856,6 +884,8 @@ export function PresentationView({
                     romanized={previousRomanized}
                     offsetX={verticalScroll ? 0 : -windowWidth}
                     offsetY={verticalScroll ? -windowHeight : 0}
+                    enableInputWordTooltips={false}
+                    enableOutputWordTooltips={false}
                     {...commonCardProps}
                   />
                 )}
@@ -868,6 +898,8 @@ export function PresentationView({
                   romanized={romanizedOutput}
                   offsetX={0}
                   offsetY={0}
+                  enableInputWordTooltips={inputTooltipsEnabled}
+                  enableOutputWordTooltips={true}
                   {...commonCardProps}
                 />
 
@@ -880,6 +912,8 @@ export function PresentationView({
                     romanized={nextRomanized}
                     offsetX={verticalScroll ? 0 : windowWidth}
                     offsetY={verticalScroll ? windowHeight : 0}
+                    enableInputWordTooltips={false}
+                    enableOutputWordTooltips={false}
                     {...commonCardProps}
                   />
                 )}
@@ -896,6 +930,8 @@ export function PresentationView({
                   romanized={romanizedOutput}
                   offsetX={0}
                   offsetY={0}
+                  enableInputWordTooltips={inputTooltipsEnabled}
+                  enableOutputWordTooltips={true}
                   {...commonCardProps}
                 />
               </AnimatePresence>

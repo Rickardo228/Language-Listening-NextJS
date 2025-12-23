@@ -1301,6 +1301,7 @@ export function PhrasePlaybackView({
                             title={showTitle ? (collectionName || configName) : undefined}
                             showAllPhrases={presentationConfig.showAllPhrases}
                             enableOutputBeforeInput={presentationConfig.enableOutputBeforeInput}
+                            enableInputPlayback={presentationConfig.enableInputPlayback}
                             showProgressBar={showProgressBar}
                             progressDuration={progressDuration}
                             progressDelay={progressDelay}
