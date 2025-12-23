@@ -12,6 +12,43 @@ export const ROUTES = {
   TERMS: '/terms',
 } as const;
 
+export const PUBLIC_ROUTE_ROOTS = [
+  ROUTES.TEMPLATE_PUBLIC,
+  ROUTES.SHARE,
+  ROUTES.PRIVACY,
+  ROUTES.TERMS,
+] as const;
+
+function getRouteRoot(pathname: string | null): string | null {
+  if (!pathname) return null;
+  if (pathname === ROUTES.HOME) return ROUTES.HOME;
+  const [rootSegment] = pathname.split('/').filter(Boolean);
+  return rootSegment ? `/${rootSegment}` : ROUTES.HOME;
+}
+
+function matchesRouteRoot(pathname: string | null, roots: readonly string[]): boolean {
+  if (!pathname) return false;
+  const routeRoot = getRouteRoot(pathname);
+  return !!routeRoot && roots.some((root) => (
+    root === ROUTES.HOME ? pathname === ROUTES.HOME : pathname === root || pathname.startsWith(`${root}/`)
+  ));
+}
+
+/**
+ * Check if the current route is public (no auth required)
+ */
+export function isPublicRoute(pathname: string | null): boolean {
+  return matchesRouteRoot(pathname, PUBLIC_ROUTE_ROOTS);
+}
+
+/**
+ * Check if the current route is private (auth required)
+ */
+export function isPrivateRoute(pathname: string | null): boolean {
+  if (!pathname) return false;
+  return !isPublicRoute(pathname);
+}
+
 /**
  * Check if the current path is the home page
  */

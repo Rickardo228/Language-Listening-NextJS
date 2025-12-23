@@ -21,7 +21,7 @@ import { TemplatesBrowser } from './TemplatesBrowser';
 import { SignInPage } from '../SignInPage';
 import { OnboardingGuard } from './OnboardingGuard';
 import { BottomNavigation } from './BottomNavigation';
-import { shouldHideSidebar, shouldHideBottomNav, getCollectionIdFromPath, ROUTES } from '../routes';
+import { shouldHideSidebar, shouldHideBottomNav, getCollectionIdFromPath, ROUTES, isPublicRoute } from '../routes';
 import { resetMainScroll } from '../utils/scroll';
 
 
@@ -34,6 +34,7 @@ interface AppLayoutProps {
 export function AppLayout({ children }: AppLayoutProps) {
   const router = useRouter();
   const pathname = usePathname();
+  const resolvedPathname = pathname ?? (typeof window !== 'undefined' ? window.location.pathname : null);
   const { user, isAuthLoading, userProfile } = useUser();
   const { theme, toggleTheme } = useTheme();
   const { isCollapsed, setIsCollapsed } = useSidebar();
@@ -61,11 +62,13 @@ export function AppLayout({ children }: AppLayoutProps) {
   }, [userProfile?.preferredInputLang, userProfile?.preferredTargetLang]);
   const [loading, setLoading] = useState<boolean>(false);
 
+  const isPublicPath = isPublicRoute(resolvedPathname);
+
   // Don't show sidebar for certain routes
-  const hideSidebar = shouldHideSidebar(pathname);
+  const hideSidebar = shouldHideSidebar(resolvedPathname);
 
   // Extract current collection ID from URL for highlighting in sidebar
-  const currentCollectionId = getCollectionIdFromPath(pathname);
+  const currentCollectionId = getCollectionIdFromPath(resolvedPathname);
 
   // Load saved collections from Firestore on mount or when user changes
   const initialiseCollections = useCallback(async (user: User) => {
@@ -299,7 +302,7 @@ export function AppLayout({ children }: AppLayoutProps) {
     );
   }
 
-  if (!user && !hideSidebar) {
+  if (!user && !isPublicPath) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-background">
         <SignInPage showLanguageSelect={true} />
