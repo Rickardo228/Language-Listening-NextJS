@@ -12,6 +12,9 @@ export const ROUTES = {
   TERMS: '/terms',
 } as const;
 
+// SEO language route patterns (/{language}/{slug})
+const SEO_LANGUAGE_PATTERNS = ['italian', 'spanish', 'japanese'] as const;
+
 export const PUBLIC_ROUTE_ROOTS = [
   ROUTES.TEMPLATE_PUBLIC,
   ROUTES.SHARE,
@@ -38,6 +41,14 @@ function matchesRouteRoot(pathname: string | null, roots: readonly string[]): bo
  * Check if the current route is public (no auth required)
  */
 export function isPublicRoute(pathname: string | null): boolean {
+  if (!pathname) return false;
+
+  // Check SEO language pages: /{language}/{slug}
+  const segments = pathname.split('/').filter(Boolean);
+  if (segments.length >= 2 && SEO_LANGUAGE_PATTERNS.includes(segments[0] as any)) {
+    return true;
+  }
+
   return matchesRouteRoot(pathname, PUBLIC_ROUTE_ROOTS);
 }
 
