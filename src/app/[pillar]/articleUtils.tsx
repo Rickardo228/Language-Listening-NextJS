@@ -88,6 +88,9 @@ export function buildArticleSchema(article: SanityArticle) {
 }
 
 export function ArticleContent({ article }: { article: SanityArticle }) {
+  const hasPhrases = Array.isArray(article.body)
+    && article.body.some((block) => block?._type === 'phraseBlock');
+
   return (
     <article className="max-w-4xl mx-auto px-4 py-12">
       <header className="mb-12">
@@ -124,7 +127,11 @@ export function ArticleContent({ article }: { article: SanityArticle }) {
       </header>
 
       <div className="prose prose-lg dark:prose-invert max-w-none">
-        <PortableText value={article.body} articleSlug={article.slug?.current} />
+        <PortableText
+          value={article.body}
+          articleSlug={article.slug?.current}
+          hasPhrases={hasPhrases}
+        />
       </div>
     </article>
   );

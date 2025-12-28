@@ -15,7 +15,7 @@ const generateSlug = (children: any): string => {
     .replace(/^-|-$/g, '');
 };
 
-const buildComponents = (articleSlug?: string): PortableTextComponents => ({
+const buildComponents = (articleSlug?: string, hasPhrases?: boolean): PortableTextComponents => ({
   block: {
     h2: ({ children }) => {
       const id = generateSlug(children);
@@ -134,7 +134,7 @@ const buildComponents = (articleSlug?: string): PortableTextComponents => ({
     ),
     ctaBlock: ({ value }: any) => (
       <TemplateCta
-        slug={value.slug}
+        slug={value.slug || value.templateSlug}
         inputLang={value.inputLang}
         targetLang={value.targetLang}
         heading={value.title}
@@ -142,6 +142,7 @@ const buildComponents = (articleSlug?: string): PortableTextComponents => ({
         buttonText={value.buttonText}
         variant={value.variant}
         articleSlug={articleSlug}
+        hasPhrases={hasPhrases}
       />
     ),
     templateCta: ({ value }: any) => (
@@ -152,6 +153,7 @@ const buildComponents = (articleSlug?: string): PortableTextComponents => ({
         heading={value.heading}
         description={value.description}
         articleSlug={articleSlug}
+        hasPhrases={hasPhrases}
       />
     ),
     table: ({ value }: any) => {
@@ -196,6 +198,14 @@ const buildComponents = (articleSlug?: string): PortableTextComponents => ({
   },
 });
 
-export function PortableText({ value, articleSlug }: { value: any; articleSlug?: string }) {
-  return <BasePortableText value={value} components={buildComponents(articleSlug)} />;
+export function PortableText({
+  value,
+  articleSlug,
+  hasPhrases,
+}: {
+  value: any;
+  articleSlug?: string;
+  hasPhrases?: boolean;
+}) {
+  return <BasePortableText value={value} components={buildComponents(articleSlug, hasPhrases)} />;
 }

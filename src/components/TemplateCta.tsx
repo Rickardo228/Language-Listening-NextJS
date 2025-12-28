@@ -13,6 +13,7 @@ interface TemplateCtaProps {
   buttonText?: string;
   variant?: 'primary' | 'secondary' | 'accent';
   articleSlug?: string;
+  hasPhrases?: boolean;
 }
 
 export function TemplateCta({
@@ -25,11 +26,29 @@ export function TemplateCta({
   buttonText = 'Practice Now',
   variant = 'primary',
   articleSlug,
+  hasPhrases,
 }: TemplateCtaProps) {
-  const resolvedSlug = slug || templateId || articleSlug;
-  if (!resolvedSlug) return null;
+  const trimmedSlug = typeof slug === 'string' ? slug.trim() : '';
+  const trimmedTemplateId = typeof templateId === 'string' ? templateId.trim() : '';
+  const trimmedArticleSlug = typeof articleSlug === 'string' ? articleSlug.trim() : '';
+  const hasExplicitSlug = Boolean(trimmedSlug);
+  const hasExplicitTemplate = Boolean(trimmedTemplateId);
+  const hasArticlePhrases = hasPhrases ?? true;
+  const resolvedSlug = hasExplicitSlug
+    ? trimmedSlug
+    : hasExplicitTemplate
+      ? trimmedTemplateId
+      : hasArticlePhrases
+        ? trimmedArticleSlug
+        : '';
+  const shouldRouteHome = !hasExplicitSlug && !hasExplicitTemplate && !hasArticlePhrases;
+  if (!resolvedSlug && !shouldRouteHome) return null;
 
-  const templateUrl = `https://languageshadowing.com/t/${resolvedSlug}/${inputLang}/${targetLang}`;
+  const encodedInputLang = encodeURIComponent(inputLang);
+  const encodedTargetLang = encodeURIComponent(targetLang);
+  const templateUrl = `https://languageshadowing.com/t/${resolvedSlug}/${encodedInputLang}/${encodedTargetLang}`;
+  const homeUrl = `https://languageshadowing.com/?inputLang=${encodedInputLang}&targetLang=${encodedTargetLang}`;
+  const ctaUrl = shouldRouteHome ? homeUrl : templateUrl;
   const variantClasses =
     variant === 'secondary'
       ? 'from-gray-50 to-gray-100 border-gray-200 dark:from-gray-900/20 dark:to-gray-800/30 dark:border-gray-700'
@@ -52,7 +71,7 @@ export function TemplateCta({
         </div>
 
         <Link
-          href={templateUrl}
+          href={ctaUrl}
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center justify-center px-6 py-3 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white font-medium rounded-lg transition-colors duration-200 shadow-sm hover:shadow-md"

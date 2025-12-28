@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useState, useEffect, ReactElement } from 'react';
 import { LanguageSelector } from './components/LanguageSelector';
 import { languageOptions } from './types';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { trackSignUp, identifyUser } from '../lib/mixpanelClient';
 import { Input } from './components/ui';
 
@@ -35,6 +35,7 @@ export function SignInPage({
     onAuthSuccess,
 }: SignInPageProps) {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const [inputLang, setInputLang] = useState(languageOptions[0]?.code || 'en-US');
     const [targetLang, setTargetLang] = useState('it-IT');
     const [isFirstVisit, setIsFirstVisit] = useState(false);
@@ -52,6 +53,21 @@ export function SignInPage({
             setIsSignUp(true); // Default to sign-up mode on first visit
         }
     }, []);
+
+    useEffect(() => {
+        const inputParam = searchParams.get('inputLang');
+        const targetParam = searchParams.get('targetLang');
+        const isValidInput = inputParam && languageOptions.some((option) => option.code === inputParam);
+        const isValidTarget = targetParam && languageOptions.some((option) => option.code === targetParam);
+
+        if (isValidInput) {
+            setInputLang(inputParam);
+        }
+
+        if (isValidTarget) {
+            setTargetLang(targetParam);
+        }
+    }, [searchParams]);
 
     const handleGoogleSignIn = async () => {
         setIsGoogleLoading(true);
