@@ -15,11 +15,25 @@ export const ROUTES = {
 // SEO language route patterns (/{language}/{slug})
 const SEO_LANGUAGE_PATTERNS = ['italian', 'spanish', 'japanese'] as const;
 
+// SEO pillar route patterns (/{pillar}/{slug})
+const SEO_PILLAR_PATTERNS = [
+  'language-shadowing',
+  'learn-italian',
+  'learn-spanish',
+  'learn-japanese',
+  'learn-english',
+] as const;
+
 export const PUBLIC_ROUTE_ROOTS = [
   ROUTES.TEMPLATE_PUBLIC,
   ROUTES.SHARE,
   ROUTES.PRIVACY,
   ROUTES.TERMS,
+] as const;
+
+const PUBLIC_SINGLE_SEGMENT_ROUTES = [
+  ...SEO_PILLAR_PATTERNS,
+  ...SEO_LANGUAGE_PATTERNS,
 ] as const;
 
 function getRouteRoot(pathname: string | null): string | null {
@@ -45,7 +59,15 @@ export function isPublicRoute(pathname: string | null): boolean {
 
   // Check SEO language pages: /{language}/{slug}
   const segments = pathname.split('/').filter(Boolean);
-  if (segments.length >= 2 && SEO_LANGUAGE_PATTERNS.includes(segments[0] as any)) {
+  if (
+    segments.length >= 2 &&
+    (SEO_LANGUAGE_PATTERNS.includes(segments[0] as any) ||
+      SEO_PILLAR_PATTERNS.includes(segments[0] as any))
+  ) {
+    return true;
+  }
+
+  if (segments.length === 1 && PUBLIC_SINGLE_SEGMENT_ROUTES.includes(segments[0] as any)) {
     return true;
   }
 
