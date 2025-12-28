@@ -439,18 +439,20 @@ export function PhrasePlaybackView({
                         // Check if we're on the last phrase - if so, list is completed
                         if (targetIndex === phrases.length - 1) {
                             isCompletingList = true;
+                        } else {
+                            targetIndex = (targetIndex + 1) % phrases.length;
+                            targetPhase = 'output';
                         }
-                        targetIndex = (targetIndex + 1) % phrases.length;
-                        targetPhase = 'output';
                     }
                 } else {
                     // Shadow -> next phrase Recall
                     // Check if we're on the last phrase - if so, list is completed
                     if (targetIndex === phrases.length - 1) {
                         isCompletingList = true;
+                    } else {
+                        targetIndex = (targetIndex + 1) % phrases.length;
+                        targetPhase = enableRecall ? 'output' : 'input'; // Start at recall or shadow of next phrase
                     }
-                    targetIndex = (targetIndex + 1) % phrases.length;
-                    targetPhase = enableRecall ? 'output' : 'input'; // Start at recall or shadow of next phrase
                 }
             } else { // delta === -1
                 if (curPhase === 'input') {
@@ -478,18 +480,20 @@ export function PhrasePlaybackView({
                         // Check if we're on the last phrase - if so, list is completed
                         if (targetIndex === phrases.length - 1) {
                             isCompletingList = true;
+                        } else {
+                            targetIndex = (targetIndex + 1) % phrases.length;
+                            targetPhase = 'input';
                         }
-                        targetIndex = (targetIndex + 1) % phrases.length;
-                        targetPhase = 'input';
                     }
                 } else {
                     // Shadow -> next phrase Recall OR Shadow
                     // Check if we're on the last phrase - if so, list is completed
                     if (targetIndex === phrases.length - 1) {
                         isCompletingList = true;
+                    } else {
+                        targetIndex = (targetIndex + 1) % phrases.length;
+                        targetPhase = enableRecall ? 'input' : 'output';
                     }
-                    targetIndex = (targetIndex + 1) % phrases.length;
-                    targetPhase = enableRecall ? 'input' : 'output';
                 }
             } else { // delta === -1
                 if (curPhase === 'output') {
