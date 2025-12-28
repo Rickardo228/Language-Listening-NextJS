@@ -1,5 +1,5 @@
 // hooks/usePresentationConfig.ts
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { PresentationConfig } from "../types";
 import { defaultPresentationConfig } from "../defaultConfig";
 
@@ -10,9 +10,12 @@ export function usePresentationConfig(initial?: Partial<PresentationConfig>) {
       ...initial,
     } as PresentationConfig);
 
-  const setPresentationConfig = (newConfig: Partial<PresentationConfig>) => {
-    setPresentationConfigState((prev) => ({ ...prev, ...newConfig }));
-  };
+  const setPresentationConfig = useCallback(
+    (newConfig: Partial<PresentationConfig>) => {
+      setPresentationConfigState((prev) => ({ ...prev, ...newConfig }));
+    },
+    []
+  );
 
   return { presentationConfig, setPresentationConfig };
 }
