@@ -145,8 +145,8 @@ export function PresentationView({
   const resetDrag = showAllPhrases ? false : currentPhase
   // Reset drag position when currentPhrase changes
   useLayoutEffect(() => {
-    dragY.set(0, false);
-    dragX.set(0, false);
+    dragY.set(0);
+    dragX.set(0);
 
     // Reset swipe transition flag after the new phrase has been rendered
     // This ensures the next non-swipe change will animate properly
