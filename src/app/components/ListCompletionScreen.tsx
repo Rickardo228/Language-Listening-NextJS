@@ -120,8 +120,8 @@ const StatCard = memo(({
   const total = listenedCount + viewedCount;
   const startTotal = startListened + startViewed;
 
-  const borderColors = ['border-purple-500', 'border-cyan-500', 'border-lime-500'];
-  const textColors = ['text-purple-400', 'text-cyan-400', 'text-lime-400'];
+  const borderColors = ['border-fuchsia-500', 'border-emerald-500', 'border-blue-500'];
+  const textColors = ['text-fuchsia-400', 'text-emerald-400', 'text-blue-400'];
   const borderIndex = title === "Today" ? 0 : title === "All Time" ? 2 : 1;
 
   return (
