@@ -3,12 +3,15 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { ListPageContent } from './ListPageContent';
 import { db } from '@/lib/firestore-admin';
+import { client } from '@/lib/sanity';
+import { PortableText } from '@/components/PortableText';
 
 // Language code mapping
 const LANGUAGE_MAP: Record<string, { code: string; name: string; native: string }> = {
   italian: { code: 'it-IT', name: 'Italian', native: 'Italiano' },
   spanish: { code: 'es-ES', name: 'Spanish', native: 'Español' },
   japanese: { code: 'ja-JP', name: 'Japanese', native: '日本語' },
+  'language-shadowing': { code: 'en-US', name: 'English', native: 'English' },
 };
 
 // Pillar descriptions for SEO
@@ -44,6 +47,62 @@ interface PageSpec {
   language?: string;
   keyword?: string;
   blocks?: Array<Record<string, any>>;
+}
+
+// Type definitions for Sanity data
+interface SanityArticle {
+  _id: string;
+  title: string;
+  slug: { current: string };
+  description?: string;
+  keywords?: string[];
+  language: string;
+  pillar: string;
+  category?: string;
+  searchVolume?: number;
+  competition?: number;
+  quickAnswer?: string;
+  body: any[];
+  publishedAt?: string;
+}
+
+/**
+ * Fetch article from Sanity by slug
+ */
+async function getSanityArticle(slug: string): Promise<SanityArticle | null> {
+  try {
+    console.log(`🔍 Fetching Sanity article for slug: ${slug}`);
+
+    const article = await client.fetch<SanityArticle>(
+      `*[_type == "article" && slug.current == $slug][0]{
+        _id,
+        title,
+        slug,
+        description,
+        keywords,
+        language,
+        pillar,
+        category,
+        searchVolume,
+        competition,
+        quickAnswer,
+        body,
+        publishedAt
+      }`,
+      { slug }
+    );
+
+    if (article) {
+      console.log(`✅ Found Sanity article: ${article.title}`);
+    } else {
+      console.log(`⚠️ No Sanity article found for slug: ${slug}`);
+    }
+
+    return article;
+  } catch (error) {
+    console.error(`❌ Error fetching Sanity article:`, error);
+    return null;
+  }
 }
 
 /**
@@ -157,6 +216,26 @@ async function getPageData(language: string, languageCode: string, slug: string)
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { language, slug } = await params;
 
+  // Try Sanity first
+  const sanityArticle = await getSanityArticle(slug);
+  if (sanityArticle) {
+    return {
+      title: sanityArticle.title,
+      description: sanityArticle.description || sanityArticle.quickAnswer,
+      keywords: sanityArticle.keywords || [],
+      openGraph: {
+        title: sanityArticle.title,
+        description: sanityArticle.description || sanityArticle.quickAnswer || '',
+        type: 'article',
+        publishedTime: sanityArticle.publishedAt,
+      },
+      alternates: {
+        canonical: `/${language}/${slug}`,
+      },
+    };
+  }
+
+  // Fallback to old Firestore logic
   if (!LANGUAGE_MAP[language]) {
     return {
       title: 'Page Not Found',
@@ -204,6 +283,79 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 export default async function ListPage({ params }: PageProps) {
   const { language, slug } = await params;
 
+  // Try fetching from Sanity first
+  const sanityArticle = await getSanityArticle(slug);
+
+  if (sanityArticle) {
+    // Render Sanity article
+    const schemaMarkup = {
+      '@context': 'https://schema.org',
+      '@type': 'Article',
+      headline: sanityArticle.title,
+      description: sanityArticle.description || sanityArticle.quickAnswer,
+      author: {
+        '@type': 'Organization',
+        name: 'Language Shadowing',
+      },
+      datePublished: sanityArticle.publishedAt,
+      keywords: sanityArticle.keywords?.join(', '),
+    };
+
+    return (
+      <>
+        {/* Schema markup */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(schemaMarkup) }}
+        />
+
+        {/* Article content */}
+        <article className="max-w-4xl mx-auto px-4 py-12">
+          {/* Header */}
+          <header className="mb-12">
+            <h1 className="text-4xl md:text-5xl font-bold mb-6 text-gray-900 dark:text-gray-100">
+              {sanityArticle.title}
+            </h1>
+
+            {sanityArticle.quickAnswer && (
+              <div className="bg-blue-50 dark:bg-blue-900/30 border-l-4 border-blue-500 dark:border-blue-400 p-6 mb-8">
+                <p className="text-lg text-gray-800 dark:text-gray-200 font-medium">
+                  {sanityArticle.quickAnswer}
+                </p>
+              </div>
+            )}
+
+            {sanityArticle.description && (
+              <p className="text-xl text-gray-600 dark:text-gray-400 mb-6">
+                {sanityArticle.description}
+              </p>
+            )}
+
+            {/* Metadata */}
+            <div className="flex flex-wrap gap-4 text-sm text-gray-500 dark:text-gray-400">
+              {sanityArticle.category && (
+                <span className="bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded">
+                  {sanityArticle.category}
+                </span>
+              )}
+              {sanityArticle.publishedAt && (
+                <span>
+                  Published: {new Date(sanityArticle.publishedAt).toLocaleDateString()}
+                </span>
+              )}
+            </div>
+          </header>
+
+          {/* Article body */}
+          <div className="prose prose-lg dark:prose-invert max-w-none">
+            <PortableText value={sanityArticle.body} articleSlug={sanityArticle.slug?.current} />
+          </div>
+        </article>
+      </>
+    );
+  }
+
+  // Fallback to old Firestore logic for phrase list pages
   // Validate language
   if (!LANGUAGE_MAP[language]) {
     notFound();
@@ -310,12 +462,28 @@ export async function generateStaticParams() {
   try {
     console.log('🔍 Fetching all page specs for static generation...');
 
+    // Fetch Sanity articles
+    const sanityArticles = await client.fetch<Array<{ slug: { current: string }; pillar: string }>>(
+      `*[_type == "article" && defined(slug.current)]{
+        slug,
+        pillar
+      }`
+    );
+
+    const sanityParams = sanityArticles.map(article => ({
+      language: article.pillar || 'language-shadowing',
+      slug: article.slug.current,
+    }));
+
+    console.log(`✅ Found ${sanityParams.length} Sanity articles`);
+
+    // Fetch Firestore page specs
     const pageSpecsRef = db.collection('page_specs');
     const snapshot = await pageSpecsRef.get();
 
     if (snapshot.empty) {
-      console.log('⚠️ No page specs found');
-      return [];
+      console.log('⚠️ No Firestore page specs found');
+      return sanityParams;
     }
 
     // Map language codes back to route names
@@ -325,7 +493,7 @@ export async function generateStaticParams() {
       'ja-JP': 'japanese',
     };
 
-    const params = snapshot.docs.map(doc => {
+    const firestoreParams = snapshot.docs.map(doc => {
       // Document ID format: ${languageCode}_${slug} (e.g., "it-IT_common-italian-phrases")
       const docId = doc.id;
       const [languageCode, ...slugParts] = docId.split('_');
@@ -343,8 +511,13 @@ export async function generateStaticParams() {
       };
     }).filter((param): param is { language: string; slug: string } => param !== null);
 
-    console.log(`✅ Generated ${params.length} static params for SEO`);
-    return params;
+    console.log(`✅ Generated ${firestoreParams.length} Firestore static params`);
+
+    // Combine both sources
+    const allParams = [...sanityParams, ...firestoreParams];
+    console.log(`✅ Total static params: ${allParams.length}`);
+
+    return allParams;
   } catch (error) {
     console.error('❌ Error generating static params:', error);
     return [];
