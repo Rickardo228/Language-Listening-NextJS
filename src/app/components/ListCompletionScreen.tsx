@@ -126,23 +126,23 @@ const StatCard = memo(({
 
   return (
     <motion.div
-      className={`bg-slate-800 dark:bg-slate-800 rounded-2xl p-6 border-4 ${borderColors[borderIndex]} shadow-xl w-[320px] overflow-hidden`}
+      className={`bg-slate-800 dark:bg-slate-800 rounded-2xl p-4 md:p-6 border-4 ${borderColors[borderIndex]} shadow-xl w-full max-w-[280px] md:max-w-[320px] overflow-hidden`}
       initial={{ opacity: 0, x: xOffset }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ delay }}
     >
-      <div className="flex flex-col items-center justify-center py-8">
-        <div className={`${textColors[borderIndex]} font-bold text-sm uppercase tracking-wide mb-6`}>
+      <div className="flex flex-col items-center justify-center py-4 md:py-8">
+        <div className={`${textColors[borderIndex]} font-bold text-sm uppercase tracking-wide mb-4 md:mb-6`}>
           {title}
         </div>
         <div className="min-w-[140px] text-center">
           <AnimatedNumber
             target={total}
             startValue={startTotal}
-            className={`text-7xl font-black ${textColors[borderIndex]}`}
+            className={`text-5xl md:text-7xl font-black ${textColors[borderIndex]}`}
           />
         </div>
-        <div className="text-slate-400 text-sm font-bold uppercase tracking-wider mt-4">
+        <div className="text-slate-400 text-sm font-bold uppercase tracking-wider mt-3 md:mt-4">
           Phrases
         </div>
       </div>
@@ -355,13 +355,13 @@ export function ListCompletionScreen({
                     {/* Streak Display */}
                     {currentStreak > 0 && (
                       <motion.div
-                        className="bg-slate-800 dark:bg-slate-800 rounded-3xl p-8 border-4 border-purple-500 shadow-2xl"
+                        className="bg-slate-800 dark:bg-slate-800 rounded-3xl p-4 md:p-8 border-4 border-purple-500 shadow-2xl"
                         initial={{ scale: 0.9, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
                         transition={{ delay: 0.4, type: "spring" }}
                       >
                         <motion.div
-                          className="text-7xl mb-4"
+                          className="text-5xl md:text-7xl mb-3 md:mb-4"
                           animate={{
                             scale: [1, 1.2, 1],
                             rotate: [0, 5, -5, 0]
@@ -370,10 +370,10 @@ export function ListCompletionScreen({
                         >
                           {streakData.emoji}
                         </motion.div>
-                        <div className="text-6xl font-black bg-gradient-to-r from-yellow-400 to-amber-500 bg-clip-text text-transparent mb-2">
+                        <div className="text-4xl md:text-6xl font-black bg-gradient-to-r from-yellow-400 to-amber-500 bg-clip-text text-transparent mb-2">
                           {currentStreak} Day{currentStreak !== 1 ? 's' : ''}
                         </div>
-                        <div className="text-3xl font-bold text-slate-200 uppercase tracking-wider">
+                        <div className="text-xl md:text-3xl font-bold text-slate-200 uppercase tracking-wider">
                           {streakData.message}
                         </div>
                       </motion.div>
