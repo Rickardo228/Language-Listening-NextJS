@@ -11,6 +11,7 @@ import { createPortal } from "react-dom";
 import { useUser } from "../contexts/UserContext";
 import { motion, AnimatePresence } from "framer-motion";
 import { UserStatsModal } from "../components/UserStatsModal";
+import { ListCompletionScreen } from "../components/ListCompletionScreen";
 import { trackPhrasesListenedPopup } from "../../lib/mixpanelClient";
 import { getPhraseRankTitle, DEBUG_MILESTONE_THRESHOLDS } from "./rankingSystem";
 import { useRouter } from "next/navigation";
@@ -61,7 +62,7 @@ const DEBUG_MILESTONE_MODE = process.env.NODE_ENV === 'development' && false;
 const DEBUG_MILESTONES = DEBUG_MILESTONE_THRESHOLDS;
 
 // Dynamic streak messaging system
-function getStreakMessage(streakCount: number): { emoji: string; message: string } {
+export function getStreakMessage(streakCount: number): { emoji: string; message: string } {
   const messages = [
     // Day 1-7: First week - daily changes
     { range: [1, 1], emoji: "🌱", message: "STREAK STARTED!" },
@@ -365,19 +366,13 @@ export const useUpdateUserStats = () => {
         displayCount = listenedCount > 0 ? listenedCount : 1;
         displayType = 'listened';
         console.log('📊 List completed - showing completion popup with count:', listenedCount, '(listened)');
-        if (shouldPersistUntilInteraction) {
-          phrasesListenedRef.current = 0;
-        }
+
       }
     } else if (eventType === 'listened' && listenedCount > 0) {
       shouldShowPopup = true;
       displayCount = listenedCount;
       displayType = 'listened';
-      // Only reset counter for persistent popups (end of list, manual pause)
-      // For snackbar milestone popups (every 5), keep accumulating
-      if (shouldPersistUntilInteraction) {
-        phrasesListenedRef.current = 0;
-      }
+
     } else if (eventType === 'viewed' && viewedCount > 0) {
       shouldShowPopup = true;
       displayCount = viewedCount;
@@ -388,14 +383,9 @@ export const useUpdateUserStats = () => {
       if (listenedCount > 0) {
         displayCount = listenedCount;
         displayType = 'listened';
-        // Only reset if persistent
-        if (shouldPersistUntilInteraction) {
-          phrasesListenedRef.current = 0;
-        }
       } else {
         displayCount = viewedCount;
         displayType = 'viewed';
-        // Don't reset viewed count - keep accumulating
       }
     }
 
@@ -504,6 +494,8 @@ export const useUpdateUserStats = () => {
     setOnGoNextCallback(() => null);
     // Clear recent milestones when user dismisses the popup
     setRecentMilestones([]);
+    phrasesListenedRef.current = 0;
+    phrasesViewedRef.current = 0;
   }, [showPopup, countToShow, persistUntilInteraction, currentStreak]);
 
   const openStatsModal = () => {
@@ -851,337 +843,57 @@ export const useUpdateUserStats = () => {
 
   const StatsPopups = mounted ? createPortal(
     <AnimatePresence mode="wait">
-      {/* Stats Popup - Snackbar for non-persistent, Full popup for persistent */}
-      {showPopup && (
+      {/* Milestone Celebration Popup */}
+      {/* Fullscreen List Completion - Two Step Flow */}
+      {showPopup && isListCompleted && user && (
+        <ListCompletionScreen
+          key="list-completion"
+          isOpen={true}
+          onClose={closeStatsPopup}
+          currentStreak={currentStreak}
+          getStreakMessage={getStreakMessage}
+          onGoAgain={onGoAgainCallback || undefined}
+          onGoNext={onGoNextCallback || undefined}
+          userId={user.uid}
+          sessionListened={phrasesListenedRef.current}
+          sessionViewed={phrasesViewedRef.current}
+
+        />
+      )}
+
+      {/* Regular Snackbar Popup for non-completion milestones */}
+      {showPopup && !isListCompleted && (
         <motion.div
-          key="pause-popup"
-          className={`fixed z-50 ${!persistUntilInteraction
-            ? 'top-4 left-1/2 -translate-x-1/2' // Snackbar position for both viewed and listened (moved to top to avoid nav buttons)
-            : 'inset-0 flex items-center justify-center md:items-center md:justify-center sm:items-end sm:justify-end sm:p-4' // Full popup
-            }`}
+          key="snackbar-popup"
+          className="fixed z-50 top-20 sm:top-4 left-1/2 -translate-x-1/2"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.2 }}
         >
-          {(() => {
-            // Determine popup color scheme based on completion status or milestones
-            const useYellowTheme = isListCompleted || recentMilestones.length > 0;
-
-            return (
-              <motion.div
-                className={`${useYellowTheme ? 'bg-yellow-500' : 'bg-blue-500'
-                  } text-white rounded-lg shadow-lg ${isListCompleted
-                    ? 'px-8 py-6 max-w-md' // Bigger for list completion
-                    : !persistUntilInteraction
-                      ? 'px-5 py-3 max-w-xs' // Compact snackbar for both types
-                      : 'px-6 py-4 max-w-sm' // Regular popup
-                  } mx-4 sm:mx-0`}
-                initial={{ scale: 0.8, opacity: 0, y: 20 }}
-                animate={{ scale: 1, opacity: 1, y: 0 }}
-                exit={{ scale: 0.8, opacity: 0, y: -20 }}
-                transition={{
-                  type: "spring",
-                  stiffness: 300,
-                  damping: 25,
-                  duration: 0.3
-                }}
+          <motion.div
+            className="bg-blue-500 text-white rounded-lg shadow-lg px-5 py-3 max-w-sm mx-4 sm:mx-0"
+            initial={{ scale: 0.8, opacity: 0, y: 20 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0.8, opacity: 0, y: -20 }}
+            transition={{
+              type: "spring",
+              stiffness: 300,
+              damping: 25,
+              duration: 0.3
+            }}
+          >
+            <div className="flex items-center justify-center">
+              <motion.span
+                className="font-bold text-sm"
+                initial={{ opacity: 0, x: 10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.2, duration: 0.3 }}
               >
-                <div className={isListCompleted ? "space-y-4" : "space-y-3"}>
-                  {/* Nice work header for list completion */}
-                  {isListCompleted && (
-                    <motion.div
-                      className="text-center"
-                      initial={{ opacity: 0, y: -10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.1, duration: 0.3 }}
-                    >
-                      <span className="text-2xl font-bold">Nice work!</span>
-                    </motion.div>
-                  )}
-
-                  {/* Main achievement header */}
-                  <div className={`flex items-center justify-center ${!persistUntilInteraction ? 'space-x-2' : 'space-x-3'
-                    }`}>
-                    {persistUntilInteraction && (
-                      <motion.div
-                        className={isListCompleted ? "w-7 h-7" : "w-6 h-6"}
-                        initial={{ rotate: -180, scale: 0 }}
-                        animate={{ rotate: 0, scale: 1 }}
-                        transition={{ delay: 0.1, type: "spring", stiffness: 400 }}
-                      >
-                        <Check className="w-full h-full" />
-                      </motion.div>
-                    )}
-                    <motion.span
-                      className={`font-bold ${isListCompleted
-                        ? 'text-xl'
-                        : !persistUntilInteraction
-                          ? 'text-sm'
-                          : 'text-lg'
-                        }`}
-                      initial={{ opacity: 0, x: 10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.2, duration: 0.3 }}
-                    >
-                      {!persistUntilInteraction
-                        ? `${popupEventType === 'viewed' ? '👀' : '🎧'} ${countToShow} phrase${countToShow !== 1 ? 's' : ''} ${popupEventType}!`
-                        : `${popupEventType === 'viewed' ? '👀' : ''} ${countToShow} phrase${countToShow !== 1 ? 's' : ''} ${popupEventType}!`
-                      }
-                    </motion.span>
-                  </div>
-
-                  {/* List completed badge for list completion */}
-                  {isListCompleted && (
-                    <motion.div
-                      className="flex items-center justify-center"
-                      initial={{ opacity: 0, scale: 0.8 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: 0.3, duration: 0.3, type: "spring" }}
-                    >
-                      <span className="px-4 py-2 bg-white/20 dark:bg-black/30 rounded-full text-lg font-semibold border-2 border-white/30">
-                        🎉 List completed! 🎉
-                      </span>
-                    </motion.div>
-                  )}
-
-                  {/* Streak display - show once per day in persistent popups */}
-                  {persistUntilInteraction && currentStreak > 0 && (() => {
-
-                    // Check if we should show the streak based on localStorage
-                    const lastStreakShownDate = localStorage.getItem('lastStreakShownDate');
-                    const todayLocal = new Date().toLocaleDateString();
-                    // Show streak if: we haven't shown today OR it's list completion
-                    const shouldShowStreak = (lastStreakShownDate !== todayLocal) || isListCompleted;
-
-                    if (!shouldShowStreak) {
-                      return null;
-                    }
-
-                    // Don't set localStorage here - let closeStatsPopup do it when user clicks continue
-
-                    const streakData = getStreakMessage(currentStreak);
-                    return (
-                      <motion.div
-                        className="relative flex items-center justify-center space-x-3 p-3 bg-black/10 dark:bg-white/10 rounded-lg border border-black/20 dark:border-white/20"
-                        initial={{ opacity: 0, scale: 0.8, y: 15 }}
-                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.9, y: -10 }}
-                        transition={{ delay: 0.5, duration: 0.4, type: "spring", stiffness: 200 }}
-                      >
-                        <motion.span
-                          className="text-2xl"
-                          animate={{
-                            scale: [1, 1.2, 1],
-                            rotate: [0, 5, -5, 0]
-                          }}
-                          transition={{
-                            delay: 0.8,
-                            duration: 0.8,
-                            repeat: 1,
-                            ease: "easeInOut"
-                          }}
-                        >
-                          {streakData.emoji}
-                        </motion.span>
-                        <motion.div
-                          className="flex flex-col items-center"
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          transition={{ delay: 0.7, duration: 0.3 }}
-                        >
-                          <motion.div className="text-lg font-bold text-gray-900 dark:text-white flex items-center space-x-1">
-                            {/* Animated number increment */}
-                            <AnimatePresence mode="wait">
-                              <motion.span
-                                key={currentStreak}
-                                initial={{ opacity: 0, y: -20, scale: 0.5 }}
-                                animate={{ opacity: 1, y: 0, scale: 1 }}
-                                exit={{ opacity: 0, y: 20, scale: 0.5 }}
-                                transition={{
-                                  delay: 0.9,
-                                  duration: 0.4,
-                                  type: "spring",
-                                  stiffness: 300
-                                }}
-                              >
-                                {currentStreak}
-                              </motion.span>
-                            </AnimatePresence>
-                            <span> day streak</span>
-                          </motion.div>
-                          <motion.span
-                            className="text-xs font-medium text-gray-700 dark:text-white/80 uppercase tracking-wide"
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            transition={{ delay: 1.0, duration: 0.3 }}
-                          >
-                            {streakData.message}
-                          </motion.span>
-                        </motion.div>
-
-                        {/* Enhanced sparkle effect for increment */}
-                        <motion.div className="absolute -top-1 -right-1">
-                          {[...Array(2)].map((_, i) => (
-                            <motion.span
-                              key={i}
-                              className="absolute text-yellow-200 text-sm"
-                              initial={{ opacity: 0, scale: 0 }}
-                              animate={{
-                                opacity: [0, 1, 0],
-                                scale: [0, 1, 0],
-                                rotate: [0, 180, 360],
-                                x: [0, Math.random() * 20 - 10],
-                                y: [0, -Math.random() * 15 - 5]
-                              }}
-                              transition={{
-                                delay: 1.2 + i * 0.2,
-                                duration: 1.0,
-                                ease: "easeOut"
-                              }}
-                            >
-                              ✨
-                            </motion.span>
-                          ))}
-                        </motion.div>
-                      </motion.div>
-                    );
-                  })()}
-
-                  {/* Show recent milestones in the persistent popup (not in snackbar) */}
-                  {persistUntilInteraction && recentMilestones.length > 0 && (
-                    <motion.div
-                      className="mt-3 p-4 bg-white/10 dark:bg-black/20 rounded-lg border border-white/20"
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      transition={{ delay: 0.3, duration: 0.3 }}
-                    >
-                      <motion.div
-                        className="text-sm font-bold mb-3 flex items-center text-white"
-                        initial={{ scale: 0.9 }}
-                        animate={{ scale: 1 }}
-                        transition={{ delay: 0.4, type: "spring", stiffness: 200 }}
-                      >
-                        <motion.span
-                          className="mr-2 text-base"
-                          animate={{ rotate: [0, 10, -10, 0] }}
-                          transition={{ delay: 0.5, duration: 0.8, repeat: 1 }}
-                        >
-                          🏆
-                        </motion.span>
-                        Recent Milestone{recentMilestones.length > 1 ? 's' : ''} Achieved!
-                      </motion.div>
-                      <div className="space-y-2">
-                        {recentMilestones.slice(0, 2).map((milestone, index) => (
-                          <motion.div
-                            key={index}
-                            className={`p-3 rounded-lg border ${getRecentMilestoneBackgroundStyle(milestone.color, popupEventType)} shadow-sm`}
-                            initial={{ opacity: 0, x: -20, scale: 0.9 }}
-                            animate={{ opacity: 1, x: 0, scale: 1 }}
-                            transition={{
-                              delay: 0.5 + index * 0.1,
-                              type: "spring",
-                              stiffness: 300,
-                              damping: 20
-                            }}
-                          >
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center space-x-2">
-                                <motion.div
-                                  className={`w-3 h-3 rounded-full bg-white/80`}
-                                  animate={{ scale: [1, 1.2, 1] }}
-                                  transition={{
-                                    delay: 0.7 + index * 0.1,
-                                    duration: 0.6,
-                                    repeat: 1
-                                  }}
-                                />
-                                <span className={`font-bold text-sm ${getRecentMilestoneTextColor()}`}>
-                                  {milestone.title}
-                                </span>
-                              </div>
-                              <motion.span
-                                className={`text-xs font-medium ${getRecentMilestoneTextColor()} px-2 py-1 bg-white/20 dark:bg-black/30 rounded-full`}
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                transition={{ delay: 0.8 + index * 0.1 }}
-                              >
-                                {milestone.count.toLocaleString()} phrases
-                              </motion.span>
-                            </div>
-                            <motion.div
-                              className={`text-xs ${getRecentMilestoneTextColor()}/90 mt-1 italic`}
-                              initial={{ opacity: 0 }}
-                              animate={{ opacity: 1 }}
-                              transition={{ delay: 0.9 + index * 0.1 }}
-                            >
-                              {milestone.description}
-                            </motion.div>
-                          </motion.div>
-                        ))}
-                      </div>
-                    </motion.div>
-                  )}
-                  {persistUntilInteraction && (
-                    <motion.div
-                      className="mt-3 space-y-2"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ delay: 0.4, duration: 0.3 }}
-                    >
-                      {user && (
-                        <button
-                          className={`w-full px-4 py-2 ${useYellowTheme ? 'bg-yellow-800 hover:bg-yellow-900' : 'bg-blue-800 hover:bg-blue-900'} text-white rounded text-sm font-medium transition-colors`}
-                          onClick={openStatsModal}
-                        >
-                          View Stats
-                        </button>
-                      )}
-                      {isListCompleted && onGoAgainCallback && (
-                        <button
-                          className={`w-full px-4 py-2 ${useYellowTheme ? 'bg-yellow-700 hover:bg-yellow-800' : 'bg-blue-700 hover:bg-blue-800'} text-white rounded text-sm font-medium transition-colors shadow-md border-2 border-white/30`}
-                          onClick={async () => {
-                            const callback = onGoAgainCallback();
-                            if (callback) {
-                              await callback;
-                            }
-                            closeStatsPopup("continue");
-                          }}
-                        >
-                          Go Again
-                        </button>
-                      )}
-                      {isListCompleted && onGoNextCallback && (
-                        <button
-                          className={`w-full px-4 py-2 ${useYellowTheme ? 'bg-green-600 hover:bg-green-700' : 'bg-green-600 hover:bg-green-700'} text-white rounded text-sm font-medium transition-colors shadow-md border-2 border-white/30`}
-                          onClick={async () => {
-                            const callback = onGoNextCallback();
-                            if (callback) {
-                              await callback;
-                            }
-                            closeStatsPopup("continue");
-                          }}
-                        >
-                          Go Next →
-                        </button>
-                      )}
-                      <button
-                        className={`w-full px-4 py-2 ${useYellowTheme ? 'bg-yellow-600 hover:bg-yellow-700' : 'bg-blue-600 hover:bg-blue-700'} text-white rounded text-sm font-medium transition-colors shadow-md`}
-                        onClick={() => {
-                          closeStatsPopup("continue");
-                          if (isListCompleted) {
-                            router.push('/');
-                          }
-                        }}
-                      >
-                        {isListCompleted ? 'Home' : 'Continue'}
-                      </button>
-                    </motion.div>
-                  )}
-                </div>
-              </motion.div>
-            );
-          })()}
+                {popupEventType === 'viewed' ? '👀' : '🎧'} {countToShow} phrase{countToShow !== 1 ? 's' : ''} {popupEventType}!
+              </motion.span>
+            </div>
+          </motion.div>
         </motion.div>
       )}
 

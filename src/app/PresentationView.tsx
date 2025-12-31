@@ -1,20 +1,26 @@
 'use client';
 
-import { useState, useEffect, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useState, useEffect, useRef, useLayoutEffect } from "react";
+import { motion, AnimatePresence, useMotionValue, animate } from "framer-motion";
 import { createPortal } from "react-dom";
-import { ArrowLeft, ArrowRight, Maximize2, X, Play, Pause, Settings } from "lucide-react";
+import { ArrowLeft, ArrowRight, ArrowUp, ArrowDown, Maximize2, X, Play, Pause, Settings } from "lucide-react";
 import { AutumnLeaves } from "./Effects/AutumnLeaves";
 import CherryBlossom from "./Effects/CherryBlossom";
-import { BLEED_START_DELAY, TITLE_DELAY } from './consts';
 import ParticleAnimation from "./Effects/ParticleGlow";
 import { PhraseCounter } from "./components/PhraseCounter";
 import { DustEffect } from "./Effects/DustEffect";
+import { PhraseCard } from "./components/PhraseCard";
+
+export { TITLE_ANIMATION_DURATION } from "./components/PhraseCard";
 
 interface PresentationViewProps {
   currentPhrase: string;
   currentTranslated: string;
   currentPhase: "input" | "output";
+  inputLang?: string;
+  targetLang?: string;
+  inputVoice?: string;
+  targetVoice?: string;
   fullScreen: boolean; // if true, use fullscreen styles; if false, use inline styles
   setFullscreen: React.Dispatch<React.SetStateAction<boolean>>;
   bgImage?: string | null;
@@ -38,6 +44,7 @@ interface PresentationViewProps {
   title?: string;       // New optional prop for a title
   showAllPhrases?: boolean; // New prop to show all phrases simultaneously
   enableOutputBeforeInput?: boolean; // New prop to indicate if output plays before input
+  enableInputPlayback?: boolean; // New prop to indicate if input playback is enabled
   showProgressBar?: boolean; // New prop to show progress bar during recall/shadow
   progressDuration?: number; // New prop for progress bar duration in milliseconds
   progressDelay?: number; // New prop for delay before progress bar starts
@@ -53,35 +60,26 @@ interface PresentationViewProps {
   onPlay?: () => void; // New prop for play functionality
   onPlayPhrase?: (phase: 'input' | 'output') => void; // New prop to play a specific phrase (input or output)
   onSettingsOpen?: () => void; // New prop for opening settings
-}
-
-export const TITLE_ANIMATION_DURATION = 1000
-
-function calculateFontSize(text: string, isFullScreen: boolean, hasRomanized: boolean = false): string {
-  if (!text) return isFullScreen ? '4rem' : '2rem'; // increased default size for non-fullscreen
-
-  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
-
-  // Base sizes adjusted - increased for non-fullscreen
-  const baseSize = isFullScreen ? ((hasRomanized || isMobile) ? 50 : 70) : 32; // reduced romanized size in fullscreen
-  const maxChars = isFullScreen ? 30 : 20; // threshold for max characters
-
-  // Special handling for long words on mobile
-  const longestWord = text.split(' ').reduce((max, word) => Math.max(max, word.length), 0);
-
-  // Additional scaling for long words on mobile
-  const longWordScale = isMobile && longestWord > 10 ? 0.8 : 1;
-
-  const scale = Math.min(1, maxChars / text.length) * longWordScale;
-  const fontSize = Math.max(baseSize * scale, isFullScreen ? 30 : 20); // increased minimum size for non-fullscreen
-
-  return `${fontSize}px`;
+  verticalScroll?: boolean; // New prop to enable vertical scroll mode with top/bottom navigation
+  // New props for seamless swipe animation (Spotify-style)
+  nextPhrase?: string;
+  nextTranslated?: string;
+  nextRomanized?: string;
+  previousPhrase?: string;
+  previousTranslated?: string;
+  previousRomanized?: string;
+  disableAnimation?: boolean; // New prop to disable all animations in PhraseCard
+  enableSwipe?: boolean; // New prop to enable swipe gestures
 }
 
 export function PresentationView({
   currentPhrase,
   currentTranslated,
   currentPhase,
+  inputLang,
+  targetLang,
+  inputVoice,
+  targetVoice,
   fullScreen,
   setFullscreen,
   bgImage,
@@ -105,6 +103,7 @@ export function PresentationView({
   title,
   showAllPhrases,
   enableOutputBeforeInput,
+  enableInputPlayback,
   showProgressBar,
   progressDuration,
   progressDelay,
@@ -120,6 +119,15 @@ export function PresentationView({
   onPlay,
   onPlayPhrase,
   onSettingsOpen,
+  verticalScroll = false,
+  nextPhrase,
+  nextTranslated,
+  nextRomanized,
+  previousPhrase,
+  previousTranslated,
+  previousRomanized,
+  disableAnimation = false,
+  enableSwipe = false,
 }: PresentationViewProps) {
   const [isHovering, setIsHovering] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -127,6 +135,26 @@ export function PresentationView({
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
   const isSafari = typeof window !== 'undefined' && /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
   const [isDragging, setIsDragging] = useState(false);
+  const dragX = useMotionValue(0);
+  const dragY = useMotionValue(0);
+  const [animationDirection, setAnimationDirection] = useState<'left' | 'right' | 'up' | 'down' | null>(null);
+  const isSwipeTransitionRef = useRef(false); // Track if we're in a swipe transition
+  const ignorePresentationClickRef = useRef(false);
+  const tooltipOpenRef = useRef(false);
+
+  const resetDrag = showAllPhrases ? false : currentPhase
+  // Reset drag position when currentPhrase changes
+  useLayoutEffect(() => {
+    dragY.set(0);
+    dragX.set(0);
+
+    // Reset swipe transition flag after the new phrase has been rendered
+    // This ensures the next non-swipe change will animate properly
+    if (isSwipeTransitionRef.current) {
+      isSwipeTransitionRef.current = false;
+    }
+  }, [currentPhrase, resetDrag]);
+
   // Create portal container on mount
   useEffect(() => {
     if (typeof document !== 'undefined') {
@@ -139,6 +167,20 @@ export function PresentationView({
         document.body.removeChild(container);
       };
     }
+  }, []);
+
+  useEffect(() => {
+    const handleTooltipEvent = (event: Event) => {
+      const customEvent = event as CustomEvent<{ open?: boolean }>;
+      if (typeof customEvent.detail?.open === "boolean") {
+        tooltipOpenRef.current = customEvent.detail.open;
+      }
+    };
+
+    window.addEventListener("word-tooltip", handleTooltipEvent);
+    return () => {
+      window.removeEventListener("word-tooltip", handleTooltipEvent);
+    };
   }, []);
 
   // Handle hover events for the presentation container
@@ -227,26 +269,56 @@ export function PresentationView({
       `}</style>
       <motion.div
         ref={containerRef}
-        className={`${containerClass} ${isMobile ? "" : (isHovering ? "" : "cursor-none")}`}
+        className={`${containerClass} cursor-pointer`}
         style={containerStyle}
+        onPointerDown={() => {
+          if (tooltipOpenRef.current) {
+            ignorePresentationClickRef.current = true;
+          }
+        }}
         onClick={(e) => {
+          if (ignorePresentationClickRef.current) {
+            ignorePresentationClickRef.current = false;
+            return;
+          }
+          if (tooltipOpenRef.current) {
+            return;
+          }
           if (!isDragging) {
             if (fullScreen) {
               // In fullscreen: navigate based on click position
               // Use getBoundingClientRect to get accurate container position
               const rect = e.currentTarget.getBoundingClientRect();
-              const clickX = e.clientX - rect.left;
-              const containerWidth = rect.width;
-              const clickPercentage = (clickX / containerWidth) * 100;
 
-              if (clickPercentage < 33.33 && onPrevious && canGoBack) {
-                // Left third: go back
-                onPrevious();
-              } else if (clickPercentage > 66.66 && onNext && canGoForward) {
-                // Right third: go forward
-                onNext();
+              if (verticalScroll) {
+                // Vertical mode: top/bottom navigation
+                const clickY = e.clientY - rect.top;
+                const containerHeight = rect.height;
+                const clickPercentage = (clickY / containerHeight) * 100;
+
+                if (clickPercentage < 33.33 && onPrevious && canGoBack) {
+                  // Top third: go back
+                  onPrevious();
+                } else if (clickPercentage > 66.66 && onNext) {
+                  // Bottom third: go forward (atomicAdvance will handle completion popup)
+                  onNext();
+                }
+                // Center third (33.33-66.66%): do nothing
+              } else {
+                // Horizontal mode: left/right navigation
+                const clickX = e.clientX - rect.left;
+                const containerWidth = rect.width;
+                const clickPercentage = (clickX / containerWidth) * 100;
+
+                if (clickPercentage < 33.33 && onPrevious && canGoBack) {
+                  // Left third: go back
+                  onPrevious();
+                } else if (clickPercentage > 66.66 && onNext) {
+                  // Right third: go forward (atomicAdvance will handle completion popup)
+                  onNext();
+                }
+                // Center third (33.33-66.66%): do nothing
               }
-              // Center third (33.33-66.66%): do nothing
             } else {
               // Not in fullscreen: enter fullscreen
               setFullscreen(true);
@@ -255,19 +327,6 @@ export function PresentationView({
         }}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
-        drag={isMobile && onPrevious && onNext ? "x" : false}
-        dragConstraints={{ left: 0, right: 0 }}
-        dragElastic={0.2}
-        onDragStart={() => setIsDragging(true)}
-        onDragEnd={(e, info) => {
-          setIsDragging(false);
-          const swipeThreshold = 50;
-          if (info.offset.x > swipeThreshold && canGoBack) {
-            onPrevious?.();
-          } else if (info.offset.x < -swipeThreshold && canGoForward) {
-            onNext?.();
-          }
-        }}
       >
         {/* Effects - rendered before overlay so they appear behind it */}
         {enableOrtonEffect && (
@@ -334,6 +393,8 @@ export function PresentationView({
             }}
           />
         )}
+
+
         {/* Progress Indicator at the top */}
         {totalPhrases && currentPhraseIndex !== undefined && (
           <div
@@ -402,6 +463,24 @@ export function PresentationView({
               </button>
             )}
 
+            {/* Fullscreen Button - hidden on mobile fullscreen */}
+            {!fullScreen && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setFullscreen(true);
+                }}
+                className="p-2 bg-gray-200/80 dark:bg-gray-700/80 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 transition-all duration-200"
+                title="Enter Presentation Mode"
+                style={{
+                  opacity: isMobileInline ? 1 : (shouldShowNavigationButtons ? 1 : 0),
+                  transition: 'opacity 0.3s ease'
+                }}
+              >
+                <Maximize2 className="h-5 w-5 text-gray-700 dark:text-gray-300" />
+              </button>
+            )}
+
             {/* Fullscreen/Close Button - hidden on mobile inline and when not in fullscreen */}
             {!isMobileInline && fullScreen && (
               <button
@@ -425,37 +504,72 @@ export function PresentationView({
         {/* Navigation Buttons - Spotify-style bottom center on mobile fullscreen, hidden on mobile inline */}
         {onPrevious && onNext && !isMobileInline && (
           <>
-            {fullScreen && isMobile ? (
-              // Mobile fullscreen: Spotify-style bottom center layout
+            {fullScreen && isMobile && !verticalScroll ? (
+              // Mobile fullscreen horizontal: Spotify-style bottom center layout
               <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex items-center gap-8 z-10"
                 style={{
                   opacity: shouldShowNavigationButtons ? 1 : 0,
                   transition: 'opacity 0.3s ease'
                 }}
               >
+                {canGoBack && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onPrevious();
+                    }}
+                    className="p-3 bg-gray-200 dark:bg-gray-700 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 transition-all duration-200"
+                    title="Previous Phrase"
+                  >
+                    <ArrowLeft className="h-6 w-6 text-gray-700 dark:text-gray-300" />
+                  </button>
+                )}
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    onPrevious();
+                    onNext();
                   }}
-                  disabled={!canGoBack}
-                  className="p-3 bg-gray-200 dark:bg-gray-700 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
-                  title="Previous Phrase"
+                  className="p-3 bg-gray-200 dark:bg-gray-700 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 transition-all duration-200"
+                  title="Next Phrase"
                 >
-                  <ArrowLeft className="h-6 w-6 text-gray-700 dark:text-gray-300" />
+                  <ArrowRight className="h-6 w-6 text-gray-700 dark:text-gray-300" />
                 </button>
-                {/* Pause/Play button for mobile fullscreen */}
+              </div>
+            ) : verticalScroll ? (
+              // Vertical scroll mode: top/bottom layout
+              <>
+                {canGoBack && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onPrevious();
+                    }}
+                    className="absolute top-4 left-1/2 transform -translate-x-1/2 p-3 bg-gray-200 dark:bg-gray-700 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 transition-all duration-200 z-10"
+                    title="Previous Phrase"
+                    style={{
+                      opacity: shouldShowNavigationButtons ? 1 : 0,
+                      transition: 'opacity 0.3s ease'
+                    }}
+                  >
+                    <ArrowUp className="h-6 w-6 text-gray-700 dark:text-gray-300" />
+                  </button>
+                )}
+                {/* Pause/Play button for vertical scroll - bottom left */}
                 {onPause && onPlay && (
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
                       paused ? onPlay() : onPause();
                     }}
-                    className="p-3 bg-gray-200 dark:bg-gray-700 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 transition-all duration-200"
+                    className="absolute left-8 bottom-8 p-3 bg-gray-200 dark:bg-gray-700 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 transition-all duration-200 z-10"
                     title={paused ? "Play" : "Pause"}
+                    style={{
+                      opacity: shouldShowNavigationButtons ? 1 : 0,
+                      transition: 'opacity 0.3s ease'
+                    }}
                   >
                     {paused ? (
-                      <Play className="h-6 w-6 text-gray-700 dark:text-gray-300" />
+                      <Play className="h-6 w-6 text-gray-700 dark:text-gray-300" fill="currentColor" />
                     ) : (
                       <Pause className="h-6 w-6 text-gray-700 dark:text-gray-300" />
                     )}
@@ -466,38 +580,41 @@ export function PresentationView({
                     e.stopPropagation();
                     onNext();
                   }}
-                  disabled={!canGoForward}
-                  className="p-3 bg-gray-200 dark:bg-gray-700 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                  className="absolute bottom-8 left-1/2 transform -translate-x-1/2 p-3 bg-gray-200 dark:bg-gray-700 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 transition-all duration-200 z-10"
                   title="Next Phrase"
-                >
-                  <ArrowRight className="h-6 w-6 text-gray-700 dark:text-gray-300" />
-                </button>
-              </div>
-            ) : (
-              // Desktop or inline: side-by-side layout
-              <>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onPrevious();
-                  }}
-                  disabled={!canGoBack}
-                  className="absolute left-4 top-1/2 transform -translate-y-1/2 p-3 bg-gray-200 dark:bg-gray-700 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 z-10"
-                  title="Previous Phrase"
                   style={{
                     opacity: shouldShowNavigationButtons ? 1 : 0,
                     transition: 'opacity 0.3s ease'
                   }}
                 >
-                  <ArrowLeft className="h-6 w-6 text-gray-700 dark:text-gray-300" />
+                  <ArrowDown className="h-6 w-6 text-gray-700 dark:text-gray-300" />
                 </button>
+              </>
+            ) : (
+              // Desktop or inline horizontal: side-by-side layout
+              <>
+                {canGoBack && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onPrevious();
+                    }}
+                    className="absolute left-4 top-1/2 transform -translate-y-1/2 p-3 bg-gray-200 dark:bg-gray-700 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 transition-all duration-200 z-10"
+                    title="Previous Phrase"
+                    style={{
+                      opacity: shouldShowNavigationButtons ? 1 : 0,
+                      transition: 'opacity 0.3s ease'
+                    }}
+                  >
+                    <ArrowLeft className="h-6 w-6 text-gray-700 dark:text-gray-300" />
+                  </button>
+                )}
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
                     onNext();
                   }}
-                  disabled={!canGoForward}
-                  className="absolute right-4 top-1/2 transform -translate-y-1/2 p-3 bg-gray-200 dark:bg-gray-700 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 z-10"
+                  className="absolute right-4 top-1/2 transform -translate-y-1/2 p-3 bg-gray-200 dark:bg-gray-700 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 transition-all duration-200 z-10"
                   title="Next Phrase"
                   style={{
                     opacity: shouldShowNavigationButtons ? 1 : 0,
@@ -511,14 +628,14 @@ export function PresentationView({
           </>
         )}
 
-        {/* Pause/Play button for desktop fullscreen - bottom center */}
-        {fullScreen && !isMobile && onPause && onPlay && (
+        {/* Pause/Play button for fullscreen - bottom left */}
+        {fullScreen && !verticalScroll && onPause && onPlay && (
           <button
             onClick={(e) => {
               e.stopPropagation();
               paused ? onPlay() : onPause();
             }}
-            className="absolute bottom-8 left-1/2 transform -translate-x-1/2 p-3 bg-gray-200 dark:bg-gray-700 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 transition-all duration-200 z-10"
+            className="absolute bottom-8 left-8 p-3 bg-gray-200 dark:bg-gray-700 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 transition-all duration-200 z-10"
             title={paused ? "Play" : "Pause"}
             style={{
               opacity: shouldShowNavigationButtons ? 1 : 0,
@@ -526,12 +643,73 @@ export function PresentationView({
             }}
           >
             {paused ? (
-              <Play className="h-6 w-6 text-gray-700 dark:text-gray-300" />
+              <Play className="h-6 w-6 text-gray-700 dark:text-gray-300" fill="currentColor" />
             ) : (
               <Pause className="h-6 w-6 text-gray-700 dark:text-gray-300" />
             )}
           </button>
         )}
+
+        {/* Pause/Play button for inline presentation - bottom center */}
+        {!fullScreen && onPause && onPlay && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              paused ? onPlay() : onPause();
+            }}
+            className="absolute bottom-4 left-4 p-3 bg-gray-200 dark:bg-gray-700 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 transition-all duration-200 z-10"
+            title={paused ? "Play" : "Pause"}
+          >
+            {paused ? (
+              <Play className="h-6 w-6 text-gray-700 dark:text-gray-300" fill="currentColor" />
+            ) : (
+              <Pause className="h-6 w-6 text-gray-700 dark:text-gray-300" />
+            )}
+          </button>
+        )}
+
+        {/* Final Phrase Button - Juicy centered button when on last phrase */}
+        <AnimatePresence mode="wait">
+          {currentPhraseIndex !== undefined && totalPhrases !== undefined && currentPhraseIndex === totalPhrases - 1 && onNext && (
+            <div key="finish-list-wrapper" className="absolute bottom-8 left-0 right-0 flex justify-center z-20">
+              <motion.button
+                initial={{ opacity: 0, y: 20, scale: 0.9 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                transition={{ type: "spring", stiffness: 300, damping: 25 }}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onNext();
+                }}
+                className={`${verticalScroll ? 'px-4 py-3' : 'px-8 py-4'} bg-primary hover:bg-primary/90 text-primary-foreground font-black ${verticalScroll ? 'text-lg' : 'text-xl'} rounded-2xl shadow-2xl transition-all duration-300 border-2 border-white/20`}
+                style={{
+                  boxShadow: '0 10px 40px hsl(var(--primary) / 0.4), 0 0 20px hsl(var(--primary) / 0.2)',
+                }}
+              >
+              <span className="flex items-center gap-3">
+                <span className="text-2xl">🎉</span>
+                <span>Finish List</span>
+                <motion.span
+                  animate={verticalScroll ? {
+                    y: [0, 5, 0],
+                  } : {
+                    x: [0, 5, 0],
+                  }}
+                  transition={{
+                    duration: 1,
+                    repeat: Infinity,
+                    ease: "easeInOut"
+                  }}
+                >
+                  {verticalScroll ? '↓' : '→'}
+                </motion.span>
+              </span>
+              </motion.button>
+            </div>
+          )}
+        </AnimatePresence>
 
         {/* Phrase Counter with Settings on mobile fullscreen - positioned top right */}
         {fullScreen && isMobile && onNext ? (
@@ -574,307 +752,249 @@ export function PresentationView({
           />
         )}
 
-        {/* Animate the title in/out with AnimatePresence */}
-        <AnimatePresence mode={'sync'}>
-          {title ? (
-            <motion.div
-              key="title"
-              initial={{ opacity: 0, y: -20, scale: 0.98 }}
-              animate={{
-                opacity: 1,
-                y: 0,
-                scale: 1,
-                transition: { duration: TITLE_ANIMATION_DURATION / 1000, ease: "easeOut", delay: (BLEED_START_DELAY + TITLE_DELAY) / 1000 }
-              }}
-              exit={{
-                opacity: 0,
-                y: 20,
-                scale: 0.98,
-                transition: { duration: TITLE_ANIMATION_DURATION / 1000, ease: "easeOut" }
-              }}
-              className={`text-center absolute flex flex-col ${textColorClass}`}
-              style={{
-                maxWidth: "600px",
-                padding: 20,
-                alignItems: "center",
-                justifyContent: "center",
-                textShadow: textBg ? `2px 2px 2px ${textBg}` : "2px 2px 2px rgba(0,0,0,0.2)",
-                backgroundColor: textBg
-                  ? (textBg.includes("rgb")
-                    ? (textBg.slice(0, -1) + " 0.7)").replaceAll(" ", ",")
-                    : textBg)
-                  : "rgba(255,255,255,0.9) dark:bg-gray-800",
-                borderRadius: "1rem"
-              }}
-            >
-              <h1 className={titlePropClass} style={{
-                margin: 0,
-                padding: 0,
-                fontFamily: 'var(--font-playpen-sans), "Playpen Sans", system-ui, sans-serif'
-              }}>
-                {title}
-              </h1>
-            </motion.div>
-          ) : showAllPhrases ? (
-            // Show all phrases simultaneously with highlighting
-            (currentPhrase || currentTranslated) && (
-              <div
-                className={`${isMobileInline ? 'text-left px-4' : 'text-center px-12'} ${alignPhraseTop ? 'pb-4' : ''} absolute flex bg-opacity-90 flex-col ${textColorClass}`}
-                style={{
-                  alignItems: isMobileInline ? "flex-start" : "center",
-                  justifyContent: "center",
-                  backgroundColor: textBg
-                    ? (textBg.includes("rgb")
-                      ? (textBg.slice(0, -1) + " 0.9)").replaceAll(" ", ",")
-                      : textBg)
-                    : "rgba(255,255,255,0.9) dark:bg-gray-800",
-                  borderRadius: '1rem',
-                  ...(isMobileInline && {
-                    maxWidth: 'calc(100% - 2rem)',
-                    overflow: 'hidden'
-                  })
-                }}
-              >
-                {/* Calculate the smaller font size for all phrases */}
-                {(() => {
-                  const phraseFontSize = currentPhrase ? calculateFontSize(currentPhrase, fullScreen, false) : '0px';
-                  const translatedFontSize = currentTranslated ? calculateFontSize(currentTranslated, fullScreen, romanizedOutput ? true : false) : '0px';
+        {/* Render 3-phrase stack for Spotify-style swipe (or single phrase if no next/prev available) */}
+        {(() => {
+          // Calculate window dimensions for offset positioning
+          const windowWidth = typeof window !== 'undefined' ? window.innerWidth : 1000;
+          const windowHeight = typeof window !== 'undefined' ? window.innerHeight : 1000;
 
-                  // Extract numeric values for comparison
-                  const phraseSize = parseInt(phraseFontSize);
-                  const translatedSize = parseInt(translatedFontSize);
+          // Common props for all phrase cards
+          const commonCardProps = {
+            phase: currentPhase,
+            inputLang,
+            targetLang,
+            inputVoice,
+            targetVoice,
+            fullScreen,
+            isMobile,
+            isMobileInline,
+            isSafari,
+            textColorClass,
+            textBg,
+            alignPhraseTop,
+            showAllPhrases,
+            enableOutputBeforeInput,
+            isPlayingAudio,
+            paused,
+            onPlayPhrase,
+            animationDirection,
+            dragX,
+            dragY,
+            titlePropClass,
+            verticalScroll,
+            disableAnimation: disableAnimation || isSwipeTransitionRef.current,
+          };
 
-                  // Use the smaller font size, or fallback to translated size if phrase is empty
-                  const commonFontSize = currentPhrase && currentTranslated
-                    ? `${Math.min(phraseSize, translatedSize)}px`
-                    : currentPhrase ? phraseFontSize : translatedFontSize;
+          // Check if we have 3-phrase stack enabled
+          const has3PhraseStack = (previousPhrase || previousTranslated) && (nextPhrase || nextTranslated);
+          const inputTooltipsEnabled = enableInputPlayback ?? true;
 
-                  // Make currentPhrase slightly smaller (85% of common size)
-                  const inputFontSize = currentPhrase && currentTranslated
-                    ? `${Math.floor(Math.min(phraseSize, translatedSize) * 0.85)}px`
-                    : currentPhrase ? phraseFontSize : translatedFontSize;
+          // Drag handlers for swipe navigation
+          const handleDragStart = () => setIsDragging(true);
 
-                  // Extract phrase components for conditional ordering
-                  const inputPhrase = (
-                    <AnimatePresence mode="wait">
-                      {currentPhrase && (
-                        <motion.div
-                          key={currentPhrase.trim()}
-                          initial={{ opacity: 0, y: (isSafari && isMobile && !fullScreen) ? 0 : -10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: (isSafari && isMobile && !fullScreen) ? 0 : 10 }}
-                          transition={{ duration: 0.3, ease: "easeOut" }}
-                          className={paused && onPlayPhrase && !isMobileInline ? "cursor-pointer" : ""}
-                          onClick={(e) => {
-                            if (isMobileInline) {
-                              // On mobile inline, let click bubble up to trigger fullscreen
-                              return;
-                            }
-                            if (paused && onPlayPhrase) {
-                              e.stopPropagation();
-                              onPlayPhrase('input');
-                            }
-                          }}
-                        >
-                          <h2
-                            className="font-bold mb-2"
-                            style={{
-                              margin: 0,
-                              padding: 0,
-                              marginBottom: isMobileInline && !enableOutputBeforeInput ? '12px' : undefined,
-                              fontSize: isMobileInline ? '16px' : (enableOutputBeforeInput ? commonFontSize : inputFontSize),
-                              opacity: currentPhase !== "input" ? 0.6 : 1,
-                              transform: isPlayingAudio && currentPhase === "input" ? "scale(1.02)" : "scale(1)",
-                              filter: isPlayingAudio && currentPhase === "input" ? "drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3))" : "none",
-                              transition: "opacity 0.3s ease, transform 0.3s ease, filter 0.3s ease",
-                              ...(isMobileInline && {
-                                whiteSpace: 'nowrap',
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                                maxWidth: '85vw'
-                              })
-                            }}
-                          >
-                            {currentPhrase.trim()}
-                          </h2>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  );
+          const handleDrag = (e: any, info: any) => {
+            if (verticalScroll) {
+              dragY.set(info.offset.y);
+            } else {
+              dragX.set(info.offset.x);
+            }
+          };
 
-                  const outputPhrase = (
-                    <AnimatePresence mode="wait">
-                      {currentTranslated && (
-                        <motion.div
-                          key={currentTranslated.trim()}
-                          initial={{ opacity: 0, y: (isSafari && isMobile && !fullScreen) ? 0 : -10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: (isSafari && isMobile && !fullScreen) ? 0 : 10 }}
-                          transition={{ duration: 0.3, ease: "easeOut" }}
-                          className={paused && onPlayPhrase && !isMobileInline ? "cursor-pointer" : ""}
-                          onClick={(e) => {
-                            if (isMobileInline) {
-                              // On mobile inline, let click bubble up to trigger fullscreen
-                              return;
-                            }
-                            if (paused && onPlayPhrase) {
-                              e.stopPropagation();
-                              onPlayPhrase('output');
-                            }
-                          }}
-                        >
-                          <h2
-                            className="font-bold"
-                            style={{
-                              margin: 0,
-                              padding: 0,
-                              marginBottom: isMobileInline && enableOutputBeforeInput ? '12px' : undefined,
-                              fontSize: isMobileInline ? '16px' : (enableOutputBeforeInput ? inputFontSize : commonFontSize),
-                              opacity: currentPhase !== "output" ? 0.6 : 1,
-                              transform: isPlayingAudio && currentPhase === "output" ? "scale(1.02)" : "scale(1)",
-                              filter: isPlayingAudio && currentPhase === "output" ? "drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3))" : "none",
-                              transition: "opacity 0.3s ease, transform 0.3s ease, filter 0.3s ease",
-                              ...(isMobileInline && {
-                                whiteSpace: 'nowrap',
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                                maxWidth: '85vw'
-                              })
-                            }}
-                          >
-                            {currentTranslated.trim()}
-                          </h2>
-                          {romanizedOutput && !isMobileInline && (
-                            <h2
-                              className="font-bold mt-3"
-                              style={{
-                                margin: 0,
-                                padding: 0,
-                                fontSize: enableOutputBeforeInput ? inputFontSize : commonFontSize,
-                                opacity: currentPhase !== "output" ? 0.6 : 1,
-                                transform: isPlayingAudio && currentPhase === "output" ? "scale(1.02)" : "scale(1)",
-                                filter: isPlayingAudio && currentPhase === "output" ? "drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3))" : "none",
-                                transition: "opacity 0.3s ease, transform 0.3s ease, filter 0.3s ease"
-                              }}
-                            >
-                              {romanizedOutput}
-                            </h2>
-                          )}
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  );
+          const handleDragEnd = async (e: any, info: any) => {
+            setIsDragging(false);
+            const swipeThreshold = 50;
 
-                  const divider = currentPhrase && currentTranslated && !isMobileInline && (
-                    <div
-                      style={{
-                        width: '80px',
-                        height: '1px',
-                        margin: '16px auto',
-                        background: textBg
-                          ? (textBg.includes("rgb")
-                            ? (textBg.slice(0, -1) + " 0.3)").replaceAll(" ", ",")
-                            : textBg + "4D")
-                          : "rgba(255,255,255,0.3)",
-                        borderRadius: '1px'
-                      }}
-                    />
-                  );
+            if (verticalScroll) {
+              // Vertical swipe: down to go back, up to go forward
+              if (info.offset.y > swipeThreshold && canGoBack) {
+                // Swipe down - Spotify-style: slide all cards down together
+                setAnimationDirection('down');
+                isSwipeTransitionRef.current = true;
+                if (has3PhraseStack) {
+                  // All 3 cards slide down together
+                  await animate(dragY, windowHeight, { duration: 0.3, ease: "easeOut" });
+                  onPrevious?.();
+                } else {
+                  // Fallback to old animation
+                  await animate(dragY, windowHeight, { duration: 0.2, ease: "easeOut" });
+                  onPrevious?.();
+                  dragY.set(-windowHeight);
+                  await animate(dragY, 0, { duration: 0.3, ease: "easeOut" });
+                }
+                setAnimationDirection(null);
+              } else if (info.offset.y < -swipeThreshold && onNext) {
+                // Swipe up - allow even on last phrase (atomicAdvance will handle completion popup)
+                setAnimationDirection('up');
+                isSwipeTransitionRef.current = true;
+                if (has3PhraseStack) {
+                  // All 3 cards slide up together
+                  await animate(dragY, -windowHeight, { duration: 0.3, ease: "easeOut" });
+                  console.log("On next")
+                  onNext?.();
+                } else {
+                  // Fallback to old animation
+                  await animate(dragY, -windowHeight, { duration: 0.2, ease: "easeOut" });
+                  console.log("On next 2")
 
-                  // Render in order based on enableOutputBeforeInput
-                  return (
-                    <>
-                      {enableOutputBeforeInput ? (
-                        <>
-                          {outputPhrase}
-                          {divider}
-                          {inputPhrase}
-                        </>
-                      ) : (
-                        <>
-                          {inputPhrase}
-                          {divider}
-                          {outputPhrase}
-                        </>
-                      )}
-                    </>
-                  );
-                })()}
-              </div>
-            )
-          ) : (
-            // Original single phrase display
-            (currentTranslated || currentPhrase) && (
-              <motion.div
-                key={currentPhase === "input" ? currentPhrase : currentTranslated}
-                initial={{ opacity: 0, y: (isSafari && isMobile && !fullScreen) ? 0 : -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: (isSafari && isMobile && !fullScreen) ? 0 : 10 }}
-                transition={{ duration: 0.3, ease: "easeOut" }}
-                className={`${isMobileInline ? 'text-left px-4' : 'text-center px-12'} ${alignPhraseTop ? 'pb-4' : ''} absolute flex bg-opacity-90 flex-col ${textColorClass} ${paused && onPlayPhrase && !isMobileInline ? 'cursor-pointer' : ''}`}
-                style={{
-                  alignItems: isMobileInline ? "flex-start" : "center",
-                  justifyContent: "center",
-                  backgroundColor: textBg
-                    ? (textBg.includes("rgb")
-                      ? (textBg.slice(0, -1) + " 0.9)").replaceAll(" ", ",")
-                      : textBg)
-                    : "rgba(255,255,255,0.9) dark:bg-gray-800",
-                  borderRadius: '1rem',
-                  ...(isMobileInline && {
-                    maxWidth: 'calc(100% - 2rem)',
-                    overflow: 'hidden'
-                  })
-                }}
-                onClick={(e) => {
-                  if (isMobileInline) {
-                    // On mobile inline, let click bubble up to trigger fullscreen
-                    return;
-                  }
-                  if (paused && onPlayPhrase) {
-                    e.stopPropagation();
-                    onPlayPhrase(currentPhase);
-                  }
-                }}
-              >
-                <h2
-                  key={currentPhase === "input" ? currentPhrase : currentTranslated}
-                  className="font-bold"
-                  style={{
-                    margin: 0,
-                    padding: 0,
-                    fontSize: isMobileInline ? '16px' : calculateFontSize(
-                      currentPhase === "input" ? currentPhrase : currentTranslated,
-                      fullScreen,
-                      romanizedOutput ? true : false
-                    ),
-                    ...(isMobileInline && {
-                      whiteSpace: 'nowrap',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      maxWidth: '85vw'
-                    })
-                  }}
-                >
-                  {currentPhase === "input"
-                    ? currentPhrase?.trim()
-                    : currentTranslated?.trim()}
-                </h2>
-                {currentPhase === "output" && romanizedOutput && !isMobileInline && (
-                  <h2
-                    key={currentPhase}
-                    className="font-bold mt-3"
-                    style={{
-                      fontSize: calculateFontSize(romanizedOutput, fullScreen, true)
-                    }}
-                  >
-                    {romanizedOutput}
-                  </h2>
+                  onNext?.();
+                  dragY.set(windowHeight);
+                  await animate(dragY, 0, { duration: 0.3, ease: "easeOut" });
+                }
+                setAnimationDirection(null);
+              } else {
+                // Snap back
+                animate(dragY, 0, { duration: 0.2, ease: "easeOut" });
+              }
+            } else {
+              // Horizontal swipe: right to go back, left to go forward
+              if (info.offset.x > swipeThreshold && canGoBack) {
+                // Swipe right - Spotify-style: slide all cards right together
+                setAnimationDirection('right');
+                isSwipeTransitionRef.current = true;
+                if (has3PhraseStack) {
+                  // All 3 cards slide right together
+                  await animate(dragX, windowWidth, { duration: 0.3, ease: "easeOut" });
+                  onPrevious?.();
+                } else {
+                  // Fallback to old animation
+                  await animate(dragX, windowWidth, { duration: 0.2, ease: "easeOut" });
+                  onPrevious?.();
+                  dragX.set(-windowWidth);
+                  await animate(dragX, 0, { duration: 0.3, ease: "easeOut" });
+                }
+                setAnimationDirection(null);
+              } else if (info.offset.x < -swipeThreshold && onNext) {
+                // Swipe left - allow even on last phrase (atomicAdvance will handle completion popup)
+                setAnimationDirection('left');
+                isSwipeTransitionRef.current = true;
+                if (has3PhraseStack) {
+                  // All 3 cards slide left together
+                  await animate(dragX, -windowWidth, { duration: 0.3, ease: "easeOut" });
+                  onNext?.();
+                } else {
+                  // Fallback to old animation
+                  await animate(dragX, -windowWidth, { duration: 0.2, ease: "easeOut" });
+                  onNext?.();
+                  dragX.set(windowWidth);
+                  await animate(dragX, 0, { duration: 0.3, ease: "easeOut" });
+                }
+                setAnimationDirection(null);
+              } else {
+                // Snap back
+                animate(dragX, 0, { duration: 0.2, ease: "easeOut" });
+              }
+            }
+          };
+
+          // Determine if we should make this draggable
+          const shouldBeDraggable = enableSwipe && isMobile && onPrevious && onNext;
+          const dragProps = shouldBeDraggable ? {
+            drag: verticalScroll ? "y" as const : "x" as const,
+            dragConstraints: verticalScroll ? { top: 0, bottom: 0 } : { left: 0, right: 0 },
+            dragElastic: 0.2,
+            onDragStart: handleDragStart,
+            onDrag: handleDrag,
+            onDragEnd: handleDragEnd,
+            style: { touchAction: 'none' as const }
+          } : {};
+
+          // Render phrase content
+          let phraseContent;
+
+          // If title is present, render only title (no 3-phrase stack)
+          if (title) {
+            phraseContent = (
+              <AnimatePresence mode={'sync'}>
+                <PhraseCard
+                  key="title"
+                  phrase=""
+                  translated=""
+                  title={title}
+                  {...commonCardProps}
+                />
+              </AnimatePresence>
+            );
+          } else if (has3PhraseStack) {
+            // Render 3-phrase stack for seamless swipe
+            phraseContent = (
+              <>
+                {/* Previous phrase - offset left/top */}
+                {(previousPhrase || previousTranslated) && (
+                  <PhraseCard
+                    key="previous"
+                    phrase={previousPhrase || ""}
+                    translated={previousTranslated || ""}
+                    romanized={previousRomanized}
+                    offsetX={verticalScroll ? 0 : -windowWidth}
+                    offsetY={verticalScroll ? -windowHeight : 0}
+                    enableInputWordTooltips={false}
+                    enableOutputWordTooltips={false}
+                    {...commonCardProps}
+                  />
                 )}
+
+                {/* Current phrase - at center */}
+                <PhraseCard
+                  key="current"
+                  phrase={currentPhrase}
+                  translated={currentTranslated}
+                  romanized={romanizedOutput}
+                  offsetX={0}
+                  offsetY={0}
+                  enableInputWordTooltips={inputTooltipsEnabled}
+                  enableOutputWordTooltips={true}
+                  {...commonCardProps}
+                />
+
+                {/* Next phrase - offset right/bottom */}
+                {(nextPhrase || nextTranslated) && (
+                  <PhraseCard
+                    key="next"
+                    phrase={nextPhrase || ""}
+                    translated={nextTranslated || ""}
+                    romanized={nextRomanized}
+                    offsetX={verticalScroll ? 0 : windowWidth}
+                    offsetY={verticalScroll ? windowHeight : 0}
+                    enableInputWordTooltips={false}
+                    enableOutputWordTooltips={false}
+                    {...commonCardProps}
+                  />
+                )}
+              </>
+            );
+          } else {
+            // Fallback to single phrase with AnimatePresence for enter/exit animations
+            phraseContent = (
+              <AnimatePresence mode={'sync'}>
+                <PhraseCard
+                  key={`${currentPhase}-${currentPhrase || currentTranslated}`}
+                  phrase={currentPhrase}
+                  translated={currentTranslated}
+                  romanized={romanizedOutput}
+                  offsetX={0}
+                  offsetY={0}
+                  enableInputWordTooltips={inputTooltipsEnabled}
+                  enableOutputWordTooltips={true}
+                  {...commonCardProps}
+                />
+              </AnimatePresence>
+            );
+          }
+
+          // Wrap in draggable container if on mobile with navigation
+          if (shouldBeDraggable) {
+            return (
+              <motion.div
+                className={`absolute inset-0 flex flex-col items-center ${alignPhraseTop ? '' : 'justify-center'}`}
+                {...dragProps}
+              >
+                {phraseContent}
               </motion.div>
-            )
-          )}
-        </AnimatePresence>
+            );
+          }
+
+          return phraseContent;
+        })()}
         {/* Progress Bar for Recall/Shadow */}
         <div
           className="absolute bottom-0 left-0 w-full h-1 overflow-hidden"

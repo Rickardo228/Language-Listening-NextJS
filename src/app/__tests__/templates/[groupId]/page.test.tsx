@@ -1,14 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, waitFor } from '@testing-library/react'
-import { useParams, useSearchParams, useRouter } from 'next/navigation'
-import TemplateDetailPage from '../../../templates/[groupId]/page'
+import { useRouter } from 'next/navigation'
+import TemplateDetailView from '../../../templates/TemplateDetailView'
 import { mockFirestore } from '../../../__mocks__/firebase'
 import { PresentationConfig } from '../../../types'
 
 // Mock Next.js navigation
 vi.mock('next/navigation', () => ({
-    useParams: vi.fn(),
-    useSearchParams: vi.fn(),
     useRouter: vi.fn(),
 }))
 
@@ -52,7 +50,7 @@ vi.mock('../../../contexts/UserContext', () => ({
         user: mockUserProfile,
         userProfile: mockUserProfile,
         isAdmin: mockIsAdmin,
-        loading: false,
+        isAuthLoading: false,
     }),
 }))
 
@@ -95,7 +93,7 @@ vi.mock('../../../CollectionHeader', () => ({
     CollectionHeader: () => <div data-testid="collection-header">CollectionHeader</div>,
 }))
 
-describe('TemplateDetailPage - Template-Level Config', () => {
+describe('TemplateDetailView - Template-Level Config', () => {
     const mockGroupId = 'test-group-id'
     const mockRouter = {
         push: vi.fn(),
@@ -113,12 +111,8 @@ describe('TemplateDetailPage - Template-Level Config', () => {
         capturedPresentationConfig = null
         getDocsCallCount = 0
 
-            // Setup default mocks
-            ; (useParams as ReturnType<typeof vi.fn>).mockReturnValue({ groupId: mockGroupId })
-            ; (useSearchParams as ReturnType<typeof vi.fn>).mockReturnValue({
-                get: vi.fn(() => null),
-            })
-            ; (useRouter as ReturnType<typeof vi.fn>).mockReturnValue(mockRouter)
+        // Setup default mocks
+        ; (useRouter as ReturnType<typeof vi.fn>).mockReturnValue(mockRouter)
 
         // Mock Firestore responses
         mockFirestore.collection.mockReturnValue({
@@ -252,7 +246,7 @@ describe('TemplateDetailPage - Template-Level Config', () => {
             mockIsAdmin = true
             mockUserProfile = mockAdminUser
 
-            render(<TemplateDetailPage />)
+            render(<TemplateDetailView groupId={mockGroupId} initialInputLang="en-GB" initialTargetLang="it-IT" />)
 
             // Wait for component to mount and setPresentationConfig to be available
             await waitFor(() => {
@@ -295,7 +289,7 @@ describe('TemplateDetailPage - Template-Level Config', () => {
             mockIsAdmin = true
             mockUserProfile = mockAdminUser
 
-            render(<TemplateDetailPage />)
+            render(<TemplateDetailView groupId={mockGroupId} initialInputLang="en-GB" initialTargetLang="it-IT" />)
 
             await waitFor(() => {
                 expect(capturedSetPresentationConfig).toBeTruthy()
@@ -324,7 +318,7 @@ describe('TemplateDetailPage - Template-Level Config', () => {
             mockIsAdmin = false
             mockUserProfile = mockUser
 
-            render(<TemplateDetailPage />)
+            render(<TemplateDetailView groupId={mockGroupId} initialInputLang="en-GB" initialTargetLang="it-IT" />)
 
             await waitFor(() => {
                 expect(capturedSetPresentationConfig).toBeTruthy()
@@ -352,7 +346,7 @@ describe('TemplateDetailPage - Template-Level Config', () => {
 
             const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => { })
 
-            render(<TemplateDetailPage />)
+            render(<TemplateDetailView groupId={mockGroupId} initialInputLang="en-GB" initialTargetLang="it-IT" />)
 
             await waitFor(() => {
                 expect(capturedSetPresentationConfig).toBeTruthy()
@@ -384,7 +378,7 @@ describe('TemplateDetailPage - Template-Level Config', () => {
             mockIsAdmin = true
             mockUserProfile = mockAdminUser
 
-            render(<TemplateDetailPage />)
+            render(<TemplateDetailView groupId={mockGroupId} initialInputLang="en-GB" initialTargetLang="it-IT" />)
 
             await waitFor(() => {
                 expect(capturedSetPresentationConfig).toBeTruthy()
@@ -407,7 +401,7 @@ describe('TemplateDetailPage - Template-Level Config', () => {
             mockIsAdmin = true
             mockUserProfile = mockAdminUser
 
-            render(<TemplateDetailPage />)
+            render(<TemplateDetailView groupId={mockGroupId} initialInputLang="en-GB" initialTargetLang="it-IT" />)
 
             await waitFor(() => {
                 expect(capturedSetPresentationConfig).toBeTruthy()
@@ -448,7 +442,7 @@ describe('TemplateDetailPage - Template-Level Config', () => {
             mockIsAdmin = false
             mockUserProfile = mockUser
 
-            render(<TemplateDetailPage />)
+            render(<TemplateDetailView groupId={mockGroupId} initialInputLang="en-GB" initialTargetLang="it-IT" />)
 
             await waitFor(() => {
                 expect(capturedSetPresentationConfig).toBeTruthy()
@@ -483,7 +477,7 @@ describe('TemplateDetailPage - Template-Level Config', () => {
             mockIsAdmin = true
             mockUserProfile = mockAdminUser
 
-            render(<TemplateDetailPage />)
+            render(<TemplateDetailView groupId={mockGroupId} initialInputLang="en-GB" initialTargetLang="it-IT" />)
 
             await waitFor(() => {
                 expect(capturedSetPresentationConfig).toBeTruthy()
@@ -533,7 +527,7 @@ describe('TemplateDetailPage - Template-Level Config', () => {
 
             const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => { })
 
-            render(<TemplateDetailPage />)
+            render(<TemplateDetailView groupId={mockGroupId} initialInputLang="en-GB" initialTargetLang="it-IT" />)
 
             await waitFor(() => {
                 expect(capturedSetPresentationConfig).toBeTruthy()
@@ -570,7 +564,7 @@ describe('TemplateDetailPage - Template-Level Config', () => {
 
             const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => { })
 
-            render(<TemplateDetailPage />)
+            render(<TemplateDetailView groupId={mockGroupId} initialInputLang="en-GB" initialTargetLang="it-IT" />)
 
             await waitFor(() => {
                 expect(capturedSetPresentationConfig).toBeTruthy()
@@ -593,4 +587,3 @@ describe('TemplateDetailPage - Template-Level Config', () => {
         })
     })
 })
-

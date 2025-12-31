@@ -14,6 +14,7 @@ import { useUser } from '../../contexts/UserContext';
 import { PhrasePlaybackView, PhrasePlaybackMethods } from '../../components/PhrasePlaybackView';
 import { uploadBackgroundMedia, deleteBackgroundMedia } from '../../utils/backgroundUpload';
 import { toast } from 'sonner';
+import { getUserProfile } from '../../utils/userPreferences';
 
 const firestore = getFirestore();
 
@@ -30,9 +31,38 @@ export default function CollectionPage() {
   const [addToCollectionTargetLang, setAddToCollectionTargetLang] = useState<string>('it-IT');
   const [phrasesInput, setPhrasesInput] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
+  const [userDefaultConfig, setUserDefaultConfig] = useState<PresentationConfig | null>(null);
+  const [collectionPresentationConfig, setCollectionPresentationConfig] = useState<PresentationConfig | null>(null);
+  const [userConfigLoaded, setUserConfigLoaded] = useState(false);
 
   const { presentationConfig, setPresentationConfig: setPresentationConfigBase } = usePresentationConfig();
   const playbackMethodsRef = useRef<PhrasePlaybackMethods | null>(null);
+
+  useEffect(() => {
+    const loadUserConfig = async () => {
+      if (!user) {
+        setUserDefaultConfig(null);
+        setUserConfigLoaded(true);
+        return;
+      }
+
+      try {
+        const userProfile = await getUserProfile(user.uid);
+        if (userProfile?.defaultPresentationConfig) {
+          setUserDefaultConfig(userProfile.defaultPresentationConfig);
+        } else {
+          setUserDefaultConfig(null);
+        }
+      } catch (error) {
+        console.error('Error loading user config:', error);
+        setUserDefaultConfig(null);
+      } finally {
+        setUserConfigLoaded(true);
+      }
+    };
+
+    loadUserConfig();
+  }, [user]);
 
   const setPhrases = async (phrases: Phrase[], collectionId?: string) => {
     setPhrasesBase(phrases);
@@ -106,22 +136,9 @@ export default function CollectionPage() {
             setAddToCollectionTargetLang(firstPhrase.targetLang);
           }
 
-          // Set the presentation config from the collection
-          setPresentationConfigBase(config?.presentationConfig || defaultPresentationConfig);
+          // Store the collection presentation config (merged with user defaults later)
+          setCollectionPresentationConfig(config?.presentationConfig || null);
 
-          // Reset playback state
-          if (playbackMethodsRef.current) {
-            playbackMethodsRef.current.handleStop();
-            playbackMethodsRef.current.setCurrentPhraseIndex(0);
-            // Determine initial phase considering both enableOutputBeforeInput and enableInputPlayback
-            let initialPhase: 'input' | 'output';
-            if (config?.presentationConfig?.enableOutputBeforeInput) {
-              initialPhase = 'output';
-            } else {
-              initialPhase = config?.presentationConfig?.enableInputPlayback ? 'input' : 'output';
-            }
-            playbackMethodsRef.current.setCurrentPhase(initialPhase);
-          }
         }
       } catch (err) {
         console.error('Error loading collection:', err);
@@ -133,6 +150,27 @@ export default function CollectionPage() {
 
     loadCollection();
   }, [user, collectionId]);
+
+  useEffect(() => {
+    if (!collectionConfig || !userConfigLoaded) return;
+
+    const mergedConfig: PresentationConfig = {
+      ...defaultPresentationConfig,
+      ...(userDefaultConfig || {}),
+      ...(collectionPresentationConfig || {}),
+    };
+
+    setPresentationConfigBase(mergedConfig);
+
+    if (playbackMethodsRef.current) {
+      playbackMethodsRef.current.handleStop();
+      playbackMethodsRef.current.setCurrentPhraseIndex(0);
+      const initialPhase = mergedConfig.enableOutputBeforeInput
+        ? 'output'
+        : (mergedConfig.enableInputPlayback ? 'input' : 'output');
+      playbackMethodsRef.current.setCurrentPhase(initialPhase);
+    }
+  }, [collectionConfig, collectionPresentationConfig, userConfigLoaded, userDefaultConfig, setPresentationConfigBase]);
 
   const handleAddToCollection = async (inputLang?: string, targetLang?: string, isSwapped?: boolean) => {
     const splitPhrases = phrasesInput

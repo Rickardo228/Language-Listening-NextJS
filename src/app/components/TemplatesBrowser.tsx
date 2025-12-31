@@ -10,6 +10,8 @@ import { LanguageSelector } from './LanguageSelector';
 import { useUser } from '../contexts/UserContext';
 import { track } from '../../lib/mixpanelClient';
 import { loadProgress } from '../utils/progressService';
+import { buildTemplateUrl } from '../utils/templateRoutes';
+import { resetMainScroll } from '../utils/scroll';
 
 const firestore = getFirestore();
 
@@ -480,7 +482,12 @@ export function TemplatesBrowser({
                                         inputLang,
                                         targetLang
                                     });
-                                    router.push(`/templates/${c.id}?inputLang=${inputLang}&targetLang=${targetLang}`);
+                                    resetMainScroll();
+                                    router.push(buildTemplateUrl({
+                                        groupId: c.id,
+                                        inputLang,
+                                        targetLang,
+                                    }));
                                 }}
                                 onPlayClick={(c) => {
                                     const template = templateByGroup.get(c.id);
@@ -495,9 +502,13 @@ export function TemplatesBrowser({
                                         inputLang,
                                         targetLang
                                     });
-                                    router.push(
-                                        `/templates/${c.id}?inputLang=${inputLang}&targetLang=${targetLang}&autoplay=1`
-                                    );
+                                    resetMainScroll();
+                                    router.push(buildTemplateUrl({
+                                        groupId: c.id,
+                                        inputLang,
+                                        targetLang,
+                                        autoplay: true,
+                                    }));
                                 }}
                                 hideScrollbar
                                 enableCarouselControls
@@ -520,4 +531,3 @@ export function TemplatesBrowser({
         </div>
     );
 }
-

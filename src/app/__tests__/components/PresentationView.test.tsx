@@ -66,6 +66,27 @@ describe('PresentationView Component', () => {
         expect(setFullscreen).toHaveBeenCalledWith(true)
     })
 
+    it('should ignore click to enter fullscreen when tooltip is open', async () => {
+        const user = userEvent.setup()
+        const setFullscreen = vi.fn()
+
+        render(
+            <PresentationView
+                {...defaultProps}
+                setFullscreen={setFullscreen}
+            />
+        )
+
+        window.dispatchEvent(new CustomEvent('word-tooltip', { detail: { open: true } }))
+
+        const container = screen.getByText('Hello').closest('.inset-0') as HTMLElement | null
+        if (container) {
+            await user.click(container)
+        }
+
+        expect(setFullscreen).not.toHaveBeenCalled()
+    })
+
     it('should show fullscreen button', () => {
         render(<PresentationView {...defaultProps} />)
 
@@ -265,6 +286,59 @@ describe('PresentationView Component', () => {
         })
 
         expect(onNext).not.toHaveBeenCalled()
+    })
+
+    it('should not navigate when tooltip is open in fullscreen mode', async () => {
+        const onPrevious = vi.fn()
+        const onNext = vi.fn()
+
+        render(
+            <PresentationView
+                {...defaultProps}
+                fullScreen={true}
+                onPrevious={onPrevious}
+                onNext={onNext}
+                canGoBack={true}
+                canGoForward={true}
+            />
+        )
+
+        await waitFor(() => {
+            const portalContainer = document.getElementById('presentation-portal')
+            expect(portalContainer).toBeInTheDocument()
+        })
+
+        window.dispatchEvent(new CustomEvent('word-tooltip', { detail: { open: true } }))
+
+        const portalContainer = document.getElementById('presentation-portal')
+        const presentationDiv = portalContainer!.querySelector('.inset-0') as HTMLElement
+
+        const mockRect = {
+            left: 0,
+            top: 0,
+            right: 900,
+            bottom: 600,
+            width: 900,
+            height: 600,
+            x: 0,
+            y: 0,
+            toJSON: vi.fn()
+        }
+        vi.spyOn(presentationDiv, 'getBoundingClientRect').mockReturnValue(mockRect as DOMRect)
+
+        const clickEvent = new MouseEvent('click', {
+            bubbles: true,
+            cancelable: true,
+            clientX: 200,
+            clientY: 300
+        })
+
+        presentationDiv.dispatchEvent(clickEvent)
+
+        await waitFor(() => {
+            expect(onPrevious).not.toHaveBeenCalled()
+            expect(onNext).not.toHaveBeenCalled()
+        })
     })
 
     it('should navigate on click in fullscreen mode (right third)', async () => {
@@ -552,4 +626,3 @@ describe('PresentationView Component', () => {
         expect(screen.getByText('Hello')).toBeInTheDocument()
     })
 })
-

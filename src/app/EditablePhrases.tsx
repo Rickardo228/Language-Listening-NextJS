@@ -15,6 +15,7 @@ interface EditablePhrasesProps {
     onPhraseClick?: (index: number) => void;
     onPlayPhrase?: (index: number, phase: 'input' | 'output') => void;
     enableOutputBeforeInput?: boolean;
+    readOnly?: boolean;
 }
 
 
@@ -27,9 +28,10 @@ interface PhraseComponentProps {
     onDelete: () => void;
     onPlayPhrase?: (index: number, phase: 'input' | 'output') => void;
     ref?: React.RefObject<HTMLDivElement>;
+    readOnly?: boolean;
 }
 
-function PhraseComponent({ phrase, phrases, isSelected, currentPhase, onPhraseClick, onDelete, onPlayPhrase, ref, setPhrases, enableOutputBeforeInput, isMultiSelectMode, setIsMultiSelectMode, isChecked, onCheckChange }: PhraseComponentProps & {
+function PhraseComponent({ phrase, phrases, isSelected, currentPhase, onPhraseClick, onDelete, onPlayPhrase, ref, setPhrases, enableOutputBeforeInput, isMultiSelectMode, setIsMultiSelectMode, isChecked, onCheckChange, readOnly }: PhraseComponentProps & {
     setPhrases: (phrases: Phrase[]) => void,
     enableOutputBeforeInput?: boolean,
     isMultiSelectMode: boolean,
@@ -37,6 +39,7 @@ function PhraseComponent({ phrase, phrases, isSelected, currentPhase, onPhraseCl
     isChecked: boolean,
     onCheckChange: (checked: boolean) => void
 }) {
+    const isReadOnly = !!readOnly;
     const [inputLoading, setInputLoading] = useState(false);
     const [outputLoading, setOutputLoading] = useState(false);
     const [romanizedLoading, setRomanizedLoading] = useState(false);
@@ -150,7 +153,9 @@ function PhraseComponent({ phrase, phrases, isSelected, currentPhase, onPhraseCl
             )
         )
     }
-    const menuButton = (
+    const menuButton = isReadOnly ? (
+        <div className="w-8 px-4" />
+    ) : (
         <Menu
             trigger={
                 <button
@@ -179,10 +184,26 @@ function PhraseComponent({ phrase, phrases, isSelected, currentPhase, onPhraseCl
         />
     )
 
+    const readOnlyFieldClasses = 'bg-slate-50 border-slate-200 shadow-inner dark:bg-slate-900/40 dark:border-slate-700';
+    const editableFieldClasses = 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600';
+    const focusClasses = isReadOnly ? 'focus:ring-0 focus:border-slate-300 dark:focus:border-slate-600' : '';
+    const textClasses = isReadOnly ? 'text-slate-700 dark:text-slate-200' : 'text-gray-900 dark:text-gray-100';
+
     const renderInputs = () => {
+        const readOnlyField = (value: string) => (
+            <div
+                onClick={(e) => e.stopPropagation()}
+                className={`w-full p-2 border rounded 
+                    ${readOnlyFieldClasses}
+                    ${textClasses} ${focusClasses}`}
+            >
+                {value || <span className="text-slate-400 dark:text-slate-500">-</span>}
+            </div>
+        );
+
         const inputField = (
             <div className="flex items-center gap-2">
-                {isMultiSelectMode && (
+                {isMultiSelectMode && !isReadOnly && (
                     <input
                         type="checkbox"
                         checked={isChecked}
@@ -191,24 +212,31 @@ function PhraseComponent({ phrase, phrases, isSelected, currentPhase, onPhraseCl
                         className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
                     />
                 )}
-                <input
-                    type="text"
-                    value={phrase.input}
-                    onClick={(e) => e.stopPropagation()}
-                    onChange={(e) => {
-                        const newPhrases = [...phrases];
-                        newPhrases[phrases.indexOf(phrase)] = { ...newPhrases[phrases.indexOf(phrase)], input: e.target.value };
-                        setPhrases(newPhrases);
-                    }}
-                    onBlur={() => handleBlur('input')}
-                    className={`w-full p-2 border rounded bg-white dark:bg-gray-800 
-                        ${isSelected && currentPhase === 'input'
-                            ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-400'
-                            : 'border-gray-300 dark:border-gray-600'}
-                        text-gray-900 dark:text-gray-100
-                        ${inputLoading ? 'opacity-50' : ''}`}
-                    disabled={inputLoading}
-                />
+                {isReadOnly ? (
+                    readOnlyField(phrase.input)
+                ) : (
+                    <input
+                        type="text"
+                        value={phrase.input}
+                        onClick={(e) => e.stopPropagation()}
+                        onChange={(e) => {
+                            const newPhrases = [...phrases];
+                            newPhrases[phrases.indexOf(phrase)] = { ...newPhrases[phrases.indexOf(phrase)], input: e.target.value };
+                            setPhrases(newPhrases);
+                        }}
+                        onBlur={() => {
+                            handleBlur('input');
+                        }}
+                        className={`w-full p-2 border rounded 
+                            ${editableFieldClasses}
+                            ${isSelected && currentPhase === 'input'
+                                ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-400'
+                                : ''}
+                            ${textClasses}
+                            ${inputLoading ? 'opacity-50' : ''} ${focusClasses}`}
+                        disabled={inputLoading}
+                    />
+                )}
                 {phrase.inputAudio && (
                     <button
                         onClick={(e) => {
@@ -228,26 +256,33 @@ function PhraseComponent({ phrase, phrases, isSelected, currentPhase, onPhraseCl
 
         const outputField = (
             <div className="flex items-center gap-2">
-                <input
-                    type="text"
-                    value={phrase.translated}
-                    onClick={(e) => e.stopPropagation()}
-                    onChange={(e) => {
-                        const newPhrases = [...phrases];
-                        newPhrases[phrases.indexOf(phrase)] = { ...newPhrases[phrases.indexOf(phrase)], translated: e.target.value };
-                        setPhrases(newPhrases);
-                    }}
-                    onBlur={() => handleBlur('translated')}
-                    className={`w-full p-2 border rounded bg-white dark:bg-gray-800 
-                        ${isSelected && currentPhase === 'output'
-                            ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-400'
-                            : 'border-gray-300 dark:border-gray-600'}
-                        text-gray-900 dark:text-gray-100
-                        ${outputLoading ? 'opacity-50' : ''}`}
-                    disabled={outputLoading}
-                />
+                {isReadOnly ? (
+                    readOnlyField(phrase.translated)
+                ) : (
+                    <input
+                        type="text"
+                        value={phrase.translated}
+                        onClick={(e) => e.stopPropagation()}
+                        onChange={(e) => {
+                            const newPhrases = [...phrases];
+                            newPhrases[phrases.indexOf(phrase)] = { ...newPhrases[phrases.indexOf(phrase)], translated: e.target.value };
+                            setPhrases(newPhrases);
+                        }}
+                        onBlur={() => {
+                            handleBlur('translated');
+                        }}
+                        className={`w-full p-2 border rounded 
+                            ${editableFieldClasses}
+                            ${isSelected && currentPhase === 'output'
+                                ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-400'
+                                : ''}
+                            ${textClasses}
+                            ${outputLoading ? 'opacity-50' : ''} ${focusClasses}`}
+                        disabled={outputLoading}
+                    />
+                )}
                 {!phrase.useRomanizedForAudio && <PlayOutputAudioButton />}
-                {phrase.useRomanizedForAudio && (
+                {phrase.useRomanizedForAudio && !isReadOnly && (
                     <button
                         onClick={(e) => {
                             e.stopPropagation();
@@ -260,7 +295,8 @@ function PhraseComponent({ phrase, phrases, isSelected, currentPhase, onPhraseCl
                         <MicrophoneIcon className="w-4 h-4" />
                     </button>
                 )}
-                {enableOutputBeforeInput ? menuButton : <div className="w-8 px-4"></div>}                {outputLoading && <span className="text-gray-500 dark:text-gray-400 text-sm">Processing...</span>}
+                {enableOutputBeforeInput ? menuButton : <div className="w-8 px-4"></div>}
+                {outputLoading && <span className="text-gray-500 dark:text-gray-400 text-sm">Processing...</span>}
             </div>
         );
 
@@ -294,22 +330,35 @@ function PhraseComponent({ phrase, phrases, isSelected, currentPhase, onPhraseCl
             {renderInputs()}
             {phrase.romanized && <div className="mt-2 mb-2 flex items-center gap-2">
                 <label className="block font-medium mb-1 text-gray-700 dark:text-gray-200">Romanized:</label>
-                <input
-                    type="text"
-                    value={phrase.romanized}
-                    onClick={(e) => e.stopPropagation()}
-                    onChange={(e) => {
-                        const newPhrases = [...phrases];
-                        newPhrases[phrases.indexOf(phrase)] = { ...newPhrases[phrases.indexOf(phrase)], romanized: e.target.value };
-                        setPhrases(newPhrases);
-                    }}
-                    onBlur={() => handleBlur('romanized')}
-                    className="w-full p-2 border rounded bg-white dark:bg-gray-800 
-                        border-gray-300 dark:border-gray-600 
-                        text-gray-900 dark:text-gray-100"
-                />
+                {isReadOnly ? (
+                    <div
+                        onClick={(e) => e.stopPropagation()}
+                        className={`w-full p-2 border rounded 
+                            ${readOnlyFieldClasses}
+                            ${textClasses} ${focusClasses}`}
+                    >
+                        {phrase.romanized}
+                    </div>
+                ) : (
+                    <input
+                        type="text"
+                        value={phrase.romanized}
+                        onClick={(e) => e.stopPropagation()}
+                        onChange={(e) => {
+                            const newPhrases = [...phrases];
+                            newPhrases[phrases.indexOf(phrase)] = { ...newPhrases[phrases.indexOf(phrase)], romanized: e.target.value };
+                            setPhrases(newPhrases);
+                        }}
+                        onBlur={() => {
+                            handleBlur('romanized');
+                        }}
+                        className={`w-full p-2 border rounded 
+                            ${editableFieldClasses}
+                            ${textClasses} ${focusClasses}`}
+                    />
+                )}
                 {phrase.useRomanizedForAudio && <PlayOutputAudioButton />}
-                {!phrase.useRomanizedForAudio && <button
+                {!phrase.useRomanizedForAudio && !isReadOnly && <button
                     onClick={(e) => {
                         e.stopPropagation();
                         handleGenerateRomanizedAudio();
@@ -326,7 +375,7 @@ function PhraseComponent({ phrase, phrases, isSelected, currentPhase, onPhraseCl
     );
 }
 
-export function EditablePhrases({ phrases, setPhrases, currentPhraseIndex, currentPhase, onPhraseClick, onPlayPhrase, enableOutputBeforeInput }: EditablePhrasesProps) {
+export function EditablePhrases({ phrases, setPhrases, currentPhraseIndex, currentPhase, onPhraseClick, onPlayPhrase, enableOutputBeforeInput, readOnly = false }: EditablePhrasesProps) {
     const selectedPhraseRef = useRef<HTMLDivElement>(null!);
     const [isArrowVisible, setIsArrowVisible] = useState(false);
     const [scrollDirection, setScrollDirection] = useState<'up' | 'down' | null>(null);
@@ -417,7 +466,7 @@ export function EditablePhrases({ phrases, setPhrases, currentPhraseIndex, curre
                     </button>
 
                 )}
-                {isMultiSelectMode && selectedPhrases.size > 0 && (
+                {isMultiSelectMode && selectedPhrases.size > 0 && !readOnly && (
                     <div className="flex justify-between items-between mb-4 p-3  bg-background w-[100%]">
 
                         <div className="flex items-center gap-2">
@@ -461,6 +510,7 @@ export function EditablePhrases({ phrases, setPhrases, currentPhraseIndex, curre
                         setIsMultiSelectMode={setIsMultiSelectMode}
                         isChecked={selectedPhrases.has(index)}
                         onCheckChange={(checked) => handleCheckChange(index, checked)}
+                        readOnly={readOnly}
                         {...(isSelected && { ref: selectedPhraseRef })}
                     />
                 );

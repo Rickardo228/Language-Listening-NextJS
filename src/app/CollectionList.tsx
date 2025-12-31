@@ -148,6 +148,30 @@ export function CollectionList({
         'bg-gradient-to-b from-[#1ED760] to-[#6D28D9]'
     ];
 
+    const ShowAllButton = () => {
+        return <button
+            onClick={() => (onShowAllClick ? onShowAllClick() : router.push('/templates'))}
+            className={`flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors ${layout === 'vertical' ? 'w-full' : ''} justify-center py-2`}
+            title="Show all"
+        >
+            <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={1.5}
+                stroke="currentColor"
+                className="w-3 h-3"
+            >
+                <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"
+                />
+            </svg>
+            Show all
+        </button >
+    }
+
     return (
         <div className="space-y-4">
             <div className="flex items-center justify-between">
@@ -164,6 +188,9 @@ export function CollectionList({
                     <div>
                         {actionButton}
                     </div>
+                )}
+                {showAllButton && layout === 'horizontal' && (
+                    <ShowAllButton />
                 )}
             </div>
             {loading ? (
@@ -445,28 +472,8 @@ export function CollectionList({
                     )}
                 </div>
             )}
-            {showAllButton && (
-                <button
-                    onClick={() => (onShowAllClick ? onShowAllClick() : router.push('/templates'))}
-                    className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors w-full justify-center py-2"
-                    title="Show all"
-                >
-                    <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        strokeWidth={1.5}
-                        stroke="currentColor"
-                        className="w-3 h-3"
-                    >
-                        <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"
-                        />
-                    </svg>
-                    Show all
-                </button>
+            {showAllButton && layout === 'vertical' && (
+                <ShowAllButton />
             )}
         </div>
     );
