@@ -512,31 +512,11 @@ export function PhrasePlaybackView({
             }
         }
 
-
-        // swap state + src (no pause)
-        setCurrentPhraseIndexWithMetadata(targetIndex);
-        setCurrentPhaseWithMetadata(targetPhase);
-
-        const url =
-            targetPhase === 'input'
-                ? (phrases[targetIndex].inputAudio?.audioUrl || '')
-                : (phrases[targetIndex].outputAudio?.audioUrl || '');
-
-        setSrcSafely(url);
-
         // apply rate
         const speed =
             targetPhase === 'input'
                 ? (presentationConfig.inputPlaybackSpeed || 1.0)
                 : (presentationConfig.outputPlaybackSpeed || 1.0);
-        if (audioRef.current) audioRef.current.playbackRate = speed;
-
-        // Track navigation events (stats tracking now handled in setCurrentPhraseIndexWithMetadata)
-        if (targetIndex >= 0 && phrases[targetIndex] && targetPhase === 'output') {
-            // Track skip navigation event
-            const eventType = delta === 1 ? 'next' : 'previous';
-            trackPlaybackEvent(eventType, `${collectionId || 'unknown'}-${targetIndex}`, targetPhase, targetIndex, speed);
-        }
 
         // Handle list completion
         if (isCompletingList && !presentationConfig.enableLoop) {
@@ -605,7 +585,30 @@ export function PhrasePlaybackView({
             setPaused(true);
             setMSState('paused');
             return;
+        } else {
+            // swap state + src (no pause)
+            setCurrentPhraseIndexWithMetadata(targetIndex);
+            setCurrentPhaseWithMetadata(targetPhase);
+
+            const url =
+                targetPhase === 'input'
+                    ? (phrases[targetIndex].inputAudio?.audioUrl || '')
+                    : (phrases[targetIndex].outputAudio?.audioUrl || '');
+
+            setSrcSafely(url);
+
+
+            if (audioRef.current) audioRef.current.playbackRate = speed;
         }
+
+        // Track navigation events (stats tracking now handled in setCurrentPhraseIndexWithMetadata)
+        if (targetIndex >= 0 && phrases[targetIndex] && targetPhase === 'output') {
+            // Track skip navigation event
+            const eventType = delta === 1 ? 'next' : 'previous';
+            trackPlaybackEvent(eventType, `${collectionId || 'unknown'}-${targetIndex}`, targetPhase, targetIndex, speed);
+        }
+
+
 
         // continue only if we were already playing
         if (wasPlaying) {
