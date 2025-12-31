@@ -671,7 +671,7 @@ export function PresentationView({
 
           {/* Final Phrase Button - Juicy centered button when on last phrase */}
           {currentPhraseIndex !== undefined && totalPhrases !== undefined && currentPhraseIndex === totalPhrases - 1 && onNext && (
-            <div className="absolute bottom-8 left-0 right-0 flex justify-center z-20">
+            <div className="absolute bottom-4 left-0 right-0 flex justify-center z-20">
               <motion.div
                 key={'finish-list'}
                 initial={{ opacity: 0, y: 20, scale: 0.9 }}
