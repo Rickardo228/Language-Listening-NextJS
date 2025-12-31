@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { motion } from 'framer-motion'
+import Image from 'next/image'
 import { Button } from '../components/ui/Button'
 import { languageOptions } from '../types'
 import {
@@ -13,59 +14,83 @@ import {
   Zap,
   Check,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   Repeat,
   Headphones,
-  Globe
+  Globe,
+  Users
 } from 'lucide-react'
 
 export default function LandingPage() {
   const [openFaq, setOpenFaq] = useState<number | null>(null)
+  const [currentTestimonial, setCurrentTestimonial] = useState(0)
 
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
       <section className="relative overflow-hidden bg-gradient-to-b from-primary/5 to-background">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24">
+        <div className="grid lg:grid-cols-[70%_30%] min-h-[600px] lg:min-h-[700px]">
+          {/* Left Content */}
+          <div className="flex items-center px-4 sm:px-6 lg:px-12 xl:px-16 py-16 sm:py-24">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+              className="w-full"
+            >
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-foreground mb-6" style={{ lineHeight: '1.3' }}>
+                Speak naturally and understand natives easily
+              </h1>
+              <p className="text-xl sm:text-2xl text-muted-foreground mb-8">
+                Language shadowing is the fastest way to conversational fluency.
+              </p>
+
+              <div className="space-y-4 mb-10">
+                <div className="flex items-center gap-2 text-lg">
+                  <Zap className="w-5 h-5 text-primary" />
+                  <span>Build your listening and speaking reflexes with shadowing</span>
+                </div>
+                <div className="flex items-center gap-2 text-lg">
+                  <Volume2 className="w-5 h-5 text-primary" />
+                  <span>A low effort, high impact method for any ability level</span>
+                </div>
+                <div className="flex items-center gap-2 text-lg">
+                  <TrendingUp className="w-5 h-5 text-primary" />
+                  <span>See progress in a week</span>
+                </div>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-4 mb-6">
+                <Button size="lg" className="text-lg px-8">
+                  Start free trial
+                </Button>
+                <Button size="lg" variant="secondary" className="text-lg px-8" leftIcon={<PlayCircle className="w-5 h-5" />}>
+                  Try a sample lesson
+                </Button>
+              </div>
+
+              <p className="text-sm text-muted-foreground">
+                Cancel anytime. Reminder before billing.
+              </p>
+            </motion.div>
+          </div>
+
+          {/* Right Image */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="max-w-4xl"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8, delay: 0.2 }}
+            className="relative hidden lg:block"
           >
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-foreground mb-6" style={{ lineHeight: '1.3' }}>
-              Speak naturally and understand natives easily
-            </h1>
-            <p className="text-xl sm:text-2xl text-muted-foreground mb-8">
-              Language shadowing is the fastest way to conversational fluency.
-            </p>
-
-            <div className="space-y-4 mb-10">
-              <div className="flex items-center gap-2 text-lg">
-                <Zap className="w-5 h-5 text-primary" />
-                <span>Build your listening and speaking reflexes with shadowing</span>
-              </div>
-              <div className="flex items-center gap-2 text-lg">
-                <Volume2 className="w-5 h-5 text-primary" />
-                <span>A low effort, high impact method for any ability level</span>
-              </div>
-              <div className="flex items-center gap-2 text-lg">
-                <TrendingUp className="w-5 h-5 text-primary" />
-                <span>See progress in a week</span>
-              </div>
-            </div>
-
-            <div className="flex flex-col sm:flex-row gap-4 mb-6">
-              <Button size="lg" className="text-lg px-8">
-                Start free trial
-              </Button>
-              <Button size="lg" variant="secondary" className="text-lg px-8" leftIcon={<PlayCircle className="w-5 h-5" />}>
-                Try a sample lesson
-              </Button>
-            </div>
-
-            <p className="text-sm text-muted-foreground">
-              Cancel anytime. Reminder before billing.
-            </p>
+            <div className="absolute inset-0 bg-gradient-to-r from-background/20 to-transparent z-10" />
+            <Image
+              src="/hero-image.jpg"
+              alt="Language learning"
+              fill
+              className="object-cover object-right"
+              priority
+            />
           </motion.div>
         </div>
       </section>
@@ -133,77 +158,53 @@ export default function LandingPage() {
       </section>
 
       {/* Why This Works */}
-      <section className="py-16 sm:py-24 bg-secondary/20">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="relative overflow-hidden bg-secondary/20">
+        <div className="grid lg:grid-cols-[30%_70%] min-h-[600px] lg:min-h-[700px]">
+          {/* Left Image */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
+            initial={{ opacity: 0, x: -20 }}
+            whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
+            transition={{ duration: 0.8 }}
+            className="relative hidden lg:block"
           >
-            <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4 text-center">
-              Minimum screen time, maximum progress
-            </h2>
-            <p className="text-lg text-center text-muted-foreground mb-12 max-w-3xl mx-auto">
-              Language learning through consistent, low-friction immersion. No more click and drag.
-              No more tedious flashcards. No more hunting for the right content.
-              Just press play and practice - while you're walking, doing chores, or even in the shower.
-            </p>
-
-            {/* <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
-              <div className="bg-card border-2 border-border rounded-lg p-6 space-y-4">
-                <div className="space-y-3">
-                  <p className="text-muted-foreground italic">"I just wanted the words I needed for a trip..."</p>
-                  <p className="text-foreground font-medium">
-                    ✓ Get travel-ready phrases organized by situation
-                  </p>
-                </div>
-              </div>
-
-              <div className="bg-card border-2 border-border rounded-lg p-6 space-y-4">
-                <div className="space-y-3">
-                  <p className="text-muted-foreground italic">"Anki was boring and tedious to upload and practice..."</p>
-                  <p className="text-foreground font-medium">
-                    ✓ No setup. Just tap and start practicing
-                  </p>
-                </div>
-              </div>
-
-              <div className="bg-card border-2 border-border rounded-lg p-6 space-y-4">
-                <div className="space-y-3">
-                  <p className="text-muted-foreground italic">"Tired of trawling podcast apps trying to find content that's not too advanced..."</p>
-                  <p className="text-foreground font-medium">
-                    ✓ Every phrase is matched to your level
-                  </p>
-                </div>
-              </div>
-
-              <div className="bg-card border-2 border-border rounded-lg p-6 space-y-4">
-                <div className="space-y-3">
-                  <p className="text-muted-foreground italic">"1000 day streak on Duolingo and I still can't hold a conversation..."</p>
-                  <p className="text-foreground font-medium">
-                    ✓ Practice actual speaking, not just recognition
-                  </p>
-                </div>
-              </div>
-
-              <div className="bg-card border-2 border-border rounded-lg p-6 space-y-4 md:col-span-2">
-                <div className="space-y-3">
-                  <p className="text-muted-foreground italic">"I just want to listen on the go-while doing chores, in the shower, commuting..."</p>
-                  <p className="text-foreground font-medium">
-                    ✓ Audio-first and screen-light. Practice anywhere, anytime
-                  </p>
-                </div>
-              </div>
-            </div> */}
-
-            <div className="text-center">
-              <Button size="lg" className="text-lg px-10">Start free trial</Button>
-              <p className="mt-4 text-sm text-muted-foreground">
-                Simple to start. Hard to stop.
-              </p>
-            </div>
+            <div className="absolute inset-0 bg-gradient-to-l from-secondary/20 to-transparent z-10" />
+            <Image
+              src="/on-the-go-listening.png"
+              alt="Person listening to language lessons on the go"
+              fill
+              className="object-cover object-center"
+            />
           </motion.div>
+
+          {/* Right Content */}
+          <div className="flex items-center px-4 sm:px-6 lg:px-12 xl:px-16 py-16 sm:py-24">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
+              className="w-full"
+            >
+              <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-6">
+                Easy, measurable improvements
+              </h2>
+              <p className="text-lg text-muted-foreground mb-4 leading-relaxed">
+                No games. No searching for podcasts. No tutors.
+                Just press play and practice - while you're walking, doing chores, or even in the shower.
+              </p>
+              <p className="text-lg text-muted-foreground mb-8 leading-relaxed">
+                We measure one thing: the number of phrases you listen to.
+              </p>
+
+              <div className="space-y-3 mb-8">
+                <Button size="lg" className="text-lg px-10">Start free trial</Button>
+                <p className="text-sm text-muted-foreground">
+                  Simple to start. Hard to stop.
+                </p>
+              </div>
+            </motion.div>
+          </div>
         </div>
       </section>
 
@@ -224,6 +225,18 @@ export default function LandingPage() {
               Skip the "what should I practice?" problem. Choose a set and start speaking.
             </p>
 
+            <div className="mb-12 max-w-4xl mx-auto">
+              <div className="relative rounded-xl overflow-hidden border-2 border-border shadow-2xl">
+                <Image
+                  src="/language-shadowing-player-story.png"
+                  alt="Language shadowing player interface"
+                  width={2070}
+                  height={1146}
+                  className="w-full h-auto"
+                />
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10">
               <div className="bg-card border border-border rounded-lg p-6 text-left">
                 <Check className="w-6 h-6 text-primary mb-3" />
@@ -231,11 +244,11 @@ export default function LandingPage() {
               </div>
               <div className="bg-card border border-border rounded-lg p-6 text-left">
                 <Check className="w-6 h-6 text-primary mb-3" />
-                <p className="text-sm">Travel, daily life, and real conversations</p>
+                <p className="text-sm">Most common phrases and verbs</p>
               </div>
               <div className="bg-card border border-border rounded-lg p-6 text-left">
                 <Check className="w-6 h-6 text-primary mb-3" />
-                <p className="text-sm">Always know what to practice next</p>
+                <p className="text-sm">Immersive stories</p>
               </div>
             </div>
 
@@ -244,114 +257,9 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Intermediate-friendly Content */}
-      <section className="py-16 sm:py-24 bg-secondary/20">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-          >
-            <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-6 text-center">
-              Intermediate-friendly: content that fits, so you keep going
-            </h2>
-            <p className="text-lg text-foreground/90 mb-8 leading-relaxed">
-              If you're around <strong>A2/B1</strong>, most native content is either too simple (textbook) or too fast (overwhelming).
-              This gives you a steady path: <strong>stories and practice matched to your level</strong>-so you can improve without constantly
-              translating in your head.
-            </p>
-            <p className="text-lg text-foreground/90 mb-10 leading-relaxed">
-              <strong>New to the language?</strong> Start with beginner stories and slower audio - you'll never be dropped into the deep end.
-            </p>
 
-            <div className="space-y-6 mb-10">
-              <div className="bg-card border border-border rounded-lg p-6">
-                <div className="flex items-start gap-4">
-                  <Globe className="w-6 h-6 text-primary flex-shrink-0 mt-1" />
-                  <div>
-                    <h3 className="font-semibold text-lg mb-2">Stories by level (A2 → C1)</h3>
-                    <p className="text-muted-foreground">
-                      Fantasy worlds, gripping dramas, and cosy reflective chapters-each written/curated for a specific level,
-                      with audio that doesn't outrun you.
-                    </p>
-                  </div>
-                </div>
-              </div>
 
-              <div className="bg-card border border-border rounded-lg p-6">
-                <div className="flex items-start gap-4">
-                  <BookOpen className="w-6 h-6 text-primary flex-shrink-0 mt-1" />
-                  <div>
-                    <h3 className="font-semibold text-lg mb-2">Your phrase bank</h3>
-                    <p className="text-muted-foreground">
-                      Save lines you love, add your own go-to expressions, and build personal packs (small talk, work, travel, storytelling).
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-card border border-border rounded-lg p-6">
-                <div className="flex items-start gap-4">
-                  <TrendingUp className="w-6 h-6 text-primary flex-shrink-0 mt-1" />
-                  <div>
-                    <h3 className="font-semibold text-lg mb-2">Optional daily news</h3>
-                    <p className="text-muted-foreground">
-                      Listen or read a short, level-matched recap-then shadow the key lines so the language sticks.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <p className="text-center text-muted-foreground italic">
-              Everything is <strong>audio-first and screen-light</strong> (visuals when you want them).
-            </p>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* The Player */}
-      <section className="py-16 sm:py-24">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="text-center"
-          >
-            <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-6">
-              Screen-light, on-the-go friendly
-            </h2>
-            <p className="text-lg text-foreground/90 mb-10">
-              Practice while walking, doing chores, commuting - whenever you can speak out loud.
-            </p>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-              <div className="bg-card border border-border rounded-lg p-6">
-                <Headphones className="w-10 h-10 text-primary mb-4 mx-auto" />
-                <h3 className="font-semibold mb-2">Screen-light, on-the-go friendly</h3>
-              </div>
-              <div className="bg-card border border-border rounded-lg p-6">
-                <Repeat className="w-10 h-10 text-primary mb-4 mx-auto" />
-                <h3 className="font-semibold mb-2">Swipeable mode to stay in flow</h3>
-              </div>
-              <div className="bg-card border border-border rounded-lg p-6">
-                <Volume2 className="w-10 h-10 text-primary mb-4 mx-auto" />
-                <h3 className="font-semibold mb-2">Pacing controls</h3>
-                <p className="text-sm text-muted-foreground">Never too fast or too hard</p>
-              </div>
-            </div>
-
-            <Button size="lg" variant="secondary" leftIcon={<PlayCircle className="w-5 h-5" />}>
-              Try a sample lesson
-            </Button>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Progress */}
+      {/* Social Proof */}
       <section className="py-16 sm:py-24 bg-secondary/20">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
@@ -361,26 +269,108 @@ export default function LandingPage() {
             transition={{ duration: 0.6 }}
             className="text-center"
           >
-            <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-6">
-              Progress you can feel in a week
+            <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
+              Built for learners who want to speak,<br />not just study.
             </h2>
-            <p className="text-lg text-foreground/90 mb-10">
-              You're not chasing random streaks - you're building speaking automaticity through repeatable reps.
+            <p className="text-lg text-muted-foreground mb-10">
+              Used for shadowing in 20+ languages
             </p>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-              <div className="bg-card border border-border rounded-lg p-6">
-                <Check className="w-8 h-8 text-primary mb-3 mx-auto" />
-                <p>Build consistency with simple milestones</p>
-              </div>
-              <div className="bg-card border border-border rounded-lg p-6">
-                <Check className="w-8 h-8 text-primary mb-3 mx-auto" />
-                <p>See your momentum session by session</p>
-              </div>
-              <div className="bg-card border border-border rounded-lg p-6">
-                <Check className="w-8 h-8 text-primary mb-3 mx-auto" />
-                <p>Keep a steady habit without overthinking it</p>
-              </div>
+            <div className="mb-10">
+              {(() => {
+                const testimonials = [
+                  {
+                    quote: "This is the only method that made speaking feel automatic instead of forced. I don't think about grammar anymore - I just talk.",
+                    author: "Ana V., learning Portuguese",
+                    image: "/landing/Ana-Testimonial.png"
+                  },
+                  {
+                    quote: "I practice while doing dishes, walking the dog, anywhere. Finally, a method that fits real life instead of requiring desk time.",
+                    author: "Tom H., learning Korean",
+                    image: "/landing/Tom-Testimonial.png"
+                  },
+                  {
+                    quote: "After years of classes, I still couldn't hold a conversation. Three months of shadowing changed everything. Wish I'd found this sooner.",
+                    author: "Marie S., learning Spanish",
+                    image: "/landing/Marie-Testimonial.png"
+                  }
+                ]
+
+                const handlePrevious = () => {
+                  setCurrentTestimonial((prev) =>
+                    prev === 0 ? testimonials.length - 1 : prev - 1
+                  )
+                }
+
+                const handleNext = () => {
+                  setCurrentTestimonial((prev) =>
+                    prev === testimonials.length - 1 ? 0 : prev + 1
+                  )
+                }
+
+                return (
+                  <>
+                    <div className="relative flex items-center justify-center gap-4 mb-6">
+                      <button
+                        onClick={handlePrevious}
+                        className="p-2 rounded-full hover:bg-secondary/50 transition-colors flex-shrink-0"
+                        aria-label="Previous testimonial"
+                      >
+                        <ChevronLeft className="w-6 h-6 text-muted-foreground" />
+                      </button>
+
+                      <div className="bg-card border border-border rounded-lg p-8 max-w-2xl w-full min-h-[180px] flex flex-col justify-center">
+                        <motion.div
+                          key={currentTestimonial}
+                          initial={{ opacity: 0, x: 20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          exit={{ opacity: 0, x: -20 }}
+                          transition={{ duration: 0.3 }}
+                          className="flex items-start gap-4"
+                        >
+                          <Image
+                            src={testimonials[currentTestimonial].image}
+                            alt={testimonials[currentTestimonial].author}
+                            width={60}
+                            height={60}
+                            className="rounded-full flex-shrink-0 object-cover"
+                          />
+                          <div className="flex-1">
+                            <p className="text-lg text-foreground/90 mb-4 italic">
+                              "{testimonials[currentTestimonial].quote}"
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                              - {testimonials[currentTestimonial].author}
+                            </p>
+                          </div>
+                        </motion.div>
+                      </div>
+
+                      <button
+                        onClick={handleNext}
+                        className="p-2 rounded-full hover:bg-secondary/50 transition-colors flex-shrink-0"
+                        aria-label="Next testimonial"
+                      >
+                        <ChevronRight className="w-6 h-6 text-muted-foreground" />
+                      </button>
+                    </div>
+
+                    <div className="flex justify-center gap-2">
+                      {testimonials.map((_, index) => (
+                        <button
+                          key={index}
+                          onClick={() => setCurrentTestimonial(index)}
+                          className={`w-2 h-2 rounded-full transition-all ${index === currentTestimonial
+                            ? 'bg-primary w-8'
+                            : 'bg-muted-foreground/30 hover:bg-muted-foreground/50'
+                            }`}
+                          aria-label={`View testimonial ${index + 1}`}
+                        />
+                      ))}
+                    </div>
+                  </>
+                )
+              })()}
             </div>
 
             <Button size="lg">Start free trial</Button>
@@ -409,7 +399,7 @@ export default function LandingPage() {
               <div className="bg-card border-2 border-border rounded-lg p-8">
                 <h3 className="text-2xl font-bold mb-2">Monthly</h3>
                 <p className="text-muted-foreground mb-4">Flexible and commitment-free</p>
-                <div className="text-4xl font-bold mb-4">$XX<span className="text-lg font-normal text-muted-foreground">/mo</span></div>
+                <div className="text-4xl font-bold mb-4">$9.99<span className="text-lg font-normal text-muted-foreground">/mo</span></div>
                 <Button fullWidth>Start free trial</Button>
               </div>
 
@@ -418,8 +408,8 @@ export default function LandingPage() {
                   Best value
                 </div>
                 <h3 className="text-2xl font-bold mb-2">Annual</h3>
-                <p className="opacity-90 mb-4">Save XX% with annual billing</p>
-                <div className="text-4xl font-bold mb-4">$XX<span className="text-lg font-normal opacity-90">/mo</span></div>
+                <p className="opacity-90 mb-4">Save 34% with annual billing</p>
+                <div className="text-4xl font-bold mb-4">$79<span className="text-lg font-normal opacity-90">/yr</span></div>
                 <Button fullWidth variant="secondary">Start free trial</Button>
               </div>
             </div>
@@ -447,8 +437,8 @@ export default function LandingPage() {
             <div className="space-y-4">
               {[
                 {
-                  q: "Is this for beginners?",
-                  a: "Yes - as long as you can handle short phrases. The pace and difficulty can be adjusted."
+                  q: "Is this for beginners, intermediate, or advanced learners?",
+                  a: "All levels. Beginners start with common phrases and basic conversations. Intermediate learners practice natural speech patterns and idiomatic expressions. Advanced learners work on native-speed dialogue and complex topics. The pace and difficulty adjust to your level."
                 },
                 {
                   q: "Do I need to \"study\" grammar first?",
@@ -456,15 +446,11 @@ export default function LandingPage() {
                 },
                 {
                   q: "Can I use this while commuting?",
-                  a: "Yes - it's designed to be audio-first and screen-light."
-                },
-                {
-                  q: "What if most content is too advanced?",
-                  a: "That's the point of level-matched phrases and templates: you practice at the right difficulty."
+                  a: "Yes - it's designed to be audio-first and enable you to press play once and not interact with your screen for an entire practice session if you don't want to."
                 },
                 {
                   q: "Is this better than flashcards?",
-                  a: "Different job. Flashcards help recognition; shadowing trains speaking and recall under pressure."
+                  a: "No - flashcards test memory; shadowing builds fluency. Flashcards help you recognize words. Shadowing is different: native audio with adjustable playback speed and configurable pauses for speaking, immersive full-screen. You're training your ears and mouth to work at conversation speed, not just testing if you remember a translation. It's the difference between knowing a word and being able to use it when someone's actually talking to you. (We also have active recall mode if you want traditional memory testing.)"
                 }
               ].map((faq, index) => (
                 <div key={index} className="bg-card border border-border rounded-lg overflow-hidden">
