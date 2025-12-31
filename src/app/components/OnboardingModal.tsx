@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Check } from 'lucide-react';
 import { LanguageSelector } from './LanguageSelector';
 import { OnboardingAbilitySelect } from './OnboardingAbilitySelect';
 import { OnboardingContentPreferences } from './OnboardingContentPreferences';
@@ -326,9 +327,7 @@ export function OnboardingModal({
                                 >
                                     <div className="text-green-600 dark:text-green-400">
                                         <div className="w-20 h-20 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mx-auto mb-4">
-                                            <svg className="w-10 h-10" fill="currentColor" viewBox="0 0 20 20">
-                                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                            </svg>
+                                            <Check className="w-10 h-10" strokeWidth={3} />
                                         </div>
                                     </div>
                                     <div>

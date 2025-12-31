@@ -13,6 +13,7 @@ import { defaultPresentationConfig } from '../../defaultConfig';
 import { useUser } from '../../contexts/UserContext';
 import { PhrasePlaybackView, PhrasePlaybackMethods } from '../../components/PhrasePlaybackView';
 import { uploadBackgroundMedia, deleteBackgroundMedia } from '../../utils/backgroundUpload';
+import { toast } from 'sonner';
 
 const firestore = getFirestore();
 
@@ -72,7 +73,7 @@ export default function CollectionPage() {
         }
       } catch (err) {
         console.error('Error updating presentation config:', err);
-        alert('Failed to save settings: ' + err);
+        toast.error('Failed to save settings: ' + err);
       }
     }
   };
@@ -124,7 +125,7 @@ export default function CollectionPage() {
         }
       } catch (err) {
         console.error('Error loading collection:', err);
-        alert('Error loading collection: ' + err);
+        toast.error('Error loading collection: ' + err);
       } finally {
         setLoading(false);
       }
@@ -181,7 +182,7 @@ export default function CollectionPage() {
       setPhrasesInput('');
     } catch (err) {
       console.error('Processing error:', err);
-      alert(err)
+      toast.error(String(err))
     }
     setLoading(false);
   };
@@ -224,7 +225,7 @@ export default function CollectionPage() {
       await setPhrases(updatedPhrases, selectedCollection);
     } catch (err) {
       console.error('Error updating voices:', err);
-      alert('Failed to update voices: ' + err);
+      toast.error('Failed to update voices: ' + err);
     }
   };
 
@@ -238,7 +239,7 @@ export default function CollectionPage() {
       await updateDoc(docRef, { name: newName.trim() });
       setCollectionConfig({ ...collectionConfig, name: newName.trim() });
     } catch (err) {
-      alert("Failed to rename list: " + err);
+      toast.error("Failed to rename list: " + err);
     }
   };
 
@@ -251,7 +252,7 @@ export default function CollectionPage() {
       // Navigate back to home after deletion
       router.push('/');
     } catch (err) {
-      alert("Failed to delete list: " + err);
+      toast.error("Failed to delete list: " + err);
     }
   };
 
@@ -269,10 +270,10 @@ export default function CollectionPage() {
 
       const shareUrl = `${window.location.origin}/share/${docRef.id}`;
       await navigator.clipboard.writeText(shareUrl);
-      alert('Share link copied to clipboard!');
+      toast.success('Share link copied to clipboard!');
     } catch (err) {
       console.error('Error sharing collection:', err);
-      alert('Failed to share collection: ' + err);
+      toast.error('Failed to share collection: ' + err);
     }
   };
 
@@ -301,7 +302,7 @@ export default function CollectionPage() {
       await setPresentationConfig({ bgImage: downloadUrl });
     } catch (error) {
       console.error('Error uploading background:', error);
-      alert(error instanceof Error ? error.message : 'Failed to upload background. Please try again.');
+      toast.error(error instanceof Error ? error.message : 'Failed to upload background. Please try again.');
     } finally {
       // Reset file input
       e.target.value = '';
@@ -318,13 +319,13 @@ export default function CollectionPage() {
       if (!querySnapshot.empty) {
         const docRef = querySnapshot.docs[0].ref;
         await deleteDoc(docRef);
-        alert('List unshared successfully!');
+        toast.success('List unshared successfully!');
       } else {
-        alert('No shared list found to unshare.');
+        toast.error('No shared list found to unshare.');
       }
     } catch (err) {
       console.error('Error unsharing collection:', err);
-      alert('Failed to unshare collection: ' + err);
+      toast.error('Failed to unshare collection: ' + err);
     }
   };
 

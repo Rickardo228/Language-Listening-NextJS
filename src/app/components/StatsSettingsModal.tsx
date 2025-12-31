@@ -1,3 +1,5 @@
+'use client'
+
 import { useState, useEffect } from 'react';
 import { User } from 'firebase/auth';
 import { getFlagEmoji, getLanguageName } from '../utils/languageUtils';
@@ -5,6 +7,7 @@ import { useUser } from '../contexts/UserContext';
 import { createOrUpdateUserProfile } from '../utils/userPreferences';
 import { track } from '../../lib/mixpanelClient';
 import { languageOptions } from '../types';
+import { Modal, Button, Select } from './ui';
 
 interface StatsSettingsModalProps {
     isOpen: boolean;
@@ -55,61 +58,55 @@ export function StatsSettingsModal({ isOpen, onClose, user }: StatsSettingsModal
         }
     };
 
-    if (!isOpen) return null;
+    const nativeLanguageOptions = SUPPORTED_LANGUAGES.map((lang) => ({
+        value: lang,
+        label: `${getFlagEmoji(lang)} ${getLanguageName(lang)}`,
+    }));
 
     return (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <div className="bg-background p-6 rounded-lg shadow-lg max-w-md w-full mx-4">
-                <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-xl font-bold">Stats Settings</h2>
-                    <button
+        <Modal
+            isOpen={isOpen}
+            onClose={onClose}
+            title="Stats Settings"
+            size="sm"
+            footer={
+                <>
+                    <Button
+                        variant="secondary"
                         onClick={onClose}
-                        className="text-foreground/60 hover:text-foreground"
-                    >
-                        ✕
-                    </button>
-                </div>
-
-                <div className="space-y-4">
-                    <div>
-                        <label className="block text-sm font-medium mb-2">
-                            Native Language
-                        </label>
-                        <p className="text-sm text-foreground/60 mb-3">
-                            Your native language determines which languages appear in your statistics. Languages matching your native language are filtered out from the &quot;Languages You&apos;re Learning&quot; section.
-                        </p>
-
-                        <select
-                            value={selectedNativeLanguage}
-                            onChange={(e) => setSelectedNativeLanguage(e.target.value)}
-                            className="w-full p-3 border border-border rounded-lg bg-background focus:ring-2 focus:ring-primary focus:border-transparent"
-                        >
-                            {SUPPORTED_LANGUAGES.map((lang) => (
-                                <option key={lang} value={lang}>
-                                    {getFlagEmoji(lang)} {getLanguageName(lang)}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-                </div>
-
-                <div className="flex gap-3 mt-6">
-                    <button
-                        onClick={onClose}
-                        className="flex-1 px-4 py-2 border border-border rounded-lg hover:bg-secondary"
                         disabled={isLoading}
+                        className="flex-1"
                     >
                         Cancel
-                    </button>
-                    <button
+                    </Button>
+                    <Button
+                        variant="primary"
                         onClick={handleSave}
-                        className="flex-1 bg-primary text-primary-foreground px-4 py-2 rounded-lg hover:bg-primary/90 disabled:opacity-50"
-                        disabled={isLoading}
+                        isLoading={isLoading}
+                        loadingText="Saving..."
+                        className="flex-1"
                     >
-                        {isLoading ? 'Saving...' : 'Save'}
-                    </button>
+                        Save
+                    </Button>
+                </>
+            }
+        >
+            <div className="space-y-4">
+                <div>
+                    <label className="block text-sm font-medium mb-2">
+                        Native Language
+                    </label>
+                    <p className="text-sm text-foreground/60 mb-3">
+                        Your native language determines which languages appear in your statistics. Languages matching your native language are filtered out from the &quot;Languages You&apos;re Learning&quot; section.
+                    </p>
+
+                    <Select
+                        value={selectedNativeLanguage}
+                        onChange={(e) => setSelectedNativeLanguage(e.target.value)}
+                        options={nativeLanguageOptions}
+                    />
                 </div>
             </div>
-        </div>
+        </Modal>
     );
 }

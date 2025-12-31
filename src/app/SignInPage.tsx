@@ -6,6 +6,7 @@ import { LanguageSelector } from './components/LanguageSelector';
 import { languageOptions } from './types';
 import { useRouter } from 'next/navigation';
 import { trackSignUp, identifyUser } from '../lib/mixpanelClient';
+import { Input } from './components/ui';
 
 interface Advantage {
     text: string;
@@ -212,39 +213,27 @@ export function SignInPage({
                 </div>
 
                 <form onSubmit={handleEmailAuth} className="space-y-4">
-                    <div>
-                        <label htmlFor="email" className="block text-sm font-medium text-foreground mb-1">
-                            Email address
-                        </label>
-                        <input
-                            id="email"
-                            type="email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            required
-                            disabled={isLoading}
-                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-background focus:ring-2 focus:ring-primary focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
-                            placeholder="you@example.com"
-                        />
-                    </div>
-                    <div>
-                        <label htmlFor="password" className="block text-sm font-medium text-foreground mb-1">
-                            Password
-                        </label>
-                        <input
-                            id="password"
-                            type="password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            required
-                            disabled={isLoading}
-                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-background focus:ring-2 focus:ring-primary focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
-                            placeholder="••••••••"
-                        />
-                    </div>
-                    {error && (
-                        <div className="text-red-500 text-sm">{error}</div>
-                    )}
+                    <Input
+                        id="email"
+                        label="Email address"
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        required
+                        disabled={isLoading}
+                        placeholder="you@example.com"
+                    />
+                    <Input
+                        id="password"
+                        label="Password"
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                        disabled={isLoading}
+                        placeholder="••••••••"
+                        error={error}
+                    />
                     <button
                         type="submit"
                         disabled={isLoading}

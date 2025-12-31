@@ -19,6 +19,11 @@ export function TemplateBrowserStack({
 
     return (
         <div className={`p-4 space-y-16 ${className}`}>
+            <TemplatesBrowser
+                showHeader={false}
+                title="New Playlists"
+                showAllOverride={showAllOverride}
+            />
             {learningPaths.map(path => (
                 <TemplatesBrowser
                     key={path.id}
@@ -30,11 +35,6 @@ export function TemplateBrowserStack({
                     showAllOverride={showAllOverride}
                 />
             ))}
-            <TemplatesBrowser
-                showHeader={false}
-                title="New Playlists"
-                showAllOverride={showAllOverride}
-            />
             <TemplatesBrowser
                 showHeader={false}
                 title="Recommended for You"

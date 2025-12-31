@@ -34,6 +34,14 @@ const LEARNING_PATHS: ContentSection[] = [
     maxAbilityLevel: "elementary", // Only beginner and elementary
   },
   {
+    id: "wolf_beneath_the_stars",
+    type: "path",
+    pathId: "wolf_beneath_the_stars_path",
+    title: "Wolf Beneath the Stars",
+    minAbilityLevel: "beginner",
+    maxAbilityLevel: "intermediate", // Beginner level (adult content)
+  },
+  {
     id: "skyward_gate",
     type: "path",
     pathId: "skyward_gate_path",

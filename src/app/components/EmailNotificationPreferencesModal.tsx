@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { User } from 'firebase/auth';
-import { X, Mail, Clock, Info, BarChart3 } from 'lucide-react';
+import { Mail, Clock, Info, BarChart3 } from 'lucide-react';
 import { getUserProfile, createOrUpdateUserProfile } from '../utils/userPreferences';
 import { track } from '../../lib/mixpanelClient';
+import { Modal, Button } from './ui';
+import { toast } from 'sonner';
 
 interface EmailNotificationPreferencesModalProps {
   isOpen: boolean;
@@ -67,34 +69,42 @@ export function EmailNotificationPreferencesModal({
       onClose();
     } catch (error) {
       console.error('Error saving email preferences:', error);
-      alert('Failed to save preferences. Please try again.');
+      toast.error('Failed to save preferences. Please try again.');
     } finally {
       setSaving(false);
     }
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-background rounded-lg shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
-        {/* Header */}
-        <div className="sticky top-0 bg-background border-b p-4 flex justify-between items-center">
-          <div className="flex items-center gap-2">
-            <Mail className="w-5 h-5 text-primary" />
-            <h2 className="text-xl font-bold">Email Notifications</h2>
-          </div>
-          <button
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Email Notifications"
+      icon={<Mail className="w-5 h-5 text-primary" />}
+      size="md"
+      panelClassName="max-h-[90vh]"
+      className="space-y-6"
+      footer={
+        <>
+          <Button
+            variant="ghost"
             onClick={onClose}
-            className="text-muted-foreground hover:text-foreground transition-colors"
-            aria-label="Close"
+            disabled={saving}
           >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* Content */}
-        <div className="p-6 space-y-6">
+            Cancel
+          </Button>
+          <Button
+            variant="primary"
+            onClick={handleSave}
+            isLoading={saving}
+            loadingText="Saving..."
+            disabled={loading}
+          >
+            Save Preferences
+          </Button>
+        </>
+      }
+    >
           {loading ? (
             <div className="flex justify-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -218,33 +228,6 @@ export function EmailNotificationPreferencesModal({
               </div>
             </>
           )}
-        </div>
-
-        {/* Footer */}
-        <div className="sticky bottom-0 bg-background border-t p-4 flex justify-end gap-2">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 text-muted-foreground hover:text-foreground transition-colors"
-            disabled={saving}
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleSave}
-            disabled={saving || loading}
-            className="px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-          >
-            {saving ? (
-              <>
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                Saving...
-              </>
-            ) : (
-              'Save Preferences'
-            )}
-          </button>
-        </div>
-      </div>
-    </div>
+    </Modal>
   );
 }

@@ -14,7 +14,12 @@ export type PresentationConfig = {
   enableAutumnLeaves: boolean;
   enableOrtonEffect: boolean;
   enableParticles?: boolean;
+  particleRotation?: number;
   enableSteam?: boolean;
+  enableDust?: boolean;
+  particleColor?: string;
+  particleSpeed?: number;
+  dustOpacity?: number;
   postProcessDelay: number;
   delayBetweenPhrases: number;
   enableLoop: boolean;

@@ -10,8 +10,24 @@ import { CollectionHeader } from '../../CollectionHeader';
 import { useUser } from '../../contexts/UserContext';
 import { getUserProfile, createOrUpdateUserProfile } from '../../utils/userPreferences';
 import { uploadBackgroundMedia, deleteBackgroundMedia } from '../../utils/backgroundUpload';
+import { presentationConfigDefinition } from '../../configDefinitions';
+import { Select } from '../../components/ui';
+import { toast } from 'sonner';
 
 const firestore = getFirestore();
+
+// Get all admin-only field keys from config definitions
+const adminOnlyFields = presentationConfigDefinition
+    .filter(field => field.adminOnly)
+    .map(field => field.key);
+
+// Template-level fields include admin-only fields plus background-related fields
+const templateLevelFields: (keyof PresentationConfig)[] = [
+    'bgImage',
+    'backgroundOverlayOpacity',
+    'textColor',
+    ...adminOnlyFields as (keyof PresentationConfig)[]
+];
 
 interface TemplatePhrase {
     translated?: string;
@@ -31,6 +47,8 @@ interface Template {
     phraseCount: number;
     name: string;
     presentationConfig?: PresentationConfig;
+    pathId?: string;
+    pathIndex?: number;
 }
 
 // Helper function to get language label from code using Intl.DisplayNames
@@ -144,6 +162,8 @@ export default function TemplateDetailPage() {
     const [templatePresentationConfig, setTemplatePresentationConfig] = useState<PresentationConfig | null>(null);
     const [userConfigLoaded, setUserConfigLoaded] = useState(false);
     const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const [currentPathId, setCurrentPathId] = useState<string | undefined>(undefined);
+    const [currentPathIndex, setCurrentPathIndex] = useState<number | undefined>(undefined);
 
     // Fetch user's default presentation config on mount
     useEffect(() => {
@@ -295,6 +315,10 @@ export default function TemplateDetailPage() {
                     // Store template data for name extraction
                     setTemplateData(inputTemplateData);
 
+                    // Capture path information if this template is part of a learning path
+                    setCurrentPathId(inputTemplateData.pathId);
+                    setCurrentPathIndex(inputTemplateData.pathIndex);
+
                     // Capture template-level presentation config (admin-set)
                     if (inputTemplateData.presentationConfig) {
                         setTemplatePresentationConfig(inputTemplateData.presentationConfig);
@@ -335,7 +359,7 @@ export default function TemplateDetailPage() {
     // Admin-only template deletion function
     const handleDeleteTemplate = async (templateGroupId: string) => {
         if (!isAdmin) {
-            alert('Only administrators can delete templates.');
+            toast.error('Only administrators can delete templates.');
             return;
         }
 
@@ -356,14 +380,14 @@ export default function TemplateDetailPage() {
 
             await Promise.all(deletePromises);
 
-            alert(`Template group "${templateGroupId}" has been successfully deleted.`);
+            toast.success(`Template group "${templateGroupId}" has been successfully deleted.`);
 
             // Redirect back to templates list or home
             window.location.href = '/templates';
 
         } catch (error) {
             console.error('Error deleting template:', error);
-            alert('Failed to delete template. Please try again.');
+            toast.error('Failed to delete template. Please try again.');
         }
     };
 
@@ -414,17 +438,54 @@ export default function TemplateDetailPage() {
                 await Promise.all(updatePromises);
             } catch (persistError) {
                 console.error('Error saving template background to Firestore:', persistError);
-                alert('Background image applied locally but failed to save for this template. Please try again.');
+                toast.error('Background image applied locally but failed to save for this template. Please try again.');
             }
         } catch (error) {
             console.error('Error uploading template background:', error);
-            alert(error instanceof Error ? error.message : 'Failed to upload background. Please try again.');
+            toast.error(error instanceof Error ? error.message : 'Failed to upload background. Please try again.');
         } finally {
             // Reset file input
             e.target.value = '';
         }
     };
 
+
+    // Navigate to next template in the learning path
+    const handleNavigateToNextInPath = useCallback(async () => {
+        if (!currentPathId || currentPathIndex === undefined) {
+            console.log('No path information available');
+            return;
+        }
+
+        try {
+            // Query for the next template in the path
+            const templatesRef = collection(firestore, 'templates');
+            const nextTemplateQuery = query(
+                templatesRef,
+                where('pathId', '==', currentPathId),
+                where('pathIndex', '==', currentPathIndex + 1)
+            );
+
+            const nextTemplateSnapshot = await getDocs(nextTemplateQuery);
+
+            if (!nextTemplateSnapshot.empty) {
+                // Get the first matching template (there should only be one per pathIndex)
+                const nextTemplateDoc = nextTemplateSnapshot.docs[0];
+                const nextTemplateData = nextTemplateDoc.data() as Template;
+
+                // Navigate to the next template, preserving language preferences and enabling autoplay
+                router.push(
+                    `/templates/${nextTemplateData.groupId}?inputLang=${selectedInputLang}&targetLang=${selectedTargetLang}&autoplay=1`
+                );
+            } else {
+                // End of path - no next template found
+                console.log('Reached end of learning path');
+                // Optionally show a message or redirect to path overview
+            }
+        } catch (error) {
+            console.error('Error navigating to next template in path:', error);
+        }
+    }, [currentPathId, currentPathIndex, selectedInputLang, selectedTargetLang, router]);
 
     // Clear autoplay parameter from URL after it's been read
     useEffect(() => {
@@ -523,15 +584,12 @@ export default function TemplateDetailPage() {
                                 templateLevelUpdates.bgImage = null;
                             }
 
-                            // Handle overlay opacity change
-                            if ('backgroundOverlayOpacity' in config && config.backgroundOverlayOpacity !== undefined) {
-                                templateLevelUpdates.backgroundOverlayOpacity = config.backgroundOverlayOpacity;
-                            }
-
-                            // Handle text color change
-                            if ('textColor' in config) {
-                                templateLevelUpdates.textColor = config.textColor;
-                            }
+                            // Dynamically handle all template-level fields
+                            templateLevelFields.forEach(field => {
+                                if (field in config && config[field] !== undefined) {
+                                    (templateLevelUpdates as any)[field] = config[field];
+                                }
+                            });
 
                             // Persist template-level fields to Firestore
                             if (Object.keys(templateLevelUpdates).length > 0) {
@@ -555,14 +613,18 @@ export default function TemplateDetailPage() {
                                     setTemplatePresentationConfig(prev => prev ? { ...prev, ...templateLevelUpdates } : prev);
                                 } catch (persistError) {
                                     console.error('Error saving template-level config to Firestore:', persistError);
-                                    alert('Config applied locally but failed to save for this template. Please try again.');
+                                    toast.error('Config applied locally but failed to save for this template. Please try again.');
                                 }
                             }
                         }
 
-                        // Save user-level config (exclude template-level fields: bgImage, backgroundOverlayOpacity, textColor)
-                        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                        const { bgImage, backgroundOverlayOpacity, textColor, ...userConfig } = newConfig;
+                        // Save user-level config (exclude template-level fields)
+                        const userConfig = Object.keys(newConfig).reduce((acc, key) => {
+                            if (!templateLevelFields.includes(key as keyof PresentationConfig)) {
+                                (acc as any)[key] = (newConfig as any)[key];
+                            }
+                            return acc;
+                        }, {} as Partial<PresentationConfig>);
 
                         // Update local user config state so the effect doesn't overwrite our changes
                         setUserDefaultConfig(userConfig as PresentationConfig);
@@ -576,6 +638,9 @@ export default function TemplateDetailPage() {
                     showImportPhrases={true}
                     autoplay={shouldAutoplay}
                     itemType="template"
+                    pathId={currentPathId}
+                    pathIndex={currentPathIndex}
+                    onNavigateToNextInPath={currentPathId && currentPathIndex !== undefined ? handleNavigateToNextInPath : undefined}
                 />
             ) : (
                 <div className="flex items-center justify-center h-full">
@@ -586,29 +651,25 @@ export default function TemplateDetailPage() {
                         </p>
                         {availableLanguages.length > 1 && (
                             <div className="flex items-center gap-4 mt-4 justify-center">
-                                <select
+                                <Select
                                     value={selectedInputLang}
                                     onChange={(e) => setSelectedInputLang(e.target.value)}
-                                    className="px-3 py-2 border rounded-lg bg-background"
-                                >
-                                    {availableLanguages.map(lang => (
-                                        <option key={`input-${lang}`} value={lang}>
-                                            {getLanguageLabel(lang)}
-                                        </option>
-                                    ))}
-                                </select>
+                                    options={availableLanguages.map(lang => ({
+                                        value: lang,
+                                        label: getLanguageLabel(lang)
+                                    }))}
+                                    className="min-w-[200px]"
+                                />
                                 <span className="text-sm">→</span>
-                                <select
+                                <Select
                                     value={selectedTargetLang}
                                     onChange={(e) => setSelectedTargetLang(e.target.value)}
-                                    className="px-3 py-2 border rounded-lg bg-background"
-                                >
-                                    {availableLanguages.map(lang => (
-                                        <option key={`target-${lang}`} value={lang}>
-                                            {getLanguageLabel(lang)}
-                                        </option>
-                                    ))}
-                                </select>
+                                    options={availableLanguages.map(lang => ({
+                                        value: lang,
+                                        label: getLanguageLabel(lang)
+                                    }))}
+                                    className="min-w-[200px]"
+                                />
                             </div>
                         )}
                     </div>

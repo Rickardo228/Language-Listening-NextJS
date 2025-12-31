@@ -10,6 +10,8 @@ import { PhrasePlaybackView } from '../../components/PhrasePlaybackView';
 import { LanguageFlags } from '../../components/LanguageFlags';
 import { useUser } from '../../contexts/UserContext';
 import { User } from 'firebase/auth';
+import { X, Check } from 'lucide-react';
+import { toast } from 'sonner';
 
 const firestore = getFirestore();
 
@@ -92,11 +94,11 @@ export default function SharedList() {
 
             const colRef = firestoreCollection(firestore, 'users', user.uid, 'collections');
             await addDoc(colRef, newCollection);
-            alert('List saved successfully!');
+            toast.success('List saved successfully!');
             router.push('/');
         } catch (err) {
             console.error('Error saving list:', err);
-            alert('Failed to save list: ' + err);
+            toast.error('Failed to save list: ' + err);
         }
     };
 
@@ -128,10 +130,7 @@ export default function SharedList() {
                         className="absolute top-2 right-2 p-2 text-muted-foreground hover:text-foreground transition-colors"
                         aria-label="Close"
                     >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <line x1="18" y1="6" x2="6" y2="18"></line>
-                            <line x1="6" y1="6" x2="18" y2="18"></line>
-                        </svg>
+                        <X className="w-6 h-6" />
                     </button>
                     <SignInPage
                         title="Save This List"
@@ -146,9 +145,7 @@ export default function SharedList() {
                                                 {advantage.icon ? (
                                                     <span className="text-primary">{advantage.icon}</span>
                                                 ) : (
-                                                    <svg className="w-4 h-4 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                                        <path d="M20 6L9 17l-5-5" />
-                                                    </svg>
+                                                    <Check className="w-4 h-4 text-primary" />
                                                 )}
                                                 {advantage.text}
                                             </li>

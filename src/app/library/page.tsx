@@ -1,42 +1,24 @@
 'use client'
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
-import { Home, Sun, Moon, ChevronRight, Library } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { Config, languageOptions, Phrase, CollectionType as CollectionTypeEnum } from '../types';
 import { API_BASE_URL } from '../consts';
 import { ImportPhrases } from '../ImportPhrases';
 import { User } from 'firebase/auth';
 import { getFirestore, collection, getDocs, doc, updateDoc, deleteDoc, query, orderBy, limit as fbLimit } from 'firebase/firestore';
 import { CollectionList } from '../CollectionList';
-import { useTheme } from '../ThemeProvider';
-import { UserAvatar } from './UserAvatar';
-import { defaultPresentationConfig, defaultPresentationConfigs } from '../defaultConfig';
 import { useUser } from '../contexts/UserContext';
-import { useSidebar } from '../contexts/SidebarContext';
 import { trackSelectList, trackCreatePhrase, track } from '../../lib/mixpanelClient';
 import { createCollection } from '../utils/collectionService';
+import { defaultPresentationConfig, defaultPresentationConfigs } from '../defaultConfig';
 import { toast } from 'sonner';
-import { TemplatesBrowser } from './TemplatesBrowser';
-import { SignInPage } from '../SignInPage';
-import { OnboardingGuard } from './OnboardingGuard';
-import { BottomNavigation } from './BottomNavigation';
-import { shouldHideSidebar, shouldHideBottomNav, getCollectionIdFromPath, ROUTES } from '../routes';
-
 
 const firestore = getFirestore();
 
-interface AppLayoutProps {
-  children: React.ReactNode;
-}
-
-export function AppLayout({ children }: AppLayoutProps) {
+export default function LibraryPage() {
   const router = useRouter();
-  const pathname = usePathname();
-  const { user, isAuthLoading, userProfile } = useUser();
-  const { theme, toggleTheme } = useTheme();
-  const { isCollapsed, setIsCollapsed } = useSidebar();
-
+  const { user, userProfile } = useUser();
 
   // User input and language selection
   const [phrasesInput, setPhrasesInput] = useState<string>('');
@@ -60,16 +42,8 @@ export function AppLayout({ children }: AppLayoutProps) {
   }, [userProfile?.preferredInputLang, userProfile?.preferredTargetLang]);
   const [loading, setLoading] = useState<boolean>(false);
 
-  // Don't show sidebar for certain routes
-  const hideSidebar = shouldHideSidebar(pathname);
-
-  // Extract current collection ID from URL for highlighting in sidebar
-  const currentCollectionId = getCollectionIdFromPath(pathname);
-
   // Load saved collections from Firestore on mount or when user changes
   const initialiseCollections = useCallback(async (user: User) => {
-
-
     const fetchCollections = async (opts?: { fetchAll?: boolean; limitCount?: number }) => {
       const colRef = collection(firestore, 'users', user.uid, 'collections');
       const q = opts?.fetchAll
@@ -90,7 +64,6 @@ export function AppLayout({ children }: AppLayoutProps) {
         } as Config);
       });
       setSavedCollections(loaded);
-
 
       if (loaded.length > 0) {
         const allPhrases = loaded.flatMap(col => col.phrases);
@@ -117,13 +90,13 @@ export function AppLayout({ children }: AppLayoutProps) {
       setCollectionsLoading(false);
       setLoading(false);
     }
-  }, [savedCollections.length, userProfile?.preferredInputLang, userProfile?.preferredTargetLang]);
+  }, [savedCollections.length]);
 
   useEffect(() => {
-    if (user && !hideSidebar) {
+    if (user) {
       initialiseCollections(user);
     }
-  }, [initialiseCollections, user, hideSidebar])
+  }, [initialiseCollections, user])
 
   // Save a new collection to Firestore
   const handleCreateCollection = async (phrases: Phrase[], prompt?: string, collectionType?: CollectionTypeEnum, userArg?: User, skipTracking?: boolean) => {
@@ -267,191 +240,77 @@ export function AppLayout({ children }: AppLayoutProps) {
       await deleteDoc(docRef);
       setSavedCollections(prev => prev.filter(col => col.id !== id));
 
-      // Navigate back to home if we deleted the current collection
-      router.push('/');
+      // Navigate back to library if we deleted the current collection
+      router.push('/library');
     } catch (err) {
       toast.error("Failed to delete list: " + err);
     }
   };
 
-
-  const handleHome = () => {
-    track('Home Button Clicked', { source: 'header' });
-
-    // On mobile, if on a collection page, navigate to library instead of home
-    const isMobile = window.innerWidth < 1024; // lg breakpoint
-    const isOnCollectionPage = pathname.startsWith('/collection/');
-
-    if (isMobile && isOnCollectionPage) {
-      router.push(ROUTES.LIBRARY);
-    } else {
-      router.push(ROUTES.HOME);
-    }
-  };
-
-  if (isAuthLoading) {
+  if (!user) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
-
-  if (!user && !hideSidebar) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-background">
-        <SignInPage showLanguageSelect={true} />
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-4">Sign in required</h1>
+          <p>Please sign in to view your library.</p>
+          <button
+            onClick={() => {
+              track('Back to Home From Library Clicked');
+              router.push('/');
+            }}
+            className="mt-4 px-4 py-2 rounded bg-primary text-primary-foreground"
+          >
+            Back to Home
+          </button>
+        </div>
       </div>
     );
   }
 
   return (
-    <OnboardingGuard>
-      <div className="font-sans lg:h-[100vh] flex flex-col bg-background text-foreground">
-        {/* Nav */}
-        <div className="flex items-center justify-between shadow-md lg:mb-0 p-3 sticky top-0 bg-background border-b z-50">
-          <div className="flex items-center gap-4">
-            <div
-              className="flex items-center gap-3 text-2xl cursor-pointer hover:opacity-80 transition-opacity"
-              onClick={handleHome}
-              title="Home"
-            >
-              <img
-                src={theme === 'light' ? '/language-shadowing-logo-dark.png' : '/language-shadowing-logo-white.png'}
-                alt="Language Shadowing Logo - Learn Languages Through Audio Practice"
-                className="w-8 h-8 sm:ml-2 sm:mt-0.5"
-              />
-              <h1 className="hidden sm:block">Language Shadowing</h1>
-            </div>
-            <button
-              onClick={handleHome}
-              className="p-2 rounded-lg bg-secondary hover:bg-secondary/80"
-              title="Home"
-            >
-              <Home className="w-5 h-5" strokeWidth={1.5} />
-            </button>
-          </div>
-
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => {
-                track('Theme Toggle Clicked', { newTheme: theme === 'light' ? 'dark' : 'light' });
-                toggleTheme();
-              }}
-              className="p-2 rounded-lg bg-secondary hover:bg-secondary/80"
-              title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
-            >
-              {theme === 'light' ? (
-                <Moon className="w-5 h-5" strokeWidth={1.5} />
-              ) : (
-                <Sun className="w-5 h-5" strokeWidth={1.5} />
-              )}
-            </button>
-            {user && (
-              <UserAvatar
-                user={user}
-              />
-            )}
-          </div>
-        </div>
-
-        {/* Main content */}
-        <div className={`flex lg:flex-row flex-col-reverse w-full lg:h-[92vh] ${hideSidebar ? '' : ''}`}>
-          {/* Saved Configs List - hide for certain routes */}
-          {pathname !== '/templates' && !hideSidebar && user && (
-            <div className={`group hidden lg:flex flex-col gap-10 bg-background lg:bg-secondary/50 p-5 ${isCollapsed ? 'lg:w-[60px] overflow-hidden' : 'lg:w-[460px] min-w-[300px]'} max-w-[100vw] h-[100%] overflow-visible lg:overflow-y-auto mb-[80px] relative transition-all duration-300`}>
-
-              {!isCollapsed && (
-                <>
-
-                  <CollectionList
-                    savedCollections={savedCollections}
-                    onLoadCollection={handleLoadCollection}
-                    onRenameCollection={handleRenameCollection}
-                    onDeleteCollection={handleDeleteCollection}
-                    selectedCollection={currentCollectionId}
-                    loading={collectionsLoading}
-                    showAllButton={collectionsLimited}
-                    actionButton={
-                      <ImportPhrases
-                        inputLang={newCollectionInputLang}
-                        setInputLang={setNewCollectionInputLang}
-                        targetLang={newCollectionTargetLang}
-                        setTargetLang={setNewCollectionTargetLang}
-                        phrasesInput={phrasesInput}
-                        setPhrasesInput={setPhrasesInput}
-                        loading={loading}
-                        onProcess={handleProcess}
-                      />
-                    }
-                    title={
-                      <div className="flex items-center">
-                        <button
-                          onClick={() => {
-                            track('Sidebar Collapsed');
-                            setIsCollapsed(true);
-                          }}
-                          className="hidden lg:block p-1 rounded-lg bg-secondary hover:bg-secondary/80 transition-all duration-200 opacity-0 group-hover:opacity-100 w-0 group-hover:w-6 overflow-hidden group-hover:mr-2"
-                          title="Collapse"
-                        >
-                          <ChevronRight
-                            className="w-4 h-4 transition-transform duration-200 min-w-4 rotate-180"
-                            strokeWidth={1.5}
-                          />
-                        </button>
-                        <span>Your Library</span>
-                      </div>
-                    }
-                    onShowAllClick={async () => {
-                      if (!user) return;
-                      track('Show All Collections Clicked');
-                      setCollectionsLoading(true);
-                      const colRef = collection(firestore, 'users', user.uid, 'collections');
-                      const q = query(colRef, orderBy('created_at', 'desc'));
-                      const snapshot = await getDocs(q);
-                      const loaded: Config[] = [];
-                      snapshot.forEach(docSnap => {
-                        const data = docSnap.data();
-                        const phrases = data.phrases.map((phrase: Phrase) => ({
-                          ...phrase,
-                          created_at: phrase.created_at || data.created_at
-                        }));
-                        loaded.push({ ...data, phrases, id: docSnap.id } as Config);
-                      });
-                      setSavedCollections(loaded);
-                      setCollectionsLimited(false);
-                      setCollectionsLoading(false);
-                    }}
-                  />
-                </>
-              )}
-
-              {isCollapsed && (
-                <div className="flex flex-col items-center pt-2 px-2">
-                  <button
-                    onClick={() => {
-                      track('Sidebar Expanded');
-                      setIsCollapsed(false);
-                    }}
-                    className="p-2 rounded-lg bg-secondary hover:bg-secondary/80 transition-colors"
-                    title="Open Library"
-                  >
-                    <Library className="w-5 h-5" fill="currentColor" />
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Main Content Area */}
-          <div className={`flex-1 ${!shouldHideBottomNav(pathname) && user ? 'pb-20 lg:pb-0' : ''}`}>
-            {children}
-          </div>
-        </div>
-
-        {/* Bottom Navigation for Mobile */}
-        {!shouldHideBottomNav(pathname) && user && <BottomNavigation />}
-      </div>
-    </OnboardingGuard>
+    <div className="p-5 space-y-6 max-w-[600px] mx-auto">
+      <CollectionList
+        savedCollections={savedCollections}
+        onLoadCollection={handleLoadCollection}
+        onRenameCollection={handleRenameCollection}
+        onDeleteCollection={handleDeleteCollection}
+        selectedCollection={undefined}
+        loading={collectionsLoading}
+        showAllButton={collectionsLimited}
+        actionButton={
+          <ImportPhrases
+            inputLang={newCollectionInputLang}
+            setInputLang={setNewCollectionInputLang}
+            targetLang={newCollectionTargetLang}
+            setTargetLang={setNewCollectionTargetLang}
+            phrasesInput={phrasesInput}
+            setPhrasesInput={setPhrasesInput}
+            loading={loading}
+            onProcess={handleProcess}
+          />
+        }
+        title={<span>Your Library</span>}
+        onShowAllClick={async () => {
+          if (!user) return;
+          track('Show All Collections Clicked');
+          setCollectionsLoading(true);
+          const colRef = collection(firestore, 'users', user.uid, 'collections');
+          const q = query(colRef, orderBy('created_at', 'desc'));
+          const snapshot = await getDocs(q);
+          const loaded: Config[] = [];
+          snapshot.forEach(docSnap => {
+            const data = docSnap.data();
+            const phrases = data.phrases.map((phrase: Phrase) => ({
+              ...phrase,
+              created_at: phrase.created_at || data.created_at
+            }));
+            loaded.push({ ...data, phrases, id: docSnap.id } as Config);
+          });
+          setSavedCollections(loaded);
+          setCollectionsLimited(false);
+          setCollectionsLoading(false);
+        }}
+      />
+    </div>
   );
 }

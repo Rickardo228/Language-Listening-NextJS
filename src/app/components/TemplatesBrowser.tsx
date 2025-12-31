@@ -2,9 +2,10 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { ArrowLeft } from 'lucide-react';
 import { getFirestore, collection, query, where, getDocs, Timestamp, orderBy, limit, QuerySnapshot, DocumentSnapshot, } from 'firebase/firestore';
 import { languageOptions, Config, PresentationConfig } from '../types';
-import { CollectionList } from '../CollectionList';
+import { CollectionList, CollectionStatus } from '../CollectionList';
 import { LanguageSelector } from './LanguageSelector';
 import { useUser } from '../contexts/UserContext';
 import { track } from '../../lib/mixpanelClient';
@@ -65,7 +66,8 @@ export function TemplatesBrowser({
     const { user, userProfile } = useUser();
     const [templates, setTemplates] = useState<Template[]>([]);
     const [loading, setLoading] = useState(true);
-    const [isShowingAll, setIsShowingAll] = useState(false);
+    // For learning paths, we fetch all items initially, so isShowingAll should start as true
+    const [isShowingAll, setIsShowingAll] = useState(Boolean(pathId));
     const [templateProgress, setTemplateProgress] = useState<Record<string, { completedAt?: string; listenedCount: number; lastPhraseIndex?: number }>>({});
 
     // Use user preferences if available, otherwise fall back to props
@@ -143,7 +145,8 @@ export function TemplatesBrowser({
                         querySnapshot.forEach((doc: DocumentSnapshot) => {
                             if (!seenIds.has(doc.id)) {
                                 seenIds.add(doc.id);
-                                templatesData.push({ id: doc.id, ...doc.data() } as Template);
+                                const templateData = { id: doc.id, ...doc.data() } as Template;
+                                templatesData.push(templateData);
                             }
                         });
                     });
@@ -165,8 +168,10 @@ export function TemplatesBrowser({
                         })
                         .map((groupTemplates) => groupTemplates.find((t) => t.lang === inputLangToUse) || groupTemplates[0]);
 
+                    // Randomize templates to ensure variety
+                    const randomizedTemplates = uniqueTemplates.sort(() => Math.random() - 0.5);
 
-                    setTemplates(options?.fetchAll ? uniqueTemplates : uniqueTemplates.slice(0, FETCH_LIMIT));
+                    setTemplates(options?.fetchAll ? randomizedTemplates : randomizedTemplates.slice(0, FETCH_LIMIT));
                     return;
                 }
 
@@ -238,9 +243,11 @@ export function TemplatesBrowser({
                     }
                 });
 
-                setTemplates(options?.fetchAll ? sortedTemplates : sortedTemplates.slice(0, FETCH_LIMIT));
+                const finalTemplates = options?.fetchAll ? sortedTemplates : sortedTemplates.slice(0, FETCH_LIMIT);
+
+                setTemplates(finalTemplates);
             } catch (err) {
-                console.error('Error fetching templates:', err);
+                console.error('[TemplatesBrowser] Error fetching templates:', err);
                 setTemplates([]);
             } finally {
                 setLoading(false);
@@ -269,7 +276,12 @@ export function TemplatesBrowser({
     useEffect(() => {
         if (!hasInitialFetch.current) {
             hasInitialFetch.current = true;
-            fetchTemplates(undefined, undefined, { fetchAll: false, limitCount: 10 });
+            // For learning paths, load all items to ensure scroll-to-incomplete works
+            // For regular templates, load limited set for performance
+            fetchTemplates(undefined, undefined, {
+                fetchAll: Boolean(pathId),
+                limitCount: pathId ? undefined : 10
+            });
         }
     }, [pathId, fetchTemplates]);
 
@@ -329,6 +341,26 @@ export function TemplatesBrowser({
         fetchCompletionStatus();
     }, [user?.uid, templates, inputLang, targetLang]);
 
+    // Calculate the item before the first incomplete item index for learning paths
+    const getFirstIncompleteIndex = (): number | undefined => {
+        if (!pathId || loading || templates.length === 0) return undefined;
+        if (Object.keys(templateProgress).length === 0) return undefined;
+
+        const firstIncompleteIndex = templates.findIndex((template) => {
+            const progress = templateProgress[template.groupId];
+            const total = template.phraseCount || 0;
+
+            if (!progress || !total) return true; // No progress means incomplete
+
+            // Check if incomplete (not explicitly completed AND haven't listened to all phrases)
+            const isCompleted = Boolean(progress.completedAt) || progress.listenedCount >= total;
+            return !isCompleted;
+        });
+
+        // Return the first incomplete item if it exists
+        return firstIncompleteIndex >= 0 ? firstIncompleteIndex : undefined;
+    };
+
     // No separate loader branch; `CollectionList` will show skeletons when loading is true
 
     return (
@@ -345,19 +377,7 @@ export function TemplatesBrowser({
                                 }}
                                 className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-primary hover:text-primary/80 transition-colors"
                             >
-                                <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    width="16"
-                                    height="16"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    strokeWidth="2"
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                >
-                                    <path d="M19 12H5M12 19l-7-7 7-7" />
-                                </svg>
+                                <ArrowLeft className="w-4 h-4" strokeWidth={2} />
                                 Back to Home
                             </button>
                         </div>
@@ -406,14 +426,35 @@ export function TemplatesBrowser({
                                 loading={loading}
                                 getPhraseCount={(c) => templateByGroup.get(c.id)?.phraseCount || 0}
                                 getLanguagePair={() => ({ inputLang, targetLang })}
-                                getCompletionStatus={(c) => {
+                                getStatus={(c): CollectionStatus => {
                                     const t = templateByGroup.get(c.id);
                                     const progress = templateProgress[c.id];
                                     const total = t?.phraseCount || 0;
-                                    if (!progress || !total) return false;
+
+                                    // No progress at all
+                                    if (!progress || !total) return 'not-started';
+
                                     // Treat as completed if we have an explicit completedAt
                                     // OR if we've listened to all phrases in this template
-                                    return Boolean(progress.completedAt) || progress.listenedCount >= total;
+                                    const isCompleted = Boolean(progress.completedAt) || progress.listenedCount >= total;
+                                    if (isCompleted) return 'completed';
+
+                                    // Check if this is the first incomplete template in the path (i.e., "next")
+                                    if (pathId) {
+                                        const firstIncompleteIndex = templates.findIndex((template) => {
+                                            const prog = templateProgress[template.groupId];
+                                            const tot = template.phraseCount || 0;
+                                            if (!prog || !tot) return true;
+                                            const completed = Boolean(prog.completedAt) || prog.listenedCount >= tot;
+                                            return !completed;
+                                        });
+
+                                        const currentIndex = templates.findIndex(template => template.groupId === c.id);
+                                        if (currentIndex === firstIncompleteIndex) return 'next';
+                                    }
+
+                                    // Has progress but not complete
+                                    return 'in-progress';
                                 }}
                                 getProgressSummary={(c) => {
                                     const t = templateByGroup.get(c.id);
@@ -460,6 +501,8 @@ export function TemplatesBrowser({
                                 }}
                                 hideScrollbar
                                 enableCarouselControls
+                                scrollToIndex={getFirstIncompleteIndex()}
+                                scrollBehavior="instant"
                                 onShowAllClick={async () => {
                                     track('Show All Templates Clicked', { pathId: pathId || null });
                                     if (showAllOverride) {

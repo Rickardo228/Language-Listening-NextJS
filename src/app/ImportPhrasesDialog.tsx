@@ -2,11 +2,13 @@
 
 import { useState } from 'react'
 import { languageOptions, CollectionType } from './types'
-import { X, Plus } from 'lucide-react'
+import { X, Plus, Lightbulb } from 'lucide-react'
 import { API_BASE_URL } from './consts'
 import { Dialog } from '@headlessui/react'
 import { LanguageSelector } from './components/LanguageSelector'
 import { trackGeneratePhrases } from '../lib/mixpanelClient'
+import { Input, Select } from './components/ui'
+import { toast } from 'sonner'
 
 export interface ImportPhrasesDialogProps {
     isOpen: boolean
@@ -102,7 +104,7 @@ export function ImportPhrasesDialog({
         } catch (error) {
             console.error('Error generating phrases:', error);
             // Show error to user
-            alert(error instanceof Error ? error.message : 'Failed to generate phrases. Please try again.');
+            toast.error(error instanceof Error ? error.message : 'Failed to generate phrases. Please try again.');
         } finally {
             setGeneratingPhrases(false);
             setIsFetchingUrl(false);
@@ -130,35 +132,27 @@ export function ImportPhrasesDialog({
                     <div className="space-y-4">
                         <div className="flex flex-col gap-4">
                             {!onAddToCollection && (
-                                <div>
-                                    <label className="block text-sm font-medium mb-1">List Name</label>
-                                    <div className="flex flex-wrap gap-2">
-                                        <input
-                                            type="text"
-                                            value={prompt}
-                                            onChange={(e) => setPrompt(e.target.value)}
-                                            className="w-full p-2 rounded-md border bg-background"
-                                            placeholder="Enter a name or paste a URL (YouTube/website)..."
-                                            disabled={loading}
-                                            autoFocus={Boolean(onProcess)}
-                                        />
-
-                                    </div>
-                                </div>
+                                <Input
+                                    label="List Name"
+                                    type="text"
+                                    value={prompt}
+                                    onChange={(e) => setPrompt(e.target.value)}
+                                    placeholder="Enter a name or paste a URL (YouTube/website)..."
+                                    disabled={loading}
+                                    autoFocus={Boolean(onProcess)}
+                                />
                             )}
                             {!onAddToCollection && (
-                                <div>
-                                    <label className="block text-sm font-medium mb-1">List Type</label>
-                                    <select
-                                        value={collectionType}
-                                        onChange={(e) => setCollectionType(e.target.value as CollectionType)}
-                                        className="w-full p-2 rounded-md border bg-background"
-                                        disabled={loading}
-                                    >
-                                        <option value="phrases">Phrases</option>
-                                        <option value="article">Article</option>
-                                    </select>
-                                </div>
+                                <Select
+                                    label="List Type"
+                                    value={collectionType}
+                                    onChange={(e) => setCollectionType(e.target.value as CollectionType)}
+                                    disabled={loading}
+                                    options={[
+                                        { value: 'phrases', label: 'Phrases' },
+                                        { value: 'article', label: 'Article' }
+                                    ]}
+                                />
                             )}
                             <LanguageSelector
                                 inputLang={inputLang}
@@ -191,9 +185,7 @@ export function ImportPhrasesDialog({
                                         </div>
                                     ) : (
                                         <div className="flex items-center gap-1">
-                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-                                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 18v-5.25m0 0a6.01 6.01 0 0 0 1.5-.189m-1.5.189a6.01 6.01 0 0 1-1.5-.189m3.75 7.478a12.06 12.06 0 0 1-4.5 0m3.75 2.383a14.406 14.406 0 0 1-3 0M14.25 18v-.192c0-.983.658-1.823 1.508-2.316a7.5 7.5 0 1 0-7.517 0c.85.493 1.509 1.333 1.509 2.316V18" />
-                                            </svg>
+                                            <Lightbulb className="w-5 h-5" />
                                             {collectionType === 'phrases' ? 'Generate Phrases with AI' : 'Generate Article with AI'}
                                         </div>
                                     )}
@@ -213,16 +205,15 @@ export function ImportPhrasesDialog({
 
                             {!onProcess && (
                                 <div>
-                                    <label className="block text-sm font-medium mb-1">Get phrase suggestions with AI</label>
-                                    <div className="flex flex-wrap gap-2">
-                                        <input
-                                            type="text"
-                                            value={prompt}
-                                            onChange={(e) => setPrompt(e.target.value)}
-                                            className="w-full p-2 rounded-md border bg-background"
-                                            placeholder="Ask for suggestions or paste a URL..."
-                                            disabled={loading}
-                                        />
+                                    <Input
+                                        label="Get phrase suggestions with AI"
+                                        type="text"
+                                        value={prompt}
+                                        onChange={(e) => setPrompt(e.target.value)}
+                                        placeholder="Ask for suggestions or paste a URL..."
+                                        disabled={loading}
+                                    />
+                                    <div className="flex flex-wrap gap-2 mt-2">
                                         {prompt.trim() && (
                                             <button
                                                 onClick={handleGeneratePhrases}
@@ -236,9 +227,7 @@ export function ImportPhrasesDialog({
                                                     </div>
                                                 ) : (
                                                     <div className="flex items-center gap-1">
-                                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 18v-5.25m0 0a6.01 6.01 0 0 0 1.5-.189m-1.5.189a6.01 6.01 0 0 1-1.5-.189m3.75 7.478a12.06 12.06 0 0 1-4.5 0m3.75 2.383a14.406 14.406 0 0 1-3 0M14.25 18v-.192c0-.983.658-1.823 1.508-2.316a7.5 7.5 0 1 0-7.517 0c.85.493 1.509 1.333 1.509 2.316V18" />
-                                                        </svg>
+                                                        <Lightbulb className="w-5 h-5" />
                                                         {collectionType === 'phrases' ? 'Get Phrase Suggestions' : 'Get Sentence Suggestions'}
                                                     </div>
                                                 )}

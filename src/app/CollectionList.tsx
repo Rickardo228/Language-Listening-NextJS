@@ -2,6 +2,9 @@ import { Config } from './types';
 import { LanguageFlags } from './components/LanguageFlags';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
+import { ArrowRight } from 'lucide-react';
+
+export type CollectionStatus = 'not-started' | 'in-progress' | 'completed' | 'next';
 
 interface CollectionListProps {
     savedCollections: Config[];
@@ -13,6 +16,7 @@ interface CollectionListProps {
     title?: string | React.ReactNode;
     showAllButton?: boolean;
     onShowAllClick?: () => void;
+    actionButton?: React.ReactNode;
     // Controls the presentation style of each item
     itemVariant?: 'list' | 'card';
     // Controls the flow/layout of the list container
@@ -31,8 +35,14 @@ interface CollectionListProps {
     getLanguagePair?: (collection: Config) => { inputLang: string; targetLang: string } | null;
     // Optional callback to determine if a collection is completed
     getCompletionStatus?: (collection: Config) => boolean;
+    // Optional callback to get detailed status (not-started, in-progress, completed, next)
+    getStatus?: (collection: Config) => CollectionStatus;
     // Optional callback to provide progress for incomplete collections
     getProgressSummary?: (collection: Config) => { completedCount: number; totalCount: number } | null;
+    // Optional index to scroll to (for horizontal layout)
+    scrollToIndex?: number;
+    // Optional scroll behavior when scrolling to index (defaults to 'smooth')
+    scrollBehavior?: ScrollBehavior;
 }
 
 export function CollectionList({
@@ -45,6 +55,7 @@ export function CollectionList({
     title,
     showAllButton = true,
     onShowAllClick,
+    actionButton,
     itemVariant = 'list',
     layout = 'vertical',
     showFlags = true,
@@ -55,7 +66,10 @@ export function CollectionList({
     getPhraseCount,
     getLanguagePair,
     getCompletionStatus,
+    getStatus,
     getProgressSummary,
+    scrollToIndex,
+    scrollBehavior = 'smooth',
 }: CollectionListProps) {
     const router = useRouter();
     const containerRef = useRef<HTMLDivElement | null>(null);
@@ -83,6 +97,30 @@ export function CollectionList({
             ro.disconnect();
         };
     }, [layout, savedCollections.length]);
+
+    // Handle scrolling to a specific index
+    useEffect(() => {
+        if (layout !== 'horizontal' || scrollToIndex === undefined || loading) return;
+        if (scrollToIndex < 0 || scrollToIndex >= savedCollections.length) return;
+
+        const el = containerRef.current;
+        if (!el) return;
+
+        // Wait for the DOM to be fully rendered
+        const timer = setTimeout(() => {
+            // Card width (220px) + gap (16px from gap-4)
+            const cardWidth = 220;
+            const gap = 16;
+            const scrollPosition = scrollToIndex * (cardWidth + gap);
+
+            el.scrollTo({
+                left: scrollPosition,
+                behavior: scrollBehavior
+            });
+        }, 100);
+
+        return () => clearTimeout(timer);
+    }, [layout, scrollToIndex, savedCollections.length, loading, scrollBehavior]);
 
     // Deterministic hash to map collections to palette indices
     const hashStringToNumber = (value: string): number => {
@@ -122,28 +160,10 @@ export function CollectionList({
                         <h2 className="text-xl font-semibold">Your Library</h2>
                     )}
                 </div>
-                {showAllButton && (
-                    <button
-                        onClick={() => (onShowAllClick ? onShowAllClick() : router.push('/templates'))}
-                        className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors lg:mr-10"
-                        title="Show all"
-                    >
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            strokeWidth={1.5}
-                            stroke="currentColor"
-                            className="w-3 h-3"
-                        >
-                            <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"
-                            />
-                        </svg>
-                        Show all
-                    </button>
+                {actionButton && (
+                    <div>
+                        {actionButton}
+                    </div>
                 )}
             </div>
             {loading ? (
@@ -155,7 +175,7 @@ export function CollectionList({
                             : 'space-y-2'
                     }
                 >
-                    {Array.from({ length: layout === 'horizontal' || itemVariant === 'card' ? 6 : 5 }).map((_, index) => (
+                    {Array.from({ length: layout === 'horizontal' || itemVariant === 'card' ? 6 : 8 }).map((_, index) => (
                         itemVariant === 'card' ? (
                             <div
                                 key={`skeleton-card-${index}`}
@@ -196,7 +216,9 @@ export function CollectionList({
                             const languages = getLanguagePair ? getLanguagePair(collection) : (collection.phrases[0]
                                 ? { inputLang: collection.phrases[0].inputLang, targetLang: collection.phrases[0].targetLang }
                                 : null);
-                            const isCompleted = getCompletionStatus ? getCompletionStatus(collection) : false;
+                            const status = getStatus ? getStatus(collection) : (getCompletionStatus ? (getCompletionStatus(collection) ? 'completed' : 'not-started') : 'not-started');
+                            const isCompleted = status === 'completed';
+                            const isNext = status === 'next';
                             const progress = getProgressSummary
                                 ? getProgressSummary(collection)
                                 : null;
@@ -236,7 +258,13 @@ export function CollectionList({
                                             {hasBackgroundImage && (
                                                 <div className="pointer-events-none absolute inset-0 z-0 bg-black/35" />
                                             )}
-                                            {isCompleted && (
+                                            {isNext && (
+                                                <div className="absolute top-2 left-2 inline-flex items-center gap-1 rounded-full bg-primary/90 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide">
+                                                    <ArrowRight className="w-3 h-3" strokeWidth={2} />
+                                                    <span>Next</span>
+                                                </div>
+                                            )}
+                                            {isCompleted && !isNext && (
                                                 <div className="absolute top-2 left-2 inline-flex items-center gap-1 rounded-full bg-black/50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide">
                                                     <svg
                                                         xmlns="http://www.w3.org/2000/svg"
@@ -285,7 +313,7 @@ export function CollectionList({
                                                 </div>
                                             )}
                                             <div className="w-full relative z-10">
-                                                <div className="text-lg sm:text-xl font-semibold leading-tight break-words line-clamp-2 capitalize">{collection.name}</div>
+                                                <div className="text-lg sm:text-xl font-semibold leading-tight break-words line-clamp-2 capitalize">{collection.name.replace(/_/g, ' ')}</div>
                                                 {showFlags && (
                                                     <div className="text-[10px] opacity-80 tracking-wider">
                                                         {languages ? (
@@ -316,7 +344,7 @@ export function CollectionList({
                                 >
                                     <div className="flex items-center justify-between">
                                         <div className="flex-1 min-w-0">
-                                            <h3 className="text-sm font-medium truncate capitalize">{collection.name}</h3>
+                                            <h3 className="text-sm font-medium truncate capitalize">{collection.name.replace(/_/g, ' ')}</h3>
                                             <p className="text-xs opacity-80 flex items-center gap-1">
                                                 <span>{phraseCount} phrases</span>
                                                 {showFlags && languages && (
@@ -416,6 +444,29 @@ export function CollectionList({
                         </>
                     )}
                 </div>
+            )}
+            {showAllButton && (
+                <button
+                    onClick={() => (onShowAllClick ? onShowAllClick() : router.push('/templates'))}
+                    className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors w-full justify-center py-2"
+                    title="Show all"
+                >
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        strokeWidth={1.5}
+                        stroke="currentColor"
+                        className="w-3 h-3"
+                    >
+                        <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"
+                        />
+                    </svg>
+                    Show all
+                </button>
             )}
         </div>
     );

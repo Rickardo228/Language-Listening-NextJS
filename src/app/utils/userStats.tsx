@@ -15,6 +15,7 @@ import { trackPhrasesListenedPopup } from "../../lib/mixpanelClient";
 import { getPhraseRankTitle, DEBUG_MILESTONE_THRESHOLDS } from "./rankingSystem";
 import { useRouter } from "next/navigation";
 import { createOrUpdateUserProfile } from "./userPreferences";
+import { Check } from "lucide-react";
 
 const firestore = getFirestore();
 
@@ -270,6 +271,7 @@ export const useUpdateUserStats = () => {
   const [popupEventType, setPopupEventType] = useState<'listened' | 'viewed'>('listened');
   const [isListCompleted, setIsListCompleted] = useState(false);
   const [onGoAgainCallback, setOnGoAgainCallback] = useState<(() => void | Promise<void>) | null>(null);
+  const [onGoNextCallback, setOnGoNextCallback] = useState<(() => void | Promise<void>) | null>(null);
 
   const phrasesListenedRef = useRef(0);
   const phrasesViewedRef = useRef(0);
@@ -340,7 +342,7 @@ export const useUpdateUserStats = () => {
     fetchInitialTotal();
   }, [user]);
 
-  const showStatsUpdate = useCallback((shouldPersistUntilInteraction: boolean = false, eventType: 'listened' | 'viewed' | 'both' = 'listened', listCompleted: boolean = false, onGoAgain?: () => void | Promise<void>) => {
+  const showStatsUpdate = useCallback((shouldPersistUntilInteraction: boolean = false, eventType: 'listened' | 'viewed' | 'both' = 'listened', listCompleted: boolean = false, onGoAgain?: () => void | Promise<void>, onGoNext?: () => void | Promise<void>) => {
     const listenedCount = phrasesListenedRef.current;
     const viewedCount = phrasesViewedRef.current;
 
@@ -348,7 +350,26 @@ export const useUpdateUserStats = () => {
     let displayCount = 0;
     let displayType = '';
 
-    if (eventType === 'listened' && listenedCount > 0) {
+    // List completion popups should always show, regardless of counter
+    if (listCompleted) {
+      shouldShowPopup = true;
+
+      // Respect the eventType parameter - use appropriate counter and display type
+      if (eventType === 'viewed') {
+        displayCount = viewedCount > 0 ? viewedCount : 1;
+        displayType = 'viewed';
+        console.log('📊 List completed - showing completion popup with count:', viewedCount, '(viewed)');
+        // Don't reset viewed counter
+      } else {
+        // Default to listened for 'listened' or 'both' event types
+        displayCount = listenedCount > 0 ? listenedCount : 1;
+        displayType = 'listened';
+        console.log('📊 List completed - showing completion popup with count:', listenedCount, '(listened)');
+        if (shouldPersistUntilInteraction) {
+          phrasesListenedRef.current = 0;
+        }
+      }
+    } else if (eventType === 'listened' && listenedCount > 0) {
       shouldShowPopup = true;
       displayCount = listenedCount;
       displayType = 'listened';
@@ -398,6 +419,8 @@ export const useUpdateUserStats = () => {
       isListCompletedRef.current = listCompleted; // Sync ref for guard checks
       // Store the go again callback if provided (wrap in function to avoid React treating it as lazy initializer)
       setOnGoAgainCallback(listCompleted && onGoAgain ? () => onGoAgain : () => null);
+      // Store the go next callback if provided (wrap in function to avoid React treating it as lazy initializer)
+      setOnGoNextCallback(listCompleted && onGoNext ? () => onGoNext : () => null);
 
       // Store the event type for display purposes
       setPopupEventType(displayType as 'listened' | 'viewed');
@@ -425,6 +448,7 @@ export const useUpdateUserStats = () => {
           setIsListCompleted(false);
           isListCompletedRef.current = false; // Reset ref
           setOnGoAgainCallback(() => null);
+          setOnGoNextCallback(() => null);
           popupCloseTimeoutRef.current = null;
         }, 2000);
         popupCloseTimeoutRef.current = timeoutId;
@@ -477,6 +501,7 @@ export const useUpdateUserStats = () => {
     setIsListCompleted(false);
     isListCompletedRef.current = false; // Reset ref
     setOnGoAgainCallback(() => null);
+    setOnGoNextCallback(() => null);
     // Clear recent milestones when user dismisses the popup
     setRecentMilestones([]);
   }, [showPopup, countToShow, persistUntilInteraction, currentStreak]);
@@ -501,6 +526,7 @@ export const useUpdateUserStats = () => {
     setShowPopup(false);
     setPersistUntilInteraction(false);
     isListCompletedRef.current = false; // Reset ref
+    setOnGoNextCallback(() => null);
     // Clear recent milestones when user opens stats modal
     setRecentMilestones([]);
   };
@@ -574,6 +600,29 @@ export const useUpdateUserStats = () => {
       return;
     }
 
+    // Increment the session ref counter FIRST (before dev check) to ensure UI popups work in dev mode
+    if (!skipSessionIncrement) {
+      if (eventType === 'listened') {
+        phrasesListenedRef.current += 1;
+        const newListenedCount = phrasesListenedRef.current;
+
+        // Show snackbar popup every 5 phrases listened
+        if (newListenedCount % 5 === 0) {
+          // Use setTimeout to avoid showing popup during the same render cycle
+          setTimeout(() => {
+            showStatsUpdate(false, 'listened');
+          }, 100);
+        }
+      } else if (eventType === 'viewed') {
+        phrasesViewedRef.current += 1;
+      }
+    }
+
+    // Skip Firestore updates in development environment (but keep session counters above)
+    if (process.env.NODE_ENV === 'development') {
+      return;
+    }
+
     // Smart sync: every N phrases or when forced
     await syncTotalIfNeeded();
 
@@ -607,24 +656,6 @@ export const useUpdateUserStats = () => {
 
     // Track phrases since last sync for smart syncing
     phraseCountSinceLastSync.current += 1;
-
-    // Increment the session ref counter based on event type (unless skipped)
-    if (!skipSessionIncrement) {
-      if (eventType === 'listened') {
-        phrasesListenedRef.current += 1;
-        const newListenedCount = phrasesListenedRef.current;
-
-        // Show snackbar popup every 5 phrases listened
-        if (newListenedCount % 5 === 0) {
-          // Use setTimeout to avoid showing popup during the same render cycle
-          setTimeout(() => {
-            showStatsUpdate(false, 'listened');
-          }, 100);
-        }
-      } else if (eventType === 'viewed') {
-        phrasesViewedRef.current += 1;
-      }
-    }
 
     const now = new Date();
     const userTimezone = getUserTimezone();
@@ -825,7 +856,7 @@ export const useUpdateUserStats = () => {
         <motion.div
           key="pause-popup"
           className={`fixed z-50 ${!persistUntilInteraction
-            ? 'bottom-4 left-1/2 -translate-x-1/2' // Snackbar position for both viewed and listened
+            ? 'top-4 left-1/2 -translate-x-1/2' // Snackbar position for both viewed and listened (moved to top to avoid nav buttons)
             : 'inset-0 flex items-center justify-center md:items-center md:justify-center sm:items-end sm:justify-end sm:p-4' // Full popup
             }`}
           initial={{ opacity: 0 }}
@@ -873,16 +904,14 @@ export const useUpdateUserStats = () => {
                   <div className={`flex items-center justify-center ${!persistUntilInteraction ? 'space-x-2' : 'space-x-3'
                     }`}>
                     {persistUntilInteraction && (
-                      <motion.svg
+                      <motion.div
                         className={isListCompleted ? "w-7 h-7" : "w-6 h-6"}
-                        fill="currentColor"
-                        viewBox="0 0 20 20"
                         initial={{ rotate: -180, scale: 0 }}
                         animate={{ rotate: 0, scale: 1 }}
                         transition={{ delay: 0.1, type: "spring", stiffness: 400 }}
                       >
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                      </motion.svg>
+                        <Check className="w-full h-full" />
+                      </motion.div>
                     )}
                     <motion.span
                       className={`font-bold ${isListCompleted
@@ -1120,6 +1149,20 @@ export const useUpdateUserStats = () => {
                           }}
                         >
                           Go Again
+                        </button>
+                      )}
+                      {isListCompleted && onGoNextCallback && (
+                        <button
+                          className={`w-full px-4 py-2 ${useYellowTheme ? 'bg-green-600 hover:bg-green-700' : 'bg-green-600 hover:bg-green-700'} text-white rounded text-sm font-medium transition-colors shadow-md border-2 border-white/30`}
+                          onClick={async () => {
+                            const callback = onGoNextCallback();
+                            if (callback) {
+                              await callback;
+                            }
+                            closeStatsPopup("continue");
+                          }}
+                        >
+                          Go Next →
                         </button>
                       )}
                       <button

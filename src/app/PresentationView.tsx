@@ -3,12 +3,13 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { createPortal } from "react-dom";
-import { ArrowLeft, ArrowRight, Maximize2, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, Maximize2, X, Play, Pause, Settings } from "lucide-react";
 import { AutumnLeaves } from "./Effects/AutumnLeaves";
 import CherryBlossom from "./Effects/CherryBlossom";
 import { BLEED_START_DELAY, TITLE_DELAY } from './consts';
 import ParticleAnimation from "./Effects/ParticleGlow";
 import { PhraseCounter } from "./components/PhraseCounter";
+import { DustEffect } from "./Effects/DustEffect";
 
 interface PresentationViewProps {
   currentPhrase: string;
@@ -23,7 +24,12 @@ interface PresentationViewProps {
   enableCherryBlossom?: boolean;
   enableOrtonEffect?: boolean;
   enableParticles?: boolean;
+  particleRotation?: number;
   enableSteam?: boolean;
+  enableDust?: boolean;
+  particleColor?: string;
+  particleSpeed?: number;
+  dustOpacity?: number;
   containerBg?: string; // New prop for container background color (default: 'bg-teal-500')
   textBg?: string;      // New prop for text container background color (default: 'bg-rose-400')
   backgroundOverlayOpacity?: number; // Optional dark overlay over bg image to improve contrast
@@ -42,6 +48,11 @@ interface PresentationViewProps {
   currentPhraseIndex?: number; // New prop for current phrase index (0-based)
   totalPhrases?: number; // New prop for total number of phrases
   isPlayingAudio?: boolean; // New prop to indicate if audio is actively playing
+  paused?: boolean; // New prop to indicate if playback is paused
+  onPause?: () => void; // New prop for pause functionality
+  onPlay?: () => void; // New prop for play functionality
+  onPlayPhrase?: (phase: 'input' | 'output') => void; // New prop to play a specific phrase (input or output)
+  onSettingsOpen?: () => void; // New prop for opening settings
 }
 
 export const TITLE_ANIMATION_DURATION = 1000
@@ -80,7 +91,12 @@ export function PresentationView({
   enableCherryBlossom,
   enableOrtonEffect,
   enableParticles,
+  particleRotation,
   enableSteam,
+  enableDust,
+  particleColor,
+  particleSpeed,
+  dustOpacity,
   containerBg,
   textBg,
   backgroundOverlayOpacity,
@@ -99,6 +115,11 @@ export function PresentationView({
   currentPhraseIndex,
   totalPhrases,
   isPlayingAudio = false,
+  paused,
+  onPause,
+  onPlay,
+  onPlayPhrase,
+  onSettingsOpen,
 }: PresentationViewProps) {
   const [isHovering, setIsHovering] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -140,8 +161,11 @@ export function PresentationView({
 
   const alignPhraseTop = totalPhraseLength > 165 && isMobile;
 
+  // Check if we're on mobile and not in fullscreen
+  const isMobileInline = isMobile && !fullScreen;
+
   const containerClass =
-    `inset-0 flex flex-col items-center ${alignPhraseTop ? '' : 'justify-center'} ` +
+    `inset-0 flex flex-col items-center overflow-hidden ${alignPhraseTop ? '' : 'justify-center'} ` +
     (fullScreen ? "fixed z-50" : "relative p-4 lg:rounded shadow w-full h-48 lg:h-[70vh] lg:max-h-[80vh]") +
     (!containerBg ? " bg-gray-100 dark:bg-gray-900" : "");
 
@@ -209,8 +233,10 @@ export function PresentationView({
           if (!isDragging) {
             if (fullScreen) {
               // In fullscreen: navigate based on click position
-              const clickX = e.nativeEvent.offsetX;
-              const containerWidth = e.currentTarget.offsetWidth;
+              // Use getBoundingClientRect to get accurate container position
+              const rect = e.currentTarget.getBoundingClientRect();
+              const clickX = e.clientX - rect.left;
+              const containerWidth = rect.width;
               const clickPercentage = (clickX / containerWidth) * 100;
 
               if (clickPercentage < 33.33 && onPrevious && canGoBack) {
@@ -287,7 +313,8 @@ export function PresentationView({
         )}
         {enableAutumnLeaves && <AutumnLeaves fullScreen={fullScreen} />}
         {enableCherryBlossom && <CherryBlossom fullScreen={fullScreen} />}
-        {fullScreen && enableParticles && <ParticleAnimation />}
+        {enableParticles && <ParticleAnimation rotation={particleRotation} speed={particleSpeed} />}
+        {enableDust && <DustEffect fullScreen={fullScreen} color={particleColor} direction={particleRotation} speed={particleSpeed} opacity={dustOpacity} />}
         {enableSteam && <div style={{ position: 'absolute', width: '100%', height: '100%', top: '410px', left: '710px' }}>
           <span className="steam" style={{
 
@@ -297,11 +324,13 @@ export function PresentationView({
         {/* Background overlay - appears on top of effects but behind UI elements */}
         {bgImage && effectiveOverlayOpacity > 0 && (
           <div
-            className="pointer-events-none absolute inset-0"
+            className="pointer-events-none absolute inset-0 bg-white dark:bg-black"
             style={{
-              backgroundColor: textColor === 'dark'
-                ? `rgba(255,255,255,${effectiveOverlayOpacity})` // Light overlay for dark text
-                : `rgba(0,0,0,${effectiveOverlayOpacity})` // Dark overlay for light text or default
+              opacity: textColor === 'dark'
+                ? effectiveOverlayOpacity // Light overlay (white bg) for dark text
+                : textColor === 'light'
+                  ? effectiveOverlayOpacity // Dark overlay (black bg) for light text
+                  : effectiveOverlayOpacity // Auto: light overlay in light mode, dark overlay in dark mode
             }}
           />
         )}
@@ -334,28 +363,67 @@ export function PresentationView({
           </div>
         )}
 
-        {/* Fullscreen/Close Button - repositioned to top-right */}
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            setFullscreen(prev => !prev);
-          }}
-          className="absolute top-4 right-4 p-3 bg-gray-200 dark:bg-gray-700 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 transition-all duration-200 z-10"
-          title={fullScreen ? "Exit Presentation Mode" : "Enter Presentation Mode"}
-          style={{
-            opacity: shouldShowNavigationButtons ? 1 : 0,
-            transition: 'opacity 0.3s ease'
-          }}
-        >
-          {fullScreen ? (
-            <X className="h-6 w-6 text-gray-700 dark:text-gray-300" />
-          ) : (
-            <Maximize2 className="h-6 w-6 text-gray-700 dark:text-gray-300" />
-          )}
-        </button>
+        {/* Top left X button for mobile fullscreen */}
+        {fullScreen && isMobile && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setFullscreen(false);
+            }}
+            className="absolute top-4 left-4 p-2 bg-gray-200/80 dark:bg-gray-700/80 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 transition-all duration-200 z-10"
+            title="Exit Presentation Mode"
+            style={{
+              opacity: shouldShowNavigationButtons ? 1 : 0,
+              transition: 'opacity 0.3s ease'
+            }}
+          >
+            <X className="h-5 w-5 text-gray-700 dark:text-gray-300" />
+          </button>
+        )}
 
-        {/* Navigation Buttons - Spotify-style bottom center on mobile fullscreen */}
-        {onPrevious && onNext && (
+        {/* Top right buttons container - for desktop and mobile inline (not mobile fullscreen) */}
+        {!(fullScreen && isMobile) && (
+          <div className="absolute top-2 right-2 flex items-center gap-1 z-10">
+            {/* Settings Button - visible on desktop and mobile inline (not mobile fullscreen) */}
+            {onSettingsOpen && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onSettingsOpen();
+                }}
+                className="p-1.5 bg-gray-200/80 dark:bg-gray-700/80 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 transition-all duration-200"
+                title="Settings"
+                style={{
+                  opacity: isMobileInline ? 1 : (shouldShowNavigationButtons ? 1 : 0),
+                  transition: 'opacity 0.3s ease'
+                }}
+              >
+                <Settings className="h-4 w-4 text-gray-700 dark:text-gray-300" />
+              </button>
+            )}
+
+            {/* Fullscreen/Close Button - hidden on mobile inline and when not in fullscreen */}
+            {!isMobileInline && fullScreen && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setFullscreen(prev => !prev);
+                }}
+                className="p-2 bg-gray-200/80 dark:bg-gray-700/80 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 transition-all duration-200"
+                title="Exit Presentation Mode"
+                style={{
+                  opacity: shouldShowNavigationButtons ? 1 : 0,
+                  transition: 'opacity 0.3s ease'
+                }}
+              >
+                <X className="h-5 w-5 text-gray-700 dark:text-gray-300" />
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Navigation Buttons - Spotify-style bottom center on mobile fullscreen, hidden on mobile inline */}
+        {onPrevious && onNext && !isMobileInline && (
           <>
             {fullScreen && isMobile ? (
               // Mobile fullscreen: Spotify-style bottom center layout
@@ -376,6 +444,23 @@ export function PresentationView({
                 >
                   <ArrowLeft className="h-6 w-6 text-gray-700 dark:text-gray-300" />
                 </button>
+                {/* Pause/Play button for mobile fullscreen */}
+                {onPause && onPlay && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      paused ? onPlay() : onPause();
+                    }}
+                    className="p-3 bg-gray-200 dark:bg-gray-700 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 transition-all duration-200"
+                    title={paused ? "Play" : "Pause"}
+                  >
+                    {paused ? (
+                      <Play className="h-6 w-6 text-gray-700 dark:text-gray-300" />
+                    ) : (
+                      <Pause className="h-6 w-6 text-gray-700 dark:text-gray-300" />
+                    )}
+                  </button>
+                )}
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
@@ -426,19 +511,68 @@ export function PresentationView({
           </>
         )}
 
-        {/* Phrase Counter */}
-        <PhraseCounter
-          currentPhraseIndex={currentPhraseIndex}
-          totalPhrases={totalPhrases}
-          className={`absolute z-10 ${fullScreen && isMobile && onNext
-            ? "top-4 left-4" // Move to top-left on mobile fullscreen
-            : "bottom-4 right-4"
-            }`}
-          style={{
-            opacity: shouldShowNavigationButtons ? 1 : 0,
-            transition: 'opacity 0.3s ease'
-          }}
-        />
+        {/* Pause/Play button for desktop fullscreen - bottom center */}
+        {fullScreen && !isMobile && onPause && onPlay && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              paused ? onPlay() : onPause();
+            }}
+            className="absolute bottom-8 left-1/2 transform -translate-x-1/2 p-3 bg-gray-200 dark:bg-gray-700 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 transition-all duration-200 z-10"
+            title={paused ? "Play" : "Pause"}
+            style={{
+              opacity: shouldShowNavigationButtons ? 1 : 0,
+              transition: 'opacity 0.3s ease'
+            }}
+          >
+            {paused ? (
+              <Play className="h-6 w-6 text-gray-700 dark:text-gray-300" />
+            ) : (
+              <Pause className="h-6 w-6 text-gray-700 dark:text-gray-300" />
+            )}
+          </button>
+        )}
+
+        {/* Phrase Counter with Settings on mobile fullscreen - positioned top right */}
+        {fullScreen && isMobile && onNext ? (
+          <div
+            className="absolute top-4 right-4 flex items-center gap-2 z-10"
+            style={{
+              opacity: shouldShowNavigationButtons ? 1 : 0,
+              transition: 'opacity 0.3s ease'
+            }}
+          >
+            {onSettingsOpen && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onSettingsOpen();
+                }}
+                className="p-1.5 bg-gray-200/80 dark:bg-gray-700/80 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 transition-all duration-200 mr-1"
+                title="Settings"
+              >
+                <Settings className="h-4 w-4 text-gray-700 dark:text-gray-300" />
+              </button>
+            )}
+            <PhraseCounter
+              currentPhraseIndex={currentPhraseIndex}
+              totalPhrases={totalPhrases}
+            />
+          </div>
+        ) : (
+          <PhraseCounter
+            currentPhraseIndex={currentPhraseIndex}
+            totalPhrases={totalPhrases}
+            className={`absolute z-10 ${isMobileInline
+              ? "bottom-1 right-2 text-xs" // Smaller position on mobile inline
+              : "bottom-4 right-4"
+              }`}
+            style={{
+              opacity: isMobileInline ? 1 : (shouldShowNavigationButtons ? 1 : 0),
+              transition: 'opacity 0.3s ease'
+            }}
+          />
+        )}
 
         {/* Animate the title in/out with AnimatePresence */}
         <AnimatePresence mode={'sync'}>
@@ -484,16 +618,21 @@ export function PresentationView({
           ) : showAllPhrases ? (
             // Show all phrases simultaneously with highlighting
             (currentPhrase || currentTranslated) && (
-              <div className={`text-center px-12 ${alignPhraseTop ? 'pb-4' : ''} absolute flex bg-opacity-90 flex-col ${textColorClass}`}
+              <div
+                className={`${isMobileInline ? 'text-left px-4' : 'text-center px-12'} ${alignPhraseTop ? 'pb-4' : ''} absolute flex bg-opacity-90 flex-col ${textColorClass}`}
                 style={{
-                  alignItems: "center",
+                  alignItems: isMobileInline ? "flex-start" : "center",
                   justifyContent: "center",
                   backgroundColor: textBg
                     ? (textBg.includes("rgb")
                       ? (textBg.slice(0, -1) + " 0.9)").replaceAll(" ", ",")
                       : textBg)
                     : "rgba(255,255,255,0.9) dark:bg-gray-800",
-                  borderRadius: '1rem'
+                  borderRadius: '1rem',
+                  ...(isMobileInline && {
+                    maxWidth: 'calc(100% - 2rem)',
+                    overflow: 'hidden'
+                  })
                 }}
               >
                 {/* Calculate the smaller font size for all phrases */}
@@ -525,17 +664,35 @@ export function PresentationView({
                           animate={{ opacity: 1, y: 0 }}
                           exit={{ opacity: 0, y: (isSafari && isMobile && !fullScreen) ? 0 : 10 }}
                           transition={{ duration: 0.3, ease: "easeOut" }}
+                          className={paused && onPlayPhrase && !isMobileInline ? "cursor-pointer" : ""}
+                          onClick={(e) => {
+                            if (isMobileInline) {
+                              // On mobile inline, let click bubble up to trigger fullscreen
+                              return;
+                            }
+                            if (paused && onPlayPhrase) {
+                              e.stopPropagation();
+                              onPlayPhrase('input');
+                            }
+                          }}
                         >
                           <h2
                             className="font-bold mb-2"
                             style={{
                               margin: 0,
                               padding: 0,
-                              fontSize: enableOutputBeforeInput ? commonFontSize : inputFontSize,
+                              marginBottom: isMobileInline && !enableOutputBeforeInput ? '12px' : undefined,
+                              fontSize: isMobileInline ? '16px' : (enableOutputBeforeInput ? commonFontSize : inputFontSize),
                               opacity: currentPhase !== "input" ? 0.6 : 1,
                               transform: isPlayingAudio && currentPhase === "input" ? "scale(1.02)" : "scale(1)",
                               filter: isPlayingAudio && currentPhase === "input" ? "drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3))" : "none",
-                              transition: "opacity 0.3s ease, transform 0.3s ease, filter 0.3s ease"
+                              transition: "opacity 0.3s ease, transform 0.3s ease, filter 0.3s ease",
+                              ...(isMobileInline && {
+                                whiteSpace: 'nowrap',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                maxWidth: '85vw'
+                              })
                             }}
                           >
                             {currentPhrase.trim()}
@@ -554,22 +711,40 @@ export function PresentationView({
                           animate={{ opacity: 1, y: 0 }}
                           exit={{ opacity: 0, y: (isSafari && isMobile && !fullScreen) ? 0 : 10 }}
                           transition={{ duration: 0.3, ease: "easeOut" }}
+                          className={paused && onPlayPhrase && !isMobileInline ? "cursor-pointer" : ""}
+                          onClick={(e) => {
+                            if (isMobileInline) {
+                              // On mobile inline, let click bubble up to trigger fullscreen
+                              return;
+                            }
+                            if (paused && onPlayPhrase) {
+                              e.stopPropagation();
+                              onPlayPhrase('output');
+                            }
+                          }}
                         >
                           <h2
                             className="font-bold"
                             style={{
                               margin: 0,
                               padding: 0,
-                              fontSize: enableOutputBeforeInput ? inputFontSize : commonFontSize,
+                              marginBottom: isMobileInline && enableOutputBeforeInput ? '12px' : undefined,
+                              fontSize: isMobileInline ? '16px' : (enableOutputBeforeInput ? inputFontSize : commonFontSize),
                               opacity: currentPhase !== "output" ? 0.6 : 1,
                               transform: isPlayingAudio && currentPhase === "output" ? "scale(1.02)" : "scale(1)",
                               filter: isPlayingAudio && currentPhase === "output" ? "drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3))" : "none",
-                              transition: "opacity 0.3s ease, transform 0.3s ease, filter 0.3s ease"
+                              transition: "opacity 0.3s ease, transform 0.3s ease, filter 0.3s ease",
+                              ...(isMobileInline && {
+                                whiteSpace: 'nowrap',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                maxWidth: '85vw'
+                              })
                             }}
                           >
                             {currentTranslated.trim()}
                           </h2>
-                          {romanizedOutput && (
+                          {romanizedOutput && !isMobileInline && (
                             <h2
                               className="font-bold mt-3"
                               style={{
@@ -590,7 +765,7 @@ export function PresentationView({
                     </AnimatePresence>
                   );
 
-                  const divider = currentPhrase && currentTranslated && (
+                  const divider = currentPhrase && currentTranslated && !isMobileInline && (
                     <div
                       style={{
                         width: '80px',
@@ -636,16 +811,30 @@ export function PresentationView({
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: (isSafari && isMobile && !fullScreen) ? 0 : 10 }}
                 transition={{ duration: 0.3, ease: "easeOut" }}
-                className={`text-center px-12 ${alignPhraseTop ? 'pb-4' : ''} absolute flex bg-opacity-90 flex-col ${textColorClass}`}
+                className={`${isMobileInline ? 'text-left px-4' : 'text-center px-12'} ${alignPhraseTop ? 'pb-4' : ''} absolute flex bg-opacity-90 flex-col ${textColorClass} ${paused && onPlayPhrase && !isMobileInline ? 'cursor-pointer' : ''}`}
                 style={{
-                  alignItems: "center",
+                  alignItems: isMobileInline ? "flex-start" : "center",
                   justifyContent: "center",
                   backgroundColor: textBg
                     ? (textBg.includes("rgb")
                       ? (textBg.slice(0, -1) + " 0.9)").replaceAll(" ", ",")
                       : textBg)
                     : "rgba(255,255,255,0.9) dark:bg-gray-800",
-                  borderRadius: '1rem'
+                  borderRadius: '1rem',
+                  ...(isMobileInline && {
+                    maxWidth: 'calc(100% - 2rem)',
+                    overflow: 'hidden'
+                  })
+                }}
+                onClick={(e) => {
+                  if (isMobileInline) {
+                    // On mobile inline, let click bubble up to trigger fullscreen
+                    return;
+                  }
+                  if (paused && onPlayPhrase) {
+                    e.stopPropagation();
+                    onPlayPhrase(currentPhase);
+                  }
                 }}
               >
                 <h2
@@ -654,18 +843,24 @@ export function PresentationView({
                   style={{
                     margin: 0,
                     padding: 0,
-                    fontSize: calculateFontSize(
+                    fontSize: isMobileInline ? '16px' : calculateFontSize(
                       currentPhase === "input" ? currentPhrase : currentTranslated,
                       fullScreen,
                       romanizedOutput ? true : false
-                    )
+                    ),
+                    ...(isMobileInline && {
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      maxWidth: '85vw'
+                    })
                   }}
                 >
                   {currentPhase === "input"
                     ? currentPhrase?.trim()
                     : currentTranslated?.trim()}
                 </h2>
-                {currentPhase === "output" && romanizedOutput && (
+                {currentPhase === "output" && romanizedOutput && !isMobileInline && (
                   <h2
                     key={currentPhase}
                     className="font-bold mt-3"

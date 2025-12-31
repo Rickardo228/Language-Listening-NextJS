@@ -45,6 +45,9 @@ interface PhrasePlaybackViewProps {
     autoplay?: boolean;
     transport?: WebMediaSessionTransport; // Optional transport for testing/external control
     itemType?: 'template' | 'collection';
+    pathId?: string; // Learning path ID if this collection is part of a path
+    pathIndex?: number; // Position in the learning path
+    onNavigateToNextInPath?: () => void; // Callback to navigate to next item in path
 }
 
 export function PhrasePlaybackView({
@@ -61,6 +64,9 @@ export function PhrasePlaybackView({
     autoplay = false,
     transport: externalTransport,
     itemType,
+    pathId,
+    pathIndex,
+    onNavigateToNextInPath,
 }: PhrasePlaybackViewProps) {
     const { user } = useUser();
     const { updateUserStats, StatsPopups, StatsModal, showStatsUpdate, incrementViewedAndCheckMilestone, initializeViewedCounter, phrasesViewed } = useUpdateUserStats();
@@ -71,6 +77,7 @@ export function PhrasePlaybackView({
     const [paused, setPaused] = useState(true);
     const [isPlayingAudio, setIsPlayingAudio] = useState(false);
     const [fullscreen, setFullscreenBase] = useState(false);
+
     const setFullscreen = useCallback((value: boolean | ((prevState: boolean) => boolean)) => {
         setFullscreenBase(prevFullscreen => {
             const newVal = typeof value === 'function' ? value(prevFullscreen) : value;
@@ -80,7 +87,7 @@ export function PhrasePlaybackView({
             // Only show if phrases viewed count is over 5
             if (!newVal && prevFullscreen && pausedRef.current && phrasesViewed > 5) {
                 // User is exiting fullscreen while paused (viewing mode)
-                showStatsUpdate(true, 'viewed');
+                showStatsUpdate(false, 'viewed');
             }
 
             return newVal;
@@ -88,6 +95,7 @@ export function PhrasePlaybackView({
     }, [phrasesViewed, showStatsUpdate]);
     const [showTitle, setShowTitle] = useState(false);
     const [configName, setConfigName] = useState('Default');
+    const [settingsOpen, setSettingsOpen] = useState(false);
 
     // Debouncing refs for spam prevention
     const updateUserStatsTimeout = useRef<NodeJS.Timeout | null>(null);
@@ -410,6 +418,9 @@ export function PhrasePlaybackView({
         const curPhase = phaseRef.current;
         let targetPhase: 'input' | 'output' = curPhase;
 
+        // Track if we're about to complete the list by clicking next on the final phrase
+        let isCompletingList = false;
+
         if (playOutputBeforeInput) {
             if (delta === +1) {
                 if (curPhase === 'output') {
@@ -420,11 +431,19 @@ export function PhrasePlaybackView({
                         targetPhase = 'input';
                     } else {
                         // Skip shadow, jump to next phrase's recall
+                        // Check if we're on the last phrase - if so, list is completed
+                        if (targetIndex === phrases.length - 1) {
+                            isCompletingList = true;
+                        }
                         targetIndex = (targetIndex + 1) % phrases.length;
                         targetPhase = 'output';
                     }
                 } else {
                     // Shadow -> next phrase Recall
+                    // Check if we're on the last phrase - if so, list is completed
+                    if (targetIndex === phrases.length - 1) {
+                        isCompletingList = true;
+                    }
                     targetIndex = (targetIndex + 1) % phrases.length;
                     targetPhase = enableRecall ? 'output' : 'input'; // Start at recall or shadow of next phrase
                 }
@@ -451,11 +470,19 @@ export function PhrasePlaybackView({
                     if (enableRecall) {
                         targetPhase = 'output';
                     } else {
+                        // Check if we're on the last phrase - if so, list is completed
+                        if (targetIndex === phrases.length - 1) {
+                            isCompletingList = true;
+                        }
                         targetIndex = (targetIndex + 1) % phrases.length;
                         targetPhase = 'input';
                     }
                 } else {
                     // Shadow -> next phrase Recall OR Shadow
+                    // Check if we're on the last phrase - if so, list is completed
+                    if (targetIndex === phrases.length - 1) {
+                        isCompletingList = true;
+                    }
                     targetIndex = (targetIndex + 1) % phrases.length;
                     targetPhase = enableRecall ? 'input' : 'output';
                 }
@@ -502,6 +529,75 @@ export function PhrasePlaybackView({
             trackPlaybackEvent(eventType, `${collectionId || 'unknown'}-${targetIndex}`, targetPhase, targetIndex, speed);
         }
 
+        // Handle list completion
+        if (isCompletingList && !presentationConfig.enableLoop) {
+            // Show completion popup (persistent, requires user interaction)
+            // Use the appropriate event type based on whether we were playing or not
+            const completionEventType = wasPlaying ? 'listened' : 'viewed';
+
+            // Pass a callback that will be resolved later when user clicks "Go Again"
+            // We can't reference handleReplay here due to dependency ordering
+            const goAgainCallback = async () => {
+                clearAllTimeouts();
+                setCurrentPhraseIndexWithMetadata(prev => prev < 0 ? prev - 1 : -1);
+
+                // Determine starting phase based on playback order and enableInputPlayback
+                const startPhase = presentationConfig.enableInputPlayback
+                    ? getRecallPhase()  // Start with recall phase (first audio)
+                    : getShadowPhase(); // Skip recall phase, start with shadow phase (second audio)
+                setCurrentPhaseWithMetadata(startPhase);
+
+                if (startPhase === 'input' && audioRef.current && phrases[0]?.inputAudio?.audioUrl) {
+                    setSrcSafely(phrases[0].inputAudio?.audioUrl || '');
+                    const speed = presentationConfig.inputPlaybackSpeed || 1.0;
+                    if (speed !== 1.0 && audioRef.current) {
+                        audioRef.current.playbackRate = speed;
+                    }
+                } else if (startPhase === 'output' && audioRef.current && phrases[0]?.outputAudio?.audioUrl) {
+                    setSrcSafely(phrases[0].outputAudio?.audioUrl || '');
+                    const speed = presentationConfig.outputPlaybackSpeed || 1.0;
+                    if (speed !== 1.0 && audioRef.current) {
+                        audioRef.current.playbackRate = speed;
+                    }
+                }
+
+                setShowTitle(true);
+                // Respect the user's autoplay preference - if they were playing, resume playing
+                setPaused(!wasPlaying);
+
+                const timeoutId1 = window.setTimeout(() => {
+                    setShowTitle(false);
+                }, presentationConfig.postProcessDelay + BLEED_START_DELAY - 1000);
+                timeoutIds.current.push(timeoutId1);
+
+                const timeoutId = window.setTimeout(() => {
+                    setCurrentPhraseIndexWithMetadata(0);
+                }, presentationConfig.postProcessDelay + BLEED_START_DELAY);
+                timeoutIds.current.push(timeoutId);
+
+                // Track replay event
+                if (phrases[0]) {
+                    const speed = startPhase === 'input'
+                        ? (presentationConfig.inputPlaybackSpeed || 1.0)
+                        : (presentationConfig.outputPlaybackSpeed || 1.0);
+                    trackPlaybackEvent('replay', `${collectionId || 'unknown'}-0`, startPhase, 0, speed);
+                }
+            };
+
+            showStatsUpdate(true, completionEventType, true, goAgainCallback, onNavigateToNextInPath);
+
+            // Mark as completed in progress tracking
+            const currentPhrase = phrases[indexRef.current];
+            if (user?.uid && collectionId && currentPhrase?.inputLang && currentPhrase?.targetLang) {
+                markCompleted(user.uid, collectionId, currentPhrase.inputLang, currentPhrase.targetLang);
+            }
+
+            // Don't advance to next phrase, stay paused
+            setPaused(true);
+            setMSState('paused');
+            return;
+        }
+
         // continue only if we were already playing
         if (wasPlaying) {
             setPaused(false);
@@ -511,7 +607,7 @@ export function PhrasePlaybackView({
             setPaused(true);
             setMSState('paused');
         }
-    }, [phrases, presentationConfig.enableOutputBeforeInput, presentationConfig.enableInputPlayback, presentationConfig.inputPlaybackSpeed, presentationConfig.outputPlaybackSpeed, setCurrentPhraseIndexWithMetadata, setCurrentPhaseWithMetadata, collectionId, safePlay]);
+    }, [phrases, presentationConfig.enableOutputBeforeInput, presentationConfig.enableInputPlayback, presentationConfig.inputPlaybackSpeed, presentationConfig.outputPlaybackSpeed, presentationConfig.enableLoop, presentationConfig.postProcessDelay, setCurrentPhraseIndexWithMetadata, setCurrentPhaseWithMetadata, collectionId, safePlay, showStatsUpdate, user?.uid, getRecallPhase, getShadowPhase]);
 
 
     const handleAudioError = useCallback(async (phase: 'input' | 'output', autoPlay?: boolean) => {
@@ -570,7 +666,7 @@ export function PhrasePlaybackView({
         el.pause();
         setPaused(true);
         setMSState('paused');
-        showStatsUpdate(true);
+        showStatsUpdate(false);
 
         if (source === 'external') {
             // 💥 nuke any buffered/decoded audio so unlock can't leak sound
@@ -766,6 +862,11 @@ export function PhrasePlaybackView({
         }
     };
 
+    // Wrapper to play specific phrase phase (for click-to-play in fullscreen)
+    const handlePlayPhrasePhase = useCallback((phase: 'input' | 'output') => {
+        handlePlayPhrase(currentPhraseIndex, phase);
+    }, [handlePlayPhrase, currentPhraseIndex]);
+
     // Removed large commented handlePrevious function - replaced with atomicAdvance
 
     // Removed large commented handleNext function - replaced with atomicAdvance
@@ -869,7 +970,7 @@ export function PhrasePlaybackView({
                             // If looping is enabled, restart from beginning
                             setCurrentPhraseIndexWithMetadata(0);
                         } else {
-                            showStatsUpdate(true, 'listened', true, handleReplay)
+                            showStatsUpdate(true, 'listened', true, handleReplay, onNavigateToNextInPath)
                             setPaused(true);
                             // Mark template/collection as completed
                             if (user && collectionId) {
@@ -912,7 +1013,7 @@ export function PhrasePlaybackView({
                                 setCurrentPhraseIndexWithMetadata(0);
                                 setCurrentPhaseWithMetadata('output');
                             } else {
-                                showStatsUpdate(true, 'listened', true, handleReplay)
+                                showStatsUpdate(true, 'listened', true, handleReplay, onNavigateToNextInPath)
                                 setPaused(true);
                                 // Mark template/collection as completed
                                 if (user?.uid && collectionId && currentPhrase?.inputLang && currentPhrase?.targetLang) {
@@ -941,7 +1042,7 @@ export function PhrasePlaybackView({
                                 setCurrentPhaseWithMetadata('output');
                             }
                         } else {
-                            showStatsUpdate(true, 'listened', true, handleReplay)
+                            showStatsUpdate(true, 'listened', true, handleReplay, onNavigateToNextInPath)
                             setPaused(true);
                             // Mark template/collection as completed
                             if (user?.uid && collectionId && currentPhrase?.inputLang && currentPhrase?.targetLang) {
@@ -1155,7 +1256,7 @@ export function PhrasePlaybackView({
 
                 {/* Presentation View and Controls */}
                 {Boolean(typeof currentPhraseIndex === "number" && phrases?.length) && (
-                    <div className="xl:flex-1 sticky top-[64px] bg-background lg:p-2 z-1 lg:order-1">
+                    <div className="xl:flex-1 sticky top-[61px] lg:top-[64px] bg-background lg:p-2 z-1 lg:order-1">
                         <PresentationView
                             currentPhrase={phrases[currentPhraseIndex]?.input || ''}
                             currentTranslated={phrases[currentPhraseIndex]?.translated || ''}
@@ -1174,7 +1275,11 @@ export function PhrasePlaybackView({
                             enableAutumnLeaves={presentationConfig.enableAutumnLeaves}
                             enableOrtonEffect={presentationConfig.enableOrtonEffect}
                             enableParticles={presentationConfig.enableParticles}
+                            particleRotation={presentationConfig.particleRotation}
                             enableSteam={presentationConfig.enableSteam}
+                            enableDust={presentationConfig.enableDust}
+                            particleColor={presentationConfig.particleColor}
+                            particleSpeed={presentationConfig.particleSpeed}
                             romanizedOutput={phrases[currentPhraseIndex]?.romanized}
                             title={showTitle ? (collectionName || configName) : undefined}
                             showAllPhrases={presentationConfig.showAllPhrases}
@@ -1189,6 +1294,11 @@ export function PhrasePlaybackView({
                             currentPhraseIndex={currentPhraseIndex}
                             totalPhrases={phrases.length}
                             isPlayingAudio={isPlayingAudio}
+                            paused={paused}
+                            onPause={handlePause}
+                            onPlay={handlePlay}
+                            onPlayPhrase={handlePlayPhrasePhase}
+                            onSettingsOpen={() => setSettingsOpen(true)}
                         />
                         <div className="py-1 px-1 lg:py-2">
                             <PresentationControls
@@ -1211,6 +1321,9 @@ export function PhrasePlaybackView({
                                 canGoForward={true}
                                 inputLang={phrases[0]?.inputLang}
                                 targetLang={phrases[0]?.targetLang}
+                                setFullscreen={setFullscreen}
+                                settingsOpen={settingsOpen}
+                                setSettingsOpen={setSettingsOpen}
                             />
                         </div>
                     </div>
