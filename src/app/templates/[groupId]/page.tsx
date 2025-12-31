@@ -364,7 +364,7 @@ export default function TemplateDetailPage() {
                 <PhrasePlaybackView
                     phrases={phrases}
                     presentationConfig={presentationConfig}
-                    collectionName={`${groupId} (${selectedInputLang} → ${selectedTargetLang})`}
+                    collectionName={`${templateData?.name || groupId} (${selectedInputLang} → ${selectedTargetLang})`}
                     setPhrases={async (phrases: Phrase[]) => setPhrases(phrases)}
                     setPresentationConfig={async (config: Partial<PresentationConfig>) => setPresentationConfig(prev => ({ ...prev, ...config }))}
                     methodsRef={methodsRef}
