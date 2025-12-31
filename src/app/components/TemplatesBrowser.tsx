@@ -428,6 +428,11 @@ export function TemplatesBrowser({
                                 loading={loading}
                                 getPhraseCount={(c) => templateByGroup.get(c.id)?.phraseCount || 0}
                                 getLanguagePair={() => ({ inputLang, targetLang })}
+                                getHref={(c) => buildTemplateUrl({
+                                    groupId: c.id,
+                                    inputLang,
+                                    targetLang,
+                                })}
                                 getStatus={(c): CollectionStatus => {
                                     const t = templateByGroup.get(c.id);
                                     const progress = templateProgress[c.id];
@@ -471,23 +476,26 @@ export function TemplatesBrowser({
                                 }}
                                 onLoadCollection={(c) => {
                                     const template = templateByGroup.get(c.id);
-                                    track('Template Collection Selected', {
-                                        templateId: c.id,
-                                        templateName: template?.name || c.name,
-                                        templateTags: template?.tags || [],
-                                        complexity: template?.complexity || null,
-                                        phraseCount: template?.phraseCount || null,
-                                        pathId: pathId || null,
-                                        is_path: template?.is_path || false,
-                                        inputLang,
-                                        targetLang
-                                    });
+
+                                    // Reset scroll position
                                     resetMainScroll();
-                                    router.push(buildTemplateUrl({
-                                        groupId: c.id,
-                                        inputLang,
-                                        targetLang,
-                                    }));
+
+                                    // Track analytics (non-blocking)
+                                    setTimeout(() => {
+                                        track('Template Collection Selected', {
+                                            templateId: c.id,
+                                            templateName: template?.name || c.name,
+                                            templateTags: template?.tags || [],
+                                            complexity: template?.complexity || null,
+                                            phraseCount: template?.phraseCount || null,
+                                            pathId: pathId || null,
+                                            is_path: template?.is_path || false,
+                                            inputLang,
+                                            targetLang
+                                        });
+                                    }, 0);
+
+                                    // Navigation is handled by Link component's href
                                 }}
                                 onPlayClick={(c) => {
                                     const template = templateByGroup.get(c.id);

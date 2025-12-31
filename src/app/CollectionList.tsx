@@ -3,6 +3,7 @@ import { LanguageFlags } from './components/LanguageFlags';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { ArrowRight } from 'lucide-react';
+import Link from 'next/link';
 
 export type CollectionStatus = 'not-started' | 'in-progress' | 'completed' | 'next';
 
@@ -43,6 +44,8 @@ interface CollectionListProps {
     scrollToIndex?: number;
     // Optional scroll behavior when scrolling to index (defaults to 'smooth')
     scrollBehavior?: ScrollBehavior;
+    // Optional callback to get the href for a collection (for prefetching)
+    getHref?: (collection: Config) => string;
 }
 
 export function CollectionList({
@@ -70,6 +73,7 @@ export function CollectionList({
     getProgressSummary,
     scrollToIndex,
     scrollBehavior = 'smooth',
+    getHref,
 }: CollectionListProps) {
     const router = useRouter();
     const containerRef = useRef<HTMLDivElement | null>(null);
@@ -262,12 +266,11 @@ export function CollectionList({
                                         : hasBackgroundImage
                                             ? 'bg-black/40 text-white'
                                             : `${tileBackgroundClass} text-white`;
-                                return (
-                                    <div
-                                        key={collection.id}
-                                        className={`group cursor-pointer transition-colors ${layout === 'horizontal' ? 'min-w-[220px] max-w-[220px]' : ''}`}
-                                        onClick={() => onLoadCollection(collection)}
-                                    >
+                                const href = getHref ? getHref(collection) : undefined;
+                                const wrapperClassName = `group cursor-pointer transition-colors ${layout === 'horizontal' ? 'min-w-[220px] max-w-[220px]' : ''}`;
+
+                                const cardContent = (
+                                    <>
                                         <div
                                             className={
                                                 `relative overflow-hidden rounded-lg p-4 h-40 flex items-end border ${baseBackgroundClass}`
@@ -356,19 +359,41 @@ export function CollectionList({
                                         <p className="text-xs text-muted-foreground mt-2 line-clamp-2">
                                             {phraseCount} phrases
                                         </p>
+                                    </>
+                                );
+
+                                return href ? (
+                                    <Link
+                                        key={collection.id}
+                                        href={href}
+                                        className={wrapperClassName}
+                                        onClick={() => {
+                                            // Don't preventDefault - let Link navigate naturally
+                                            // Call the handler but it shouldn't call router.push since Link handles navigation
+                                            onLoadCollection(collection);
+                                        }}
+                                    >
+                                        {cardContent}
+                                    </Link>
+                                ) : (
+                                    <div
+                                        key={collection.id}
+                                        className={wrapperClassName}
+                                        onClick={() => onLoadCollection(collection)}
+                                    >
+                                        {cardContent}
                                     </div>
                                 );
                             }
 
-                            return (
-                                <div
-                                    key={collection.id}
-                                    className={`p-4 rounded-lg border cursor-pointer transition-colors ${selectedCollection && selectedCollection === collection.id
-                                        ? 'bg-primary text-primary-foreground'
-                                        : 'bg-background hover:bg-secondary'
-                                        }`}
-                                    onClick={() => onLoadCollection(collection)}
-                                >
+                            const listHref = getHref ? getHref(collection) : undefined;
+                            const listClassName = `p-4 rounded-lg border cursor-pointer transition-colors ${selectedCollection && selectedCollection === collection.id
+                                ? 'bg-primary text-primary-foreground'
+                                : 'bg-background hover:bg-secondary'
+                            }`;
+
+                            const listContent = (
+                                <>
                                     <div className="flex items-center justify-between">
                                         <div className="flex-1 min-w-0">
                                             <h3 className="text-sm font-medium truncate capitalize">{collection.name.replace(/_/g, ' ')}</h3>
@@ -440,6 +465,28 @@ export function CollectionList({
                                             </div>
                                         )}
                                     </div>
+                                </>
+                            );
+
+                            return listHref ? (
+                                <Link
+                                    key={collection.id}
+                                    href={listHref}
+                                    className={listClassName}
+                                    onClick={() => {
+                                        // Don't preventDefault - let Link navigate naturally
+                                        onLoadCollection(collection);
+                                    }}
+                                >
+                                    {listContent}
+                                </Link>
+                            ) : (
+                                <div
+                                    key={collection.id}
+                                    className={listClassName}
+                                    onClick={() => onLoadCollection(collection)}
+                                >
+                                    {listContent}
                                 </div>
                             );
                         })}
