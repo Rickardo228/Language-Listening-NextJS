@@ -669,42 +669,47 @@ export function PresentationView({
         )}
 
         {/* Final Phrase Button - Juicy centered button when on last phrase */}
-        {currentPhraseIndex !== undefined && totalPhrases !== undefined && currentPhraseIndex === totalPhrases - 1 && onNext && (
-          <div className="absolute bottom-8 left-0 right-0 flex justify-center z-20">
-            <motion.button
-              initial={{ opacity: 0, y: 20, scale: 0.9 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={(e) => {
-                e.stopPropagation();
-                onNext();
-              }}
-              className="px-8 py-4 bg-primary hover:bg-primary/90 text-primary-foreground font-black text-xl rounded-2xl shadow-2xl transition-all duration-300 border-2 border-white/20"
-              style={{
-                boxShadow: '0 10px 40px hsl(var(--primary) / 0.4), 0 0 20px hsl(var(--primary) / 0.2)',
-              }}
-            >
-            <span className="flex items-center gap-3">
-              <span className="text-2xl">🎉</span>
-              <span>Finish List</span>
-              <motion.span
-                animate={{
-                  x: [0, 5, 0],
+        <AnimatePresence mode="wait">
+          {currentPhraseIndex !== undefined && totalPhrases !== undefined && currentPhraseIndex === totalPhrases - 1 && onNext && (
+            <div key="finish-list-wrapper" className="absolute bottom-8 left-0 right-0 flex justify-center z-20">
+              <motion.button
+                initial={{ opacity: 0, y: 20, scale: 0.9 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                transition={{ type: "spring", stiffness: 300, damping: 25 }}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onNext();
                 }}
-                transition={{
-                  duration: 1,
-                  repeat: Infinity,
-                  ease: "easeInOut"
+                className={`${verticalScroll ? 'px-4 py-3' : 'px-8 py-4'} bg-primary hover:bg-primary/90 text-primary-foreground font-black ${verticalScroll ? 'text-lg' : 'text-xl'} rounded-2xl shadow-2xl transition-all duration-300 border-2 border-white/20`}
+                style={{
+                  boxShadow: '0 10px 40px hsl(var(--primary) / 0.4), 0 0 20px hsl(var(--primary) / 0.2)',
                 }}
               >
-                →
-              </motion.span>
-            </span>
-            </motion.button>
-          </div>
-        )}
+              <span className="flex items-center gap-3">
+                <span className="text-2xl">🎉</span>
+                <span>Finish List</span>
+                <motion.span
+                  animate={verticalScroll ? {
+                    y: [0, 5, 0],
+                  } : {
+                    x: [0, 5, 0],
+                  }}
+                  transition={{
+                    duration: 1,
+                    repeat: Infinity,
+                    ease: "easeInOut"
+                  }}
+                >
+                  {verticalScroll ? '↓' : '→'}
+                </motion.span>
+              </span>
+              </motion.button>
+            </div>
+          )}
+        </AnimatePresence>
 
         {/* Phrase Counter with Settings on mobile fullscreen - positioned top right */}
         {fullScreen && isMobile && onNext ? (
