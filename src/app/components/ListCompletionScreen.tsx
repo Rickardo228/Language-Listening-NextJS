@@ -559,9 +559,9 @@ export function ListCompletionScreen({
                           size="lg"
                           fullWidth
                           className="font-bold text-lg py-4 rounded-xl shadow-lg"
-                          onClick={() => {
+                          onClick={async () => {
+                            await router.push('/');
                             onClose();
-                            router.push('/');
                           }}
                         >
                           Home
