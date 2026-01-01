@@ -366,6 +366,7 @@ export function CollectionList({
                                     <Link
                                         key={collection.id}
                                         href={href}
+                                        prefetch={true}
                                         className={wrapperClassName}
                                         onClick={() => {
                                             // Don't preventDefault - let Link navigate naturally
@@ -390,7 +391,7 @@ export function CollectionList({
                             const listClassName = `p-4 rounded-lg border cursor-pointer transition-colors ${selectedCollection && selectedCollection === collection.id
                                 ? 'bg-primary text-primary-foreground'
                                 : 'bg-background hover:bg-secondary'
-                            }`;
+                                }`;
 
                             const listContent = (
                                 <>
@@ -472,6 +473,7 @@ export function CollectionList({
                                 <Link
                                     key={collection.id}
                                     href={listHref}
+                                    prefetch={true}
                                     className={listClassName}
                                     onClick={() => {
                                         // Don't preventDefault - let Link navigate naturally
