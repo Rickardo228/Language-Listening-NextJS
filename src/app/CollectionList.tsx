@@ -362,8 +362,8 @@ export function CollectionList({
                                     </>
                                 );
 
-                                const shouldPrefetch = href ? !href.startsWith('/t/') : true;
-
+                                // const shouldPrefetch = href ? !href.startsWith('/t/') : true;
+                                const shouldPrefetch = true;
                                 return href ? (
                                     <Link
                                         key={collection.id}
