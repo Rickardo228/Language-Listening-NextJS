@@ -362,10 +362,13 @@ export function CollectionList({
                                     </>
                                 );
 
+                                const shouldPrefetch = href ? !href.startsWith('/t/') : true;
+
                                 return href ? (
                                     <Link
                                         key={collection.id}
                                         href={href}
+                                        prefetch={shouldPrefetch}
                                         className={wrapperClassName}
                                         onClick={() => {
                                             // Don't preventDefault - let Link navigate naturally
@@ -390,7 +393,7 @@ export function CollectionList({
                             const listClassName = `p-4 rounded-lg border cursor-pointer transition-colors ${selectedCollection && selectedCollection === collection.id
                                 ? 'bg-primary text-primary-foreground'
                                 : 'bg-background hover:bg-secondary'
-                            }`;
+                                }`;
 
                             const listContent = (
                                 <>
@@ -468,10 +471,13 @@ export function CollectionList({
                                 </>
                             );
 
+                            const shouldPrefetch = listHref ? !listHref.startsWith('/t/') : true;
+
                             return listHref ? (
                                 <Link
                                     key={collection.id}
                                     href={listHref}
+                                    prefetch={shouldPrefetch}
                                     className={listClassName}
                                     onClick={() => {
                                         // Don't preventDefault - let Link navigate naturally
