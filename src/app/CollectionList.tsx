@@ -366,6 +366,7 @@ export function CollectionList({
                                     <Link
                                         key={collection.id}
                                         href={href}
+                                        prefetch={true}
                                         className={wrapperClassName}
                                         onClick={() => {
                                             // Don't preventDefault - let Link navigate naturally
@@ -472,6 +473,7 @@ export function CollectionList({
                                 <Link
                                     key={collection.id}
                                     href={listHref}
+                                    prefetch={true}
                                     className={listClassName}
                                     onClick={() => {
                                         // Don't preventDefault - let Link navigate naturally
