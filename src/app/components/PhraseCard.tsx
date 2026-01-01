@@ -1,6 +1,7 @@
 'use client';
 
 import {
+  forwardRef,
   useCallback,
   useEffect,
   useMemo,
@@ -14,6 +15,15 @@ import { motion, AnimatePresence, useMotionValue, type MotionValue } from "frame
 import { Volume2 } from "lucide-react";
 import { API_BASE_URL, BLEED_START_DELAY, TITLE_DELAY } from "../consts";
 import { generateAudio } from "../utils/audioUtils";
+
+// Hide Headless UI focus guard elements within PhraseCard (apply once)
+const FOCUS_GUARD_STYLE_ID = 'phrase-card-focus-guard-style';
+if (typeof document !== 'undefined' && !document.getElementById(FOCUS_GUARD_STYLE_ID)) {
+  const style = document.createElement('style');
+  style.id = FOCUS_GUARD_STYLE_ID;
+  style.textContent = '.phrase-card [data-headlessui-focus-guard="true"] { display: none !important; }';
+  document.head.appendChild(style);
+}
 
 export const TITLE_ANIMATION_DURATION = 1000;
 
@@ -477,6 +487,12 @@ type WordTokenProps = {
   onOpenChange: (tokenId: string, open: boolean) => void;
 };
 
+const CustomSpanButton = forwardRef<HTMLSpanElement, React.HTMLProps<HTMLSpanElement>>(
+  function CustomSpanButton(props, ref) {
+    return <span ref={ref} {...props} />;
+  }
+);
+
 type WordTokenContentProps = {
   open: boolean;
   payload: ActiveWord;
@@ -507,8 +523,8 @@ function WordTokenContent({
   return (
     <>
       <Popover.Button
-        type="button"
-        className={`inline-flex items-baseline rounded-sm px-0 transition-opacity duration-150 [@media(hover:hover)]:hover:opacity-70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/60 ${open ? "opacity-70" : ""}`}
+        as={CustomSpanButton}
+        className={`rounded-sm px-0 transition-opacity duration-150 [@media(hover:hover)]:hover:opacity-70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/60 ${open ? "opacity-70" : ""}`}
         onClick={handleButtonClick}
       >
         {payload.displayWord}
@@ -567,7 +583,7 @@ function WordToken({
   };
 
   return (
-    <Popover key={tokenId} as="span" className="relative inline-block">
+    <Popover key={tokenId} as="span">
       {({ open }) => (
         <WordTokenContent
           open={open}
@@ -658,7 +674,6 @@ export function PhraseCard({
     if (!text) return null;
     if (!sourceLang || !targetLang) return text.trim();
     // If tooltips are disabled, return the text without the tooltips
-    if (!enableTooltips) return text.trim();
 
     const tokens = tokenizePhrase(text, sourceLang);
 
@@ -674,6 +689,8 @@ export function PhraseCard({
 
       const tokenId = `${sourceLang}-${targetLang}-${sentence}-${index}`;
       const lookupToken = stripEdgePunctuation(value) || value;
+
+      if (!enableTooltips) return <span>{value}</span>
 
       return (
         <WordToken
@@ -745,7 +762,7 @@ export function PhraseCard({
           scale: 0.98,
           transition: { duration: TITLE_ANIMATION_DURATION / 1000, ease: "easeOut" }
         }}
-        className={`text-center absolute flex flex-col ${textColorClass}`}
+        className={`phrase-card text-center absolute flex flex-col ${textColorClass}`}
         style={{
           maxWidth: "600px",
           padding: 20,
@@ -779,7 +796,7 @@ export function PhraseCard({
 
     return (
       <motion.div
-        className={`text-left ${isMobileInline ? 'px-4' : 'px-12'} ${alignPhraseTop ? 'pb-4' : ''} absolute flex bg-opacity-90 flex-col ${textColorClass} group`}
+        className={`phrase-card text-left ${isMobileInline ? 'px-4' : 'px-12'} ${alignPhraseTop ? 'pb-4' : ''} absolute flex bg-opacity-90 flex-col ${textColorClass} group`}
         style={{
           alignItems: "flex-start",
           justifyContent: "center",
@@ -965,7 +982,7 @@ export function PhraseCard({
       animate={{ opacity: 1, y: 0 }}
       exit={disableAnimation ? { opacity: 1, y: 0 } : { opacity: 0, y: (isSafari && isMobile && !fullScreen) ? 0 : 10 }}
       transition={{ duration: disableAnimation ? 0 : (animationDirection ? 0 : 0.3), ease: "easeOut" }}
-      className={`${isMobileInline ? 'text-left px-4' : 'text-center px-12'} ${alignPhraseTop ? 'pb-4' : ''} absolute flex bg-opacity-90 flex-col ${textColorClass}`}
+      className={`phrase-card ${isMobileInline ? 'text-left px-4' : 'text-center px-12'} ${alignPhraseTop ? 'pb-4' : ''} absolute flex bg-opacity-90 flex-col ${textColorClass}`}
       style={{
         alignItems: isMobileInline ? "flex-start" : "center",
         justifyContent: "center",
