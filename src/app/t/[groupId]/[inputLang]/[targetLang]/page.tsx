@@ -1,31 +1,19 @@
-import TemplateDetailClient from './template-detail-client';
+'use client'
 
-type PageProps = {
-    params: {
-        groupId: string;
-        inputLang: string;
-        targetLang: string;
-    };
-    searchParams?: {
-        autoplay?: string | string[];
-    };
-};
+import { useParams, useSearchParams } from 'next/navigation';
+import TemplateDetailView from '@/app/templates/TemplateDetailView';
 
-const LOADING_DELAY_MS = 400;
+export default function PublicTemplatePage() {
+    const { groupId, inputLang, targetLang } = useParams();
+    const searchParams = useSearchParams();
+    const shouldAutoplay = searchParams.get('autoplay') === '1' || searchParams.get('autoplay') === 'true';
 
-export default async function PublicTemplatePage({ params, searchParams }: PageProps) {
-    const decodedGroupId = params.groupId ? decodeURIComponent(params.groupId) : null;
-    const decodedInputLang = params.inputLang ? decodeURIComponent(params.inputLang) : 'en-GB';
-    const decodedTargetLang = params.targetLang ? decodeURIComponent(params.targetLang) : 'it-IT';
-    const autoplayParam = searchParams?.autoplay;
-    const shouldAutoplay = Array.isArray(autoplayParam)
-        ? autoplayParam.includes('1') || autoplayParam.includes('true')
-        : autoplayParam === '1' || autoplayParam === 'true';
-
-    await new Promise((resolve) => setTimeout(resolve, LOADING_DELAY_MS));
+    const decodedGroupId = groupId ? decodeURIComponent(groupId as string) : null;
+    const decodedInputLang = inputLang ? decodeURIComponent(inputLang as string) : 'en-GB';
+    const decodedTargetLang = targetLang ? decodeURIComponent(targetLang as string) : 'it-IT';
 
     return (
-        <TemplateDetailClient
+        <TemplateDetailView
             groupId={decodedGroupId}
             initialInputLang={decodedInputLang}
             initialTargetLang={decodedTargetLang}

@@ -362,13 +362,10 @@ export function CollectionList({
                                     </>
                                 );
 
-                                // const shouldPrefetch = href ? !href.startsWith('/t/') : true;
-                                const shouldPrefetch = true;
                                 return href ? (
                                     <Link
                                         key={collection.id}
                                         href={href}
-                                        prefetch={shouldPrefetch}
                                         className={wrapperClassName}
                                         onClick={() => {
                                             // Don't preventDefault - let Link navigate naturally
@@ -471,13 +468,10 @@ export function CollectionList({
                                 </>
                             );
 
-                            const shouldPrefetch = listHref ? !listHref.startsWith('/t/') : true;
-
                             return listHref ? (
                                 <Link
                                     key={collection.id}
                                     href={listHref}
-                                    prefetch={shouldPrefetch}
                                     className={listClassName}
                                     onClick={() => {
                                         // Don't preventDefault - let Link navigate naturally
