@@ -284,16 +284,17 @@ export default function LandingPage() {
                     author: "Ana V., learning Portuguese",
                     image: "/landing/Ana-Testimonial.png"
                   },
-                  {
-                    quote: "I practice while doing dishes, walking the dog, anywhere. Finally, a method that fits real life instead of requiring desk time.",
-                    author: "Tom H., learning Korean",
-                    image: "/landing/Tom-Testimonial.png"
-                  },
+
                   {
                     quote: "After years of classes, I still couldn't hold a conversation. Three months of shadowing changed everything. Wish I'd found this sooner.",
                     author: "Marie S., learning Spanish",
                     image: "/landing/Marie-Testimonial.png"
-                  }
+                  },
+                  {
+                    quote: "I practice while doing dishes, walking the dog, anywhere. Finally, a method that fits real life instead of requiring desk time. Thanks!",
+                    author: "Tom H., learning Korean",
+                    image: "/landing/Tom-Testimonial.png"
+                  },
                 ]
 
                 const handlePrevious = () => {
@@ -319,7 +320,7 @@ export default function LandingPage() {
                         <ChevronLeft className="w-6 h-6 text-muted-foreground" />
                       </button>
 
-                      <div className="bg-card border border-border rounded-lg p-8 max-w-2xl w-full min-h-[180px] flex flex-col justify-center">
+                      <div className="bg-card border border-border rounded-lg p-8 max-w-2.2xl w-full min-h-[180px] flex flex-col justify-center">
                         <motion.div
                           key={currentTestimonial}
                           initial={{ opacity: 0, x: 20 }}
