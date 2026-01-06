@@ -16,6 +16,7 @@ import { Select } from '../components/ui';
 import { Share2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { buildTemplateUrl } from '../utils/templateRoutes';
+import { usePresentationConfig } from '../hooks/usePresentationConfig';
 
 const firestore = getFirestore();
 
@@ -164,18 +165,25 @@ export default function TemplateDetailView({
     const [selectedTargetLang, setSelectedTargetLang] = useState<string>(initialTargetLang);
     const [availableLanguages, setAvailableLanguages] = useState<string[]>([]);
     const [templateData, setTemplateData] = useState<Template | null>(null);
-    const [presentationConfig, setPresentationConfig] = useState<PresentationConfig>({
-        ...defaultPresentationConfig,
-        name: `Template ${groupId}`,
-        enableLoop: false,
-        enableOutputDurationDelay: false
-    });
     const [userDefaultConfig, setUserDefaultConfig] = useState<PresentationConfig | null>(null);
     const [templatePresentationConfig, setTemplatePresentationConfig] = useState<PresentationConfig | null>(null);
     const [userConfigLoaded, setUserConfigLoaded] = useState(false);
     const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const [currentPathId, setCurrentPathId] = useState<string | undefined>(undefined);
     const [currentPathIndex, setCurrentPathIndex] = useState<number | undefined>(undefined);
+
+    // Derive the merged presentation config from source states
+    const basePresentationConfig = usePresentationConfig({
+        userDefaultConfig,
+        itemPresentationConfig: templatePresentationConfig,
+        isReady: userConfigLoaded,
+    });
+
+    // Override name with template name if available
+    const presentationConfig: PresentationConfig = {
+        ...basePresentationConfig,
+        name: templateData?.name || `Template ${groupId}`,
+    };
 
     // Fetch user's default presentation config on mount
     useEffect(() => {
@@ -358,17 +366,6 @@ export default function TemplateDetailView({
         fetchTemplates();
     }, [groupId, selectedInputLang, selectedTargetLang]);
 
-    // Combine defaults: system -> user default -> template-level config
-    useEffect(() => {
-        const base: PresentationConfig = {
-            ...defaultPresentationConfig,
-            ...(userDefaultConfig || {}),
-            ...(templatePresentationConfig || {}),
-            name: templateData?.name || `Template ${groupId}`,
-        };
-
-        setPresentationConfig(base);
-    }, [userDefaultConfig, templatePresentationConfig, templateData?.name, groupId]);
 
     // Admin-only template deletion function
     const handleDeleteTemplate = async (templateGroupId: string) => {

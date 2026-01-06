@@ -35,7 +35,13 @@ export default function CollectionPage() {
   const [collectionPresentationConfig, setCollectionPresentationConfig] = useState<PresentationConfig | null>(null);
   const [userConfigLoaded, setUserConfigLoaded] = useState(false);
 
-  const { presentationConfig, setPresentationConfig: setPresentationConfigBase } = usePresentationConfig();
+  // Derive the merged presentation config from source states
+  const presentationConfig = usePresentationConfig({
+    userDefaultConfig,
+    itemPresentationConfig: collectionPresentationConfig,
+    isReady: !!collectionConfig && userConfigLoaded,
+  });
+
   const playbackMethodsRef = useRef<PhrasePlaybackMethods | null>(null);
 
   useEffect(() => {
@@ -90,19 +96,22 @@ export default function CollectionPage() {
       }
     }
 
-    setPresentationConfigBase(newConfig);
     if (selectedCollection && user) {
       try {
-        const docRef = doc(firestore, 'users', user.uid, 'collections', selectedCollection);
         const updatedConfig = { ...presentationConfig, ...newConfig } as PresentationConfig;
+
+        // Update Firestore
+        const docRef = doc(firestore, 'users', user.uid, 'collections', selectedCollection);
         await updateDoc(docRef, {
           presentationConfig: updatedConfig
         });
+
+        // Update local state - this will cause useMemo to recalculate presentationConfig
+        setCollectionPresentationConfig(updatedConfig);
+
         if (collectionConfig) {
           setCollectionConfig({ ...collectionConfig, presentationConfig: updatedConfig });
         }
-        // Update collectionPresentationConfig to prevent useEffect from overwriting changes
-        setCollectionPresentationConfig(updatedConfig);
       } catch (err) {
         console.error('Error updating presentation config:', err);
         toast.error('Failed to save settings: ' + err);
@@ -153,26 +162,17 @@ export default function CollectionPage() {
     loadCollection();
   }, [user, collectionId]);
 
+  // Reset playback state when presentation config changes
   useEffect(() => {
-    if (!collectionConfig || !userConfigLoaded) return;
+    if (!collectionConfig || !userConfigLoaded || !playbackMethodsRef.current) return;
 
-    const mergedConfig: PresentationConfig = {
-      ...defaultPresentationConfig,
-      ...(userDefaultConfig || {}),
-      ...(collectionPresentationConfig || {}),
-    };
-
-    setPresentationConfigBase(mergedConfig);
-
-    if (playbackMethodsRef.current) {
-      playbackMethodsRef.current.handleStop();
-      playbackMethodsRef.current.setCurrentPhraseIndex(0);
-      const initialPhase = mergedConfig.enableOutputBeforeInput
-        ? 'output'
-        : (mergedConfig.enableInputPlayback ? 'input' : 'output');
-      playbackMethodsRef.current.setCurrentPhase(initialPhase);
-    }
-  }, [collectionConfig, collectionPresentationConfig, userConfigLoaded, userDefaultConfig, setPresentationConfigBase]);
+    playbackMethodsRef.current.handleStop();
+    playbackMethodsRef.current.setCurrentPhraseIndex(0);
+    const initialPhase = presentationConfig.enableOutputBeforeInput
+      ? 'output'
+      : (presentationConfig.enableInputPlayback ? 'input' : 'output');
+    playbackMethodsRef.current.setCurrentPhase(initialPhase);
+  }, [collectionConfig, presentationConfig, userConfigLoaded]);
 
   const handleAddToCollection = async (inputLang?: string, targetLang?: string, isSwapped?: boolean) => {
     const splitPhrases = phrasesInput
