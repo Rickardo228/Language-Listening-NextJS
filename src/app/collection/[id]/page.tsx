@@ -14,7 +14,6 @@ import { useUser } from '../../contexts/UserContext';
 import { PhrasePlaybackView, PhrasePlaybackMethods } from '../../components/PhrasePlaybackView';
 import { uploadBackgroundMedia, deleteBackgroundMedia } from '../../utils/backgroundUpload';
 import { toast } from 'sonner';
-import { getUserProfile } from '../../utils/userPreferences';
 
 const firestore = getFirestore();
 
@@ -31,44 +30,16 @@ export default function CollectionPage() {
   const [addToCollectionTargetLang, setAddToCollectionTargetLang] = useState<string>('it-IT');
   const [phrasesInput, setPhrasesInput] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
-  const [userDefaultConfig, setUserDefaultConfig] = useState<PresentationConfig | null>(null);
   const [collectionPresentationConfig, setCollectionPresentationConfig] = useState<PresentationConfig | null>(null);
-  const [userConfigLoaded, setUserConfigLoaded] = useState(false);
 
   // Derive the merged presentation config from source states
-  const presentationConfig = usePresentationConfig({
-    userDefaultConfig,
+  const { presentationConfig, setPresentationConfig: setBasePresentationConfig, isReady } = usePresentationConfig({
+    user,
     itemPresentationConfig: collectionPresentationConfig,
-    isReady: !!collectionConfig && userConfigLoaded,
+    isItemReady: !!collectionConfig,
   });
 
   const playbackMethodsRef = useRef<PhrasePlaybackMethods | null>(null);
-
-  useEffect(() => {
-    const loadUserConfig = async () => {
-      if (!user) {
-        setUserDefaultConfig(null);
-        setUserConfigLoaded(true);
-        return;
-      }
-
-      try {
-        const userProfile = await getUserProfile(user.uid);
-        if (userProfile?.defaultPresentationConfig) {
-          setUserDefaultConfig(userProfile.defaultPresentationConfig);
-        } else {
-          setUserDefaultConfig(null);
-        }
-      } catch (error) {
-        console.error('Error loading user config:', error);
-        setUserDefaultConfig(null);
-      } finally {
-        setUserConfigLoaded(true);
-      }
-    };
-
-    loadUserConfig();
-  }, [user]);
 
   const setPhrases = async (phrases: Phrase[], collectionId?: string) => {
     setPhrasesBase(phrases);
@@ -106,7 +77,7 @@ export default function CollectionPage() {
           presentationConfig: updatedConfig
         });
 
-        // Update local state - this will cause useMemo to recalculate presentationConfig
+        // Update local state - this triggers the hook to recalculate presentationConfig
         setCollectionPresentationConfig(updatedConfig);
 
         if (collectionConfig) {
@@ -164,7 +135,7 @@ export default function CollectionPage() {
 
   // Reset playback state when presentation config changes
   useEffect(() => {
-    if (!collectionConfig || !userConfigLoaded || !playbackMethodsRef.current) return;
+    if (!collectionConfig || !isReady || !playbackMethodsRef.current) return;
 
     playbackMethodsRef.current.handleStop();
     playbackMethodsRef.current.setCurrentPhraseIndex(0);
@@ -172,7 +143,7 @@ export default function CollectionPage() {
       ? 'output'
       : (presentationConfig.enableInputPlayback ? 'input' : 'output');
     playbackMethodsRef.current.setCurrentPhase(initialPhase);
-  }, [collectionConfig, presentationConfig, userConfigLoaded]);
+  }, [collectionConfig, presentationConfig, isReady]);
 
   const handleAddToCollection = async (inputLang?: string, targetLang?: string, isSwapped?: boolean) => {
     const splitPhrases = phrasesInput
