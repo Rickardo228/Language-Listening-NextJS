@@ -8,14 +8,14 @@ import { getFirestore, collection, query, where, getDocs, Timestamp, deleteDoc, 
 import { PhrasePlaybackView, PhrasePlaybackMethods } from '../components/PhrasePlaybackView';
 import { CollectionHeader } from '../CollectionHeader';
 import { useUser } from '../contexts/UserContext';
-import { getUserProfile, createOrUpdateUserProfile } from '../utils/userPreferences';
-import { getVariantConfig } from '../utils/abTesting';
+import { createOrUpdateUserProfile } from '../utils/userPreferences';
 import { uploadBackgroundMedia, deleteBackgroundMedia } from '../utils/backgroundUpload';
 import { presentationConfigDefinition } from '../configDefinitions';
 import { Select } from '../components/ui';
 import { Share2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { buildTemplateUrl } from '../utils/templateRoutes';
+import { usePresentationConfig } from '../hooks/usePresentationConfig';
 
 const firestore = getFirestore();
 
@@ -164,48 +164,28 @@ export default function TemplateDetailView({
     const [selectedTargetLang, setSelectedTargetLang] = useState<string>(initialTargetLang);
     const [availableLanguages, setAvailableLanguages] = useState<string[]>([]);
     const [templateData, setTemplateData] = useState<Template | null>(null);
-    const [presentationConfig, setPresentationConfig] = useState<PresentationConfig>({
-        ...defaultPresentationConfig,
-        name: `Template ${groupId}`,
-        enableLoop: false,
-        enableOutputDurationDelay: false
-    });
-    const [userDefaultConfig, setUserDefaultConfig] = useState<PresentationConfig | null>(null);
     const [templatePresentationConfig, setTemplatePresentationConfig] = useState<PresentationConfig | null>(null);
-    const [userConfigLoaded, setUserConfigLoaded] = useState(false);
     const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const [currentPathId, setCurrentPathId] = useState<string | undefined>(undefined);
     const [currentPathIndex, setCurrentPathIndex] = useState<number | undefined>(undefined);
 
-    // Fetch user's default presentation config on mount
-    useEffect(() => {
-        const loadUserConfig = async () => {
-            if (!user) {
-                // If no user, use variant B config
-                setUserDefaultConfig(getVariantConfig('variantB'));
-                setUserConfigLoaded(true);
-                return;
-            }
+    // Derive the merged presentation config from source states
+    const { presentationConfig: basePresentationConfig, setPresentationConfig: setBasePresentationConfig, isReady } = usePresentationConfig({
+        user,
+        itemPresentationConfig: templatePresentationConfig,
+        isItemReady: true,
+    });
 
-            try {
-                const userProfile = await getUserProfile(user.uid);
-                if (userProfile?.defaultPresentationConfig) {
-                    setUserDefaultConfig(userProfile.defaultPresentationConfig);
-                }
-            } catch (error) {
-                console.error('Error loading user config:', error);
-            } finally {
-                setUserConfigLoaded(true);
-            }
-        };
-
-        loadUserConfig();
-    }, [user]);
+    // Override name with template name if available
+    const presentationConfig: PresentationConfig = {
+        ...basePresentationConfig,
+        name: templateData?.name || `Template ${groupId}`,
+    };
 
     // Debounced save function for real-time user default persistence
     // Note: This should only receive user-level config (template-level fields already excluded)
     const debouncedSaveConfig = useCallback((config: PresentationConfig) => {
-        if (!user || !userConfigLoaded) return;
+        if (!user || !isReady) return;
 
         if (saveTimeoutRef.current) {
             clearTimeout(saveTimeoutRef.current);
@@ -220,7 +200,7 @@ export default function TemplateDetailView({
                 console.error('Error saving presentation config:', error);
             }
         }, 300);
-    }, [user, userConfigLoaded]);
+    }, [user, isReady]);
 
     // Cleanup timeout on unmount
     useEffect(() => {
@@ -358,17 +338,6 @@ export default function TemplateDetailView({
         fetchTemplates();
     }, [groupId, selectedInputLang, selectedTargetLang]);
 
-    // Combine defaults: system -> user default -> template-level config
-    useEffect(() => {
-        const base: PresentationConfig = {
-            ...defaultPresentationConfig,
-            ...(userDefaultConfig || {}),
-            ...(templatePresentationConfig || {}),
-            name: templateData?.name || `Template ${groupId}`,
-        };
-
-        setPresentationConfig(base);
-    }, [userDefaultConfig, templatePresentationConfig, templateData?.name, groupId]);
 
     // Admin-only template deletion function
     const handleDeleteTemplate = async (templateGroupId: string) => {
@@ -427,11 +396,7 @@ export default function TemplateDetailView({
             // Upload new background (template upload uses shared path)
             const { downloadUrl } = await uploadBackgroundMedia(file, user.uid, groupId as string, true);
 
-            // Update local presentation config state without touching user defaults
-            setPresentationConfig(prev => ({
-                ...prev,
-                bgImage: downloadUrl,
-            }));
+            // Update template presentation config state (derived config will automatically update)
             setTemplatePresentationConfig(prev => prev ? { ...prev, bgImage: downloadUrl } : prev);
 
             // Persist background to all template docs in this group so it applies across languages
@@ -588,7 +553,7 @@ export default function TemplateDetailView({
                     readOnly={readOnly}
                     setPresentationConfig={async (config: Partial<PresentationConfig>) => {
                         const newConfig = { ...presentationConfig, ...config };
-                        setPresentationConfig(newConfig);
+                        setBasePresentationConfig(newConfig);
 
                         // Handle template-level fields if admin
                         if (isAdmin && groupId && user) {
@@ -651,9 +616,8 @@ export default function TemplateDetailView({
                             return acc;
                         }, {} as Partial<PresentationConfig>);
 
-                        // Update local user config state so the effect doesn't overwrite our changes
-                        setUserDefaultConfig(userConfig as PresentationConfig);
-
+                        // Update local user config via hook setter and debounced save
+                        setBasePresentationConfig(userConfig);
                         debouncedSaveConfig(userConfig as PresentationConfig);
                     }}
                     methodsRef={methodsRef}

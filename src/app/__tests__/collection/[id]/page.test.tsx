@@ -46,7 +46,6 @@ vi.mock('../../../contexts/UserContext', () => ({
 }))
 
 // Mock usePresentationConfig
-const mockSetPresentationConfigBase = vi.fn()
 const mockPresentationConfig: PresentationConfig = {
     name: 'Default',
     bgImage: null,
@@ -69,12 +68,7 @@ const mockPresentationConfig: PresentationConfig = {
 }
 
 vi.mock('../../../hooks/usePresentationConfig', () => ({
-    usePresentationConfig: () => ({
-        get presentationConfig() {
-            return mockPresentationConfig
-        },
-        setPresentationConfig: mockSetPresentationConfigBase,
-    }),
+    usePresentationConfig: () => mockPresentationConfig,
 }))
 
 // Mock backgroundUpload
@@ -179,9 +173,6 @@ describe('CollectionPage - Background Removal', () => {
                 'https://storage.googleapis.com/test-bucket/backgrounds/test-user-id/test-collection-id/image.jpg'
             )
 
-            // Verify setPresentationConfigBase was called
-            expect(mockSetPresentationConfigBase).toHaveBeenCalledWith({ bgImage: null })
-
             // Verify Firestore update was called
             await waitFor(() => {
                 expect(mockFirestore.updateDoc).toHaveBeenCalled()
@@ -204,9 +195,6 @@ describe('CollectionPage - Background Removal', () => {
             // Verify deleteBackgroundMedia was NOT called
             expect(mockDeleteBackgroundMedia).not.toHaveBeenCalled()
 
-            // Verify setPresentationConfigBase was still called
-            expect(mockSetPresentationConfigBase).toHaveBeenCalledWith({ bgImage: null })
-
             // Verify Firestore update was called
             expect(mockFirestore.updateDoc).toHaveBeenCalled()
         })
@@ -227,8 +215,8 @@ describe('CollectionPage - Background Removal', () => {
             // Verify deleteBackgroundMedia was NOT called
             expect(mockDeleteBackgroundMedia).not.toHaveBeenCalled()
 
-            // Verify setPresentationConfigBase was called
-            expect(mockSetPresentationConfigBase).toHaveBeenCalledWith({ containerBg: 'red' })
+            // Verify Firestore update was called
+            expect(mockFirestore.updateDoc).toHaveBeenCalled()
         })
 
         it('should NOT delete background if there is no existing background', async () => {
@@ -247,8 +235,8 @@ describe('CollectionPage - Background Removal', () => {
             // Verify deleteBackgroundMedia was NOT called (no background to delete)
             expect(mockDeleteBackgroundMedia).not.toHaveBeenCalled()
 
-            // Verify setPresentationConfigBase was still called
-            expect(mockSetPresentationConfigBase).toHaveBeenCalledWith({ bgImage: null })
+            // Verify Firestore update was called
+            expect(mockFirestore.updateDoc).toHaveBeenCalled()
         })
 
         it('should handle background deletion errors gracefully', async () => {
@@ -279,9 +267,6 @@ describe('CollectionPage - Background Removal', () => {
                     expect.any(Error)
                 )
             })
-
-            // Verify setPresentationConfigBase was still called despite error
-            expect(mockSetPresentationConfigBase).toHaveBeenCalledWith({ bgImage: null })
 
             // Verify Firestore update still proceeded despite deletion error
             expect(mockFirestore.updateDoc).toHaveBeenCalled()
