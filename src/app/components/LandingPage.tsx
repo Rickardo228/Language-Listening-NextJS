@@ -3,26 +3,21 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import Image from 'next/image'
-import { Button } from '../components/ui/Button'
+import Link from 'next/link'
+import { Button } from './ui/Button'
 import { languageOptions } from '../types'
 import {
   PlayCircle,
   Volume2,
   TrendingUp,
-  MapPin,
-  BookOpen,
   Zap,
   Check,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
-  Repeat,
-  Headphones,
-  Globe,
-  Users
 } from 'lucide-react'
 
-export default function LandingPage() {
+export function LandingPage() {
   const [openFaq, setOpenFaq] = useState<number | null>(null)
   const [currentTestimonial, setCurrentTestimonial] = useState(0)
 
@@ -62,9 +57,11 @@ export default function LandingPage() {
               </div>
 
               <div className="flex flex-col sm:flex-row gap-4 mb-6">
-                <Button size="lg" className="text-lg px-8">
-                  Start free trial
-                </Button>
+                <Link href="/get-started">
+                  <Button size="lg" className="text-lg px-8">
+                    Start free trial
+                  </Button>
+                </Link>
                 <Button size="lg" variant="secondary" className="text-lg px-8" leftIcon={<PlayCircle className="w-5 h-5" />}>
                   Try a sample lesson
                 </Button>
@@ -198,7 +195,9 @@ export default function LandingPage() {
               </p>
 
               <div className="space-y-3 mb-8">
-                <Button size="lg" className="text-lg px-10">Start free trial</Button>
+                <Link href="/get-started">
+                  <Button size="lg" className="text-lg px-10">Start free trial</Button>
+                </Link>
                 <p className="text-sm text-muted-foreground">
                   Simple to start. Hard to stop.
                 </p>
@@ -257,8 +256,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-
-
       {/* Social Proof */}
       <section className="py-16 sm:py-24 bg-secondary/20">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -284,7 +281,6 @@ export default function LandingPage() {
                     author: "Ana V., learning Portuguese",
                     image: "/landing/Ana-Testimonial.png"
                   },
-
                   {
                     quote: "After years of classes, I still couldn't hold a conversation. Three months of shadowing changed everything. Wish I'd found this sooner.",
                     author: "Marie S., learning Spanish",
@@ -374,7 +370,9 @@ export default function LandingPage() {
               })()}
             </div>
 
-            <Button size="lg">Start free trial</Button>
+            <Link href="/get-started">
+              <Button size="lg">Start free trial</Button>
+            </Link>
           </motion.div>
         </div>
       </section>
@@ -401,7 +399,9 @@ export default function LandingPage() {
                 <h3 className="text-2xl font-bold mb-2">Monthly</h3>
                 <p className="text-muted-foreground mb-4">Flexible and commitment-free</p>
                 <div className="text-4xl font-bold mb-4">$9.99<span className="text-lg font-normal text-muted-foreground">/mo</span></div>
-                <Button fullWidth>Start free trial</Button>
+                <Link href="/get-started">
+                  <Button fullWidth>Start free trial</Button>
+                </Link>
               </div>
 
               <div className="bg-primary text-primary-foreground border-2 border-primary rounded-lg p-8 relative">
@@ -411,7 +411,9 @@ export default function LandingPage() {
                 <h3 className="text-2xl font-bold mb-2">Annual</h3>
                 <p className="opacity-90 mb-4">Save 34% with annual billing</p>
                 <div className="text-4xl font-bold mb-4">$79<span className="text-lg font-normal opacity-90">/yr</span></div>
-                <Button fullWidth variant="secondary">Start free trial</Button>
+                <Link href="/get-started">
+                  <Button fullWidth variant="secondary">Start free trial</Button>
+                </Link>
               </div>
             </div>
 
@@ -491,9 +493,11 @@ export default function LandingPage() {
             <p className="text-lg text-muted-foreground mb-10">
               No pressure - just a fair trial and a simple system that makes speaking inevitable.
             </p>
-            <Button size="lg" className="text-lg px-10">
-              Start free trial
-            </Button>
+            <Link href="/get-started">
+              <Button size="lg" className="text-lg px-10">
+                Start free trial
+              </Button>
+            </Link>
           </motion.div>
         </div>
       </section>

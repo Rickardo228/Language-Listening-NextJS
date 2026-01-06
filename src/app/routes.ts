@@ -4,6 +4,7 @@
 
 export const ROUTES = {
   HOME: '/',
+  GET_STARTED: '/get-started',
   TEMPLATES: '/templates',
   TEMPLATE_PUBLIC: '/t',
   LIBRARY: '/library',
@@ -25,6 +26,8 @@ const SEO_PILLAR_PATTERNS = [
 ] as const;
 
 export const PUBLIC_ROUTE_ROOTS = [
+  ROUTES.HOME,
+  ROUTES.GET_STARTED,
   ROUTES.TEMPLATE_PUBLIC,
   ROUTES.SHARE,
   ROUTES.PRIVACY,
