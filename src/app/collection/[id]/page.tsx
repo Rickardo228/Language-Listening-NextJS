@@ -101,6 +101,8 @@ export default function CollectionPage() {
         if (collectionConfig) {
           setCollectionConfig({ ...collectionConfig, presentationConfig: updatedConfig });
         }
+        // Update collectionPresentationConfig to prevent useEffect from overwriting changes
+        setCollectionPresentationConfig(updatedConfig);
       } catch (err) {
         console.error('Error updating presentation config:', err);
         toast.error('Failed to save settings: ' + err);
