@@ -28,6 +28,7 @@
     "firebase": "^11.6.1",
     "firebase-admin": "^13.6.0",
     "framer-motion": "^12.4.3",
+    "js-confetti": "^0.13.1",
     "lucide-react": "^0.475.0",
     "mixpanel-browser": "^2.66.0",
     "next": "16.0.7",

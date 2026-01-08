@@ -11,6 +11,7 @@ import { useUser } from '../../contexts/UserContext';
 import { getUserProfile, createOrUpdateUserProfile } from '../../utils/userPreferences';
 import { getVariantConfig } from '../../utils/abTesting';
 import { uploadBackgroundMedia, deleteBackgroundMedia } from '../../utils/backgroundUpload';
+import { markCompleted } from '../../utils/progressService';
 import { presentationConfigDefinition } from '../../configDefinitions';
 import { Select } from '../../components/ui';
 import { Share2 } from 'lucide-react';
@@ -666,6 +667,11 @@ export default function TemplateDetailView({
                     pathId={currentPathId}
                     pathIndex={currentPathIndex}
                     onNavigateToNextInPath={currentPathId && currentPathIndex !== undefined ? handleNavigateToNextInPath : undefined}
+                    onCompleted={(userId, collectionId, inputLang, targetLang) => {
+                        if (inputLang && targetLang) {
+                            markCompleted(userId, collectionId, inputLang, targetLang);
+                        }
+                    }}
                 />
             ) : (
                 <div className="flex items-center justify-center h-full">

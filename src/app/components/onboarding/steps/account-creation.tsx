@@ -33,7 +33,7 @@ export function AccountCreation({
           </div>
           <h1 className="text-3xl md:text-4xl">Create your account</h1>
           <p className="text-gray-600 text-lg">
-            Save your plan and keep your progress in sync.
+            Save your plan and keep your progress.
           </p>
         </div>
       )}

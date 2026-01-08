@@ -15,6 +15,7 @@ import { PhrasePlaybackView, PhrasePlaybackMethods } from '../../../components/P
 import { uploadBackgroundMedia, deleteBackgroundMedia } from '../../../utils/backgroundUpload';
 import { toast } from 'sonner';
 import { getUserProfile } from '../../../utils/userPreferences';
+import { markCompleted } from '../../../utils/progressService';
 import { ROUTES } from '../../../routes';
 
 const firestore = getFirestore();
@@ -433,6 +434,11 @@ export default function CollectionPage() {
       methodsRef={playbackMethodsRef}
       handleImageUpload={handleImageUpload}
       itemType="collection"
+      onCompleted={(userId, collectionId, inputLang, targetLang) => {
+        if (inputLang && targetLang) {
+          markCompleted(userId, collectionId, inputLang, targetLang);
+        }
+      }}
     />
   );
 }

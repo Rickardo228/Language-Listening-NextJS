@@ -1,7 +1,8 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import type { default as JSConfettiType } from 'js-confetti';
 import { Progress } from './ui/Progress';
 import { DreamOutcome } from './onboarding/steps/dream-outcome';
 import { PainPoints } from './onboarding/steps/pain-points';
@@ -135,6 +136,7 @@ export function OnboardingFlow({
     interests: [],
   });
   const [isLoading, setIsLoading] = useState(false);
+  const confettiInstanceRef = useRef<JSConfettiType | null>(null);
 
   const resolvedStep = Math.max(1, Math.min(controlledStep || internalStep, steps.length));
   const currentStepId = steps[resolvedStep - 1];
@@ -156,6 +158,37 @@ export function OnboardingFlow({
   const prevStep = () => changeStep(resolvedStep - 1);
 
   const progress = (resolvedStep / steps.length) * 100;
+
+  useEffect(() => {
+    let isMounted = true;
+
+    void (async () => {
+      const { default: JSConfetti } = await import('js-confetti');
+      if (!isMounted) return;
+      confettiInstanceRef.current = new JSConfetti();
+    })();
+
+    return () => {
+      isMounted = false;
+      confettiInstanceRef.current?.clearCanvas();
+      confettiInstanceRef.current = null;
+    };
+  }, []);
+
+  const triggerConfetti = () => {
+    confettiInstanceRef.current?.addConfetti({
+      confettiNumber: 140,
+      confettiRadius: 4,
+      confettiColors: [
+        '#F87171',
+        '#FB923C',
+        '#FACC15',
+        '#34D399',
+        '#38BDF8',
+        '#A78BFA',
+      ],
+    });
+  };
 
   useEffect(() => {
     if (preselectedInputLang) {
@@ -305,7 +338,14 @@ export function OnboardingFlow({
                 <PlanReveal data={data} onNext={nextStep} onBack={prevStep} />
               )}
               {currentStepId === 'quick-win' && (
-                <QuickWin data={data} onNext={nextStep} onBack={prevStep} />
+                <QuickWin
+                  data={data}
+                  onNext={() => {
+                    triggerConfetti();
+                    nextStep();
+                  }}
+                  onBack={prevStep}
+                />
               )}
               {currentStepId === 'account-creation' && (
                 <AccountCreation

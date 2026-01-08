@@ -8,7 +8,7 @@ import { BLEED_START_DELAY, DELAY_AFTER_INPUT_PHRASES_MULTIPLIER, DELAY_AFTER_OU
 import { useUpdateUserStats } from '../utils/userStats';
 import { track, trackAudioEnded, trackPlaybackEvent } from '../../lib/mixpanelClient';
 import { WebMediaSessionTransport } from '../../transport/webMediaSessionTransport';
-import { loadProgress, saveProgress, markCompleted } from '../utils/progressService';
+import { loadProgress, saveProgress } from '../utils/progressService';
 import { useUser } from '../contexts/UserContext';
 import { cn } from './ui/utils';
 // Removed useVirtualDelay import - reverting to simpler timeout-based approach
@@ -51,7 +51,8 @@ interface PhrasePlaybackViewProps {
     onNavigateToNextInPath?: () => void; // Callback to navigate to next item in path
     initialFullscreen?: boolean; // Start in fullscreen mode
     readOnly?: boolean;
-    hasPhrases?: boolean;
+    hidePhrases?: boolean;
+    onCompleted?: (userId: string, collectionId: string, inputLang: string, targetLang: string) => void;
 }
 
 export function PhrasePlaybackView({
@@ -73,7 +74,8 @@ export function PhrasePlaybackView({
     onNavigateToNextInPath,
     initialFullscreen = false,
     readOnly = false,
-    hasPhrases = true,
+    hidePhrases = false,
+    onCompleted,
 }: PhrasePlaybackViewProps) {
     const { user } = useUser();
     const { updateUserStats, StatsPopups, StatsModal, showStatsUpdate, incrementViewedAndCheckMilestone, initializeViewedCounter, phrasesViewed } = useUpdateUserStats();
@@ -580,8 +582,8 @@ export function PhrasePlaybackView({
 
             // Mark as completed in progress tracking
             const currentPhrase = phrases[indexRef.current];
-            if (user?.uid && collectionId && currentPhrase?.inputLang && currentPhrase?.targetLang) {
-                markCompleted(user.uid, collectionId, currentPhrase.inputLang, currentPhrase.targetLang);
+            if (onCompleted) {
+                onCompleted(user?.uid || '', collectionId || '', currentPhrase?.inputLang || '', currentPhrase?.targetLang || '');
             }
 
             // Don't advance to next phrase, stay paused
@@ -988,8 +990,8 @@ export function PhrasePlaybackView({
                             showStatsUpdate(true, 'listened', true, handleReplay, onNavigateToNextInPath)
                             setPaused(true);
                             // Mark template/collection as completed
-                            if (user && collectionId) {
-                                markCompleted(user.uid, collectionId, currentPhrase?.inputLang, currentPhrase?.targetLang);
+                            if (onCompleted) {
+                                onCompleted(user?.uid || '', collectionId || '', currentPhrase?.inputLang || '', currentPhrase?.targetLang || '');
                             }
                         }
                     }
@@ -1031,8 +1033,8 @@ export function PhrasePlaybackView({
                                 showStatsUpdate(true, 'listened', true, handleReplay, onNavigateToNextInPath)
                                 setPaused(true);
                                 // Mark template/collection as completed
-                                if (user?.uid && collectionId && currentPhrase?.inputLang && currentPhrase?.targetLang) {
-                                    markCompleted(user.uid, collectionId, currentPhrase?.inputLang, currentPhrase?.targetLang);
+                                if (onCompleted) {
+                                    onCompleted(user?.uid || '', collectionId || '', currentPhrase?.inputLang || '', currentPhrase?.targetLang || '');
                                 }
                             }
                         }
@@ -1060,8 +1062,8 @@ export function PhrasePlaybackView({
                             showStatsUpdate(true, 'listened', true, handleReplay, onNavigateToNextInPath)
                             setPaused(true);
                             // Mark template/collection as completed
-                            if (user?.uid && collectionId && currentPhrase?.inputLang && currentPhrase?.targetLang) {
-                                markCompleted(user.uid, collectionId, currentPhrase?.inputLang, currentPhrase?.targetLang);
+                            if (onCompleted) {
+                                onCompleted(user?.uid || '', collectionId || '', currentPhrase?.inputLang || '', currentPhrase?.targetLang || '');
                             }
                         }
                     }
@@ -1536,48 +1538,6 @@ export function PhrasePlaybackView({
         })()}
     />
 
-    if (!hasPhrases) {
-        return (
-            <div className="flex-1">
-                {/* All Stats Popups (unified portal) */}
-                {StatsPopups}
-
-                {/* Stats Modal */}
-                {StatsModal}
-
-                {/* Audio Element */}
-                <audio
-                    ref={initTransport}
-                    onEnded={() => {
-                        setIsPlayingAudio(false);
-                        handleAudioEnded();
-                    }}
-                    onPlay={handleAudioPlay}
-                    onPause={() => setIsPlayingAudio(false)}
-                    controls
-                    hidden
-                    playsInline
-                    preload="metadata"
-                />
-
-                {presentationView}
-
-                <SettingsModal
-                    isOpen={settingsOpen}
-                    onClose={() => setSettingsOpen(false)}
-                    configName={configName}
-                    setConfigName={setConfigName}
-                    onSaveConfig={() => { }}
-                    presentationConfig={presentationConfig}
-                    setPresentationConfig={setPresentationConfig || (() => { })}
-                    handleImageUpload={handleImageUpload}
-                    inputLang={phrases[0]?.inputLang}
-                    targetLang={phrases[0]?.targetLang}
-                />
-            </div>
-        );
-    }
-
     return (
         <div className="flex-1">
             {/* All Stats Popups (unified portal) */}
@@ -1602,72 +1562,74 @@ export function PhrasePlaybackView({
             />
 
             {/* Phrases and PresentationView Main content */}
-            <div className="flex flex-col-reverse lg:flex-col w-full lg:px-2">
-                {/* Phrases List */}
-                <div className="flex-1 lg:relative lg:order-2">
-                    {showImportPhrases && collectionId && stickyHeaderContent && (
-                        <div className={`sticky lg:pb-3 px-0 py-2 top-[60px] z-10 bg-background`}>
-                            {stickyHeaderContent}
-                        </div>
-                    )}
+            {hidePhrases ? presentationView : (
+                <div className="flex flex-col-reverse lg:flex-col w-full lg:px-2">
+                    {/* Phrases List */}
+                    <div className="flex-1 lg:relative lg:order-2">
+                        {showImportPhrases && collectionId && stickyHeaderContent && (
+                            <div className={`sticky lg:pb-3 px-0 py-2 top-[60px] z-10 bg-background`}>
+                                {stickyHeaderContent}
+                            </div>
+                        )}
 
-                    {/* Editable Inputs for Each Phrase */}
-                    {phrases.length > 0 && !fullscreen && (
-                        <div className="lg:py-0 p-2">
-                            <EditablePhrases
-                                phrases={phrases}
-                                setPhrases={setPhrases || (() => { })}
-                                inputLanguage={phrases[0]?.inputLang}
-                                outputLanguage={phrases[0]?.targetLang}
-                                currentPhraseIndex={currentPhraseIndex}
-                                currentPhase={currentPhase}
-                                readOnly={readOnly}
-                                onPhraseClick={(index) => {
-                                    setCurrentPhraseIndexWithMetadata(index);
-                                    clearAllTimeouts();
+                        {/* Editable Inputs for Each Phrase */}
+                        {phrases.length > 0 && !fullscreen && (
+                            <div className="lg:py-0 p-2">
+                                <EditablePhrases
+                                    phrases={phrases}
+                                    setPhrases={setPhrases || (() => { })}
+                                    inputLanguage={phrases[0]?.inputLang}
+                                    outputLanguage={phrases[0]?.targetLang}
+                                    currentPhraseIndex={currentPhraseIndex}
+                                    currentPhase={currentPhase}
+                                    readOnly={readOnly}
+                                    onPhraseClick={(index) => {
+                                        setCurrentPhraseIndexWithMetadata(index);
+                                        clearAllTimeouts();
 
-                                    // Determine target phase considering both enableOutputBeforeInput and enableInputPlayback
-                                    const targetPhase = presentationConfig.enableInputPlayback
-                                        ? getRecallPhase()  // Start with recall phase (first audio)
-                                        : getShadowPhase(); // Skip recall phase, start with shadow phase (second audio)
+                                        // Determine target phase considering both enableOutputBeforeInput and enableInputPlayback
+                                        const targetPhase = presentationConfig.enableInputPlayback
+                                            ? getRecallPhase()  // Start with recall phase (first audio)
+                                            : getShadowPhase(); // Skip recall phase, start with shadow phase (second audio)
 
-                                    setCurrentPhaseWithMetadata(targetPhase);
-                                    if (audioRef.current) {
-                                        const audioUrl = targetPhase === 'input'
-                                            ? phrases[index].inputAudio?.audioUrl
-                                            : phrases[index].outputAudio?.audioUrl;
-                                        setSrcSafely(audioUrl || '');
-                                        // Set playback speed based on target phase
-                                        const speed = targetPhase === 'input'
-                                            ? (presentationConfig.inputPlaybackSpeed || 1.0)
-                                            : (presentationConfig.outputPlaybackSpeed || 1.0);
-                                        if (speed !== 1.0) {
-                                            audioRef.current.playbackRate = speed;
+                                        setCurrentPhaseWithMetadata(targetPhase);
+                                        if (audioRef.current) {
+                                            const audioUrl = targetPhase === 'input'
+                                                ? phrases[index].inputAudio?.audioUrl
+                                                : phrases[index].outputAudio?.audioUrl;
+                                            setSrcSafely(audioUrl || '');
+                                            // Set playback speed based on target phase
+                                            const speed = targetPhase === 'input'
+                                                ? (presentationConfig.inputPlaybackSpeed || 1.0)
+                                                : (presentationConfig.outputPlaybackSpeed || 1.0);
+                                            if (speed !== 1.0) {
+                                                audioRef.current.playbackRate = speed;
+                                            }
+
+                                            // If already playing, then actually play the new clip
+                                            if (!paused) {
+                                                setPaused(false);
+                                                setMSState('playing');
+                                                safePlay('phrase-click-active');
+                                            }
                                         }
+                                    }}
+                                    onPlayPhrase={handlePlayPhrase}
+                                    enableOutputBeforeInput={presentationConfig.enableOutputBeforeInput}
+                                />
+                            </div>
+                        )}
+                    </div>
 
-                                        // If already playing, then actually play the new clip
-                                        if (!paused) {
-                                            setPaused(false);
-                                            setMSState('playing');
-                                            safePlay('phrase-click-active');
-                                        }
-                                    }
-                                }}
-                                onPlayPhrase={handlePlayPhrase}
-                                enableOutputBeforeInput={presentationConfig.enableOutputBeforeInput}
-                            />
+                    {/* Presentation View and Controls */}
+                    {Boolean(typeof currentPhraseIndex === "number" && phrases?.length) && (
+                        <div className="xl:flex-1 lg:top-[64px] bg-background lg:p-2 z-1 lg:order-1">
+                            {presentationView}
+
                         </div>
                     )}
                 </div>
-
-                {/* Presentation View and Controls */}
-                {Boolean(typeof currentPhraseIndex === "number" && phrases?.length) && (
-                    <div className="xl:flex-1 lg:top-[64px] bg-background lg:p-2 z-1 lg:order-1">
-                        {presentationView}
-
-                    </div>
-                )}
-            </div>
+            )}
             <SettingsModal
                 isOpen={settingsOpen}
                 onClose={() => setSettingsOpen(false)}

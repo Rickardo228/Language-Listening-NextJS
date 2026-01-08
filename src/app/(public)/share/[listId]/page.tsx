@@ -9,6 +9,7 @@ import { getFirestore, doc, getDoc, collection as firestoreCollection, addDoc, q
 import { PhrasePlaybackView } from '../../../components/PhrasePlaybackView';
 import { LanguageFlags } from '../../../components/LanguageFlags';
 import { useUser } from '../../../contexts/UserContext';
+import { markCompleted } from '../../../utils/progressService';
 import { User } from 'firebase/auth';
 import { X, Check } from 'lucide-react';
 import { toast } from 'sonner';
@@ -242,6 +243,11 @@ export default function SharedList() {
                             }
                         });
                         setHasUnsavedChanges(true);
+                    }
+                }}
+                onCompleted={(userId, collectionId, inputLang, targetLang) => {
+                    if (inputLang && targetLang) {
+                        markCompleted(userId, collectionId, inputLang, targetLang);
                     }
                 }}
             />
