@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ChevronLeft,
   CircleCheck,
@@ -10,13 +10,18 @@ import {
   Volume2,
   Zap,
 } from 'lucide-react';
-import { PresentationView } from '../../../PresentationView';
+import {
+  PhrasePlaybackView,
+  type PhrasePlaybackMethods,
+} from '../../PhrasePlaybackView';
 import { Button } from '../../ui/Button';
 import { Card } from '../../ui/Card';
 import { Label } from '../../ui/Label';
 import { Slider } from '../../ui/Slider';
 import { Switch } from '../../ui/Switch';
 import { OnboardingData } from '../types';
+import { defaultPresentationConfig } from '../../../defaultConfig';
+import { Phrase, PresentationConfig } from '../../../types';
 
 interface Props {
   data: OnboardingData;
@@ -58,38 +63,68 @@ const lauraMipsoPhrases = [
 ];
 
 export function QuickWin({ data, onNext, onBack }: Props) {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(false);
   const [playTranslation, setPlayTranslation] = useState(true);
   const [speed, setSpeed] = useState([1]);
   const [shadowPause, setShadowPause] = useState([2]);
   const [completedPhrases, setCompletedPhrases] = useState<number[]>([]);
-  const currentPhrase = lauraMipsoPhrases[currentIndex];
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const playbackMethodsRef = useRef<PhrasePlaybackMethods | null>(null);
+  const currentIndexRef = useRef(currentIndex);
+  const completedRef = useRef(completedPhrases);
   const allCompleted = completedPhrases.length === lauraMipsoPhrases.length;
 
-  const handlePlay = () => {
-    setIsPlaying(true);
-    setTimeout(() => {
-      setIsPlaying(false);
-      if (!completedPhrases.includes(currentIndex)) {
-        setCompletedPhrases((prev) => [...prev, currentIndex]);
+  useEffect(() => {
+    currentIndexRef.current = currentIndex;
+  }, [currentIndex]);
+
+  useEffect(() => {
+    completedRef.current = completedPhrases;
+  }, [completedPhrases]);
+
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      const idx = playbackMethodsRef.current?.getCurrentPhraseIndex?.();
+      if (typeof idx !== 'number') return;
+      if (idx !== currentIndexRef.current) {
+        currentIndexRef.current = idx;
+        setCurrentIndex(idx);
       }
-    }, 2000);
-  };
+      if (!completedRef.current.includes(idx)) {
+        setCompletedPhrases((prev) => (prev.includes(idx) ? prev : [...prev, idx]));
+      }
+    }, 400);
 
-  const handleNextPhrase = () => {
-    if (currentIndex < lauraMipsoPhrases.length - 1) {
-      setCurrentIndex(currentIndex + 1);
-      setIsPlaying(false);
-    }
-  };
+    return () => window.clearInterval(intervalId);
+  }, []);
 
-  const handlePreviousPhrase = () => {
-    if (currentIndex > 0) {
-      setCurrentIndex(currentIndex - 1);
-      setIsPlaying(false);
-    }
-  };
+  const phrases = useMemo<Phrase[]>(
+    () =>
+      lauraMipsoPhrases.map((phrase) => ({
+        input: phrase.native,
+        translated: phrase.target,
+        romanized: phrase.phonetic,
+        inputLang: data.nativeLanguage || 'en-GB',
+        targetLang: data.targetLanguage || 'es-ES',
+        inputAudio: null,
+        outputAudio: null,
+        inputVoice: `${data.nativeLanguage || 'en-GB'}-Standard-D`,
+        targetVoice: `${data.targetLanguage || 'es-ES'}-Standard-D`,
+      })),
+    [data.nativeLanguage, data.targetLanguage]
+  );
+
+  const presentationConfig = useMemo<PresentationConfig>(
+    () => ({
+      ...defaultPresentationConfig,
+      containerBg: '',
+      enableInputPlayback: false,
+      enableOutputBeforeInput: !playTranslation,
+      inputPlaybackSpeed: speed[0],
+      outputPlaybackSpeed: speed[0],
+      delayBetweenPhrases: shadowPause[0] * 1000,
+    }),
+    [playTranslation, shadowPause, speed]
+  );
 
   return (
     <div className="space-y-6">
@@ -103,45 +138,17 @@ export function QuickWin({ data, onNext, onBack }: Props) {
             <p className="text-gray-600 text-lg">
               Listen, repeat, and adjust the settings to match your pace.
             </p>
-            {completedPhrases.length > 0 && (
-              <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
-                <CircleCheck className="w-4 h-4" />
-                <span>
-                  {completedPhrases.length} of {lauraMipsoPhrases.length} phrases
-                  practiced
-                </span>
-              </div>
-            )}
           </div>
 
-          <Card className="p-0 overflow-hidden bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-slate-900 dark:to-slate-950">
-            <div className="[&>div]:h-56 [&>div]:lg:h-[45vh] [&>div]:max-h-[45vh]">
-              <PresentationView
-                currentPhrase={currentPhrase.native}
-                currentTranslated={playTranslation ? currentPhrase.target : ''}
-                currentPhase={playTranslation ? 'output' : 'input'}
-                inputLang={data.nativeLanguage || 'en-GB'}
-                targetLang={data.targetLanguage || 'es-ES'}
-                fullScreen={false}
-                setFullscreen={() => {}}
-                romanizedOutput={playTranslation ? currentPhrase.phonetic : undefined}
-                showAllPhrases={false}
-                enableInputPlayback={false}
-                disableAnimation
-                containerBg="transparent"
-                textColor="light"
-                onPrevious={handlePreviousPhrase}
-                onNext={handleNextPhrase}
-                canGoBack={currentIndex > 0}
-                canGoForward={currentIndex < lauraMipsoPhrases.length - 1}
-                currentPhraseIndex={currentIndex}
-                totalPhrases={lauraMipsoPhrases.length}
-                isPlayingAudio={isPlaying}
-                paused={!isPlaying}
-                onPlay={handlePlay}
-                onPause={() => setIsPlaying(false)}
+          <Card className="p-0 overflow-hidden from-indigo-50 to-purple-50 dark:from-slate-900 dark:to-slate-950">
+              <PhrasePlaybackView
+                phrases={phrases}
+                presentationConfig={presentationConfig}
+                methodsRef={playbackMethodsRef}
+                readOnly
+                showImportPhrases={false}
+                hasPhrases={false}
               />
-            </div>
           </Card>
 
           <Card className="p-5 space-y-5">

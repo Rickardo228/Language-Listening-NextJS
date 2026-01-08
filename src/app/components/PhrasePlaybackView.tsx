@@ -10,6 +10,7 @@ import { track, trackAudioEnded, trackPlaybackEvent } from '../../lib/mixpanelCl
 import { WebMediaSessionTransport } from '../../transport/webMediaSessionTransport';
 import { loadProgress, saveProgress, markCompleted } from '../utils/progressService';
 import { useUser } from '../contexts/UserContext';
+import { cn } from './ui/utils';
 // Removed useVirtualDelay import - reverting to simpler timeout-based approach
 
 interface NavigatorWithMediaSession extends Navigator {
@@ -50,6 +51,7 @@ interface PhrasePlaybackViewProps {
     onNavigateToNextInPath?: () => void; // Callback to navigate to next item in path
     initialFullscreen?: boolean; // Start in fullscreen mode
     readOnly?: boolean;
+    hasPhrases?: boolean;
 }
 
 export function PhrasePlaybackView({
@@ -71,6 +73,7 @@ export function PhrasePlaybackView({
     onNavigateToNextInPath,
     initialFullscreen = false,
     readOnly = false,
+    hasPhrases = true,
 }: PhrasePlaybackViewProps) {
     const { user } = useUser();
     const { updateUserStats, StatsPopups, StatsModal, showStatsUpdate, incrementViewedAndCheckMilestone, initializeViewedCounter, phrasesViewed } = useUpdateUserStats();
@@ -1188,6 +1191,393 @@ export function PhrasePlaybackView({
         getCurrentPhase: () => currentPhase
     };
 
+    const presentationView = <PresentationView
+        currentPhrase={phrases[currentPhraseIndex]?.input || ''}
+        currentTranslated={phrases[currentPhraseIndex]?.translated || ''}
+        currentPhase={currentPhase}
+        inputLang={phrases[currentPhraseIndex]?.inputLang}
+        targetLang={phrases[currentPhraseIndex]?.targetLang}
+        inputVoice={phrases[currentPhraseIndex]?.inputVoice}
+        targetVoice={phrases[currentPhraseIndex]?.targetVoice}
+        fullScreen={fullscreen}
+        setFullscreen={setFullscreen}
+        bgImage={presentationConfig.bgImage}
+        containerBg={presentationConfig.containerBg}
+        // TODO - deally scroll and swipe should both work on mobile all the time, regardless of settings
+        verticalScroll={isMobile && presentationConfig.showAllPhrases && !presentationConfig.enableInputPlayback}
+        enableSwipe={isMobile}
+        // Can maybe introduce but might replace with text colour
+        // textBg={presentationConfig.textBg}
+        backgroundOverlayOpacity={presentationConfig.backgroundOverlayOpacity}
+        textColor={presentationConfig.textColor}
+        enableSnow={presentationConfig.enableSnow}
+        enableCherryBlossom={presentationConfig.enableCherryBlossom}
+        enableLeaves={presentationConfig.enableLeaves}
+        enableAutumnLeaves={presentationConfig.enableAutumnLeaves}
+        enableOrtonEffect={presentationConfig.enableOrtonEffect}
+        enableParticles={presentationConfig.enableParticles}
+        particleRotation={presentationConfig.particleRotation}
+        enableSteam={presentationConfig.enableSteam}
+        enableDust={presentationConfig.enableDust}
+        particleColor={presentationConfig.particleColor}
+        particleSpeed={presentationConfig.particleSpeed}
+        romanizedOutput={phrases[currentPhraseIndex]?.romanized}
+        title={showTitle ? (collectionName || configName) : undefined}
+        showAllPhrases={presentationConfig.showAllPhrases}
+        enableOutputBeforeInput={presentationConfig.enableOutputBeforeInput}
+        enableInputPlayback={presentationConfig.enableInputPlayback}
+        showProgressBar={showProgressBar}
+        progressDuration={progressDuration}
+        progressDelay={progressDelay}
+        onPrevious={() => atomicAdvance(-1)}
+        onNext={() => atomicAdvance(+1)}
+        canGoBack={
+            presentationConfig.enableLoop ||
+            currentPhraseIndex > 0 ||
+            (!presentationConfig.showAllPhrases && presentationConfig.enableInputPlayback && !isRecallPhase(currentPhase))
+        }
+        canGoForward={
+            presentationConfig.enableLoop ||
+            currentPhraseIndex < phrases.length - 1 ||
+            (!presentationConfig.showAllPhrases && presentationConfig.enableInputPlayback && isRecallPhase(currentPhase))
+        }
+        currentPhraseIndex={currentPhraseIndex}
+        totalPhrases={phrases.length}
+        isPlayingAudio={isPlayingAudio}
+        paused={paused}
+        onPause={handlePause}
+        onPlay={handlePlay}
+        onPlayPhrase={handlePlayPhrasePhase}
+        onSettingsOpen={() => setSettingsOpen(true)}
+        nextPhrase={(() => {
+            if (presentationConfig.showAllPhrases) {
+                // Show all phrases mode: next is the next phrase
+                return phrases[currentPhraseIndex + 1]?.input || ' ';
+            } else {
+                // Non-showAllPhrases mode: Cards all use currentPhase to decide what to display
+                // If currentPhase is 'input', all cards will display their 'phrase' prop
+                // If currentPhase is 'output', all cards will display their 'translated' prop
+                // The next card depends on both currentPhase AND enableOutputBeforeInput
+                // When enableInputPlayback is true, never pass input phrases (or output if enableOutputBeforeInput)
+
+                if (presentationConfig.enableOutputBeforeInput) {
+                    // Output-first mode: output -> input -> next output -> next input
+                    // When enableInputPlayback is true, skip output phrases (not input)
+                    // When enableInputPlayback is false, skip input entirely (output -> next output)
+                    if (currentPhase === 'output') {
+                        // Next is same phrase's input
+                        // When currentPhase is 'output', cards display 'translated' prop
+                        // If enableInputPlayback, skip output - next should be current phrase's input
+                        // If !enableInputPlayback, skip input entirely - next should be next phrase's output
+                        if (presentationConfig.enableInputPlayback) {
+                            return phrases[currentPhraseIndex]?.input || ' ';
+                        }
+                        // !enableInputPlayback: skip input, go directly to next output
+                        return phrases[currentPhraseIndex + 1]?.translated || ' ';
+                    } else {
+                        // currentPhase === 'input'
+                        // Next is next phrase's output
+                        // When currentPhase is 'input', cards display 'phrase' prop
+                        // If enableInputPlayback, normal flow - next should be next phrase's output
+                        if (presentationConfig.enableInputPlayback) {
+                            return phrases[currentPhraseIndex + 1]?.translated || ' ';
+                        }
+                        // !enableInputPlayback: this case shouldn't happen (input phase skipped)
+                        return phrases[currentPhraseIndex + 1]?.translated || ' ';
+                    }
+                } else {
+                    // Input-first mode: input -> output -> next input -> next output
+                    // When enableInputPlayback is true, normal flow: input -> output -> next input -> next output
+                    // When enableInputPlayback is false, skip input entirely (output -> next output)
+                    if (currentPhase === 'input') {
+                        // All cards will display their 'phrase' prop
+                        // Next card should show current phrase's output (translated)
+                        return phrases[currentPhraseIndex]?.translated || ' ';
+                    } else {
+                        // All cards will display their 'translated' prop
+                        // Next card should show next phrase's input
+                        // If enableInputPlayback, normal flow - next should be next phrase's input
+                        // If !enableInputPlayback, skip input entirely - next should be next phrase's output
+                        if (presentationConfig.enableInputPlayback) {
+                            return phrases[currentPhraseIndex + 1]?.input || ' ';
+                        }
+                        // !enableInputPlayback: skip input, go directly to next output
+                        return phrases[currentPhraseIndex + 1]?.translated || ' ';
+                    }
+                }
+            }
+        })()}
+        nextTranslated={(() => {
+            if (presentationConfig.showAllPhrases) {
+                // Show all phrases mode: next is the next phrase
+                return phrases[currentPhraseIndex + 1]?.translated || ' ';
+            } else {
+                // Non-showAllPhrases mode: put content in the field that will be displayed
+                // When enableInputPlayback is true, never pass input phrases (or output if enableOutputBeforeInput)
+                if (presentationConfig.enableOutputBeforeInput) {
+                    // Output-first mode
+                    // When enableInputPlayback is true, skip output phrases (not input)
+                    // When enableInputPlayback is false, skip input entirely (output -> next output)
+                    if (currentPhase === 'output') {
+                        // Cards display 'translated' prop
+                        // If enableInputPlayback, next shows current phrase's input
+                        // If !enableInputPlayback, skip input - next shows next phrase's output
+                        if (presentationConfig.enableInputPlayback) {
+                            return phrases[currentPhraseIndex]?.input || ' ';
+                        }
+                        // !enableInputPlayback: skip input, go directly to next output
+                        return phrases[currentPhraseIndex + 1]?.translated || ' ';
+                    } else {
+                        // currentPhase === 'input'
+                        // Cards display 'phrase' prop
+                        // If enableInputPlayback, normal flow - next shows next phrase's output (in phrase prop since phase is input)
+                        if (presentationConfig.enableInputPlayback) {
+                            return phrases[currentPhraseIndex + 1]?.translated || ' ';
+                        }
+                        // !enableInputPlayback: this case shouldn't happen (input phase skipped)
+                        return phrases[currentPhraseIndex + 1]?.translated || ' ';
+                    }
+                } else {
+                    // Input-first mode
+                    // When enableInputPlayback is true, normal flow: input -> output -> next input -> next output
+                    // When enableInputPlayback is false, skip input entirely (output -> next output)
+                    if (currentPhase === 'input') {
+                        // All cards will display their 'phrase' prop, so 'translated' won't be used
+                        // But we still need to populate it for when phase changes
+                        return phrases[currentPhraseIndex]?.translated || ' ';
+                    } else {
+                        // All cards will display their 'translated' prop
+                        // If enableInputPlayback, normal flow - next shows next phrase's input (in translated prop since phase is output)
+                        // If !enableInputPlayback, skip input entirely - next shows next phrase's output
+                        if (presentationConfig.enableInputPlayback) {
+                            // Next card will show next phrase's input, but since currentPhase is 'output', 
+                            // it will display the 'translated' prop, so we put the input there
+                            return phrases[currentPhraseIndex + 1]?.input || ' ';
+                        }
+                        // !enableInputPlayback: skip input, go directly to next output
+                        return phrases[currentPhraseIndex + 1]?.translated || ' ';
+                    }
+                }
+            }
+        })()}
+        nextRomanized={(() => {
+            if (presentationConfig.showAllPhrases) {
+                return phrases[currentPhraseIndex + 1]?.romanized || ' ';
+            } else {
+                // Romanized only shows with translated (output phase)
+                if (presentationConfig.enableOutputBeforeInput) {
+                    // Output-first mode
+                    if (currentPhase === 'output') {
+                        // If enableInputPlayback, next shows input, no romanized
+                        // If !enableInputPlayback, next shows next phrase's output, include romanized
+                        if (presentationConfig.enableInputPlayback) {
+                            return ' ';
+                        }
+                        return phrases[currentPhraseIndex + 1]?.romanized || ' ';
+                    } else {
+                        // currentPhase === 'input'
+                        // Next shows next phrase's output, include romanized
+                        return phrases[currentPhraseIndex + 1]?.romanized || ' ';
+                    }
+                } else {
+                    // Input-first mode
+                    if (currentPhase === 'input') {
+                        // Next card shows current phrase's translated, so include romanized
+                        return phrases[currentPhraseIndex]?.romanized || ' ';
+                    } else {
+                        // If enableInputPlayback, next shows next phrase's input, no romanized
+                        // If !enableInputPlayback, next shows next phrase's output, include romanized
+                        if (presentationConfig.enableInputPlayback) {
+                            return ' ';
+                        }
+                        return phrases[currentPhraseIndex + 1]?.romanized || ' ';
+                    }
+                }
+            }
+        })()}
+        previousPhrase={(() => {
+            if (presentationConfig.showAllPhrases) {
+                return phrases[currentPhraseIndex - 1]?.input || ' ';
+            } else {
+                // Non-showAllPhrases mode
+                // When enableInputPlayback is true, never pass input phrases (or output if enableOutputBeforeInput)
+                if (presentationConfig.enableOutputBeforeInput) {
+                    // Output-first mode: output -> input -> next output
+                    // When enableInputPlayback is true, skip output phrases (not input)
+                    // When enableInputPlayback is false, skip input entirely (output -> next output)
+                    if (currentPhase === 'output') {
+                        // Previous is prev phrase's input
+                        // Cards display 'translated' when currentPhase is 'output'
+                        // If enableInputPlayback, skip output - previous should be prev phrase's input
+                        // If !enableInputPlayback, skip input - previous should be prev phrase's output
+                        if (presentationConfig.enableInputPlayback) {
+                            return phrases[currentPhraseIndex - 1]?.input || ' ';
+                        }
+                        // !enableInputPlayback: skip input, go directly to prev output
+                        return phrases[currentPhraseIndex - 1]?.translated || ' ';
+                    } else {
+                        // currentPhase === 'input'
+                        // Previous is same phrase's output
+                        // Cards display 'phrase' when currentPhase is 'input'
+                        // If enableInputPlayback, normal flow - previous should be current phrase's output
+                        if (presentationConfig.enableInputPlayback) {
+                            return phrases[currentPhraseIndex]?.translated || ' ';
+                        }
+                        // !enableInputPlayback: this case shouldn't happen (input phase skipped)
+                        return phrases[currentPhraseIndex - 1]?.translated || ' ';
+                    }
+                } else {
+                    // Input-first mode
+                    // When enableInputPlayback is true, normal flow: input -> output -> next input -> next output
+                    // When enableInputPlayback is false, skip input entirely (output -> next output)
+                    if (currentPhase === 'input') {
+                        // All cards will display their 'phrase' prop
+                        // Previous card should show previous phrase's translated
+                        return phrases[currentPhraseIndex - 1]?.translated || ' ';
+                    } else {
+                        // All cards will display their 'translated' prop
+                        // Previous card should show current phrase's input
+                        // If enableInputPlayback, normal flow - previous should be current phrase's input
+                        // If !enableInputPlayback, skip input entirely - previous should be prev phrase's output
+                        if (presentationConfig.enableInputPlayback) {
+                            return phrases[currentPhraseIndex]?.input || ' ';
+                        }
+                        // !enableInputPlayback: skip input, go directly to prev output
+                        return phrases[currentPhraseIndex - 1]?.translated || ' ';
+                    }
+                }
+            }
+        })()}
+        previousTranslated={(() => {
+            if (presentationConfig.showAllPhrases) {
+                return phrases[currentPhraseIndex - 1]?.translated || ' ';
+            } else {
+                // Non-showAllPhrases mode
+                // When enableInputPlayback is true, never pass input phrases (or output if enableOutputBeforeInput)
+                if (presentationConfig.enableOutputBeforeInput) {
+                    // Output-first mode
+                    // When enableInputPlayback is true, skip output phrases (not input)
+                    // When enableInputPlayback is false, skip input entirely (output -> next output)
+                    if (currentPhase === 'output') {
+                        // Cards display 'translated' prop
+                        // If enableInputPlayback, skip output - previous shows prev phrase's input
+                        // If !enableInputPlayback, skip input - previous shows prev phrase's output
+                        if (presentationConfig.enableInputPlayback) {
+                            return phrases[currentPhraseIndex - 1]?.input || ' ';
+                        }
+                        // !enableInputPlayback: skip input, go directly to prev output
+                        return phrases[currentPhraseIndex - 1]?.translated || ' ';
+                    } else {
+                        // currentPhase === 'input'
+                        // Cards display 'phrase' prop
+                        // If enableInputPlayback, normal flow - previous shows current phrase's output (in phrase prop since phase is input)
+                        if (presentationConfig.enableInputPlayback) {
+                            return phrases[currentPhraseIndex]?.translated || ' ';
+                        }
+                        // !enableInputPlayback: this case shouldn't happen (input phase skipped)
+                        return phrases[currentPhraseIndex - 1]?.translated || ' ';
+                    }
+                } else {
+                    // Input-first mode
+                    // When enableInputPlayback is true, normal flow: input -> output -> next input -> next output
+                    // When enableInputPlayback is false, skip input entirely (output -> next output)
+                    if (currentPhase === 'input') {
+                        // All cards will display their 'phrase' prop, so 'translated' won't be used
+                        return phrases[currentPhraseIndex - 1]?.translated || ' ';
+                    } else {
+                        // All cards will display their 'translated' prop
+                        // If enableInputPlayback, normal flow - previous shows current phrase's input (in translated prop since phase is output)
+                        // If !enableInputPlayback, skip input entirely - previous shows prev phrase's output
+                        if (presentationConfig.enableInputPlayback) {
+                            // Previous card will show current phrase's input, but since currentPhase is 'output',
+                            // it will display the 'translated' prop, so we put the input there
+                            return phrases[currentPhraseIndex]?.input || ' ';
+                        }
+                        // !enableInputPlayback: skip input, go directly to prev output
+                        return phrases[currentPhraseIndex - 1]?.translated || ' ';
+                    }
+                }
+            }
+        })()}
+        previousRomanized={(() => {
+            if (presentationConfig.showAllPhrases) {
+                return phrases[currentPhraseIndex - 1]?.romanized || ' ';
+            } else {
+                // Romanized only shows with translated (output phase)
+                if (presentationConfig.enableOutputBeforeInput) {
+                    // Output-first mode
+                    if (currentPhase === 'output') {
+                        // If enableInputPlayback, previous shows prev phrase's input, no romanized
+                        // If !enableInputPlayback, previous shows prev phrase's output, include romanized
+                        if (presentationConfig.enableInputPlayback) {
+                            return ' ';
+                        }
+                        return phrases[currentPhraseIndex - 1]?.romanized || ' ';
+                    } else {
+                        // currentPhase === 'input'
+                        // Previous shows current phrase's output, include romanized
+                        return phrases[currentPhraseIndex]?.romanized || ' ';
+                    }
+                } else {
+                    // Input-first mode
+                    if (currentPhase === 'input') {
+                        // Previous card shows previous phrase's translated, so include romanized
+                        return phrases[currentPhraseIndex - 1]?.romanized || ' ';
+                    } else {
+                        // If enableInputPlayback, previous shows current phrase's input, no romanized
+                        // If !enableInputPlayback, previous shows prev phrase's output, include romanized
+                        if (presentationConfig.enableInputPlayback) {
+                            return ' ';
+                        }
+                        return phrases[currentPhraseIndex - 1]?.romanized || ' ';
+                    }
+                }
+            }
+        })()}
+    />
+
+    if (!hasPhrases) {
+        return (
+            <div className="flex-1">
+                {/* All Stats Popups (unified portal) */}
+                {StatsPopups}
+
+                {/* Stats Modal */}
+                {StatsModal}
+
+                {/* Audio Element */}
+                <audio
+                    ref={initTransport}
+                    onEnded={() => {
+                        setIsPlayingAudio(false);
+                        handleAudioEnded();
+                    }}
+                    onPlay={handleAudioPlay}
+                    onPause={() => setIsPlayingAudio(false)}
+                    controls
+                    hidden
+                    playsInline
+                    preload="metadata"
+                />
+
+                {presentationView}
+
+                <SettingsModal
+                    isOpen={settingsOpen}
+                    onClose={() => setSettingsOpen(false)}
+                    configName={configName}
+                    setConfigName={setConfigName}
+                    onSaveConfig={() => { }}
+                    presentationConfig={presentationConfig}
+                    setPresentationConfig={setPresentationConfig || (() => { })}
+                    handleImageUpload={handleImageUpload}
+                    inputLang={phrases[0]?.inputLang}
+                    targetLang={phrases[0]?.targetLang}
+                />
+            </div>
+        );
+    }
+
     return (
         <div className="flex-1">
             {/* All Stats Popups (unified portal) */}
@@ -1195,7 +1585,6 @@ export function PhrasePlaybackView({
 
             {/* Stats Modal */}
             {StatsModal}
-
 
             {/* Audio Element */}
             <audio
@@ -1212,7 +1601,7 @@ export function PhrasePlaybackView({
                 preload="metadata"
             />
 
-            {/* Main content */}
+            {/* Phrases and PresentationView Main content */}
             <div className="flex flex-col-reverse lg:flex-col w-full lg:px-2">
                 {/* Phrases List */}
                 <div className="flex-1 lg:relative lg:order-2">
@@ -1274,350 +1663,7 @@ export function PhrasePlaybackView({
                 {/* Presentation View and Controls */}
                 {Boolean(typeof currentPhraseIndex === "number" && phrases?.length) && (
                     <div className="xl:flex-1 lg:top-[64px] bg-background lg:p-2 z-1 lg:order-1">
-                        <PresentationView
-                            currentPhrase={phrases[currentPhraseIndex]?.input || ''}
-                            currentTranslated={phrases[currentPhraseIndex]?.translated || ''}
-                            currentPhase={currentPhase}
-                            inputLang={phrases[currentPhraseIndex]?.inputLang}
-                            targetLang={phrases[currentPhraseIndex]?.targetLang}
-                            inputVoice={phrases[currentPhraseIndex]?.inputVoice}
-                            targetVoice={phrases[currentPhraseIndex]?.targetVoice}
-                            fullScreen={fullscreen}
-                            setFullscreen={setFullscreen}
-                            bgImage={presentationConfig.bgImage}
-                            containerBg={presentationConfig.containerBg}
-                            // TODO - deally scroll and swipe should both work on mobile all the time, regardless of settings
-                            verticalScroll={isMobile && presentationConfig.showAllPhrases && !presentationConfig.enableInputPlayback}
-                            enableSwipe={isMobile}
-                            // Can maybe introduce but might replace with text colour
-                            // textBg={presentationConfig.textBg}
-                            backgroundOverlayOpacity={presentationConfig.backgroundOverlayOpacity}
-                            textColor={presentationConfig.textColor}
-                            enableSnow={presentationConfig.enableSnow}
-                            enableCherryBlossom={presentationConfig.enableCherryBlossom}
-                            enableLeaves={presentationConfig.enableLeaves}
-                            enableAutumnLeaves={presentationConfig.enableAutumnLeaves}
-                            enableOrtonEffect={presentationConfig.enableOrtonEffect}
-                            enableParticles={presentationConfig.enableParticles}
-                            particleRotation={presentationConfig.particleRotation}
-                            enableSteam={presentationConfig.enableSteam}
-                            enableDust={presentationConfig.enableDust}
-                            particleColor={presentationConfig.particleColor}
-                            particleSpeed={presentationConfig.particleSpeed}
-                            romanizedOutput={phrases[currentPhraseIndex]?.romanized}
-                            title={showTitle ? (collectionName || configName) : undefined}
-                            showAllPhrases={presentationConfig.showAllPhrases}
-                            enableOutputBeforeInput={presentationConfig.enableOutputBeforeInput}
-                            enableInputPlayback={presentationConfig.enableInputPlayback}
-                            showProgressBar={showProgressBar}
-                            progressDuration={progressDuration}
-                            progressDelay={progressDelay}
-                            onPrevious={() => atomicAdvance(-1)}
-                            onNext={() => atomicAdvance(+1)}
-                            canGoBack={
-                                presentationConfig.enableLoop ||
-                                currentPhraseIndex > 0 ||
-                                (!presentationConfig.showAllPhrases && presentationConfig.enableInputPlayback && !isRecallPhase(currentPhase))
-                            }
-                            canGoForward={
-                                presentationConfig.enableLoop ||
-                                currentPhraseIndex < phrases.length - 1 ||
-                                (!presentationConfig.showAllPhrases && presentationConfig.enableInputPlayback && isRecallPhase(currentPhase))
-                            }
-                            currentPhraseIndex={currentPhraseIndex}
-                            totalPhrases={phrases.length}
-                            isPlayingAudio={isPlayingAudio}
-                            paused={paused}
-                            onPause={handlePause}
-                            onPlay={handlePlay}
-                            onPlayPhrase={handlePlayPhrasePhase}
-                            onSettingsOpen={() => setSettingsOpen(true)}
-                            nextPhrase={(() => {
-                                if (presentationConfig.showAllPhrases) {
-                                    // Show all phrases mode: next is the next phrase
-                                    return phrases[currentPhraseIndex + 1]?.input || ' ';
-                                } else {
-                                    // Non-showAllPhrases mode: Cards all use currentPhase to decide what to display
-                                    // If currentPhase is 'input', all cards will display their 'phrase' prop
-                                    // If currentPhase is 'output', all cards will display their 'translated' prop
-                                    // The next card depends on both currentPhase AND enableOutputBeforeInput
-                                    // When enableInputPlayback is true, never pass input phrases (or output if enableOutputBeforeInput)
-
-                                    if (presentationConfig.enableOutputBeforeInput) {
-                                        // Output-first mode: output -> input -> next output -> next input
-                                        // When enableInputPlayback is true, skip output phrases (not input)
-                                        // When enableInputPlayback is false, skip input entirely (output -> next output)
-                                        if (currentPhase === 'output') {
-                                            // Next is same phrase's input
-                                            // When currentPhase is 'output', cards display 'translated' prop
-                                            // If enableInputPlayback, skip output - next should be current phrase's input
-                                            // If !enableInputPlayback, skip input entirely - next should be next phrase's output
-                                            if (presentationConfig.enableInputPlayback) {
-                                                return phrases[currentPhraseIndex]?.input || ' ';
-                                            }
-                                            // !enableInputPlayback: skip input, go directly to next output
-                                            return phrases[currentPhraseIndex + 1]?.translated || ' ';
-                                        } else {
-                                            // currentPhase === 'input'
-                                            // Next is next phrase's output
-                                            // When currentPhase is 'input', cards display 'phrase' prop
-                                            // If enableInputPlayback, normal flow - next should be next phrase's output
-                                            if (presentationConfig.enableInputPlayback) {
-                                                return phrases[currentPhraseIndex + 1]?.translated || ' ';
-                                            }
-                                            // !enableInputPlayback: this case shouldn't happen (input phase skipped)
-                                            return phrases[currentPhraseIndex + 1]?.translated || ' ';
-                                        }
-                                    } else {
-                                        // Input-first mode: input -> output -> next input -> next output
-                                        // When enableInputPlayback is true, normal flow: input -> output -> next input -> next output
-                                        // When enableInputPlayback is false, skip input entirely (output -> next output)
-                                        if (currentPhase === 'input') {
-                                            // All cards will display their 'phrase' prop
-                                            // Next card should show current phrase's output (translated)
-                                            return phrases[currentPhraseIndex]?.translated || ' ';
-                                        } else {
-                                            // All cards will display their 'translated' prop
-                                            // Next card should show next phrase's input
-                                            // If enableInputPlayback, normal flow - next should be next phrase's input
-                                            // If !enableInputPlayback, skip input entirely - next should be next phrase's output
-                                            if (presentationConfig.enableInputPlayback) {
-                                                return phrases[currentPhraseIndex + 1]?.input || ' ';
-                                            }
-                                            // !enableInputPlayback: skip input, go directly to next output
-                                            return phrases[currentPhraseIndex + 1]?.translated || ' ';
-                                        }
-                                    }
-                                }
-                            })()}
-                            nextTranslated={(() => {
-                                if (presentationConfig.showAllPhrases) {
-                                    // Show all phrases mode: next is the next phrase
-                                    return phrases[currentPhraseIndex + 1]?.translated || ' ';
-                                } else {
-                                    // Non-showAllPhrases mode: put content in the field that will be displayed
-                                    // When enableInputPlayback is true, never pass input phrases (or output if enableOutputBeforeInput)
-                                    if (presentationConfig.enableOutputBeforeInput) {
-                                        // Output-first mode
-                                        // When enableInputPlayback is true, skip output phrases (not input)
-                                        // When enableInputPlayback is false, skip input entirely (output -> next output)
-                                        if (currentPhase === 'output') {
-                                            // Cards display 'translated' prop
-                                            // If enableInputPlayback, next shows current phrase's input
-                                            // If !enableInputPlayback, skip input - next shows next phrase's output
-                                            if (presentationConfig.enableInputPlayback) {
-                                                return phrases[currentPhraseIndex]?.input || ' ';
-                                            }
-                                            // !enableInputPlayback: skip input, go directly to next output
-                                            return phrases[currentPhraseIndex + 1]?.translated || ' ';
-                                        } else {
-                                            // currentPhase === 'input'
-                                            // Cards display 'phrase' prop
-                                            // If enableInputPlayback, normal flow - next shows next phrase's output (in phrase prop since phase is input)
-                                            if (presentationConfig.enableInputPlayback) {
-                                                return phrases[currentPhraseIndex + 1]?.translated || ' ';
-                                            }
-                                            // !enableInputPlayback: this case shouldn't happen (input phase skipped)
-                                            return phrases[currentPhraseIndex + 1]?.translated || ' ';
-                                        }
-                                    } else {
-                                        // Input-first mode
-                                        // When enableInputPlayback is true, normal flow: input -> output -> next input -> next output
-                                        // When enableInputPlayback is false, skip input entirely (output -> next output)
-                                        if (currentPhase === 'input') {
-                                            // All cards will display their 'phrase' prop, so 'translated' won't be used
-                                            // But we still need to populate it for when phase changes
-                                            return phrases[currentPhraseIndex]?.translated || ' ';
-                                        } else {
-                                            // All cards will display their 'translated' prop
-                                            // If enableInputPlayback, normal flow - next shows next phrase's input (in translated prop since phase is output)
-                                            // If !enableInputPlayback, skip input entirely - next shows next phrase's output
-                                            if (presentationConfig.enableInputPlayback) {
-                                                // Next card will show next phrase's input, but since currentPhase is 'output', 
-                                                // it will display the 'translated' prop, so we put the input there
-                                                return phrases[currentPhraseIndex + 1]?.input || ' ';
-                                            }
-                                            // !enableInputPlayback: skip input, go directly to next output
-                                            return phrases[currentPhraseIndex + 1]?.translated || ' ';
-                                        }
-                                    }
-                                }
-                            })()}
-                            nextRomanized={(() => {
-                                if (presentationConfig.showAllPhrases) {
-                                    return phrases[currentPhraseIndex + 1]?.romanized || ' ';
-                                } else {
-                                    // Romanized only shows with translated (output phase)
-                                    if (presentationConfig.enableOutputBeforeInput) {
-                                        // Output-first mode
-                                        if (currentPhase === 'output') {
-                                            // If enableInputPlayback, next shows input, no romanized
-                                            // If !enableInputPlayback, next shows next phrase's output, include romanized
-                                            if (presentationConfig.enableInputPlayback) {
-                                                return ' ';
-                                            }
-                                            return phrases[currentPhraseIndex + 1]?.romanized || ' ';
-                                        } else {
-                                            // currentPhase === 'input'
-                                            // Next shows next phrase's output, include romanized
-                                            return phrases[currentPhraseIndex + 1]?.romanized || ' ';
-                                        }
-                                    } else {
-                                        // Input-first mode
-                                        if (currentPhase === 'input') {
-                                            // Next card shows current phrase's translated, so include romanized
-                                            return phrases[currentPhraseIndex]?.romanized || ' ';
-                                        } else {
-                                            // If enableInputPlayback, next shows next phrase's input, no romanized
-                                            // If !enableInputPlayback, next shows next phrase's output, include romanized
-                                            if (presentationConfig.enableInputPlayback) {
-                                                return ' ';
-                                            }
-                                            return phrases[currentPhraseIndex + 1]?.romanized || ' ';
-                                        }
-                                    }
-                                }
-                            })()}
-                            previousPhrase={(() => {
-                                if (presentationConfig.showAllPhrases) {
-                                    return phrases[currentPhraseIndex - 1]?.input || ' ';
-                                } else {
-                                    // Non-showAllPhrases mode
-                                    // When enableInputPlayback is true, never pass input phrases (or output if enableOutputBeforeInput)
-                                    if (presentationConfig.enableOutputBeforeInput) {
-                                        // Output-first mode: output -> input -> next output
-                                        // When enableInputPlayback is true, skip output phrases (not input)
-                                        // When enableInputPlayback is false, skip input entirely (output -> next output)
-                                        if (currentPhase === 'output') {
-                                            // Previous is prev phrase's input
-                                            // Cards display 'translated' when currentPhase is 'output'
-                                            // If enableInputPlayback, skip output - previous should be prev phrase's input
-                                            // If !enableInputPlayback, skip input - previous should be prev phrase's output
-                                            if (presentationConfig.enableInputPlayback) {
-                                                return phrases[currentPhraseIndex - 1]?.input || ' ';
-                                            }
-                                            // !enableInputPlayback: skip input, go directly to prev output
-                                            return phrases[currentPhraseIndex - 1]?.translated || ' ';
-                                        } else {
-                                            // currentPhase === 'input'
-                                            // Previous is same phrase's output
-                                            // Cards display 'phrase' when currentPhase is 'input'
-                                            // If enableInputPlayback, normal flow - previous should be current phrase's output
-                                            if (presentationConfig.enableInputPlayback) {
-                                                return phrases[currentPhraseIndex]?.translated || ' ';
-                                            }
-                                            // !enableInputPlayback: this case shouldn't happen (input phase skipped)
-                                            return phrases[currentPhraseIndex - 1]?.translated || ' ';
-                                        }
-                                    } else {
-                                        // Input-first mode
-                                        // When enableInputPlayback is true, normal flow: input -> output -> next input -> next output
-                                        // When enableInputPlayback is false, skip input entirely (output -> next output)
-                                        if (currentPhase === 'input') {
-                                            // All cards will display their 'phrase' prop
-                                            // Previous card should show previous phrase's translated
-                                            return phrases[currentPhraseIndex - 1]?.translated || ' ';
-                                        } else {
-                                            // All cards will display their 'translated' prop
-                                            // Previous card should show current phrase's input
-                                            // If enableInputPlayback, normal flow - previous should be current phrase's input
-                                            // If !enableInputPlayback, skip input entirely - previous should be prev phrase's output
-                                            if (presentationConfig.enableInputPlayback) {
-                                                return phrases[currentPhraseIndex]?.input || ' ';
-                                            }
-                                            // !enableInputPlayback: skip input, go directly to prev output
-                                            return phrases[currentPhraseIndex - 1]?.translated || ' ';
-                                        }
-                                    }
-                                }
-                            })()}
-                            previousTranslated={(() => {
-                                if (presentationConfig.showAllPhrases) {
-                                    return phrases[currentPhraseIndex - 1]?.translated || ' ';
-                                } else {
-                                    // Non-showAllPhrases mode
-                                    // When enableInputPlayback is true, never pass input phrases (or output if enableOutputBeforeInput)
-                                    if (presentationConfig.enableOutputBeforeInput) {
-                                        // Output-first mode
-                                        // When enableInputPlayback is true, skip output phrases (not input)
-                                        // When enableInputPlayback is false, skip input entirely (output -> next output)
-                                        if (currentPhase === 'output') {
-                                            // Cards display 'translated' prop
-                                            // If enableInputPlayback, skip output - previous shows prev phrase's input
-                                            // If !enableInputPlayback, skip input - previous shows prev phrase's output
-                                            if (presentationConfig.enableInputPlayback) {
-                                                return phrases[currentPhraseIndex - 1]?.input || ' ';
-                                            }
-                                            // !enableInputPlayback: skip input, go directly to prev output
-                                            return phrases[currentPhraseIndex - 1]?.translated || ' ';
-                                        } else {
-                                            // currentPhase === 'input'
-                                            // Cards display 'phrase' prop
-                                            // If enableInputPlayback, normal flow - previous shows current phrase's output (in phrase prop since phase is input)
-                                            if (presentationConfig.enableInputPlayback) {
-                                                return phrases[currentPhraseIndex]?.translated || ' ';
-                                            }
-                                            // !enableInputPlayback: this case shouldn't happen (input phase skipped)
-                                            return phrases[currentPhraseIndex - 1]?.translated || ' ';
-                                        }
-                                    } else {
-                                        // Input-first mode
-                                        // When enableInputPlayback is true, normal flow: input -> output -> next input -> next output
-                                        // When enableInputPlayback is false, skip input entirely (output -> next output)
-                                        if (currentPhase === 'input') {
-                                            // All cards will display their 'phrase' prop, so 'translated' won't be used
-                                            return phrases[currentPhraseIndex - 1]?.translated || ' ';
-                                        } else {
-                                            // All cards will display their 'translated' prop
-                                            // If enableInputPlayback, normal flow - previous shows current phrase's input (in translated prop since phase is output)
-                                            // If !enableInputPlayback, skip input entirely - previous shows prev phrase's output
-                                            if (presentationConfig.enableInputPlayback) {
-                                                // Previous card will show current phrase's input, but since currentPhase is 'output',
-                                                // it will display the 'translated' prop, so we put the input there
-                                                return phrases[currentPhraseIndex]?.input || ' ';
-                                            }
-                                            // !enableInputPlayback: skip input, go directly to prev output
-                                            return phrases[currentPhraseIndex - 1]?.translated || ' ';
-                                        }
-                                    }
-                                }
-                            })()}
-                            previousRomanized={(() => {
-                                if (presentationConfig.showAllPhrases) {
-                                    return phrases[currentPhraseIndex - 1]?.romanized || ' ';
-                                } else {
-                                    // Romanized only shows with translated (output phase)
-                                    if (presentationConfig.enableOutputBeforeInput) {
-                                        // Output-first mode
-                                        if (currentPhase === 'output') {
-                                            // If enableInputPlayback, previous shows prev phrase's input, no romanized
-                                            // If !enableInputPlayback, previous shows prev phrase's output, include romanized
-                                            if (presentationConfig.enableInputPlayback) {
-                                                return ' ';
-                                            }
-                                            return phrases[currentPhraseIndex - 1]?.romanized || ' ';
-                                        } else {
-                                            // currentPhase === 'input'
-                                            // Previous shows current phrase's output, include romanized
-                                            return phrases[currentPhraseIndex]?.romanized || ' ';
-                                        }
-                                    } else {
-                                        // Input-first mode
-                                        if (currentPhase === 'input') {
-                                            // Previous card shows previous phrase's translated, so include romanized
-                                            return phrases[currentPhraseIndex - 1]?.romanized || ' ';
-                                        } else {
-                                            // If enableInputPlayback, previous shows current phrase's input, no romanized
-                                            // If !enableInputPlayback, previous shows prev phrase's output, include romanized
-                                            if (presentationConfig.enableInputPlayback) {
-                                                return ' ';
-                                            }
-                                            return phrases[currentPhraseIndex - 1]?.romanized || ' ';
-                                        }
-                                    }
-                                }
-                            })()}
-                        />
+                        {presentationView}
 
                     </div>
                 )}
