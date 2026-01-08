@@ -7,6 +7,7 @@ import { languageOptions } from './types';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { trackSignUp, identifyUser } from '../lib/mixpanelClient';
 import { Input } from './components/ui';
+import { ROUTES } from './routes';
 
 interface Advantage {
     text: string;
@@ -75,16 +76,12 @@ export function SignInPage({
 
         try {
             const provider = new GoogleAuthProvider();
-            if (isFirstVisit || isSignUp && !onAuthSuccess) {
-                // Default behavior - redirect to home page with query params
-                router.push(`/?firstVisit=true&inputLang=${inputLang}&targetLang=${targetLang}`);
-            }
             const result = await signInWithPopup(auth, provider);
 
             // If this is the first visit, store the selected languages
             if (isFirstVisit || isSignUp) {
                 localStorage.setItem('hasVisitedBefore', 'true');
-                
+
                 // Store selected languages for onboarding
                 if (showLanguageSelect) {
                     localStorage.setItem('signupInputLang', inputLang);
@@ -97,12 +94,14 @@ export function SignInPage({
                     identifyUser(result.user.uid, result.user.email || undefined);
                     trackSignUp(result.user.uid, result.user.providerData[0]?.providerId || 'google');
                 }
+            }
 
-                if (onAuthSuccess) {
-                    onAuthSuccess(result.user);
-                }
-            } else if (onAuthSuccess) {
+            // Handle post-auth navigation
+            if (onAuthSuccess) {
                 onAuthSuccess(result.user);
+            } else if (isFirstVisit || isSignUp) {
+                // Default behavior - redirect to home page with query params
+                router.push(`${ROUTES.HOME}?firstVisit=true&inputLang=${inputLang}&targetLang=${targetLang}`);
             }
         } catch (error) {
             console.error('Error signing in with Google:', error);
@@ -120,14 +119,9 @@ export function SignInPage({
         try {
             let result;
             if (isSignUp) {
-                if (!onAuthSuccess) {
-                    // Default behavior - redirect to home page with query params
-                    router.push(`/?firstVisit=true&inputLang=${inputLang}&targetLang=${targetLang}`);
-                }
-
                 result = await createUserWithEmailAndPassword(auth, email, password);
                 localStorage.setItem('hasVisitedBefore', 'true');
-                
+
                 // Store selected languages for onboarding
                 if (showLanguageSelect) {
                     localStorage.setItem('signupInputLang', inputLang);
@@ -142,8 +136,12 @@ export function SignInPage({
                 result = await signInWithEmailAndPassword(auth, email, password);
             }
 
+            // Handle post-auth navigation
             if (onAuthSuccess) {
                 onAuthSuccess(result.user);
+            } else if (isSignUp) {
+                // Default behavior - redirect to home page with query params
+                router.push(`${ROUTES.HOME}?firstVisit=true&inputLang=${inputLang}&targetLang=${targetLang}`);
             }
         } catch (error: unknown) {
             console.error('Error with email authentication:', error);

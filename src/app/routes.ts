@@ -3,7 +3,8 @@
  */
 
 export const ROUTES = {
-  HOME: '/',
+  LANDING: '/',
+  HOME: '/home',
   GET_STARTED: '/get-started',
   TEMPLATES: '/templates',
   TEMPLATE_PUBLIC: '/t',
@@ -26,7 +27,7 @@ const SEO_PILLAR_PATTERNS = [
 ] as const;
 
 export const PUBLIC_ROUTE_ROOTS = [
-  ROUTES.HOME,
+  ROUTES.LANDING,
   ROUTES.GET_STARTED,
   ROUTES.TEMPLATE_PUBLIC,
   ROUTES.SHARE,
@@ -41,16 +42,16 @@ const PUBLIC_SINGLE_SEGMENT_ROUTES = [
 
 function getRouteRoot(pathname: string | null): string | null {
   if (!pathname) return null;
-  if (pathname === ROUTES.HOME) return ROUTES.HOME;
+  if (pathname === ROUTES.LANDING) return ROUTES.LANDING;
   const [rootSegment] = pathname.split('/').filter(Boolean);
-  return rootSegment ? `/${rootSegment}` : ROUTES.HOME;
+  return rootSegment ? `/${rootSegment}` : ROUTES.LANDING;
 }
 
 function matchesRouteRoot(pathname: string | null, roots: readonly string[]): boolean {
   if (!pathname) return false;
   const routeRoot = getRouteRoot(pathname);
   return !!routeRoot && roots.some((root) => (
-    root === ROUTES.HOME ? pathname === ROUTES.HOME : pathname === root || pathname.startsWith(`${root}/`)
+    root === ROUTES.LANDING ? pathname === ROUTES.LANDING : pathname === root || pathname.startsWith(`${root}/`)
   ));
 }
 
@@ -86,10 +87,17 @@ export function isPrivateRoute(pathname: string | null): boolean {
 }
 
 /**
- * Check if the current path is the home page
+ * Check if the current path is the authenticated home page
  */
 export function isHomePage(pathname: string | null): boolean {
   return pathname === ROUTES.HOME;
+}
+
+/**
+ * Check if the current path is the landing page
+ */
+export function isLandingPage(pathname: string | null): boolean {
+  return pathname === ROUTES.LANDING;
 }
 
 /**
@@ -120,6 +128,7 @@ export function isCollectionDetailPage(pathname: string | null): boolean {
  */
 export function shouldHideSidebar(pathname: string | null): boolean {
   return !!pathname && (
+    pathname.startsWith(ROUTES.GET_STARTED) ||
     pathname.startsWith(ROUTES.LIBRARY) ||
     pathname.startsWith(ROUTES.SHARE) ||
     pathname.startsWith(ROUTES.PRIVACY) ||
@@ -137,6 +146,10 @@ export function shouldHideBottomNav(pathname: string | null): boolean {
   return shouldHideSidebar(pathname) ||
     isCollectionDetailPage(pathname) ||
     isTemplateDetailPage(pathname);
+}
+
+export function shouldHideTopNav(pathname: string | null): boolean {
+  return !!pathname && pathname.startsWith(ROUTES.GET_STARTED);
 }
 
 /**

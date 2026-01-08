@@ -61,6 +61,10 @@ export const UserContextProvider: React.FC<UserContextProviderProps> = ({ childr
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
             if (firebaseUser) {
+                // Set auth-hint cookie for SSR redirect
+                // This is an essential cookie for proper authentication routing
+                document.cookie = "auth-hint=1; path=/; max-age=31536000; SameSite=Lax; Secure";
+
                 // Extract custom claims from ID token
                 try {
                     const idTokenResult = await firebaseUser.getIdTokenResult();
@@ -100,9 +104,11 @@ export const UserContextProvider: React.FC<UserContextProviderProps> = ({ childr
                     trackLogin(firebaseUser.uid, firebaseUser.providerData[0]?.providerId || 'email');
                 }
             } else {
-                // User is signed out, clear claims and profile
+                // User is signed out, clear claims, profile, and auth-hint cookie
                 setUserClaims(null);
                 setUserProfile(null);
+                // Clear the auth-hint cookie by setting it to expire immediately
+                document.cookie = "auth-hint=; path=/; max-age=0; SameSite=Lax; Secure";
             }
 
             setUser(firebaseUser);

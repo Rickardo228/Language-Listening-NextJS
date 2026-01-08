@@ -11,8 +11,10 @@ import { track } from '../../lib/mixpanelClient';
 import { SignInPage } from '../SignInPage';
 import { OnboardingGuard } from './OnboardingGuard';
 import { BottomNavigation } from './BottomNavigation';
-import { shouldHideSidebar, shouldHideBottomNav, getCollectionIdFromPath, ROUTES, isPublicRoute } from '../routes';
+import { shouldHideSidebar, shouldHideBottomNav, shouldHideTopNav, getCollectionIdFromPath, ROUTES, isPublicRoute, isLandingPage } from '../routes';
 import { LibraryManager } from './LibraryManager';
+import { Button } from './ui/Button';
+import Link from 'next/link';
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -27,9 +29,11 @@ export function AppLayout({ children }: AppLayoutProps) {
   const { isCollapsed, setIsCollapsed } = useSidebar();
 
   const isPublicPath = isPublicRoute(resolvedPathname);
+  const isOnLandingPage = isLandingPage(resolvedPathname);
 
   // Don't show sidebar for certain routes
   const hideSidebar = shouldHideSidebar(resolvedPathname);
+  const hideTopNav = shouldHideTopNav(resolvedPathname);
 
   // Extract current collection ID from URL for highlighting in sidebar
   const currentCollectionId = getCollectionIdFromPath(resolvedPathname);
@@ -37,6 +41,12 @@ export function AppLayout({ children }: AppLayoutProps) {
 
   const handleHome = () => {
     track('Home Button Clicked', { source: 'header' });
+
+    // If on landing page and not logged in, stay on landing page
+    if (isOnLandingPage && !user) {
+      router.push(ROUTES.LANDING);
+      return;
+    }
 
     // On mobile, if on a collection page, navigate to library instead of home
     const isMobile = window.innerWidth < 1024; // lg breakpoint
@@ -49,7 +59,9 @@ export function AppLayout({ children }: AppLayoutProps) {
     }
   };
 
-  if (isAuthLoading) {
+  // Only show loading spinner for private routes
+  // Public routes (like landing page) should render immediately for SSR
+  if (isAuthLoading && !isPublicPath) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
@@ -85,51 +97,82 @@ export function AppLayout({ children }: AppLayoutProps) {
 
       <div className="font-sans min-h-screen flex flex-col bg-background text-foreground">
         {/* Nav */}
-        <div className="flex items-center justify-between shadow-md lg:mb-0 p-3 sticky top-0 bg-background border-b z-50">
-          <div className="flex items-center gap-4">
-            <div
-              className="flex items-center gap-3 text-2xl cursor-pointer hover:opacity-80 transition-opacity"
-              onClick={handleHome}
-              title="Home"
-            >
-              <img
-                src={theme === 'light' ? '/language-shadowing-logo-dark.png' : '/language-shadowing-logo-white.png'}
-                alt="Language Shadowing Logo - Learn Languages Through Audio Practice"
-                className="w-8 h-8 sm:ml-2 sm:mt-0.5"
-              />
-              <h1 className="hidden sm:block">Language Shadowing</h1>
-            </div>
-            <button
-              onClick={handleHome}
-              className="p-2 rounded-lg bg-secondary hover:bg-secondary/80"
-              title="Home"
-            >
-              <Home className="w-5 h-5" strokeWidth={1.5} />
-            </button>
-          </div>
-
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => {
-                track('Theme Toggle Clicked', { newTheme: theme === 'light' ? 'dark' : 'light' });
-                toggleTheme();
-              }}
-              className="p-2 rounded-lg bg-secondary hover:bg-secondary/80"
-              title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
-            >
-              {theme === 'light' ? (
-                <Moon className="w-5 h-5" strokeWidth={1.5} />
-              ) : (
-                <Sun className="w-5 h-5" strokeWidth={1.5} />
+        {!hideTopNav && (
+          <div className="flex items-center justify-between shadow-md lg:mb-0 p-3 sticky top-0 bg-background border-b z-50">
+            <div className="flex items-center gap-4">
+              <div
+                className="flex items-center gap-3 text-2xl cursor-pointer hover:opacity-80 transition-opacity"
+                onClick={handleHome}
+                title="Home"
+              >
+                <img
+                  src={theme === 'light' ? '/language-shadowing-logo-dark.png' : '/language-shadowing-logo-white.png'}
+                  alt="Language Shadowing Logo - Learn Languages Through Audio Practice"
+                  className="w-8 h-8 sm:ml-2 sm:mt-0.5"
+                />
+                <h1 className="hidden sm:block">Language Shadowing</h1>
+              </div>
+              {/* Only show home button when not on landing page */}
+              {!isOnLandingPage && (
+                <button
+                  onClick={handleHome}
+                  className="p-2 rounded-lg bg-secondary hover:bg-secondary/80"
+                  title="Home"
+                >
+                  <Home className="w-5 h-5" strokeWidth={1.5} />
+                </button>
               )}
-            </button>
-            {user && (
-              <UserAvatar
-                user={user}
-              />
-            )}
+            </div>
+
+            <div className="flex items-center gap-4">
+              {/* Landing page CTA buttons when not logged in */}
+              {isOnLandingPage && !user && (
+                <>
+                  <Link href="/signin">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => track('Landing Page Login Clicked')}
+                    >
+                      Log in
+                    </Button>
+                  </Link>
+                  <Link href={ROUTES.GET_STARTED}>
+                    <Button
+                      size="sm"
+                      onClick={() => track('Landing Page Get Started Clicked')}
+                    >
+                      Get started
+                    </Button>
+                  </Link>
+                </>
+              )}
+
+              {/* Theme toggle - always show */}
+              <button
+                onClick={() => {
+                  track('Theme Toggle Clicked', { newTheme: theme === 'light' ? 'dark' : 'light' });
+                  toggleTheme();
+                }}
+                className="p-2 rounded-lg bg-secondary hover:bg-secondary/80"
+                title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
+              >
+                {theme === 'light' ? (
+                  <Moon className="w-5 h-5" strokeWidth={1.5} />
+                ) : (
+                  <Sun className="w-5 h-5" strokeWidth={1.5} />
+                )}
+              </button>
+
+              {/* User avatar when logged in */}
+              {user && (
+                <UserAvatar
+                  user={user}
+                />
+              )}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Main content */}
         <div className={`flex flex-col-reverse w-full ${sidebarOffsetClass}`}>

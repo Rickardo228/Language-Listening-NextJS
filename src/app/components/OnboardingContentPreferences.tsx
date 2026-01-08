@@ -26,12 +26,14 @@ interface OnboardingContentPreferencesProps {
     selectedPreferences: string[];
     onPreferencesChange: (preferences: string[]) => void;
     disabled?: boolean;
+    showHeader?: boolean;
 }
 
 export function OnboardingContentPreferences({
     selectedPreferences,
     onPreferencesChange,
-    disabled = false
+    disabled = false,
+    showHeader = true
 }: OnboardingContentPreferencesProps) {
     const handleTogglePreference = (preferenceId: string) => {
         if (disabled) return;
@@ -48,19 +50,21 @@ export function OnboardingContentPreferences({
 
     return (
         <div className="space-y-6">
-            <div className="text-center">
-                <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
-                    What interests you?
-                </h3>
-                <p className="text-gray-600 dark:text-gray-400">
-                    Choose three or more topics you&apos;d like to learn about
-                </p>
-                <div className="mt-2">
-                    <span className={`text-sm ${isMinimumSelected ? 'text-green-600 dark:text-green-400' : 'text-gray-500'}`}>
-                        {selectedPreferences.length} selected {isMinimumSelected && '✓'}
-                    </span>
+            {showHeader && (
+                <div className="text-center">
+                    <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
+                        What interests you?
+                    </h3>
+                    <p className="text-gray-600 dark:text-gray-400">
+                        Choose three or more topics you&apos;d like to learn about
+                    </p>
+                    <div className="mt-2">
+                        <span className={`text-sm ${isMinimumSelected ? 'text-green-600 dark:text-green-400' : 'text-gray-500'}`}>
+                            {selectedPreferences.length} selected {isMinimumSelected && '✓'}
+                        </span>
+                    </div>
                 </div>
-            </div>
+            )}
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {contentOptions.map((option) => {

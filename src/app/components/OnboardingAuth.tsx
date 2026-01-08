@@ -10,15 +10,17 @@ import { Input } from './ui';
 interface OnboardingAuthProps {
     onAuthSuccess: (user: User) => void;
     disabled?: boolean;
+    showHeader?: boolean;
 }
 
 export function OnboardingAuth({
     onAuthSuccess,
-    disabled = false
+    disabled = false,
+    showHeader = true,
 }: OnboardingAuthProps) {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [isSignUp, setIsSignUp] = useState(true);
+    const isSignUp = true;
     const [error, setError] = useState('');
     const [isGoogleLoading, setIsGoogleLoading] = useState(false);
     const [isEmailLoading, setIsEmailLoading] = useState(false);
@@ -80,17 +82,19 @@ export function OnboardingAuth({
 
     return (
         <div className="space-y-6">
-            <div className="text-center">
-                <h3 className="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">
-                    {isSignUp ? 'Create Your Account' : 'Welcome Back'}
-                </h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                    {isSignUp
-                        ? 'Sign up to save your preferences and start learning'
-                        : 'Sign in to continue your language learning journey'
-                    }
-                </p>
-            </div>
+            {showHeader && (
+                <div className="text-center">
+                    <h3 className="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">
+                        {isSignUp ? 'Create Your Account' : 'Welcome Back'}
+                    </h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                        {isSignUp
+                            ? 'Sign up to save your preferences and start learning'
+                            : 'Sign in to continue your language learning journey'
+                        }
+                    </p>
+                </div>
+            )}
 
             <div className="space-y-4">
                 {/* Google Sign In Button */}
@@ -168,24 +172,10 @@ export function OnboardingAuth({
                             <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                         )}
                         <span>
-                            {isEmailLoading
-                                ? (isSignUp ? 'Creating Account...' : 'Signing In...')
-                                : (isSignUp ? 'Create Account' : 'Sign In')
-                            }
+                            {isEmailLoading ? 'Creating Account...' : 'Continue with email'}
                         </span>
                     </button>
                 </form>
-
-                {/* Toggle Sign In / Sign Up */}
-                <div className="text-center">
-                    <button
-                        onClick={() => setIsSignUp(!isSignUp)}
-                        disabled={isLoading}
-                        className="text-sm text-blue-600 dark:text-blue-400 hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        {isSignUp ? 'Already have an account? Sign in' : "Don't have an account? Sign up"}
-                    </button>
-                </div>
             </div>
         </div>
     );

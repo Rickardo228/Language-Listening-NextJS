@@ -34,12 +34,12 @@ export function OnboardingModal({
                 >
                     <OnboardingFlow
                         includeAuthStep={false}
-                        initialStep="languages"
+                        includePaywallStep={false}
+                        initialStep={1}
                         preselectedInputLang={preselectedInputLang}
                         preselectedTargetLang={preselectedTargetLang}
                         onComplete={onComplete}
-                        showHeader={true}
-                        showProgressIndicator={true}
+                        showProgressIndicator={false}
                     />
                 </motion.div>
             </motion.div>

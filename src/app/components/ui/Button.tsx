@@ -4,7 +4,7 @@ import { ButtonHTMLAttributes, ReactNode } from 'react';
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   // Visual variants
-  variant?: 'primary' | 'secondary' | 'ghost' | 'destructive' | 'success';
+  variant?: 'primary' | 'secondary' | 'ghost' | 'outline' | 'destructive' | 'success';
 
   // Sizes
   size?: 'sm' | 'md' | 'lg';
@@ -28,6 +28,7 @@ const variantClasses = {
   primary: 'bg-primary text-primary-foreground hover:bg-primary/90',
   secondary: 'border border-border text-foreground hover:bg-secondary',
   ghost: 'text-muted-foreground hover:text-foreground hover:bg-secondary/50',
+  outline: 'border border-border text-foreground bg-transparent hover:bg-secondary/50',
   destructive: 'bg-destructive text-destructive-foreground hover:bg-destructive/90',
   success: 'bg-green-600 text-white hover:bg-green-700',
 };

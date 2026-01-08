@@ -12,6 +12,7 @@ import { track } from '../../lib/mixpanelClient';
 import { loadProgress } from '../utils/progressService';
 import { buildTemplateUrl } from '../utils/templateRoutes';
 import { resetMainScroll } from '../utils/scroll';
+import { ROUTES } from '../routes';
 
 const firestore = getFirestore();
 
@@ -375,7 +376,7 @@ export function TemplatesBrowser({
                             <button
                                 onClick={() => {
                                     track('Back to Home From Templates Browser Clicked');
-                                    router.push('/');
+                                    router.push(ROUTES.HOME);
                                 }}
                                 className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-primary hover:text-primary/80 transition-colors"
                             >
