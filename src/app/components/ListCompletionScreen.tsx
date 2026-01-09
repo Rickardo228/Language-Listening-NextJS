@@ -19,6 +19,7 @@ interface ListCompletionScreenProps {
   userId: string;
   sessionListened?: number;
   sessionViewed?: number;
+  recentMilestones?: Array<{ title: string; color: string; description: string; count: number }>;
 }
 
 const firestore = getFirestore();
@@ -231,6 +232,7 @@ export function ListCompletionScreen({
   userId,
   sessionListened = 0,
   sessionViewed = 0,
+  recentMilestones = [],
 }: ListCompletionScreenProps) {
   const router = useRouter();
   const [step, setStep] = useState<1 | 2 | 3>(1);
@@ -338,16 +340,16 @@ export function ListCompletionScreen({
                       transition={{ delay: 0.1, type: "spring", stiffness: 200 }}
                     >
                       <motion.div
-                        className="text-8xl mb-6"
+                        className="text-6xl md:text-7xl mb-4"
                         animate={{ rotate: [0, 10, -10, 10, 0] }}
                         transition={{ delay: 0.3, duration: 0.8, repeat: 1 }}
                       >
                         🎉
                       </motion.div>
-                      <h1 className="text-6xl font-black bg-gradient-to-r from-yellow-400 to-amber-500 bg-clip-text text-transparent mb-4 drop-shadow-lg">
+                      <h1 className="text-4xl md:text-5xl font-black bg-gradient-to-r from-yellow-400 to-amber-500 bg-clip-text text-transparent mb-3 drop-shadow-lg">
                         Nice Work!
                       </h1>
-                      <p className="text-2xl bg-gradient-to-r from-yellow-400 to-amber-500 bg-clip-text text-transparent font-semibold">
+                      <p className="text-xl md:text-2xl bg-gradient-to-r from-yellow-400 to-amber-500 bg-clip-text text-transparent font-semibold">
                         List completed!
                       </p>
                     </motion.div>
@@ -355,13 +357,13 @@ export function ListCompletionScreen({
                     {/* Streak Display */}
                     {currentStreak > 0 && (
                       <motion.div
-                        className="bg-slate-800 dark:bg-slate-800 rounded-3xl p-4 md:p-8 border-4 border-purple-500 shadow-2xl"
+                        className="bg-slate-800 dark:bg-slate-800 rounded-3xl p-4 md:p-6 border-4 border-purple-500 shadow-2xl"
                         initial={{ scale: 0.9, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
                         transition={{ delay: 0.4, type: "spring" }}
                       >
                         <motion.div
-                          className="text-5xl md:text-7xl mb-3 md:mb-4"
+                          className="text-4xl md:text-5xl mb-2 md:mb-3"
                           animate={{
                             scale: [1, 1.2, 1],
                             rotate: [0, 5, -5, 0]
@@ -370,10 +372,10 @@ export function ListCompletionScreen({
                         >
                           {streakData.emoji}
                         </motion.div>
-                        <div className="text-4xl md:text-6xl font-black bg-gradient-to-r from-yellow-400 to-amber-500 bg-clip-text text-transparent mb-2">
+                        <div className="text-3xl md:text-4xl font-black bg-gradient-to-r from-yellow-400 to-amber-500 bg-clip-text text-transparent mb-1 leading-tight">
                           {currentStreak} Day{currentStreak !== 1 ? 's' : ''}
                         </div>
-                        <div className="text-xl md:text-3xl font-bold text-slate-200 uppercase tracking-wider">
+                        <div className="text-lg md:text-xl font-bold text-slate-200 uppercase tracking-wider">
                           {streakData.message}
                         </div>
                       </motion.div>
@@ -503,11 +505,51 @@ export function ListCompletionScreen({
 
                       {/* Total progress (all languages) */}
                       <MilestoneProgress
-                        title="Overall Progress"
+                        title="All Languages"
                         currentCount={totalStats.listened + totalStats.viewed}
                         icon="🎯"
                       />
                     </div>
+
+                    {/* Recent Milestones */}
+                    {recentMilestones.length > 0 && (
+                      <motion.div
+                        className="bg-slate-800 dark:bg-slate-800 rounded-2xl p-4 border-3 border-purple-400 w-full mt-2"
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.6 }}
+                      >
+                        <div className="flex items-center gap-2 mb-3">
+                          <span className="text-xl">🎉</span>
+                          <h3 className="text-purple-400 font-bold text-sm uppercase tracking-wide">
+                            Recent Milestones
+                          </h3>
+                        </div>
+                        <div className="space-y-2">
+                          {recentMilestones.map((milestone, index) => (
+                            <motion.div
+                              key={index}
+                              className="bg-white/5 dark:bg-black/20 rounded-lg p-2 border border-white/10"
+                              initial={{ opacity: 0, x: -10 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              transition={{ delay: 0.7 + index * 0.05 }}
+                            >
+                              <div className="flex items-center justify-between">
+                                <div className="flex-1">
+                                  <div className="text-sm font-bold text-slate-200">
+                                    {milestone.title}
+                                  </div>
+                                  <div className="text-xs text-slate-400">
+                                    {milestone.count.toLocaleString()} phrases
+                                  </div>
+                                </div>
+                                <div className="text-lg">⭐</div>
+                              </div>
+                            </motion.div>
+                          ))}
+                        </div>
+                      </motion.div>
+                    )}
 
                     {/* Action Buttons */}
                     <motion.div

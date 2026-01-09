@@ -278,6 +278,7 @@ export const useUpdateUserStats = () => {
   const phrasesViewedRef = useRef(0);
   const isListCompletedRef = useRef(false);
   const popupCloseTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const milestoneCloseTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [mounted, setMounted] = useState(false);
   const { user, userProfile } = useUser();
 
@@ -290,6 +291,7 @@ export const useUpdateUserStats = () => {
   const SYNC_AFTER_PHRASES = 10; // Re-sync every 10 phrases
   const [currentStreak, setCurrentStreak] = useState(0);
   const [, setPreviousStreak] = useState(0);
+  const [isAutoplayActive, setIsAutoplayActive] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -299,6 +301,10 @@ export const useUpdateUserStats = () => {
       if (popupCloseTimeoutRef.current) {
         clearTimeout(popupCloseTimeoutRef.current);
         popupCloseTimeoutRef.current = null;
+      }
+      if (milestoneCloseTimeoutRef.current) {
+        clearTimeout(milestoneCloseTimeoutRef.current);
+        milestoneCloseTimeoutRef.current = null;
       }
     };
   }, []);
@@ -639,8 +645,19 @@ export const useUpdateUserStats = () => {
       setMilestoneInfo(milestoneData);
       setRecentMilestones(prev => [milestoneData, ...prev.slice(0, 4)]); // Keep only last 5 milestones
 
-      // Show instant celebration - requires user interaction to dismiss
-      setShowMilestoneCelebration(true);
+      // Only show popup if autoplay is not active - prevents multiple interruptions
+      // Milestones are still tracked and will show in list completion screen
+      if (!isAutoplayActive) {
+        setShowMilestoneCelebration(true);
+
+        // Auto-close after 4 seconds
+        if (milestoneCloseTimeoutRef.current) {
+          clearTimeout(milestoneCloseTimeoutRef.current);
+        }
+        milestoneCloseTimeoutRef.current = setTimeout(() => {
+          setShowMilestoneCelebration(false);
+        }, 4000);
+      }
     }
 
     // Update total phrases ref
@@ -857,7 +874,7 @@ export const useUpdateUserStats = () => {
           userId={user.uid}
           sessionListened={phrasesListenedRef.current}
           sessionViewed={phrasesViewedRef.current}
-
+          recentMilestones={recentMilestones}
         />
       )}
 
@@ -905,99 +922,98 @@ export const useUpdateUserStats = () => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.3 }}
+          transition={{ duration: 0.2 }}
         >
           <motion.div
-            className={`${getMilestoneBackgroundStyle(milestoneInfo.color)} px-8 py-6 rounded-xl shadow-2xl max-w-md mx-4 border-2 pointer-events-auto`}
-            initial={{ scale: 0.6, opacity: 0, y: 50, rotate: -3 }}
+            className={`${getMilestoneBackgroundStyle(milestoneInfo.color)} px-6 py-5 rounded-2xl shadow-2xl max-w-sm mx-4 border-3 pointer-events-auto`}
+            initial={{ scale: 0.8, opacity: 0, y: 20 }}
             animate={{
               scale: 1,
               opacity: 1,
               y: 0,
-              rotate: 0,
               transition: {
                 type: "spring",
-                stiffness: 400,
-                damping: 20,
-                duration: 0.6
+                stiffness: 300,
+                damping: 25,
+                duration: 0.4
               }
             }}
             exit={{
-              scale: 0.8,
+              scale: 0.9,
               opacity: 0,
-              y: -40,
-              transition: { duration: 0.4 }
+              y: -20,
+              transition: { duration: 0.2 }
             }}
           >
-            <div className="text-center space-y-4">
+            <div className="text-center space-y-3">
               <motion.div
-                className="flex items-center justify-center space-x-3"
+                className="flex items-center justify-center space-x-2"
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
-                transition={{ delay: 0.2, type: "spring", stiffness: 500 }}
+                transition={{ delay: 0.1, type: "spring", stiffness: 400 }}
               >
                 <motion.span
-                  className="text-2xl"
-                  animate={{ rotate: [0, 15, -10, 0] }}
-                  transition={{ delay: 0.4, duration: 0.8, repeat: 2 }}
+                  className="text-xl"
+                  animate={{ rotate: [0, 10, -10, 0] }}
+                  transition={{ delay: 0.2, duration: 0.6, repeat: 1 }}
                 >
                   🎉
                 </motion.span>
                 <motion.span
-                  className={`text-xl font-bold ${getMilestoneTextColor(milestoneInfo.color)}`}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.3, type: "spring" }}
+                  className={`text-lg font-bold ${getMilestoneTextColor(milestoneInfo.color)}`}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.15 }}
                 >
                   Milestone Reached!
                 </motion.span>
                 <motion.span
-                  className="text-2xl"
-                  animate={{ rotate: [0, -15, 10, 0] }}
-                  transition={{ delay: 0.5, duration: 0.8, repeat: 2 }}
+                  className="text-xl"
+                  animate={{ rotate: [0, -10, 10, 0] }}
+                  transition={{ delay: 0.3, duration: 0.6, repeat: 1 }}
                 >
                   🎉
                 </motion.span>
               </motion.div>
 
               <motion.div
-                initial={{ opacity: 0, y: 15 }}
+                initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.4, type: "spring" }}
+                transition={{ delay: 0.2 }}
                 className="space-y-2"
               >
                 <motion.div
-                  className={`text-3xl font-bold ${getMilestoneTextColor(milestoneInfo.color)} px-4 py-2 rounded-lg border-2 ${milestoneInfo.color.replace('text-', 'border-')} bg-gradient-to-r ${milestoneInfo.color.replace('text-', 'from-')}/20 ${milestoneInfo.color.replace('text-', 'to-')}/10`}
-                  animate={{ scale: [1, 1.05, 1] }}
-                  transition={{ delay: 0.6, duration: 0.4, repeat: 1 }}
+                  className={`text-2xl font-bold ${getMilestoneTextColor(milestoneInfo.color)} px-4 py-2 rounded-lg bg-white/20 dark:bg-black/20`}
+                  animate={{ scale: [1, 1.03, 1] }}
+                  transition={{ delay: 0.3, duration: 0.3, repeat: 1 }}
                 >
                   {milestoneInfo.title}
                 </motion.div>
-                <div className={`text-lg font-semibold ${getMilestoneTextColor(milestoneInfo.color)}/90`}>
+                <div className={`text-base font-semibold ${getMilestoneTextColor(milestoneInfo.color)}`}>
                   {milestoneInfo.count.toLocaleString()} phrases!
                 </div>
-                <div className={`text-sm ${getMilestoneTextColor(milestoneInfo.color)}/80 italic`}>
+                <div className={`text-sm ${getMilestoneTextColor(milestoneInfo.color)}/90 italic px-2`}>
                   {milestoneInfo.description}
                 </div>
               </motion.div>
 
               <motion.div
-                className="flex justify-center space-x-1 mt-4"
+                className="flex justify-center space-x-1"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                transition={{ delay: 0.7 }}
+                transition={{ delay: 0.4 }}
               >
                 {[...Array(3)].map((_, i) => (
                   <motion.span
                     key={i}
-                    className="text-xl"
+                    className="text-lg"
                     animate={{
-                      scale: [1, 1.4, 1],
+                      scale: [1, 1.3, 1],
                       rotate: [0, 180, 360]
                     }}
                     transition={{
-                      delay: 0.8 + i * 0.1,
-                      duration: 0.6,
+                      delay: 0.5 + i * 0.08,
+                      duration: 0.5,
                       ease: "easeInOut"
                     }}
                   >
@@ -1007,11 +1023,17 @@ export const useUpdateUserStats = () => {
               </motion.div>
 
               <motion.button
-                className="mt-6 bg-primary hover:bg-primary/90 text-white font-bold py-3 px-6 rounded-lg transition-colors duration-200"
-                onClick={() => setShowMilestoneCelebration(false)}
-                initial={{ opacity: 0, y: 10 }}
+                className="mt-4 bg-primary hover:bg-primary/90 text-white font-semibold py-2.5 px-5 rounded-lg transition-colors duration-200 text-sm"
+                onClick={() => {
+                  if (milestoneCloseTimeoutRef.current) {
+                    clearTimeout(milestoneCloseTimeoutRef.current);
+                    milestoneCloseTimeoutRef.current = null;
+                  }
+                  setShowMilestoneCelebration(false);
+                }}
+                initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 1.2 }}
+                transition={{ delay: 0.6 }}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
@@ -1052,5 +1074,7 @@ export const useUpdateUserStats = () => {
     phrasesListened: phrasesListenedRef.current,
     phrasesViewed: phrasesViewedRef.current,
     currentStreak,
+    setIsAutoplayActive,
+    recentMilestones,
   };
 };
