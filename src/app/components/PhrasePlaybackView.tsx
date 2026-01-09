@@ -73,7 +73,7 @@ export function PhrasePlaybackView({
     readOnly = false,
 }: PhrasePlaybackViewProps) {
     const { user } = useUser();
-    const { updateUserStats, StatsPopups, StatsModal, showStatsUpdate, incrementViewedAndCheckMilestone, initializeViewedCounter, phrasesViewed, setIsAutoplayActive } = useUpdateUserStats();
+    const { updateUserStats, StatsPopups, StatsModal, showStatsUpdate, incrementViewedAndCheckMilestone, initializeViewedCounter, phrasesViewed, setIsAutoplayActive, recentMilestones } = useUpdateUserStats();
     const [currentPhraseIndex, setCurrentPhraseIndex] = useState(0);
     const [currentPhase, setCurrentPhase] = useState<'input' | 'output'>(
         presentationConfig.enableInputPlayback ? 'input' : 'output'
