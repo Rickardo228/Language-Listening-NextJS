@@ -286,6 +286,7 @@ export const useUpdateUserStats = () => {
   const [showMilestoneCelebration, setShowMilestoneCelebration] = useState(false);
   const [milestoneInfo, setMilestoneInfo] = useState<{ title: string; color: string; description: string; count: number } | null>(null);
   const [recentMilestones, setRecentMilestones] = useState<Array<{ title: string; color: string; description: string; count: number }>>([]);
+  const [displayedMilestones, setDisplayedMilestones] = useState<Array<{ title: string; color: string; description: string; count: number }>>([]);
   const totalPhrasesRef = useRef(0);
   const phraseCountSinceLastSync = useRef(0);
   const SYNC_AFTER_PHRASES = 10; // Re-sync every 10 phrases
@@ -421,6 +422,13 @@ export const useUpdateUserStats = () => {
       // Store the event type for display purposes
       setPopupEventType(displayType as 'listened' | 'viewed');
 
+      // Snapshot and clear recent milestones for list completion
+      // This ensures only milestones from THIS list session are shown
+      if (listCompleted) {
+        setDisplayedMilestones([...recentMilestones]); // Snapshot current milestones
+        setRecentMilestones([]); // Clear for next session
+      }
+
       // Play completion sound if list is completed
       if (listCompleted) {
         playCompletionSound();
@@ -498,8 +506,8 @@ export const useUpdateUserStats = () => {
     isListCompletedRef.current = false; // Reset ref
     setOnGoAgainCallback(() => null);
     setOnGoNextCallback(() => null);
-    // Clear recent milestones when user dismisses the popup
-    setRecentMilestones([]);
+    // Clear displayed milestones when user dismisses the popup
+    setDisplayedMilestones([]);
     phrasesListenedRef.current = 0;
     phrasesViewedRef.current = 0;
   }, [showPopup, countToShow, persistUntilInteraction, currentStreak]);
@@ -874,7 +882,7 @@ export const useUpdateUserStats = () => {
           userId={user.uid}
           sessionListened={phrasesListenedRef.current}
           sessionViewed={phrasesViewedRef.current}
-          recentMilestones={recentMilestones}
+          recentMilestones={displayedMilestones}
         />
       )}
 
@@ -1075,6 +1083,5 @@ export const useUpdateUserStats = () => {
     phrasesViewed: phrasesViewedRef.current,
     currentStreak,
     setIsAutoplayActive,
-    recentMilestones,
   };
 };
