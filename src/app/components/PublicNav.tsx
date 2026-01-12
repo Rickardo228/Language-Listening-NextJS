@@ -23,12 +23,12 @@ export function PublicNav() {
 
       {/* Right - CTA + Theme */}
       <div className="flex items-center gap-4">
-        <Link href="/signin">
+        <Link href={`${ROUTES.SIGNIN}?mode=signin`}>
           <Button variant="ghost" size="sm">
             Log in
           </Button>
         </Link>
-        <Link href={ROUTES.GET_STARTED}>
+        <Link href={ROUTES.SIGNIN}>
           <Button size="sm">
             Get started
           </Button>

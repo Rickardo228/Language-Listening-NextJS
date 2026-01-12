@@ -48,12 +48,22 @@ export function SignInPage({
     const [isEmailLoading, setIsEmailLoading] = useState(false);
 
     useEffect(() => {
-        const hasVisited = localStorage.getItem('hasVisitedBefore');
-        if (!hasVisited) {
-            setIsFirstVisit(true);
-            setIsSignUp(true); // Default to sign-up mode on first visit
+        // Check for mode parameter in URL
+        const modeParam = searchParams.get('mode');
+
+        if (modeParam === 'signin') {
+            setIsSignUp(false); // Explicitly set to sign-in mode
+        } else if (modeParam === 'signup') {
+            setIsSignUp(true); // Explicitly set to sign-up mode
+        } else {
+            // Default behavior: show sign-up for first-time visitors
+            const hasVisited = localStorage.getItem('hasVisitedBefore');
+            if (!hasVisited) {
+                setIsFirstVisit(true);
+                setIsSignUp(true); // Default to sign-up mode on first visit
+            }
         }
-    }, []);
+    }, [searchParams]);
 
     useEffect(() => {
         const inputParam = searchParams.get('inputLang');

@@ -6,6 +6,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { Button } from './ui/Button'
 import { languageOptions } from '../types'
+import { ROUTES } from '../routes'
 import {
   PlayCircle,
   Volume2,
@@ -56,7 +57,7 @@ export function LandingPage() {
                 </div>
               </div>
 
-              <div className="flex flex-col sm:flex-row gap-4 mb-6">
+              {/* <div className="flex flex-col sm:flex-row gap-4 mb-6">
                 <Link href="/get-started">
                   <Button size="lg" className="text-lg px-8">
                     Start free trial
@@ -65,11 +66,19 @@ export function LandingPage() {
                 <Button size="lg" variant="secondary" className="text-lg px-8" leftIcon={<PlayCircle className="w-5 h-5" />}>
                   Try a sample lesson
                 </Button>
+              </div> */}
+
+              <div className="flex flex-col sm:flex-row gap-4 mb-6">
+                <Link href={ROUTES.SIGNIN}>
+                  <Button size="lg" className="text-lg px-8">
+                    Get Started Free
+                  </Button>
+                </Link>
               </div>
 
-              <p className="text-sm text-muted-foreground">
+              {/* <p className="text-sm text-muted-foreground">
                 Cancel anytime. Reminder before billing.
-              </p>
+              </p> */}
             </motion.div>
           </div>
 
@@ -142,7 +151,7 @@ export function LandingPage() {
               What is Language Shadowing?
             </h2>
             <p className="text-xl sm:text-2xl text-muted-foreground mb-8">
-              Listen → Speak → Repeat
+              Listen → Repeat
             </p>
             <p className="text-lg text-foreground/90 mb-8 leading-relaxed">
               Shadowing is one of the most natural ways we learn language. As children, we mimic our parents and peers, until words and phrases become part of our every day speech.
@@ -194,12 +203,21 @@ export function LandingPage() {
                 We measure one thing: the number of phrases you listen to.
               </p>
 
-              <div className="space-y-3 mb-8">
+              {/* <div className="space-y-3 mb-8">
                 <Link href="/get-started">
                   <Button size="lg" className="text-lg px-10">Start free trial</Button>
                 </Link>
                 <p className="text-sm text-muted-foreground">
                   Simple to start. Hard to stop.
+                </p>
+              </div> */}
+
+              <div className="space-y-3 mb-8">
+                <Link href={ROUTES.SIGNIN}>
+                  <Button size="lg" className="text-lg px-10">Get Started Free</Button>
+                </Link>
+                <p className="text-sm text-muted-foreground">
+                  Get started in minutes.
                 </p>
               </div>
             </motion.div>
@@ -251,7 +269,10 @@ export function LandingPage() {
               </div>
             </div>
 
-            <Button size="lg" variant="secondary">Browse templates</Button>
+            {/* <Button size="lg" variant="secondary">Browse templates</Button> */}
+            <Link href={ROUTES.SIGNIN}>
+              <Button size="lg">Get Started Free</Button>
+            </Link>
           </motion.div>
         </div>
       </section>
@@ -370,15 +391,18 @@ export function LandingPage() {
               })()}
             </div>
 
-            <Link href="/get-started">
+            {/* <Link href="/get-started">
               <Button size="lg">Start free trial</Button>
+            </Link> */}
+            <Link href={ROUTES.SIGNIN}>
+              <Button size="lg">Get Started Free</Button>
             </Link>
           </motion.div>
         </div>
       </section>
 
       {/* Pricing */}
-      <section className="py-16 sm:py-24">
+      {/* <section className="py-16 sm:py-24">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -422,7 +446,7 @@ export function LandingPage() {
             </p>
           </motion.div>
         </div>
-      </section>
+      </section> */}
 
       {/* FAQ */}
       <section className="py-16 sm:py-24 bg-secondary/20">
@@ -490,12 +514,17 @@ export function LandingPage() {
             <h2 className="text-3xl sm:text-5xl font-bold text-foreground mb-6">
               Your next conversation starts with 10 minutes today.
             </h2>
-            <p className="text-lg text-muted-foreground mb-10">
+            {/* <p className="text-lg text-muted-foreground mb-10">
               No pressure - just a fair trial and a simple system that makes speaking inevitable.
-            </p>
-            <Link href="/get-started">
+            </p> */}
+            {/* <Link href="/get-started">
               <Button size="lg" className="text-lg px-10">
                 Start free trial
+              </Button>
+            </Link> */}
+            <Link href={ROUTES.SIGNIN}>
+              <Button size="lg" className="text-lg px-10">
+                Get Started Free
               </Button>
             </Link>
           </motion.div>

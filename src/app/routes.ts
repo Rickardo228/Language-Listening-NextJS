@@ -5,6 +5,7 @@
 export const ROUTES = {
   LANDING: '/',
   HOME: '/home',
+  SIGNIN: '/signin',
   GET_STARTED: '/get-started',
   TEMPLATES: '/templates',
   TEMPLATE_PUBLIC: '/t',

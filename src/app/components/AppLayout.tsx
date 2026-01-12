@@ -128,7 +128,7 @@ export function AppLayout({ children }: AppLayoutProps) {
               {/* Landing page CTA buttons when not logged in */}
               {isOnLandingPage && !user && (
                 <>
-                  <Link href="/signin">
+                  <Link href={`${ROUTES.SIGNIN}?mode=signin`}>
                     <Button
                       variant="ghost"
                       size="sm"
