@@ -2,6 +2,7 @@ import { ThemeProvider } from '../ThemeProvider'
 import { CookieConsent } from '../components/CookieConsent'
 import { Toaster } from 'sonner'
 import { PublicNav } from '../components/PublicNav'
+import { Footer } from '../components/Footer'
 
 export default function PublicLayout({
   children,
@@ -22,6 +23,7 @@ export default function PublicLayout({
       <main>
         {children}
       </main>
+      <Footer />
       <CookieConsent />
     </ThemeProvider>
   )
