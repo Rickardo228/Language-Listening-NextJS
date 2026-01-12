@@ -115,13 +115,13 @@ export function OnboardingFlow({
       'language-pair',
       'ability-level',
       'interests',
-      'plan-reveal',
-      'quick-win',
+      // 'plan-reveal',
+      // 'quick-win',
     ];
 
     if (includeAuthStep) list.push('account-creation');
     if (includePaywallStep) list.push('paywall');
-    list.push('success');
+    // list.push('success');
 
     return list;
   }, [includeAuthStep, includePaywallStep]);
