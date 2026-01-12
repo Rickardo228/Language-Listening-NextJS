@@ -264,7 +264,8 @@ export function OnboardingFlow({
       await persistOnboardingData(user);
     }
 
-    nextStep();
+    onComplete()
+    // nextStep();
   };
 
   const handleAuthSuccessInternal = async (authenticatedUser: User) => {
