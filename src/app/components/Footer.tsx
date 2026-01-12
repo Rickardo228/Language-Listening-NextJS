@@ -38,11 +38,6 @@ export function Footer() {
                   Learn Japanese
                 </Link>
               </li>
-              <li>
-                <Link href="/learn-english" className="text-muted-foreground hover:text-foreground transition-colors">
-                  Learn English
-                </Link>
-              </li>
             </ul>
           </div>
 

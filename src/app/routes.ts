@@ -24,7 +24,6 @@ const SEO_PILLAR_PATTERNS = [
   'learn-italian',
   'learn-spanish',
   'learn-japanese',
-  'learn-english',
 ] as const;
 
 export const PUBLIC_ROUTE_ROOTS = [
