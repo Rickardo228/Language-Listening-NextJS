@@ -562,7 +562,7 @@ export function PresentationView({
                         e.stopPropagation();
                         paused ? onPlay() : onPause();
                       }}
-                      className="absolute left-8 bottom-8 p-3 bg-gray-200 dark:bg-gray-700 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 transition-all duration-200 z-10"
+                      className={`absolute left-8 bottom-8 p-3 rounded-full transition-all duration-200 z-10 ${paused ? "bg-primary hover:bg-primary/90 text-primary-foreground" : "bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600"}`}
                       title={paused ? "Play" : "Pause"}
                       style={{
                         opacity: shouldShowNavigationButtons ? 1 : 0,
@@ -636,7 +636,7 @@ export function PresentationView({
                 e.stopPropagation();
                 paused ? onPlay() : onPause();
               }}
-              className="absolute bottom-8 left-8 p-3 bg-gray-200 dark:bg-gray-700 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 transition-all duration-200 z-10"
+              className={`absolute bottom-8 left-8 p-3 rounded-full transition-all duration-200 z-10 ${paused ? "bg-primary hover:bg-primary/90 text-primary-foreground" : "bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600"}`}
               title={paused ? "Play" : "Pause"}
               style={{
                 opacity: shouldShowNavigationButtons ? 1 : 0,
@@ -658,7 +658,7 @@ export function PresentationView({
                 e.stopPropagation();
                 paused ? onPlay() : onPause();
               }}
-              className="absolute bottom-4 left-4 p-3 bg-gray-200 dark:bg-gray-700 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 transition-all duration-200 z-10"
+              className={`absolute bottom-4 left-4 p-3 rounded-full transition-all duration-200 z-10 ${paused ? "bg-primary hover:bg-primary/90 text-primary-foreground" : "bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600"}`}
               title={paused ? "Play" : "Pause"}
             >
               {paused ? (
