@@ -28,7 +28,7 @@ export function PublicNav() {
             Log in
           </Button>
         </Link>
-        <Link href={ROUTES.SIGNIN}>
+        <Link href={ROUTES.GET_STARTED}>
           <Button size="sm">
             Get started
           </Button>
