@@ -15,6 +15,13 @@ import { Badge } from '../../ui/Badge';
 import { Button } from '../../ui/Button';
 import { Card } from '../../ui/Card';
 import { OnboardingData } from '../types';
+import { useUser } from '../../../contexts/UserContext';
+
+// Stripe Payment Links
+const PAYMENT_LINKS = {
+  annual: 'https://buy.stripe.com/dRmfZh1jubMB0wYexmdAk01',
+  monthly: 'https://buy.stripe.com/00w00je6g17XfrSah6dAk00',
+};
 
 interface Props {
   data: OnboardingData;
@@ -64,10 +71,20 @@ const plans = [
 
 export function Paywall({ data, updateData, onNext, onBack }: Props) {
   const [selectedPlan, setSelectedPlan] = useState(data.selectedPlan || 'annual');
+  const { user } = useUser();
 
   const handleStartTrial = () => {
     updateData({ selectedPlan });
-    onNext();
+
+    // Build payment link URL with prefilled email
+    const baseUrl = PAYMENT_LINKS[selectedPlan as keyof typeof PAYMENT_LINKS];
+    const email = user?.email;
+    const paymentUrl = email
+      ? `${baseUrl}?prefilled_email=${encodeURIComponent(email)}`
+      : baseUrl;
+
+    // Redirect to Stripe Checkout
+    window.location.href = paymentUrl;
   };
 
   return (
@@ -77,7 +94,7 @@ export function Paywall({ data, updateData, onNext, onBack }: Props) {
           <Zap className="w-8 h-8 text-white" />
         </div>
         <h1 className="text-3xl md:text-4xl leading-tight">
-          Start your free trial — your next 7 days are mapped out
+          Start your free trial - your next 7 days are mapped out
         </h1>
         <p className="text-gray-600 text-lg">
           No payment due now. We&apos;ll remind you before your trial ends.
@@ -154,19 +171,19 @@ export function Paywall({ data, updateData, onNext, onBack }: Props) {
         <div className="flex items-start gap-3">
           <CircleCheck className="w-5 h-5 text-green-600 dark:text-green-400 shrink-0 mt-0.5" />
           <p className="text-sm">
-            <strong>7-day free trial</strong> — No payment due now
+            <strong>7-day free trial</strong> - No payment due now
           </p>
         </div>
         <div className="flex items-start gap-3">
           <Shield className="w-5 h-5 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
           <p className="text-sm">
-            <strong>Cancel anytime</strong> — Easy cancellation in settings
+            <strong>Cancel anytime</strong> - Easy cancellation in settings
           </p>
         </div>
         <div className="flex items-start gap-3">
           <Calendar className="w-5 h-5 text-purple-600 dark:text-purple-400 shrink-0 mt-0.5" />
           <p className="text-sm">
-            <strong>Reminder before billing</strong> — We&apos;ll email you 2 days
+            <strong>Reminder before billing</strong> - We&apos;ll email you 3 days
             before your trial ends
           </p>
         </div>
