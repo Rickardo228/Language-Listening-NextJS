@@ -17,7 +17,7 @@ import { SuccessScreen } from './onboarding/steps/success-screen';
 import { OnboardingData } from './onboarding/types';
 import { languageOptions, Phrase, CollectionType as CollectionTypeEnum } from '../types';
 import { saveOnboardingData } from '../utils/userPreferences';
-import { trackOnboardingCompleted } from '../../lib/mixpanelClient';
+import { track, trackOnboardingCompleted } from '../../lib/mixpanelClient';
 import { createCollection } from '../utils/collectionService';
 import { useUser } from '../contexts/UserContext';
 import { getFirestore, collection, getDocs, query, orderBy, limit as fbLimit } from 'firebase/firestore';
@@ -147,6 +147,32 @@ export function OnboardingFlow({
 
   const changeStep = (nextStep: number) => {
     const clampedStep = Math.max(1, Math.min(nextStep, steps.length));
+    if (clampedStep !== resolvedStep) {
+      const direction = clampedStep > resolvedStep ? 'forward' : 'back';
+      track('Onboarding Step Viewed', {
+        fromStepId: currentStepId,
+        toStepId: steps[clampedStep - 1],
+        fromStepNumber: resolvedStep,
+        toStepNumber: clampedStep,
+        totalSteps: steps.length,
+        direction,
+        dreamOutcomes: data.dreamOutcomes,
+        painPoints: data.painPoints,
+        nativeLanguage: data.nativeLanguage,
+        targetLanguage: data.targetLanguage,
+        abilityLevel: data.abilityLevel,
+        interests: data.interests,
+        practiceTime: data.practiceTime || null,
+        email: data.email || null,
+        accountType: data.accountType || null,
+        selectedPlan: data.selectedPlan || null,
+      });
+
+      if (direction === 'forward') {
+        window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+      }
+    }
+
     if (onStepChange) {
       onStepChange(clampedStep);
     } else {
@@ -204,6 +230,7 @@ export function OnboardingFlow({
       changeStep(steps.length);
     }
   }, [resolvedStep, steps.length]);
+
 
   const handleCreateCollection = async (
     phrases: Phrase[],
