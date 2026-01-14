@@ -5,6 +5,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { Suspense, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Paywall } from './onboarding/steps/paywall';
+import { OnboardingData } from './onboarding/types';
 import { ROUTES } from '../routes';
 
 interface PaywallGuardProps {
@@ -46,6 +47,15 @@ function PaywallGuardInner({ children }: PaywallGuardProps) {
         return <>{children}</>;
     }
 
+    const fallbackOnboardingData: OnboardingData = {
+        dreamOutcomes: [],
+        painPoints: [],
+        nativeLanguage: '',
+        targetLanguage: '',
+        abilityLevel: '',
+        interests: [],
+    };
+
     // Render with animated paywall modal
     return (
         <>
@@ -67,7 +77,7 @@ function PaywallGuardInner({ children }: PaywallGuardProps) {
                             className="bg-background rounded-2xl max-w-2xl w-full max-h-[85vh] overflow-y-auto p-6 md:p-8"
                         >
                             <Paywall
-                                data={{}}
+                                data={fallbackOnboardingData}
                                 updateData={() => { }}
                                 onNext={() => { }}
                                 onBack={() => router.back()}
