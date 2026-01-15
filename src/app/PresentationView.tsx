@@ -570,7 +570,7 @@ export function PresentationView({
                       }}
                     >
                       {paused ? (
-                        <Play className="h-6 w-6 text-gray-700 dark:text-gray-300" fill="currentColor" />
+                        <Play className="h-6 w-6" fill="currentColor" />
                       ) : (
                         <Pause className="h-6 w-6 text-gray-700 dark:text-gray-300" />
                       )}
@@ -644,7 +644,7 @@ export function PresentationView({
               }}
             >
               {paused ? (
-                <Play className="h-6 w-6 text-gray-700 dark:text-gray-300" fill="currentColor" />
+                <Play className="h-6 w-6" fill="currentColor" />
               ) : (
                 <Pause className="h-6 w-6 text-gray-700 dark:text-gray-300" />
               )}
@@ -662,7 +662,7 @@ export function PresentationView({
               title={paused ? "Play" : "Pause"}
             >
               {paused ? (
-                <Play className="h-6 w-6 text-gray-700 dark:text-gray-300" fill="currentColor" />
+                <Play className="h-6 w-6" fill="currentColor" />
               ) : (
                 <Pause className="h-6 w-6 text-gray-700 dark:text-gray-300" />
               )}

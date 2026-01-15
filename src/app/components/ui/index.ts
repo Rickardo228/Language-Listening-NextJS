@@ -19,3 +19,6 @@ export type { InputProps } from './Input';
 
 export { Select } from './Select';
 export type { SelectProps } from './Select';
+
+export { MilestoneCelebrationContent } from './MilestoneCelebrationContent';
+export { showMilestoneCelebrationSnackbar, showStatsSnackbar } from './StatsSnackbars';

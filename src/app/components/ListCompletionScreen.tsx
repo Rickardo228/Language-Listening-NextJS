@@ -4,7 +4,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useState, useEffect, memo } from "react";
 import { useRouter } from "next/navigation";
 import { getFirestore, doc, collection, getDocs } from "firebase/firestore";
-import { getUserLocalDateBoundary, getUserTimezone } from "../utils/userStats";
+import { getUserLocalDateBoundary, getUserTimezone } from "../utils/userStats/userStats";
 import { getPhraseRankTitle, getLanguageRankTitle, PRODUCTION_PHRASE_RANKS } from "../utils/rankingSystem";
 import { getFlagEmoji, getLanguageName } from "../utils/languageUtils";
 import { Button } from "./ui/Button";
@@ -20,6 +20,7 @@ interface ListCompletionScreenProps {
   userId: string;
   sessionListened?: number;
   sessionViewed?: number;
+  recentMilestones?: Array<{ title: string; color: string; description: string; count: number }>;
 }
 
 const firestore = getFirestore();
@@ -158,18 +159,22 @@ const MilestoneProgress = memo(({
   title,
   currentCount,
   icon,
-  language
+  language,
+  recentMilestones
 }: {
   title: string;
   currentCount: number;
   icon?: string;
   language?: string;
+  recentMilestones?: Array<{ title: string; color: string; description: string; count: number }>;
 }) => {
   const rankInfo = language
     ? getLanguageRankTitle(currentCount)
     : getPhraseRankTitle(currentCount);
 
   if (rankInfo.nextMilestone <= 0) return null;
+
+  const hasRecentMilestone = recentMilestones?.some((milestone) => milestone.title === rankInfo.title);
 
   // Find the last milestone we passed
   let lastMilestone = 0;
@@ -183,6 +188,9 @@ const MilestoneProgress = memo(({
   const progressRange = rankInfo.nextMilestone - lastMilestone;
   const currentProgress = currentCount - lastMilestone;
   const progressPercentage = (currentProgress / progressRange) * 100;
+  const nextRankTitle = rankInfo.nextMilestone > 0
+    ? (language ? getLanguageRankTitle(rankInfo.nextMilestone) : getPhraseRankTitle(rankInfo.nextMilestone)).title
+    : "Final Rank";
 
   return (
     <motion.div
@@ -198,6 +206,20 @@ const MilestoneProgress = memo(({
           {title}
         </h3>
       </div>
+      <div className="flex items-center gap-2 mb-2">
+        <div className="font-semibold">{rankInfo.title}</div>
+        {hasRecentMilestone && (
+          <span className="bg-amber-400 text-slate-900 text-xs font-black uppercase px-2 py-0.5 rounded-full">
+            New
+          </span>
+        )}
+      </div>
+
+      {/* <div className="flex gap-2 text-sm text-slate-400 mb-2">
+        <div className="text-slate-200 font-bold text-lg">{currentCount.toLocaleString()}</div>
+
+        <div className="font-semibold" style={{ alignSelf: 'start' }}>{rankInfo.title}</div>
+      </div> */}
 
       <div className="space-y-2">
         <div className="flex justify-between text-xs text-slate-300">
@@ -213,7 +235,7 @@ const MilestoneProgress = memo(({
           />
         </div>
         <div className="text-xs text-slate-400 text-center">
-          {currentProgress.toLocaleString()} of {progressRange.toLocaleString()} to {rankInfo.title}
+          {Math.max(0, progressRange - currentProgress).toLocaleString()} to reach {nextRankTitle}
         </div>
       </div>
     </motion.div>
@@ -232,9 +254,11 @@ export function ListCompletionScreen({
   userId,
   sessionListened = 0,
   sessionViewed = 0,
+  recentMilestones = [],
 }: ListCompletionScreenProps) {
   const router = useRouter();
-  const [step, setStep] = useState<1 | 2 | 3>(1);
+  // Step can be 1 (celebration), 2 (stats), "milestone" (showing milestones), or 3 (final)
+  const [step, setStep] = useState<1 | 2 | "milestone" | 3>(1);
   const [todayStats, setTodayStats] = useState({ listened: 0, viewed: 0 });
   const [totalStats, setTotalStats] = useState({ listened: 0, viewed: 0 });
   const [languageStats, setLanguageStats] = useState<LanguageStats[]>([]);
@@ -300,6 +324,16 @@ export function ListCompletionScreen({
     // Don't reset stats when closing - keep them so next animation starts from previous value
   }, [isOpen]);
 
+  // Handler for navigating from step 2 to milestone or step 3
+  const handleStep2Continue = () => {
+    if (recentMilestones.length > 0) {
+      setStep("milestone");
+
+    } else {
+      setStep(3);
+    }
+  };
+
   const streakData = getStreakMessage(currentStreak);
 
   return (
@@ -339,16 +373,16 @@ export function ListCompletionScreen({
                       transition={{ delay: 0.1, type: "spring", stiffness: 200 }}
                     >
                       <motion.div
-                        className="text-8xl mb-6"
+                        className="text-6xl md:text-7xl mb-4"
                         animate={{ rotate: [0, 10, -10, 10, 0] }}
                         transition={{ delay: 0.3, duration: 0.8, repeat: 1 }}
                       >
                         🎉
                       </motion.div>
-                      <h1 className="text-6xl font-black bg-gradient-to-r from-yellow-400 to-amber-500 bg-clip-text text-transparent mb-4 drop-shadow-lg">
+                      <h1 className="text-4xl md:text-5xl font-black bg-gradient-to-r from-yellow-400 to-amber-500 bg-clip-text text-transparent mb-3 drop-shadow-lg">
                         Nice Work!
                       </h1>
-                      <p className="text-2xl bg-gradient-to-r from-yellow-400 to-amber-500 bg-clip-text text-transparent font-semibold">
+                      <p className="text-xl md:text-2xl bg-gradient-to-r from-yellow-400 to-amber-500 bg-clip-text text-transparent font-semibold">
                         List completed!
                       </p>
                     </motion.div>
@@ -356,13 +390,13 @@ export function ListCompletionScreen({
                     {/* Streak Display */}
                     {currentStreak > 0 && (
                       <motion.div
-                        className="bg-slate-800 dark:bg-slate-800 rounded-3xl p-4 md:p-8 border-4 border-purple-500 shadow-2xl"
+                        className="bg-slate-800 dark:bg-slate-800 rounded-3xl p-4 md:p-6 border-4 border-purple-500 shadow-2xl"
                         initial={{ scale: 0.9, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
                         transition={{ delay: 0.4, type: "spring" }}
                       >
                         <motion.div
-                          className="text-5xl md:text-7xl mb-3 md:mb-4"
+                          className="text-4xl md:text-5xl mb-2 md:mb-3"
                           animate={{
                             scale: [1, 1.2, 1],
                             rotate: [0, 5, -5, 0]
@@ -371,10 +405,10 @@ export function ListCompletionScreen({
                         >
                           {streakData.emoji}
                         </motion.div>
-                        <div className="text-4xl md:text-6xl font-black bg-gradient-to-r from-yellow-400 to-amber-500 bg-clip-text text-transparent mb-2">
+                        <div className="text-3xl md:text-4xl font-black bg-gradient-to-r from-yellow-400 to-amber-500 bg-clip-text text-transparent mb-1 leading-tight">
                           {currentStreak} Day{currentStreak !== 1 ? 's' : ''}
                         </div>
-                        <div className="text-xl md:text-3xl font-bold text-slate-200 uppercase tracking-wider">
+                        <div className="text-lg md:text-xl font-bold text-slate-200 uppercase tracking-wider">
                           {streakData.message}
                         </div>
                       </motion.div>
@@ -454,7 +488,7 @@ export function ListCompletionScreen({
                       />
                     </div>
 
-                    {/* Continue to Step 3 */}
+                    {/* Continue to Milestones or Step 3 */}
                     <motion.div
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
@@ -465,7 +499,7 @@ export function ListCompletionScreen({
                         size="lg"
                         fullWidth
                         className="font-black text-2xl py-6 rounded-2xl shadow-2xl uppercase"
-                        onClick={() => setStep(3)}
+                        onClick={handleStep2Continue}
                       >
                         Continue
                       </Button>
@@ -499,14 +533,16 @@ export function ListCompletionScreen({
                           title={`${getLanguageName(mostRecentLanguage.language)} Progress`}
                           currentCount={mostRecentLanguage.count}
                           language={mostRecentLanguage.language}
+
                         />
                       )}
 
                       {/* Total progress (all languages) */}
                       <MilestoneProgress
-                        title="Overall Progress"
+                        title="All Languages"
                         currentCount={totalStats.listened + totalStats.viewed}
                         icon="🎯"
+                        recentMilestones={recentMilestones}
                       />
                     </div>
 

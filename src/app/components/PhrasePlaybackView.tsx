@@ -5,7 +5,7 @@ import { SettingsModal } from '../SettingsModal';
 import { Phrase, PresentationConfig } from '../types';
 import { generateAudio } from '../utils/audioUtils';
 import { BLEED_START_DELAY, DELAY_AFTER_INPUT_PHRASES_MULTIPLIER, DELAY_AFTER_OUTPUT_PHRASES_MULTIPLIER, } from '../consts';
-import { useUpdateUserStats } from '../utils/userStats';
+import { useUpdateUserStats } from '../utils/userStats/userStats';
 import { track, trackAudioEnded, trackPlaybackEvent } from '../../lib/mixpanelClient';
 import { WebMediaSessionTransport } from '../../transport/webMediaSessionTransport';
 import { loadProgress, saveProgress } from '../utils/progressService';
@@ -78,7 +78,7 @@ export function PhrasePlaybackView({
     onCompleted,
 }: PhrasePlaybackViewProps) {
     const { user } = useUser();
-    const { updateUserStats, StatsPopups, StatsModal, showStatsUpdate, incrementViewedAndCheckMilestone, initializeViewedCounter, phrasesViewed } = useUpdateUserStats();
+    const { updateUserStats, StatsPopups, StatsModal, showStatsUpdate, incrementViewedAndCheckMilestone, initializeViewedCounter, phrasesViewed, setIsAutoplayActive, recentMilestones } = useUpdateUserStats();
     const [currentPhraseIndex, setCurrentPhraseIndex] = useState(0);
     const [currentPhase, setCurrentPhase] = useState<'input' | 'output'>(
         presentationConfig.enableInputPlayback ? 'input' : 'output'
@@ -837,6 +837,12 @@ export function PhrasePlaybackView({
             }, 300);
         }
     }, [autoplay, phrases.length, handleReplay]);
+
+    // Track autoplay active state for milestone popup suppression
+    useEffect(() => {
+        // Autoplay is considered active when autoplay prop is true and playback is not paused
+        setIsAutoplayActive(autoplay && !paused);
+    }, [autoplay, paused, setIsAutoplayActive]);
 
 
     const handlePlayPhrase = (index: number, phase: 'input' | 'output') => {
