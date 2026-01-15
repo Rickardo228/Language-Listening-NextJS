@@ -4,7 +4,8 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useState, useEffect, memo } from "react";
 import { useRouter } from "next/navigation";
 import { getFirestore, doc, collection, getDocs } from "firebase/firestore";
-import { getUserLocalDateBoundary, getUserTimezone } from "../utils/userStats";
+import { getUserLocalDateBoundary, getUserTimezone } from "../utils/userStats/userStats";
+import { MilestoneCelebrationInline } from "../utils/userStats/MilestoneCelebrationPopup";
 import { getPhraseRankTitle, getLanguageRankTitle, PRODUCTION_PHRASE_RANKS } from "../utils/rankingSystem";
 import { getFlagEmoji, getLanguageName } from "../utils/languageUtils";
 import { Button } from "./ui/Button";
@@ -236,7 +237,9 @@ export function ListCompletionScreen({
   recentMilestones = [],
 }: ListCompletionScreenProps) {
   const router = useRouter();
-  const [step, setStep] = useState<1 | 2 | 3>(1);
+  // Step can be 1 (celebration), 2 (stats), "milestone" (showing milestones), or 3 (final)
+  const [step, setStep] = useState<1 | 2 | "milestone" | 3>(1);
+  const [currentMilestoneIndex, setCurrentMilestoneIndex] = useState(0);
   const [todayStats, setTodayStats] = useState({ listened: 0, viewed: 0 });
   const [totalStats, setTotalStats] = useState({ listened: 0, viewed: 0 });
   const [languageStats, setLanguageStats] = useState<LanguageStats[]>([]);
@@ -298,9 +301,29 @@ export function ListCompletionScreen({
   useEffect(() => {
     if (isOpen) {
       setStep(1);
+      setCurrentMilestoneIndex(0);
     }
     // Don't reset stats when closing - keep them so next animation starts from previous value
   }, [isOpen]);
+
+  // Handler for navigating from step 2 to milestone or step 3
+  const handleStep2Continue = () => {
+    if (recentMilestones.length > 0) {
+      setStep("milestone");
+      setCurrentMilestoneIndex(0);
+    } else {
+      setStep(3);
+    }
+  };
+
+  // Handler for navigating through milestones
+  const handleMilestoneContinue = () => {
+    if (currentMilestoneIndex < recentMilestones.length - 1) {
+      setCurrentMilestoneIndex(prev => prev + 1);
+    } else {
+      setStep(3);
+    }
+  };
 
   const streakData = getStreakMessage(currentStreak);
 
@@ -456,7 +479,7 @@ export function ListCompletionScreen({
                       />
                     </div>
 
-                    {/* Continue to Step 3 */}
+                    {/* Continue to Milestones or Step 3 */}
                     <motion.div
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
@@ -467,12 +490,19 @@ export function ListCompletionScreen({
                         size="lg"
                         fullWidth
                         className="font-black text-2xl py-6 rounded-2xl shadow-2xl uppercase"
-                        onClick={() => setStep(3)}
+                        onClick={handleStep2Continue}
                       >
                         Continue
                       </Button>
                     </motion.div>
                   </motion.div>
+                ) : step === "milestone" && recentMilestones.length > 0 ? (
+                  // Milestone Celebration Step
+                  <MilestoneCelebrationInline
+                    key={`milestone-${currentMilestoneIndex}`}
+                    milestoneInfo={recentMilestones[currentMilestoneIndex]}
+                    onContinue={handleMilestoneContinue}
+                  />
                 ) : (
                   // Step 3: Milestone Progress
                   <motion.div
@@ -511,46 +541,6 @@ export function ListCompletionScreen({
                         icon="🎯"
                       />
                     </div>
-
-                    {/* Recent Milestones */}
-                    {recentMilestones.length > 0 && (
-                      <motion.div
-                        className="bg-slate-800 dark:bg-slate-800 rounded-2xl p-4 border-3 border-purple-400 w-full mt-2"
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.6 }}
-                      >
-                        <div className="flex items-center gap-2 mb-3">
-                          <span className="text-xl">🎉</span>
-                          <h3 className="text-purple-400 font-bold text-sm uppercase tracking-wide">
-                            Recent Milestones
-                          </h3>
-                        </div>
-                        <div className="space-y-2">
-                          {recentMilestones.map((milestone, index) => (
-                            <motion.div
-                              key={index}
-                              className="bg-white/5 dark:bg-black/20 rounded-lg p-2 border border-white/10"
-                              initial={{ opacity: 0, x: -10 }}
-                              animate={{ opacity: 1, x: 0 }}
-                              transition={{ delay: 0.7 + index * 0.05 }}
-                            >
-                              <div className="flex items-center justify-between">
-                                <div className="flex-1">
-                                  <div className="text-sm font-bold text-slate-200">
-                                    {milestone.title}
-                                  </div>
-                                  <div className="text-xs text-slate-400">
-                                    {milestone.count.toLocaleString()} phrases
-                                  </div>
-                                </div>
-                                <div className="text-lg">⭐</div>
-                              </div>
-                            </motion.div>
-                          ))}
-                        </div>
-                      </motion.div>
-                    )}
 
                     {/* Action Buttons */}
                     <motion.div

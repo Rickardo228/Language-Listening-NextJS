@@ -5,7 +5,7 @@ import { SettingsModal } from '../SettingsModal';
 import { Phrase, PresentationConfig } from '../types';
 import { generateAudio } from '../utils/audioUtils';
 import { BLEED_START_DELAY, DELAY_AFTER_INPUT_PHRASES_MULTIPLIER, DELAY_AFTER_OUTPUT_PHRASES_MULTIPLIER, } from '../consts';
-import { useUpdateUserStats } from '../utils/userStats';
+import { useUpdateUserStats } from '../utils/userStats/userStats';
 import { track, trackAudioEnded, trackPlaybackEvent } from '../../lib/mixpanelClient';
 import { WebMediaSessionTransport } from '../../transport/webMediaSessionTransport';
 import { loadProgress, saveProgress } from '../utils/progressService';

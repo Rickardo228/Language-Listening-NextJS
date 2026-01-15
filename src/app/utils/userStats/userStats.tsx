@@ -5,18 +5,21 @@ import {
   setDoc,
   runTransaction,
 } from "firebase/firestore";
-import { Phrase } from "../types";
+import { Phrase } from "../../types";
 import { useRef, useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
-import { useUser } from "../contexts/UserContext";
-import { motion, AnimatePresence } from "framer-motion";
-import { UserStatsModal } from "../components/UserStatsModal";
-import { ListCompletionScreen } from "../components/ListCompletionScreen";
-import { trackPhrasesListenedPopup } from "../../lib/mixpanelClient";
-import { getPhraseRankTitle, DEBUG_MILESTONE_THRESHOLDS } from "./rankingSystem";
+import { useUser } from "../../contexts/UserContext";
+import { AnimatePresence } from "framer-motion";
+import { UserStatsModal } from "../../components/UserStatsModal";
+import { ListCompletionScreen } from "../../components/ListCompletionScreen";
+import { trackPhrasesListenedPopup } from "../../../lib/mixpanelClient";
+import { getPhraseRankTitle, DEBUG_MILESTONE_THRESHOLDS } from "../rankingSystem";
 import { useRouter } from "next/navigation";
-import { createOrUpdateUserProfile } from "./userPreferences";
+import { createOrUpdateUserProfile } from "../userPreferences";
 import { Check } from "lucide-react";
+import { SnackbarPopup } from "./SnackbarPopup";
+import { MilestoneCelebrationPopup } from "./MilestoneCelebrationPopup";
+import { MilestoneInfo } from "./types";
 
 const firestore = getFirestore();
 
@@ -283,9 +286,16 @@ export const useUpdateUserStats = () => {
   const { user, userProfile } = useUser();
 
   // New state for milestone celebration
-  const [showMilestoneCelebration, setShowMilestoneCelebration] = useState(false);
-  const [milestoneInfo, setMilestoneInfo] = useState<{ title: string; color: string; description: string; count: number } | null>(null);
-  const [recentMilestones, setRecentMilestones] = useState<Array<{ title: string; color: string; description: string; count: number }>>([]);
+  const [showMilestoneCelebration, setShowMilestoneCelebration] = useState(true);
+  const [milestoneInfo, setMilestoneInfo] = useState<MilestoneInfo | null>({
+    // threshold: 0,
+    title: "Welcome Aboard",
+    color: "text-gray-400",
+    count: 10,
+    // nextMilestone: 10,
+    description: "Every tap counts. Let's go.",
+  });
+  const [recentMilestones, setRecentMilestones] = useState<Array<MilestoneInfo>>([]);
   const totalPhrasesRef = useRef(0);
   const phraseCountSinceLastSync = useRef(0);
   const SYNC_AFTER_PHRASES = 10; // Re-sync every 10 phrases
@@ -504,6 +514,14 @@ export const useUpdateUserStats = () => {
     phrasesViewedRef.current = 0;
   }, [showPopup, countToShow, persistUntilInteraction, currentStreak]);
 
+  const closeMilestoneCelebration = useCallback(() => {
+    if (milestoneCloseTimeoutRef.current) {
+      clearTimeout(milestoneCloseTimeoutRef.current);
+      milestoneCloseTimeoutRef.current = null;
+    }
+    setShowMilestoneCelebration(false);
+  }, []);
+
   const openStatsModal = () => {
     // Track view stats action before closing popup
     if (showPopup) {
@@ -616,10 +634,10 @@ export const useUpdateUserStats = () => {
       }
     }
 
-    // Skip Firestore updates in development environment (but keep session counters above)
-    if (process.env.NODE_ENV === 'development') {
-      return;
-    }
+    // // Skip Firestore updates in development environment (but keep session counters above)
+    // if (process.env.NODE_ENV === 'development') {
+    //   return;
+    // }
 
     // Smart sync: every N phrases or when forced
     await syncTotalIfNeeded();
@@ -655,7 +673,7 @@ export const useUpdateUserStats = () => {
           clearTimeout(milestoneCloseTimeoutRef.current);
         }
         milestoneCloseTimeoutRef.current = setTimeout(() => {
-          setShowMilestoneCelebration(false);
+          // setShowMilestoneCelebration(false);
         }, 4000);
       }
     }
@@ -880,168 +898,24 @@ export const useUpdateUserStats = () => {
 
       {/* Regular Snackbar Popup for non-completion milestones */}
       {showPopup && !isListCompleted && (
-        <motion.div
+        <SnackbarPopup
           key="snackbar-popup"
-          className="fixed z-50 top-20 sm:top-4 left-1/2 -translate-x-1/2"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.2 }}
-        >
-          <motion.div
-            className="bg-blue-500 text-white rounded-lg shadow-lg px-5 py-3 max-w-sm mx-4 sm:mx-0"
-            initial={{ scale: 0.8, opacity: 0, y: 20 }}
-            animate={{ scale: 1, opacity: 1, y: 0 }}
-            exit={{ scale: 0.8, opacity: 0, y: -20 }}
-            transition={{
-              type: "spring",
-              stiffness: 300,
-              damping: 25,
-              duration: 0.3
-            }}
-          >
-            <div className="flex items-center justify-center">
-              <motion.span
-                className="font-bold text-sm"
-                initial={{ opacity: 0, x: 10 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.2, duration: 0.3 }}
-              >
-                {popupEventType === 'viewed' ? '👀' : '🎧'} {countToShow} phrase{countToShow !== 1 ? 's' : ''} {popupEventType}!
-              </motion.span>
-            </div>
-          </motion.div>
-        </motion.div>
+          eventType={popupEventType}
+          count={countToShow}
+        />
       )}
 
       {/* Milestone Celebration Popup */}
       {showMilestoneCelebration && milestoneInfo && (
-        <motion.div
+        <MilestoneCelebrationPopup
           key="milestone-celebration"
-          className="fixed inset-0 z-[60] flex items-center justify-center pointer-events-none"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.2 }}
-        >
-          <motion.div
-            className={`${getMilestoneBackgroundStyle(milestoneInfo.color)} px-6 py-5 rounded-2xl shadow-2xl max-w-sm mx-4 border-3 pointer-events-auto`}
-            initial={{ scale: 0.8, opacity: 0, y: 20 }}
-            animate={{
-              scale: 1,
-              opacity: 1,
-              y: 0,
-              transition: {
-                type: "spring",
-                stiffness: 300,
-                damping: 25,
-                duration: 0.4
-              }
-            }}
-            exit={{
-              scale: 0.9,
-              opacity: 0,
-              y: -20,
-              transition: { duration: 0.2 }
-            }}
-          >
-            <div className="text-center space-y-3">
-              <motion.div
-                className="flex items-center justify-center space-x-2"
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ delay: 0.1, type: "spring", stiffness: 400 }}
-              >
-                <motion.span
-                  className="text-xl"
-                  animate={{ rotate: [0, 10, -10, 0] }}
-                  transition={{ delay: 0.2, duration: 0.6, repeat: 1 }}
-                >
-                  🎉
-                </motion.span>
-                <motion.span
-                  className={`text-lg font-bold ${getMilestoneTextColor(milestoneInfo.color)}`}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.15 }}
-                >
-                  Milestone Reached!
-                </motion.span>
-                <motion.span
-                  className="text-xl"
-                  animate={{ rotate: [0, -10, 10, 0] }}
-                  transition={{ delay: 0.3, duration: 0.6, repeat: 1 }}
-                >
-                  🎉
-                </motion.span>
-              </motion.div>
-
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
-                className="space-y-2"
-              >
-                <motion.div
-                  className={`text-2xl font-bold ${getMilestoneTextColor(milestoneInfo.color)} px-4 py-2 rounded-lg bg-white/20 dark:bg-black/20`}
-                  animate={{ scale: [1, 1.03, 1] }}
-                  transition={{ delay: 0.3, duration: 0.3, repeat: 1 }}
-                >
-                  {milestoneInfo.title}
-                </motion.div>
-                <div className={`text-base font-semibold ${getMilestoneTextColor(milestoneInfo.color)}`}>
-                  {milestoneInfo.count.toLocaleString()} phrases!
-                </div>
-                <div className={`text-sm ${getMilestoneTextColor(milestoneInfo.color)}/90 italic px-2`}>
-                  {milestoneInfo.description}
-                </div>
-              </motion.div>
-
-              <motion.div
-                className="flex justify-center space-x-1"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.4 }}
-              >
-                {[...Array(3)].map((_, i) => (
-                  <motion.span
-                    key={i}
-                    className="text-lg"
-                    animate={{
-                      scale: [1, 1.3, 1],
-                      rotate: [0, 180, 360]
-                    }}
-                    transition={{
-                      delay: 0.5 + i * 0.08,
-                      duration: 0.5,
-                      ease: "easeInOut"
-                    }}
-                  >
-                    ⭐
-                  </motion.span>
-                ))}
-              </motion.div>
-
-              <motion.button
-                className="mt-4 bg-primary hover:bg-primary/90 text-white font-semibold py-2.5 px-5 rounded-lg transition-colors duration-200 text-sm"
-                onClick={() => {
-                  if (milestoneCloseTimeoutRef.current) {
-                    clearTimeout(milestoneCloseTimeoutRef.current);
-                    milestoneCloseTimeoutRef.current = null;
-                  }
-                  setShowMilestoneCelebration(false);
-                }}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.6 }}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                Continue
-              </motion.button>
-            </div>
-          </motion.div>
-        </motion.div>
+          milestoneInfo={milestoneInfo}
+          backgroundClass={getMilestoneBackgroundStyle(milestoneInfo.color)}
+          textClass={getMilestoneTextColor(milestoneInfo.color)}
+          onClose={closeMilestoneCelebration}
+          showButton={false}
+          autoHide
+        />
       )}
     </AnimatePresence>,
     document.body
