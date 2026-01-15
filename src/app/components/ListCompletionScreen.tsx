@@ -5,7 +5,6 @@ import { useState, useEffect, memo } from "react";
 import { useRouter } from "next/navigation";
 import { getFirestore, doc, collection, getDocs } from "firebase/firestore";
 import { getUserLocalDateBoundary, getUserTimezone } from "../utils/userStats/userStats";
-import { MilestoneCelebrationInline } from "../utils/userStats/MilestoneCelebrationPopup";
 import { getPhraseRankTitle, getLanguageRankTitle, PRODUCTION_PHRASE_RANKS } from "../utils/rankingSystem";
 import { getFlagEmoji, getLanguageName } from "../utils/languageUtils";
 import { Button } from "./ui/Button";
@@ -185,6 +184,9 @@ const MilestoneProgress = memo(({
   const progressRange = rankInfo.nextMilestone - lastMilestone;
   const currentProgress = currentCount - lastMilestone;
   const progressPercentage = (currentProgress / progressRange) * 100;
+  const nextRankTitle = rankInfo.nextMilestone > 0
+    ? (language ? getLanguageRankTitle(rankInfo.nextMilestone) : getPhraseRankTitle(rankInfo.nextMilestone)).title
+    : "Final Rank";
 
   return (
     <motion.div
@@ -200,6 +202,13 @@ const MilestoneProgress = memo(({
           {title}
         </h3>
       </div>
+      <div className="font-semibold mb-2">{rankInfo.title}</div>
+
+      {/* <div className="flex gap-2 text-sm text-slate-400 mb-2">
+        <div className="text-slate-200 font-bold text-lg">{currentCount.toLocaleString()}</div>
+
+        <div className="font-semibold" style={{ alignSelf: 'start' }}>{rankInfo.title}</div>
+      </div> */}
 
       <div className="space-y-2">
         <div className="flex justify-between text-xs text-slate-300">
@@ -215,7 +224,7 @@ const MilestoneProgress = memo(({
           />
         </div>
         <div className="text-xs text-slate-400 text-center">
-          {currentProgress.toLocaleString()} of {progressRange.toLocaleString()} to {rankInfo.title}
+          {Math.max(0, progressRange - currentProgress).toLocaleString()} to reach {nextRankTitle}
         </div>
       </div>
     </motion.div>
@@ -496,13 +505,6 @@ export function ListCompletionScreen({
                       </Button>
                     </motion.div>
                   </motion.div>
-                ) : step === "milestone" && recentMilestones.length > 0 ? (
-                  // Milestone Celebration Step
-                  <MilestoneCelebrationInline
-                    key={`milestone-${currentMilestoneIndex}`}
-                    milestoneInfo={recentMilestones[currentMilestoneIndex]}
-                    onContinue={handleMilestoneContinue}
-                  />
                 ) : (
                   // Step 3: Milestone Progress
                   <motion.div

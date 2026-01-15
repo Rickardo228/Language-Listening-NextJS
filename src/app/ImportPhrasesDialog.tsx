@@ -105,6 +105,7 @@ export function ImportPhrasesDialog({
             console.error('Error generating phrases:', error);
             // Show error to user
             toast.error(error instanceof Error ? error.message : 'Failed to generate phrases. Please try again.');
+
         } finally {
             setGeneratingPhrases(false);
             setIsFetchingUrl(false);

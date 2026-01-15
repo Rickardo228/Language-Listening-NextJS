@@ -1,30 +1,31 @@
 import { motion } from "framer-motion";
-import { useEffect } from "react";
-import { MilestoneInfo } from "./types";
+import { MilestoneInfo } from "../../utils/userStats/types";
 
-// Shared content component used by both popup variants
 type MilestoneCelebrationContentProps = {
   milestoneInfo: MilestoneInfo;
   textClass: string;
   onContinue?: () => void;
   showDetails?: boolean;
   showButton?: boolean;
+  showIcons?: boolean;
   size?: "sm" | "lg";
+  className?: string;
 };
 
-function MilestoneCelebrationContent({
+export function MilestoneCelebrationContent({
   milestoneInfo,
   textClass,
   onContinue,
   showDetails = false,
   showButton = true,
-  size = "sm"
+  showIcons = false,
+  size = "sm",
+  className
 }: MilestoneCelebrationContentProps) {
   const isLarge = size === "lg";
 
   return (
-    <div className="text-center space-y-3">
-      {/* Header with party emojis */}
+    <div className={`text-center space-y-3 ${className || ""}`}>
       <motion.div
         className={`flex items-center justify-center ${isLarge ? "space-x-3" : "space-x-2"}`}
         initial={{ scale: 0 }}
@@ -61,7 +62,6 @@ function MilestoneCelebrationContent({
         </motion.span>
       </motion.div>
 
-      {/* Milestone title and details */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -82,18 +82,17 @@ function MilestoneCelebrationContent({
 
         {showDetails && (
           <>
-            <div className={isLarge ? `text-xl md:text-2xl font-bold text-white mb-2` : `text-base font-semibold ${textClass}`}>
+            <div className={isLarge ? "text-xl md:text-2xl font-bold text-white mb-2" : `text-base font-semibold ${textClass}`}>
               {milestoneInfo.count.toLocaleString()} phrases!
             </div>
-            <div className={isLarge ? `text-white text-base md:text-lg italic` : `text-sm ${textClass}/90 italic px-2`}>
+            <div className={isLarge ? "text-white text-base md:text-lg italic" : `text-sm ${textClass}/90 italic px-2`}>
               {milestoneInfo.description}
             </div>
           </>
         )}
       </motion.div>
 
-      {/* Stars */}
-      <motion.div
+      {showIcons && <motion.div
         className={`flex justify-center ${isLarge ? "space-x-2" : "space-x-1"}`}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -116,9 +115,8 @@ function MilestoneCelebrationContent({
             ⭐
           </motion.span>
         ))}
-      </motion.div>
+      </motion.div>}
 
-      {/* Continue Button */}
       {showButton && (
         isLarge ? (
           <motion.div
@@ -148,118 +146,5 @@ function MilestoneCelebrationContent({
         )
       )}
     </div>
-  );
-}
-
-// Fixed overlay popup version
-type MilestoneCelebrationPopupProps = {
-  milestoneInfo: MilestoneInfo;
-  backgroundClass: string;
-  textClass: string;
-  onClose?: () => void;
-  showDetails?: boolean;
-  showButton?: boolean;
-  autoHide?: boolean;
-  autoHideDelay?: number;
-};
-
-export function MilestoneCelebrationPopup({
-  milestoneInfo,
-  backgroundClass,
-  textClass,
-  onClose,
-  showDetails = false,
-  showButton = true,
-  autoHide = false,
-  autoHideDelay = 2500
-}: MilestoneCelebrationPopupProps) {
-  // Auto-hide after delay
-  useEffect(() => {
-    if (autoHide && onClose) {
-      const timer = setTimeout(() => {
-        onClose();
-      }, autoHideDelay);
-      return () => clearTimeout(timer);
-    }
-  }, [autoHide, autoHideDelay, onClose]);
-
-  return (
-    <motion.div
-      className="fixed inset-0 z-[60] flex items-center justify-center pointer-events-none"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.2 }}
-    >
-      <motion.div
-        className={`${backgroundClass} px-6 py-5 rounded-2xl shadow-2xl max-w-sm mx-4 border-3 pointer-events-auto`}
-        initial={{ scale: 0.8, opacity: 0, y: 20 }}
-        animate={{
-          scale: 1,
-          opacity: 1,
-          y: 0,
-          transition: {
-            type: "spring",
-            stiffness: 300,
-            damping: 25,
-            duration: 0.4
-          }
-        }}
-        exit={{
-          scale: 0.9,
-          opacity: 0,
-          y: -20,
-          transition: { duration: 0.2 }
-        }}
-      >
-        <MilestoneCelebrationContent
-          milestoneInfo={milestoneInfo}
-          textClass={textClass}
-          onContinue={onClose}
-          showDetails={showDetails}
-          showButton={showButton}
-          size="sm"
-        />
-      </motion.div>
-    </motion.div>
-  );
-}
-
-// Inline version for use within modals (no fixed positioning)
-type MilestoneCelebrationInlineProps = {
-  milestoneInfo: MilestoneInfo;
-  onContinue: () => void;
-  showDetails?: boolean;
-};
-
-export function MilestoneCelebrationInline({
-  milestoneInfo,
-  onContinue,
-  showDetails = true
-}: MilestoneCelebrationInlineProps) {
-  return (
-    <motion.div
-      className="space-y-6 text-center w-full"
-      initial={{ opacity: 0, x: 50 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: -50 }}
-      transition={{ duration: 0.4 }}
-    >
-      {/* Milestone Card wrapper for inline version */}
-      <motion.div
-        className="bg-gray-500/20 dark:bg-slate-800 rounded-2xl p-6 md:p-8 border-4 border-gray-500 shadow-2xl mx-auto max-w-md"
-        initial={{ scale: 0.9, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ delay: 0.2, type: "spring" }}
-      >
-        <MilestoneCelebrationContent
-          milestoneInfo={milestoneInfo}
-          textClass="text-gray-400"
-          onContinue={onContinue}
-          showDetails={showDetails}
-          size="lg"
-        />
-      </motion.div>
-    </motion.div>
   );
 }

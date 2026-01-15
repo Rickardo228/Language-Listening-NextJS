@@ -17,8 +17,7 @@ import { getPhraseRankTitle, DEBUG_MILESTONE_THRESHOLDS } from "../rankingSystem
 import { useRouter } from "next/navigation";
 import { createOrUpdateUserProfile } from "../userPreferences";
 import { Check } from "lucide-react";
-import { SnackbarPopup } from "./SnackbarPopup";
-import { MilestoneCelebrationPopup } from "./MilestoneCelebrationPopup";
+import { showMilestoneCelebrationSnackbar, showStatsSnackbar } from "../../components/ui/StatsSnackbars";
 import { MilestoneInfo } from "./types";
 
 const firestore = getFirestore();
@@ -272,7 +271,6 @@ export const useUpdateUserStats = () => {
   const [countToShow, setCountToShow] = useState(0);
   const [persistUntilInteraction, setPersistUntilInteraction] = useState(false);
   const [showStatsModal, setShowStatsModal] = useState(false);
-  const [popupEventType, setPopupEventType] = useState<'listened' | 'viewed'>('listened');
   const [isListCompleted, setIsListCompleted] = useState(false);
   const [onGoAgainCallback, setOnGoAgainCallback] = useState<(() => void | Promise<void>) | null>(null);
   const [onGoNextCallback, setOnGoNextCallback] = useState<(() => void | Promise<void>) | null>(null);
@@ -281,20 +279,10 @@ export const useUpdateUserStats = () => {
   const phrasesViewedRef = useRef(0);
   const isListCompletedRef = useRef(false);
   const popupCloseTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const milestoneCloseTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [mounted, setMounted] = useState(false);
   const { user, userProfile } = useUser();
 
   // New state for milestone celebration
-  const [showMilestoneCelebration, setShowMilestoneCelebration] = useState(true);
-  const [milestoneInfo, setMilestoneInfo] = useState<MilestoneInfo | null>({
-    // threshold: 0,
-    title: "Welcome Aboard",
-    color: "text-gray-400",
-    count: 10,
-    // nextMilestone: 10,
-    description: "Every tap counts. Let's go.",
-  });
   const [recentMilestones, setRecentMilestones] = useState<Array<MilestoneInfo>>([]);
   const totalPhrasesRef = useRef(0);
   const phraseCountSinceLastSync = useRef(0);
@@ -311,10 +299,6 @@ export const useUpdateUserStats = () => {
       if (popupCloseTimeoutRef.current) {
         clearTimeout(popupCloseTimeoutRef.current);
         popupCloseTimeoutRef.current = null;
-      }
-      if (milestoneCloseTimeoutRef.current) {
-        clearTimeout(milestoneCloseTimeoutRef.current);
-        milestoneCloseTimeoutRef.current = null;
       }
     };
   }, []);
@@ -412,6 +396,20 @@ export const useUpdateUserStats = () => {
     }
 
     if (shouldShowPopup) {
+      if (!listCompleted) {
+        showStatsSnackbar({ eventType: displayType as "listened" | "viewed", count: displayCount });
+
+        if (displayType === "listened") {
+          trackPhrasesListenedPopup(
+            "show",
+            displayCount,
+            shouldPersistUntilInteraction,
+            shouldPersistUntilInteraction ? "natural" : "manual"
+          );
+        }
+        return;
+      }
+
       // Clear any pending close timeout from previous popups
       if (popupCloseTimeoutRef.current) {
         clearTimeout(popupCloseTimeoutRef.current);
@@ -428,8 +426,6 @@ export const useUpdateUserStats = () => {
       // Store the go next callback if provided (wrap in function to avoid React treating it as lazy initializer)
       setOnGoNextCallback(listCompleted && onGoNext ? () => onGoNext : () => null);
 
-      // Store the event type for display purposes
-      setPopupEventType(displayType as 'listened' | 'viewed');
 
       // Play completion sound if list is completed
       if (listCompleted) {
@@ -513,14 +509,6 @@ export const useUpdateUserStats = () => {
     phrasesListenedRef.current = 0;
     phrasesViewedRef.current = 0;
   }, [showPopup, countToShow, persistUntilInteraction, currentStreak]);
-
-  const closeMilestoneCelebration = useCallback(() => {
-    if (milestoneCloseTimeoutRef.current) {
-      clearTimeout(milestoneCloseTimeoutRef.current);
-      milestoneCloseTimeoutRef.current = null;
-    }
-    setShowMilestoneCelebration(false);
-  }, []);
 
   const openStatsModal = () => {
     // Track view stats action before closing popup
@@ -660,21 +648,16 @@ export const useUpdateUserStats = () => {
         count: newTotal
       };
 
-      setMilestoneInfo(milestoneData);
       setRecentMilestones(prev => [milestoneData, ...prev.slice(0, 4)]); // Keep only last 5 milestones
 
       // Only show popup if autoplay is not active - prevents multiple interruptions
       // Milestones are still tracked and will show in list completion screen
       if (!isAutoplayActive) {
-        setShowMilestoneCelebration(true);
-
-        // Auto-close after 4 seconds
-        if (milestoneCloseTimeoutRef.current) {
-          clearTimeout(milestoneCloseTimeoutRef.current);
-        }
-        milestoneCloseTimeoutRef.current = setTimeout(() => {
-          // setShowMilestoneCelebration(false);
-        }, 4000);
+        showMilestoneCelebrationSnackbar({
+          milestoneInfo: milestoneData,
+          backgroundClass: getMilestoneBackgroundStyle(milestoneData.color),
+          textClass: getMilestoneTextColor(milestoneData.color)
+        });
       }
     }
 
@@ -878,7 +861,6 @@ export const useUpdateUserStats = () => {
 
   const StatsPopups = mounted ? createPortal(
     <AnimatePresence mode="wait">
-      {/* Milestone Celebration Popup */}
       {/* Fullscreen List Completion - Two Step Flow */}
       {showPopup && isListCompleted && user && (
         <ListCompletionScreen
@@ -896,27 +878,6 @@ export const useUpdateUserStats = () => {
         />
       )}
 
-      {/* Regular Snackbar Popup for non-completion milestones */}
-      {showPopup && !isListCompleted && (
-        <SnackbarPopup
-          key="snackbar-popup"
-          eventType={popupEventType}
-          count={countToShow}
-        />
-      )}
-
-      {/* Milestone Celebration Popup */}
-      {showMilestoneCelebration && milestoneInfo && (
-        <MilestoneCelebrationPopup
-          key="milestone-celebration"
-          milestoneInfo={milestoneInfo}
-          backgroundClass={getMilestoneBackgroundStyle(milestoneInfo.color)}
-          textClass={getMilestoneTextColor(milestoneInfo.color)}
-          onClose={closeMilestoneCelebration}
-          showButton={false}
-          autoHide
-        />
-      )}
     </AnimatePresence>,
     document.body
   ) : null;

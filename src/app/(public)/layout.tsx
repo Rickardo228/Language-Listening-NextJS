@@ -13,6 +13,8 @@ export default function PublicLayout({
     <ThemeProvider>
       <Toaster
         richColors
+        expand
+        position="top-center"
         toastOptions={{
           classNames: {
             toast: 'bg-background text-foreground border-border',
