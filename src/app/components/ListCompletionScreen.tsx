@@ -159,18 +159,22 @@ const MilestoneProgress = memo(({
   title,
   currentCount,
   icon,
-  language
+  language,
+  recentMilestones
 }: {
   title: string;
   currentCount: number;
   icon?: string;
   language?: string;
+  recentMilestones?: Array<{ title: string; color: string; description: string; count: number }>;
 }) => {
   const rankInfo = language
     ? getLanguageRankTitle(currentCount)
     : getPhraseRankTitle(currentCount);
 
   if (rankInfo.nextMilestone <= 0) return null;
+
+  const hasRecentMilestone = recentMilestones?.some((milestone) => milestone.title === rankInfo.title);
 
   // Find the last milestone we passed
   let lastMilestone = 0;
@@ -202,7 +206,14 @@ const MilestoneProgress = memo(({
           {title}
         </h3>
       </div>
-      <div className="font-semibold mb-2">{rankInfo.title}</div>
+      <div className="flex items-center gap-2 mb-2">
+        <div className="font-semibold">{rankInfo.title}</div>
+        {hasRecentMilestone && (
+          <span className="bg-amber-400 text-slate-900 text-xs font-black uppercase px-2 py-0.5 rounded-full">
+            New
+          </span>
+        )}
+      </div>
 
       {/* <div className="flex gap-2 text-sm text-slate-400 mb-2">
         <div className="text-slate-200 font-bold text-lg">{currentCount.toLocaleString()}</div>
@@ -522,6 +533,7 @@ export function ListCompletionScreen({
                           title={`${getLanguageName(mostRecentLanguage.language)} Progress`}
                           currentCount={mostRecentLanguage.count}
                           language={mostRecentLanguage.language}
+
                         />
                       )}
 
@@ -530,6 +542,7 @@ export function ListCompletionScreen({
                         title="All Languages"
                         currentCount={totalStats.listened + totalStats.viewed}
                         icon="🎯"
+                        recentMilestones={recentMilestones}
                       />
                     </div>
 
