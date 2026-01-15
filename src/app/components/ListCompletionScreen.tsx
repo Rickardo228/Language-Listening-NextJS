@@ -248,7 +248,6 @@ export function ListCompletionScreen({
   const router = useRouter();
   // Step can be 1 (celebration), 2 (stats), "milestone" (showing milestones), or 3 (final)
   const [step, setStep] = useState<1 | 2 | "milestone" | 3>(1);
-  const [currentMilestoneIndex, setCurrentMilestoneIndex] = useState(0);
   const [todayStats, setTodayStats] = useState({ listened: 0, viewed: 0 });
   const [totalStats, setTotalStats] = useState({ listened: 0, viewed: 0 });
   const [languageStats, setLanguageStats] = useState<LanguageStats[]>([]);
@@ -310,7 +309,6 @@ export function ListCompletionScreen({
   useEffect(() => {
     if (isOpen) {
       setStep(1);
-      setCurrentMilestoneIndex(0);
     }
     // Don't reset stats when closing - keep them so next animation starts from previous value
   }, [isOpen]);
@@ -319,16 +317,7 @@ export function ListCompletionScreen({
   const handleStep2Continue = () => {
     if (recentMilestones.length > 0) {
       setStep("milestone");
-      setCurrentMilestoneIndex(0);
-    } else {
-      setStep(3);
-    }
-  };
 
-  // Handler for navigating through milestones
-  const handleMilestoneContinue = () => {
-    if (currentMilestoneIndex < recentMilestones.length - 1) {
-      setCurrentMilestoneIndex(prev => prev + 1);
     } else {
       setStep(3);
     }
