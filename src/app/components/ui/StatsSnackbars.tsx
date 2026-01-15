@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import { toast } from "sonner";
 import { MilestoneInfo } from "../../utils/userStats/types";
 import { MilestoneCelebrationContent } from "./MilestoneCelebrationContent";
@@ -12,7 +13,11 @@ type MilestoneCelebrationSnackbarOptions = {
 
 const STATS_SNACKBAR_ID = "stats-snackbar";
 const MILESTONE_SNACKBAR_ID = "milestone-snackbar";
-const DISPLAY_FONT_STYLE = { fontFamily: "var(--font-playpen-sans), system-ui, sans-serif", minWidth: '350px', textAlign: 'center' };
+const DISPLAY_FONT_STYLE: CSSProperties = {
+  fontFamily: "var(--font-playpen-sans), system-ui, sans-serif",
+  minWidth: "350px",
+  textAlign: "center"
+};
 
 export function showStatsSnackbar({ eventType, count }: { eventType: "listened" | "viewed"; count: number }) {
   const emoji = eventType === "viewed" ? "👀" : "🎧";
