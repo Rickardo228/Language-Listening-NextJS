@@ -15,6 +15,7 @@ import { createCollection } from '../utils/collectionService';
 import { defaultPresentationConfig, defaultPresentationConfigs } from '../defaultConfig';
 import { toast } from 'sonner';
 import { resetMainScroll } from '../utils/scroll';
+import { ROUTES } from '../routes';
 
 const firestore = getFirestore();
 
@@ -259,7 +260,7 @@ export function LibraryManager({
 
       // Navigate back based on mode
       if (mode === 'sidebar') {
-        router.push('/');
+        router.push(ROUTES.HOME);
       } else {
         router.push('/library');
       }

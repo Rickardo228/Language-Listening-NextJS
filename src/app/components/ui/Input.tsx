@@ -44,7 +44,7 @@ export function Input({
 
   return (
     <div className={className}>
-      {label && <Label htmlFor={inputId} required={required}>{label}</Label>}
+      {label && <Label htmlFor={inputId} required={required} className="mb-2">{label}</Label>}
 
       <div className="relative group">
         {leftIcon && (

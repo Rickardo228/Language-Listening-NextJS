@@ -4,13 +4,6 @@ import {
   M_PLUS_Rounded_1c,
 } from "next/font/google";
 import "./globals.css";
-import { ThemeProvider } from './ThemeProvider'
-import { UserContextProvider } from './contexts/UserContext'
-import { SidebarProvider } from './contexts/SidebarContext'
-import MixpanelProvider from './components/MixpanelProvider'
-import { AppLayout } from './components/AppLayout'
-import { CookieConsent } from './components/CookieConsent'
-import { Toaster } from 'sonner'
 
 const playpenSans = Playpen_Sans({
   subsets: ["latin"],
@@ -52,26 +45,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${playpenSans.variable} ${mPlusRounded1c.variable} antialiased`} suppressHydrationWarning>
       <body>
-        <ThemeProvider>
-          <Toaster
-            richColors
-            toastOptions={{
-              classNames: {
-                toast: 'bg-background text-foreground border-border',
-              },
-            }}
-          />
-          <UserContextProvider>
-            <SidebarProvider>
-              <MixpanelProvider>
-                <AppLayout>
-                  {children}
-                </AppLayout>
-                <CookieConsent />
-              </MixpanelProvider>
-            </SidebarProvider>
-          </UserContextProvider>
-        </ThemeProvider>
+        {children}
       </body>
     </html>
   )

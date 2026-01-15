@@ -22,6 +22,9 @@ export interface UserProfile {
   nativeLanguage?: string; // User's native/first language
   contentPreferences?: string[];
   timezone?: string; // User's timezone for streak warnings
+  dreamOutcomes?: string[];
+  painPoints?: string[];
+  practiceTime?: string;
 
   // Email notification preferences
   emailNotificationsEnabled?: boolean; // Master toggle
@@ -149,6 +152,9 @@ export const saveOnboardingData = async (
     inputLang: string;
     targetLang: string;
     contentPreferences?: string[];
+    dreamOutcomes?: string[];
+    painPoints?: string[];
+    practiceTime?: string;
   },
   firebaseUser?: User // Optional Firebase user object for additional data
 ): Promise<void> => {
@@ -182,6 +188,15 @@ export const saveOnboardingData = async (
   }
   if (firebaseUser?.photoURL) {
     profileData.photoURL = firebaseUser.photoURL;
+  }
+  if (data.dreamOutcomes !== undefined) {
+    profileData.dreamOutcomes = data.dreamOutcomes;
+  }
+  if (data.painPoints !== undefined) {
+    profileData.painPoints = data.painPoints;
+  }
+  if (data.practiceTime !== undefined) {
+    profileData.practiceTime = data.practiceTime;
   }
 
   await createOrUpdateUserProfile(userId, profileData);

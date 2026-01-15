@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { User, signOut, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import { auth } from '../firebase';
-import { BarChart3, MessageSquare, LogOut, Languages, Heart, Mail } from 'lucide-react';
+import { BarChart3, MessageSquare, LogOut, Languages, Heart, Mail, CreditCard } from 'lucide-react';
 import { Menu } from '@headlessui/react';
 import { UserStatsModal } from './UserStatsModal';
 import { LanguagePreferencesModal } from './LanguagePreferencesModal';
@@ -32,14 +32,14 @@ export function UserAvatar({ user }: UserAvatarProps) {
                             </div>
                         )}
                     </Menu.Button>
-                    
+
                     <Menu.Items className="absolute right-0 mt-2 w-48 bg-background border rounded shadow-lg z-50 focus:outline-none">
                         <div className="p-4 border-b">
                             <div className="font-semibold truncate" title={user.displayName || user.email || "User"}>
                                 {user.displayName || user.email || "User"}
                             </div>
                         </div>
-                        
+
                         <Menu.Item>
                             {({ active }) => (
                                 <button
@@ -54,7 +54,7 @@ export function UserAvatar({ user }: UserAvatarProps) {
                                 </button>
                             )}
                         </Menu.Item>
-                        
+
                         <Menu.Item>
                             {({ active }) => (
                                 <button
@@ -69,7 +69,7 @@ export function UserAvatar({ user }: UserAvatarProps) {
                                 </button>
                             )}
                         </Menu.Item>
-                        
+
                         <Menu.Item>
                             {({ active }) => (
                                 <button
@@ -103,6 +103,21 @@ export function UserAvatar({ user }: UserAvatarProps) {
                         <Menu.Item>
                             {({ active }) => (
                                 <a
+                                    href="https://billing.stripe.com/p/login/00w00je6g17XfrSah6dAk00"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className={`block w-full text-left px-4 py-2 flex items-center gap-2 ${active ? 'bg-secondary' : ''}`}
+                                    onClick={() => track('Manage Subscription Clicked')}
+                                >
+                                    <CreditCard className="w-4 h-4" />
+                                    Subscription
+                                </a>
+                            )}
+                        </Menu.Item>
+
+                        <Menu.Item>
+                            {({ active }) => (
+                                <a
                                     href="mailto:hello@lingopaper.com?subject=Feedback for LingoPaper"
                                     className={`block w-full text-left px-4 py-2 flex items-center gap-2 ${active ? 'bg-secondary' : ''}`}
                                     onClick={() => track('Send Feedback Clicked')}
@@ -112,7 +127,7 @@ export function UserAvatar({ user }: UserAvatarProps) {
                                 </a>
                             )}
                         </Menu.Item>
-                        
+
                         <Menu.Item>
                             {({ active }) => (
                                 <button

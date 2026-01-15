@@ -8,6 +8,7 @@ import { getUserLocalDateBoundary, getUserTimezone } from "../utils/userStats";
 import { getPhraseRankTitle, getLanguageRankTitle, PRODUCTION_PHRASE_RANKS } from "../utils/rankingSystem";
 import { getFlagEmoji, getLanguageName } from "../utils/languageUtils";
 import { Button } from "./ui/Button";
+import { ROUTES } from "../routes";
 
 interface ListCompletionScreenProps {
   isOpen: boolean;
@@ -602,7 +603,7 @@ export function ListCompletionScreen({
                           fullWidth
                           className="font-bold text-lg py-4 rounded-xl shadow-lg"
                           onClick={async () => {
-                            await router.push('/');
+                            await router.push(ROUTES.HOME);
                             onClose();
                           }}
                         >
