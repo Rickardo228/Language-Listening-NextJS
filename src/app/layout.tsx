@@ -1,25 +1,5 @@
 import type { Metadata } from "next";
-import {
-  Playpen_Sans,
-  M_PLUS_Rounded_1c,
-} from "next/font/google";
 import "./globals.css";
-
-const playpenSans = Playpen_Sans({
-  subsets: ["latin"],
-  weight: ["400", "700"],
-  variable: "--font-playpen-sans",
-  display: "swap",
-  fallback: ["system-ui", "arial"],
-});
-
-const mPlusRounded1c = M_PLUS_Rounded_1c({
-  subsets: ["latin"],
-  weight: ["400", "700"],
-  variable: "--font-mplus-rounded",
-  display: "swap",
-  fallback: ["system-ui", "arial"],
-});
 
 export const metadata: Metadata = {
   title: "Language Shadowing",
@@ -43,7 +23,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className={`${playpenSans.variable} ${mPlusRounded1c.variable} antialiased`} suppressHydrationWarning>
+    <html lang="en" className="antialiased" suppressHydrationWarning>
       <body>
         {children}
       </body>

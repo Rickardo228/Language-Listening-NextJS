@@ -20,9 +20,6 @@ import { useUser } from '../../../contexts/UserContext';
 import { API_BASE_URL } from '../../../consts';
 import { ROUTES } from '../../../routes';
 
-// Stripe Billing Portal for returning users
-const BILLING_PORTAL_URL = 'https://billing.stripe.com/p/login/00w00je6g17XfrSah6dAk00';
-
 interface Props {
   data: OnboardingData;
   updateData: (data: Partial<OnboardingData>) => void;
@@ -132,9 +129,45 @@ export function Paywall({ data, updateData, onNext, onBack }: Props) {
     }
   };
 
-  const handleManageSubscription = () => {
-    // Redirect to Stripe Billing Portal for users who have already trialed
-    window.location.href = BILLING_PORTAL_URL;
+  const handleManageSubscription = async () => {
+    if (!user) {
+      setErrorMessage('Please sign in to manage your subscription.');
+      return;
+    }
+
+    setErrorMessage(null);
+    setIsSubmitting(true);
+    setLoadingStage('Opening billing portal...');
+
+    try {
+      const idToken = await user.getIdToken();
+      const returnUrl = `${window.location.origin}${ROUTES.HOME}`;
+      const response = await fetch(`${API_BASE_URL}/api/billing-portal-session`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${idToken}`,
+        },
+        body: JSON.stringify({ returnUrl }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data?.error || 'Failed to open billing portal.');
+      }
+
+      if (!data?.url) {
+        throw new Error('Billing portal URL missing.');
+      }
+
+      window.location.href = data.url;
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'Failed to open billing portal.');
+    } finally {
+      setIsSubmitting(false);
+      setLoadingStage(null);
+    }
   };
 
   return (
