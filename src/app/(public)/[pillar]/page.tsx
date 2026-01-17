@@ -19,7 +19,7 @@ export const revalidate = 3600;
 
 // Generate metadata for SEO
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const { pillar } = await params;
+  const { pillar } = params;
 
   const sanityArticle = await getSanityArticle(pillar);
   if (sanityArticle) {
@@ -28,18 +28,22 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   return {
     title: 'Page Not Found',
+    robots: {
+      index: false,
+      follow: false,
+    },
   };
 }
 
 export default async function PillarPage({ params }: PageProps) {
-  const { pillar } = await params;
+  const { pillar } = params;
 
   const sanityArticle = await getSanityArticle(pillar);
   if (!sanityArticle) {
     notFound();
   }
 
-  const schemaMarkup = buildArticleSchema(sanityArticle);
+  const schemaMarkup = buildArticleSchema(sanityArticle, `/${pillar}`);
 
   return (
     <>

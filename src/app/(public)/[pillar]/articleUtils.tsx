@@ -3,6 +3,18 @@ import { cache } from 'react';
 import { client } from '@/lib/sanity';
 import { PortableText } from '@/components/PortableText';
 
+const DEFAULT_SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+const DEFAULT_OG_IMAGE = '/hero-image.jpg';
+
+function normalizeSiteUrl(siteUrl: string) {
+  return siteUrl.endsWith('/') ? siteUrl.slice(0, -1) : siteUrl;
+}
+
+function buildAbsoluteUrl(path: string) {
+  const baseUrl = normalizeSiteUrl(DEFAULT_SITE_URL);
+  return new URL(path, `${baseUrl}/`).toString();
+}
+
 export interface SanityArticle {
   _id: string;
   title: string;
@@ -56,23 +68,46 @@ export const getSanityArticle = cache(async (slug: string): Promise<SanityArticl
 });
 
 export function buildArticleMetadata(article: SanityArticle, canonicalPath: string): Metadata {
+  const canonicalUrl = buildAbsoluteUrl(canonicalPath);
+  const ogImageUrl = buildAbsoluteUrl(DEFAULT_OG_IMAGE);
+  const description = article.description || article.quickAnswer || '';
+
   return {
     title: article.title,
-    description: article.description || article.quickAnswer,
+    description,
     keywords: article.keywords || [],
+    alternates: {
+      canonical: canonicalUrl,
+    },
     openGraph: {
       title: article.title,
-      description: article.description || article.quickAnswer || '',
+      description,
+      url: canonicalUrl,
+      siteName: 'Language Shadowing',
       type: 'article',
       publishedTime: article.publishedAt,
+      images: [
+        {
+          url: ogImageUrl,
+          width: 1200,
+          height: 630,
+          alt: article.title,
+        },
+      ],
     },
-    alternates: {
-      canonical: canonicalPath,
+    twitter: {
+      card: 'summary_large_image',
+      title: article.title,
+      description,
+      images: [ogImageUrl],
     },
   };
 }
 
-export function buildArticleSchema(article: SanityArticle) {
+export function buildArticleSchema(article: SanityArticle, canonicalPath: string) {
+  const canonicalUrl = buildAbsoluteUrl(canonicalPath);
+  const imageUrl = buildAbsoluteUrl(DEFAULT_OG_IMAGE);
+
   return {
     '@context': 'https://schema.org',
     '@type': 'Article',
@@ -84,6 +119,12 @@ export function buildArticleSchema(article: SanityArticle) {
     },
     datePublished: article.publishedAt,
     keywords: article.keywords?.join(', '),
+    image: [imageUrl],
+    mainEntityOfPage: {
+      '@type': 'WebPage',
+      '@id': canonicalUrl,
+    },
+    url: canonicalUrl,
   };
 }
 
