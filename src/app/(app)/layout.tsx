@@ -5,6 +5,7 @@ import MixpanelProvider from '../components/MixpanelProvider'
 import { AppLayout } from '../components/AppLayout'
 import { CookieConsent } from '../components/CookieConsent'
 import { Toaster } from 'sonner'
+import { Suspense } from 'react'
 
 export default function AuthenticatedLayout({
   children,
@@ -26,9 +27,11 @@ export default function AuthenticatedLayout({
       <UserContextProvider>
         <SidebarProvider>
           <MixpanelProvider>
-            <AppLayout>
-              {children}
-            </AppLayout>
+            <Suspense fallback={null}>
+              <AppLayout>
+                {children}
+              </AppLayout>
+            </Suspense>
             <CookieConsent />
           </MixpanelProvider>
         </SidebarProvider>
