@@ -439,15 +439,13 @@ export function TemplatesBrowser({
                                     const progress = templateProgress[c.id];
                                     const total = t?.phraseCount || 0;
 
-                                    // No progress at all
-                                    if (!progress || !total) return 'not-started';
-
                                     // Treat as completed if we have an explicit completedAt
                                     // OR if we've listened to all phrases in this template
-                                    const isCompleted = Boolean(progress.completedAt) || progress.listenedCount >= total;
+                                    const isCompleted = progress && total && (Boolean(progress.completedAt) || progress.listenedCount >= total);
                                     if (isCompleted) return 'completed';
 
                                     // Check if this is the first incomplete template in the path (i.e., "next")
+                                    // This must be checked BEFORE 'not-started' so the first incomplete item shows as 'next'
                                     if (pathId) {
                                         const firstIncompleteIndex = templates.findIndex((template) => {
                                             const prog = templateProgress[template.groupId];
@@ -460,6 +458,9 @@ export function TemplatesBrowser({
                                         const currentIndex = templates.findIndex(template => template.groupId === c.id);
                                         if (currentIndex === firstIncompleteIndex) return 'next';
                                     }
+
+                                    // No progress at all
+                                    if (!progress || !total) return 'not-started';
 
                                     // Has progress but not complete
                                     return 'in-progress';
