@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { Home, Sun, Moon, CircleCheck } from 'lucide-react';
 import { useTheme } from '../ThemeProvider';
 import { UserAvatar } from './UserAvatar';
@@ -26,8 +26,9 @@ interface AppLayoutProps {
 export function AppLayout({ children }: AppLayoutProps) {
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const resolvedPathname = pathname ?? (typeof window !== 'undefined' ? window.location.pathname : null);
-  const { user, isAuthLoading, userProfile, refreshUserClaims } = useUser();
+  const { user, isAuthLoading, userProfile, refreshUserClaims, hasTrialed } = useUser();
   const { theme, toggleTheme } = useTheme();
   const { isCollapsed, setIsCollapsed } = useSidebar();
   const [showCheckoutSuccessModal, setShowCheckoutSuccessModal] = useState(false);
@@ -44,12 +45,10 @@ export function AppLayout({ children }: AppLayoutProps) {
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    const params = new URLSearchParams(window.location.search);
+    const params = new URLSearchParams(searchParams?.toString() || window.location.search);
     const hasCheckoutSuccessParam = params.get('checkout') === 'success';
-    console.log(document.cookie);
     const cookieMatch = document.cookie.match(/(?:^|;\s*)checkout-success=([^;]+)/);
     const hasCheckoutSuccessCookie = cookieMatch?.[1] === '1';
-    console.log(cookieMatch);
     if (hasCheckoutSuccessParam || hasCheckoutSuccessCookie) {
       try {
         sessionStorage.setItem('checkout-success', '1');
@@ -60,13 +59,13 @@ export function AppLayout({ children }: AppLayoutProps) {
         params.delete('checkout');
         const nextQuery = params.toString();
         const nextUrl = `${window.location.pathname}${nextQuery ? `?${nextQuery}` : ''}${window.location.hash || ''}`;
-        window.history.replaceState({}, '', nextUrl);
+        router.replace(nextUrl);
       }
       if (hasCheckoutSuccessCookie) {
         document.cookie = 'checkout-success=; path=/; max-age=0; SameSite=Lax';
       }
     }
-  }, []);
+  }, [searchParams, router]);
 
   useEffect(() => {
     if (!user) return;
@@ -84,7 +83,7 @@ export function AppLayout({ children }: AppLayoutProps) {
     }
     refreshUserClaims();
     setShowCheckoutSuccessModal(true);
-  }, [user, refreshUserClaims]);
+  }, [user, refreshUserClaims, pathname, searchParams]);
 
 
   const handleHome = () => {
@@ -239,8 +238,10 @@ export function AppLayout({ children }: AppLayoutProps) {
         <Modal
           isOpen={showCheckoutSuccessModal}
           onClose={() => setShowCheckoutSuccessModal(false)}
-          title="Welcome aboard!"
-          subtitle="Your free trial is active and everything is unlocked."
+          title={hasTrialed ? 'You’re all set!' : 'Welcome aboard!'}
+          subtitle={hasTrialed
+            ? 'Your account is active.'
+            : 'Your free trial is active and everything is unlocked.'}
           icon={<CircleCheck className="w-6 h-6 text-green-600" />}
           footer={(
             <Button onClick={() => setShowCheckoutSuccessModal(false)}>
@@ -250,9 +251,9 @@ export function AppLayout({ children }: AppLayoutProps) {
           enableBlur={true}
         >
           <p className="text-sm text-muted-foreground">
-            We&apos;ve refreshed your account status and unlocked the full library,
-            unlimited collections, and progress tracking. Jump into your first
-            session whenever you&apos;re ready.
+            {hasTrialed
+              ? 'We updated your account status and opened the full library, unlimited collections, and progress tracking. Jump in whenever you’re ready.'
+              : 'We refreshed your account status and unlocked the full library, unlimited collections, and progress tracking. Jump into your first session whenever you are ready.'}
           </p>
         </Modal>
       </PaywallGuard>
