@@ -19,7 +19,7 @@ export const revalidate = 3600;
 
 // Generate metadata for SEO
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const { pillar } = params;
+  const { pillar } = await params;
 
   const sanityArticle = await getSanityArticle(pillar);
   if (sanityArticle) {
@@ -36,7 +36,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export default async function PillarPage({ params }: PageProps) {
-  const { pillar } = params;
+  const { pillar } = await params;
 
   const sanityArticle = await getSanityArticle(pillar);
   if (!sanityArticle) {
