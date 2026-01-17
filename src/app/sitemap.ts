@@ -27,14 +27,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ),
   ]);
 
-  const pillarEntries = pillars.map((pillar) => ({
+  const pillarEntries: MetadataRoute.Sitemap = pillars.map((pillar) => ({
     url: `${baseUrl}/${pillar.slug.current}`,
     lastModified: pillar.publishedAt || now,
     changeFrequency: 'weekly',
     priority: 0.8,
   }));
 
-  const articleEntries = articles.map((article) => ({
+  const articleEntries: MetadataRoute.Sitemap = articles.map((article) => ({
     url: `${baseUrl}/${article.pillar || 'language-shadowing'}/${article.slug.current}`,
     lastModified: article.publishedAt || now,
     changeFrequency: 'monthly',
