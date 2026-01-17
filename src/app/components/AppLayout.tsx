@@ -252,8 +252,8 @@ export function AppLayout({ children }: AppLayoutProps) {
         >
           <p className="text-sm text-muted-foreground">
             {hasTrialed
-              ? 'We updated your account status and opened the full library, unlimited collections, and progress tracking. Jump in whenever you’re ready.'
-              : 'We refreshed your account status and unlocked the full library, unlimited collections, and progress tracking. Jump into your first session whenever you are ready.'}
+              ? 'We updated your account status and opened the full library, unlimited custom phrases, and progress tracking. Jump in whenever you’re ready.'
+              : 'We refreshed your account status and unlocked the full library, unlimited custom phrases, and progress tracking. Jump into your first session whenever you are ready.'}
           </p>
         </Modal>
       </PaywallGuard>

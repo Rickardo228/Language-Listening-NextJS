@@ -38,7 +38,7 @@ const features = [
   },
   {
     icon: TrendingUp,
-    title: 'Unlimited collections + imports',
+    title: 'unlimited custom phrases + imports',
   },
   {
     icon: ChartBar,
