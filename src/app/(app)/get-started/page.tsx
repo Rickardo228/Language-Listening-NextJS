@@ -1,11 +1,19 @@
 'use client'
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { OnboardingFlow } from '../../components/OnboardingFlow';
 import { ROUTES } from '../../routes';
 
 export default function GetStartedPage() {
+    return (
+        <Suspense fallback={<div className="min-h-screen bg-slate-50 dark:bg-slate-950" />}>
+            <GetStartedContent />
+        </Suspense>
+    );
+}
+
+function GetStartedContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const [currentStep, setCurrentStep] = useState(1);
