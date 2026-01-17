@@ -25,6 +25,7 @@ interface Props {
   updateData: (data: Partial<OnboardingData>) => void;
   onNext: () => void;
   onBack: () => void;
+  showBack?: boolean;
 }
 
 const features = [
@@ -66,7 +67,7 @@ const plans = [
   },
 ];
 
-export function Paywall({ data, updateData, onNext, onBack }: Props) {
+export function Paywall({ data, updateData, onNext, onBack, showBack = true }: Props) {
   const router = useRouter();
   const [selectedPlan, setSelectedPlan] = useState(data.selectedPlan || 'annual');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -283,10 +284,12 @@ export function Paywall({ data, updateData, onNext, onBack }: Props) {
       </div>
 
       <div className="flex gap-3">
-        <Button onClick={onBack} variant="outline" size="md" className="px-4 gap-2">
-          <ChevronLeft className="w-4 h-4" />
-          Back
-        </Button>
+        {showBack && (
+          <Button onClick={onBack} variant="outline" size="md" className="px-4 gap-2">
+            <ChevronLeft className="w-4 h-4" />
+            Back
+          </Button>
+        )}
         <Button
           onClick={hasTrialed ? handleManageSubscription : handleStartTrial}
           className="flex-1"
