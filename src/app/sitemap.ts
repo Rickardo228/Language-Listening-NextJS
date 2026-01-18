@@ -1,7 +1,7 @@
 import type { MetadataRoute } from 'next';
 import { client } from '@/lib/sanity';
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.languageshadowing.com';
 
 function normalizeSiteUrl(siteUrl: string) {
   return siteUrl.endsWith('/') ? siteUrl.slice(0, -1) : siteUrl;

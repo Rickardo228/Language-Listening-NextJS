@@ -3,7 +3,7 @@ import { cache } from 'react';
 import { client } from '@/lib/sanity';
 import { PortableText } from '@/components/PortableText';
 
-const DEFAULT_SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+const DEFAULT_SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.languageshadowing.com';
 const DEFAULT_OG_IMAGE = '/hero-image.jpg';
 
 function normalizeSiteUrl(siteUrl: string) {

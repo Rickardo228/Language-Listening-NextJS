@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation';
 import { LandingPage } from '../components/LandingPage';
 import { ROUTES } from '../routes';
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.languageshadowing.com';
 const DEFAULT_OG_IMAGE = '/hero-image.jpg';
 
 function buildAbsoluteUrl(path: string) {
