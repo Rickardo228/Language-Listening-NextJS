@@ -15,9 +15,10 @@ interface LikePhraseDialogProps {
   isOpen: boolean;
   onClose: () => void;
   phrase: Phrase | null;
+  submitDisabled?: boolean;
 }
 
-export function LikePhraseDialog({ isOpen, onClose, phrase }: LikePhraseDialogProps) {
+export function LikePhraseDialog({ isOpen, onClose, phrase, submitDisabled }: LikePhraseDialogProps) {
   const { user } = useUser();
   const { upsertCollection, appendPhraseToCollection } = useCollections();
   const [matchingCollections, setMatchingCollections] = useState<Array<{ id: string; name: string; isReversed: boolean }>>([]);
@@ -27,13 +28,22 @@ export function LikePhraseDialog({ isOpen, onClose, phrase }: LikePhraseDialogPr
   const [inputLang, setInputLang] = useState(phrase?.inputLang || '');
   const [targetLang, setTargetLang] = useState(phrase?.targetLang || '');
   const [phrasesInput, setPhrasesInput] = useState(phrase?.input || '');
+  const sanitizePhrase = (value: Phrase) => {
+    const sanitized = { ...value } as Record<string, unknown>;
+    Object.keys(sanitized).forEach((key) => {
+      if (sanitized[key] === undefined) {
+        delete sanitized[key];
+      }
+    });
+    return sanitized as Phrase;
+  };
 
   useEffect(() => {
     if (!phrase) return;
     setInputLang(phrase.inputLang);
     setTargetLang(phrase.targetLang);
     setPhrasesInput(phrase.input);
-  }, [phrase]);
+  }, [phrase?.inputLang, phrase?.targetLang, phrase?.input]);
 
   useEffect(() => {
     const loadCollections = async () => {
@@ -69,7 +79,7 @@ export function LikePhraseDialog({ isOpen, onClose, phrase }: LikePhraseDialogPr
     };
 
     loadCollections();
-  }, [user, isOpen, phrase]);
+  }, [user, isOpen, phrase?.inputLang, phrase?.targetLang]);
 
   const collectionOptions = useMemo(() => {
     return matchingCollections.map((collection) => ({
@@ -84,7 +94,7 @@ export function LikePhraseDialog({ isOpen, onClose, phrase }: LikePhraseDialogPr
     setSaving(true);
     try {
       const now = new Date().toISOString();
-      const phraseToAdd = { ...phrase, created_at: now };
+      const phraseToAdd = sanitizePhrase({ ...phrase, created_at: now });
       const collectionId = await createCollection([phraseToAdd], name, 'phrases', user, user, { skipTracking: false });
       upsertCollection({
         id: collectionId,
@@ -126,7 +136,7 @@ export function LikePhraseDialog({ isOpen, onClose, phrase }: LikePhraseDialogPr
     try {
       const now = new Date().toISOString();
       const selectedCollection = matchingCollections.find((collection) => collection.id === selectedCollectionId);
-      const phraseToAdd = selectedCollection?.isReversed
+      const phraseToAdd = sanitizePhrase(selectedCollection?.isReversed
         ? {
           ...phrase,
           input: phrase.translated,
@@ -140,7 +150,7 @@ export function LikePhraseDialog({ isOpen, onClose, phrase }: LikePhraseDialogPr
           romanized: '',
           created_at: now,
         }
-        : { ...phrase, created_at: now };
+        : { ...phrase, created_at: now });
 
       if (matchingCollections.length === 0) {
         const collectionId = await createCollection([phraseToAdd], 'Liked Phrases', 'phrases', user, user, { skipTracking: false });
@@ -201,6 +211,7 @@ export function LikePhraseDialog({ isOpen, onClose, phrase }: LikePhraseDialogPr
       onCreateCollection={handleCreateCollection}
       autoFocusCollection
       onCollectionSubmit={handleSubmit}
+      submitDisabled={submitDisabled}
     />
   );
 }

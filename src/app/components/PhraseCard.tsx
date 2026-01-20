@@ -12,9 +12,11 @@ import {
 } from "react";
 import { Popover, Transition } from "@headlessui/react";
 import { motion, AnimatePresence, useMotionValue, type MotionValue } from "framer-motion";
-import { Volume2 } from "lucide-react";
+import { Volume2, Heart } from "lucide-react";
 import { API_BASE_URL, BLEED_START_DELAY, TITLE_DELAY } from "../consts";
 import { generateAudio } from "../utils/audioUtils";
+import { LikePhraseDialog } from "../LikePhraseDialog";
+import type { Phrase } from "../types";
 
 // Hide Headless UI focus guard elements within PhraseCard (apply once)
 const FOCUS_GUARD_STYLE_ID = 'phrase-card-focus-guard-style';
@@ -177,6 +179,10 @@ type WordTooltipPanelProps = {
 };
 
 function WordTooltipPanel({ payload, cacheRef, audioRef, autoPlayOnOpen }: WordTooltipPanelProps) {
+  const [likeDialogOpen, setLikeDialogOpen] = useState(false);
+  const [likeDialogPhrase, setLikeDialogPhrase] = useState<Phrase | null>(null);
+  const [likeDialogLoading, setLikeDialogLoading] = useState(false);
+  const likeDialogRequestIdRef = useRef(0);
   const cacheKey = useMemo(
     () => buildCacheKey(payload),
     [payload.sourceLang, payload.targetLang, payload.lookupWord, payload.sentence]
@@ -419,6 +425,108 @@ function WordTooltipPanel({ payload, cacheRef, audioRef, autoPlayOnOpen }: WordT
     }
   };
 
+  const buildLikedPhraseAudio = async () => {
+    const response = await fetch(`${API_BASE_URL}/generate-audio`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        translations: {
+          [payload.sourceLang]: [
+            {
+              translated: payload.lookupWord,
+              romanized: "",
+            },
+          ],
+          [payload.targetLang]: [
+            {
+              translated: tooltipState.translation,
+              romanized: "",
+            },
+          ],
+        },
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error("Audio request failed");
+    }
+
+    const data = await response.json();
+    const result = Array.isArray(data?.audioResult)
+      ? data.audioResult
+      : Array.isArray(data?.result)
+        ? data.result
+        : Array.isArray(data)
+          ? data
+          : [];
+
+    const getAudio = (lang: string) => {
+      const entry = result.find((item: { lang?: string }) => item?.lang === lang);
+      const first = entry?.data?.["0"];
+      return {
+        audioUrl: typeof first?.audioUrl === "string" ? first.audioUrl : null,
+        duration: typeof first?.duration === "number" ? first.duration : null,
+        voice: typeof first?.voice === "string" ? first.voice : undefined,
+        romanized: typeof first?.romanized === "string" ? first.romanized : "",
+      };
+    };
+
+    const inputAudio = getAudio(payload.sourceLang);
+    const outputAudio = getAudio(payload.targetLang);
+
+    return {
+      inputAudio: inputAudio.audioUrl && inputAudio.duration
+        ? { audioUrl: inputAudio.audioUrl, duration: inputAudio.duration }
+        : null,
+      outputAudio: outputAudio.audioUrl && outputAudio.duration
+        ? { audioUrl: outputAudio.audioUrl, duration: outputAudio.duration }
+        : null,
+      inputVoice: inputAudio.voice || payload.voice,
+      targetVoice: outputAudio.voice,
+      romanized: outputAudio.romanized || "",
+    };
+  };
+
+  const handleOpenLikeDialog = async (event: MouseEvent) => {
+    event.stopPropagation();
+    if (!tooltipState.translation || likeDialogLoading) return;
+    const requestId = ++likeDialogRequestIdRef.current;
+    setLikeDialogPhrase({
+      input: payload.lookupWord,
+      translated: tooltipState.translation,
+      inputAudio: null,
+      inputLang: payload.sourceLang,
+      inputVoice: payload.voice,
+      outputAudio: null,
+      targetLang: payload.targetLang,
+      romanized: "",
+    });
+    setLikeDialogOpen(true);
+    setLikeDialogLoading(true);
+    try {
+      const audio = await buildLikedPhraseAudio();
+      if (requestId !== likeDialogRequestIdRef.current) return;
+      setLikeDialogPhrase((prev) => {
+        if (!prev) return null;
+        return {
+          ...prev,
+          inputAudio: audio.inputAudio,
+          outputAudio: audio.outputAudio,
+          inputVoice: audio.inputVoice || prev.inputVoice,
+          targetVoice: audio.targetVoice,
+          romanized: audio.romanized || prev.romanized,
+        };
+      });
+    } catch (error) {
+      setTooltipState((prev) => ({
+        ...prev,
+        error: "Audio failed to load.",
+      }));
+    } finally {
+      setLikeDialogLoading(false);
+    }
+  };
+
   return (
     <>
       <div className="text-sm font-semibold text-slate-900 dark:text-slate-50">
@@ -462,6 +570,29 @@ function WordTooltipPanel({ payload, cacheRef, audioRef, autoPlayOnOpen }: WordT
         >
           {tooltipState.contextLoading ? "Asking..." : "Ask"}
         </button>
+        {tooltipState.translation && (
+          <button
+            type="button"
+            onClick={handleOpenLikeDialog}
+            aria-label="Save word"
+            disabled={likeDialogLoading}
+            className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-slate-300 text-slate-600 transition-colors hover:border-slate-400 hover:text-slate-900 dark:border-slate-600 dark:text-slate-300 dark:hover:border-slate-400 dark:hover:text-slate-100"
+          >
+            {likeDialogLoading ? (
+              <span className="text-[10px]">...</span>
+            ) : (
+              <Heart className="h-3.5 w-3.5" />
+            )}
+          </button>
+        )}
+        {likeDialogOpen && likeDialogPhrase && (
+          <LikePhraseDialog
+            isOpen={likeDialogOpen}
+            onClose={() => setLikeDialogOpen(false)}
+            phrase={likeDialogPhrase}
+            submitDisabled={likeDialogLoading}
+          />
+        )}
       </div>
       {(tooltipState.context || tooltipState.contextLoading) && (
         <div className="mt-2 text-xs text-slate-600 dark:text-slate-300">

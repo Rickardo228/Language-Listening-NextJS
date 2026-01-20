@@ -30,6 +30,7 @@ export interface ImportPhrasesDialogProps {
     onCreateCollection?: (name: string) => Promise<void>
     autoFocusCollection?: boolean
     onCollectionSubmit?: () => void
+    submitDisabled?: boolean
 }
 
 export function ImportPhrasesDialog({
@@ -52,6 +53,7 @@ export function ImportPhrasesDialog({
     onCreateCollection,
     autoFocusCollection = false,
     onCollectionSubmit,
+    submitDisabled = false,
 }: ImportPhrasesDialogProps) {
     const [prompt, setPrompt] = useState('')
     const [generatingPhrases, setGeneratingPhrases] = useState(false)
@@ -61,6 +63,7 @@ export function ImportPhrasesDialog({
     const inputLangLabel = (languageOptions.find(lang => lang.code === (isSwapped ? targetLang : inputLang))?.label || inputLang).split(' (')[0];
     const isLikeVariant = variant === 'like';
     const addToCollectionDisabled = loading
+        || submitDisabled
         || !phrasesInput.trim()
         || (isLikeVariant && collectionOptions.length > 0 && !selectedCollectionId);
 
@@ -133,7 +136,7 @@ export function ImportPhrasesDialog({
     };
 
     return (
-        <Dialog open={isOpen} onClose={onClose} className="relative z-50">
+        <Dialog open={isOpen} onClose={onClose} className="relative z-[400]">
             <div className="fixed inset-0 bg-black/50" />
             <div className="fixed inset-0 flex items-center justify-center">
                 <Dialog.Panel className={`bg-background text-foreground p-4 rounded-lg shadow-lg w-[500px] max-w-[90vw] ${isLikeVariant ? 'overflow-visible' : 'overflow-auto max-h-[90vh]'} border`}>
