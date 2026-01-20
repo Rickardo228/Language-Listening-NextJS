@@ -5,7 +5,7 @@ import { Config, Phrase } from '../types';
 
 interface CollectionsContextType {
   collections: Config[];
-  setCollections: (collections: Config[]) => void;
+  setCollections: React.Dispatch<React.SetStateAction<Config[]>>;
   upsertCollection: (collection: Config) => void;
   appendPhraseToCollection: (collectionId: string, phrase: Phrase) => void;
   removeCollection: (collectionId: string) => void;
