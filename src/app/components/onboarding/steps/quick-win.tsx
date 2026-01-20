@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { collection, getDocs, getFirestore, query, where } from 'firebase/firestore';
 import {
   ChevronLeft,
   CircleCheck,
@@ -21,7 +22,13 @@ import { Slider } from '../../ui/Slider';
 import { Switch } from '../../ui/Switch';
 import { OnboardingData } from '../types';
 import { defaultPresentationConfig } from '../../../defaultConfig';
-import { Phrase, PresentationConfig } from '../../../types';
+import { Phrase, PresentationConfig, Template } from '../../../types';
+import { buildTemplatePhrases } from '../../../utils/templatePhrases';
+
+const firestore = getFirestore();
+const QUICK_WIN_TEMPLATE_GROUP_ID = 'beginner_001';
+
+type TemplateForQuickWin = Template;
 
 interface Props {
   data: OnboardingData;
@@ -68,6 +75,7 @@ export function QuickWin({ data, onNext, onBack }: Props) {
   const [shadowPause, setShadowPause] = useState([2]);
   const [completedPhrases, setCompletedPhrases] = useState<number[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [templatePhrases, setTemplatePhrases] = useState<Phrase[]>([]);
   const playbackMethodsRef = useRef<PhrasePlaybackMethods | null>(null);
   const currentIndexRef = useRef(currentIndex);
   const completedRef = useRef(completedPhrases);
@@ -96,11 +104,59 @@ export function QuickWin({ data, onNext, onBack }: Props) {
     return () => window.clearInterval(intervalId);
   }, []);
 
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchTemplatePhrases = async () => {
+      try {
+        const inputLang = data.nativeLanguage || 'en-GB';
+        const targetLang = data.targetLanguage || 'it-IT';
+
+        const templatesRef = collection(firestore, 'templates');
+        const [inputSnapshot, targetSnapshot] = await Promise.all([
+          getDocs(query(
+            templatesRef,
+            where('groupId', '==', QUICK_WIN_TEMPLATE_GROUP_ID),
+            where('lang', '==', inputLang)
+          )),
+          getDocs(query(
+            templatesRef,
+            where('groupId', '==', QUICK_WIN_TEMPLATE_GROUP_ID),
+            where('lang', '==', targetLang)
+          )),
+        ]);
+
+        if (inputSnapshot.empty || targetSnapshot.empty) {
+          if (isMounted) setTemplatePhrases([]);
+          return;
+        }
+
+        const inputDoc = inputSnapshot.docs[0];
+        const targetDoc = targetSnapshot.docs[0];
+        const inputTemplate = { id: inputDoc.id, ...inputDoc.data() } as TemplateForQuickWin;
+        const targetTemplate = { id: targetDoc.id, ...targetDoc.data() } as TemplateForQuickWin;
+
+        if (isMounted) {
+          setTemplatePhrases(buildTemplatePhrases(inputTemplate, targetTemplate));
+        }
+      } catch (error) {
+        console.error('Error fetching quick win template:', error);
+        if (isMounted) setTemplatePhrases([]);
+      }
+    };
+
+    fetchTemplatePhrases();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [data.nativeLanguage, data.targetLanguage]);
+
   const onCompleted = () => {
     onNext();
   };
 
-  const phrases = useMemo<Phrase[]>(
+  const fallbackPhrases = useMemo<Phrase[]>(
     () =>
       lauraMipsoPhrases.map((phrase) => ({
         input: phrase.native,
@@ -114,6 +170,11 @@ export function QuickWin({ data, onNext, onBack }: Props) {
         targetVoice: `${data.targetLanguage || 'es-ES'}-Standard-D`,
       })),
     [data.nativeLanguage, data.targetLanguage]
+  );
+
+  const phrases = useMemo<Phrase[]>(
+    () => (templatePhrases.length > 0 ? templatePhrases : fallbackPhrases),
+    [fallbackPhrases, templatePhrases]
   );
 
   const presentationConfig = useMemo<PresentationConfig>(

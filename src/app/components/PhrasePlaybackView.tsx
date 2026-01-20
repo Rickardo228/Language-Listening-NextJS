@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { PresentationView } from '../PresentationView';
 import { EditablePhrases } from '../EditablePhrases';
 import { SettingsModal } from '../SettingsModal';
+import { LikePhraseDialog } from '../LikePhraseDialog';
 import { Phrase, PresentationConfig } from '../types';
 import { generateAudio } from '../utils/audioUtils';
 import { BLEED_START_DELAY, DELAY_AFTER_INPUT_PHRASES_MULTIPLIER, DELAY_AFTER_OUTPUT_PHRASES_MULTIPLIER, } from '../consts';
@@ -105,6 +106,8 @@ export function PhrasePlaybackView({
     const [showTitle, setShowTitle] = useState(false);
     const [configName, setConfigName] = useState('Default');
     const [settingsOpen, setSettingsOpen] = useState(false);
+    const [likeDialogOpen, setLikeDialogOpen] = useState(false);
+    const [likedPhrase, setLikedPhrase] = useState<Phrase | null>(null);
 
     // Debouncing refs for spam prevention
     const updateUserStatsTimeout = useRef<NodeJS.Timeout | null>(null);
@@ -1257,6 +1260,12 @@ export function PhrasePlaybackView({
         onPlay={handlePlay}
         onPlayPhrase={handlePlayPhrasePhase}
         onSettingsOpen={() => setSettingsOpen(true)}
+        onLikeOpen={() => {
+            const phrase = phrases[currentPhraseIndex];
+            if (!phrase) return;
+            setLikedPhrase(phrase);
+            setLikeDialogOpen(true);
+        }}
         nextPhrase={(() => {
             if (presentationConfig.showAllPhrases) {
                 // Show all phrases mode: next is the next phrase
@@ -1648,5 +1657,12 @@ export function PhrasePlaybackView({
                 inputLang={phrases[0]?.inputLang}
                 targetLang={phrases[0]?.targetLang}
             />
+            {likeDialogOpen && (
+                <LikePhraseDialog
+                    isOpen={likeDialogOpen}
+                    onClose={() => setLikeDialogOpen(false)}
+                    phrase={likedPhrase}
+                />
+            )}
         </div>);
 } 

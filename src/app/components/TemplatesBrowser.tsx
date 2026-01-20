@@ -4,43 +4,18 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import { getFirestore, collection, query, where, getDocs, Timestamp, orderBy, limit, QuerySnapshot, DocumentSnapshot, } from 'firebase/firestore';
-import { languageOptions, Config, PresentationConfig } from '../types';
+import { languageOptions, Config, PresentationConfig, Template } from '../types';
 import { CollectionList, CollectionStatus } from '../CollectionList';
 import { LanguageSelector } from './LanguageSelector';
 import { useUser } from '../contexts/UserContext';
 import { track } from '../../lib/mixpanelClient';
 import { loadProgress } from '../utils/progressService';
 import { buildTemplateUrl } from '../utils/templateRoutes';
+type TemplateWithTimestamp = Template & { createdAt: Timestamp };
 import { resetMainScroll } from '../utils/scroll';
 import { ROUTES } from '../routes';
 
 const firestore = getFirestore();
-
-interface TemplatePhrase {
-    translated?: string;
-    audioUrl?: string;
-    duration?: number;
-    romanized?: string;
-    voice?: string;
-}
-
-interface Template {
-    id: string;
-    groupId: string;
-    lang: string;
-    phrases: Record<string, TemplatePhrase>;
-    createdAt: Timestamp;
-    inputLang: string;
-    targetLang: string;
-    complexity: string;
-    phraseCount: number;
-    name?: string;
-    tags?: string[];
-    pathId?: string;
-    pathIndex?: number;
-    is_path?: boolean;
-    presentationConfig?: PresentationConfig;
-}
 
 interface TemplatesBrowserProps {
     initialInputLang?: string;
@@ -67,7 +42,7 @@ export function TemplatesBrowser({
 }: TemplatesBrowserProps) {
     const router = useRouter();
     const { user, userProfile } = useUser();
-    const [templates, setTemplates] = useState<Template[]>([]);
+    const [templates, setTemplates] = useState<TemplateWithTimestamp[]>([]);
     const [loading, setLoading] = useState(true);
     // For learning paths, we fetch all items initially, so isShowingAll should start as true
     const [isShowingAll, setIsShowingAll] = useState(Boolean(pathId));

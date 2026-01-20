@@ -1,6 +1,7 @@
 import { ThemeProvider } from '../ThemeProvider'
 import { UserContextProvider } from '../contexts/UserContext'
 import { SidebarProvider } from '../contexts/SidebarContext'
+import { CollectionsProvider } from '../contexts/CollectionsContext'
 import MixpanelProvider from '../components/MixpanelProvider'
 import { AppLayout } from '../components/AppLayout'
 import { CookieConsent } from '../components/CookieConsent'
@@ -25,16 +26,18 @@ export default function AuthenticatedLayout({
         }}
       />
       <UserContextProvider>
-        <SidebarProvider>
-          <MixpanelProvider>
-            <Suspense fallback={null}>
-              <AppLayout>
-                {children}
-              </AppLayout>
-            </Suspense>
-            <CookieConsent />
-          </MixpanelProvider>
-        </SidebarProvider>
+        <CollectionsProvider>
+          <SidebarProvider>
+            <MixpanelProvider>
+              <Suspense fallback={null}>
+                <AppLayout>
+                  {children}
+                </AppLayout>
+              </Suspense>
+              <CookieConsent />
+            </MixpanelProvider>
+          </SidebarProvider>
+        </CollectionsProvider>
       </UserContextProvider>
     </ThemeProvider>
   )

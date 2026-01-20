@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useLayoutEffect, useMemo } from "react";
 import { motion, AnimatePresence, useMotionValue, animate } from "framer-motion";
 import { createPortal } from "react-dom";
-import { ArrowLeft, ArrowRight, ArrowUp, ArrowDown, Maximize2, X, Play, Pause, Settings } from "lucide-react";
+import { ArrowLeft, ArrowRight, ArrowUp, ArrowDown, Maximize2, X, Play, Pause, Settings, Heart } from "lucide-react";
 import { AutumnLeaves } from "./Effects/AutumnLeaves";
 import CherryBlossom from "./Effects/CherryBlossom";
 import ParticleAnimation from "./Effects/ParticleGlow";
@@ -60,6 +60,7 @@ interface PresentationViewProps {
   onPlay?: () => void; // New prop for play functionality
   onPlayPhrase?: (phase: 'input' | 'output') => void; // New prop to play a specific phrase (input or output)
   onSettingsOpen?: () => void; // New prop for opening settings
+  onLikeOpen?: () => void; // Optional handler for liking a phrase
   verticalScroll?: boolean; // New prop to enable vertical scroll mode with top/bottom navigation
   // New props for seamless swipe animation (Spotify-style)
   nextPhrase?: string;
@@ -119,6 +120,7 @@ export function PresentationView({
   onPlay,
   onPlayPhrase,
   onSettingsOpen,
+  onLikeOpen,
   verticalScroll = false,
   nextPhrase,
   nextTranslated,
@@ -446,6 +448,22 @@ export function PresentationView({
           {/* Top right buttons container - for desktop and mobile inline (not mobile fullscreen) */}
           {!(fullScreen && isMobile) && (
             <div className="absolute top-2 right-2 flex items-center gap-1 z-10">
+              {onLikeOpen && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onLikeOpen();
+                  }}
+                  className="p-1.5 bg-gray-200/80 dark:bg-gray-700/80 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 transition-all duration-200"
+                  title="Save phrase"
+                  style={{
+                    opacity: isMobileInline ? 1 : (shouldShowNavigationButtons ? 1 : 0),
+                    transition: 'opacity 0.3s ease'
+                  }}
+                >
+                  <Heart className="h-4 w-4 text-gray-700 dark:text-gray-300" />
+                </button>
+              )}
               {/* Settings Button - visible on desktop and mobile inline (not mobile fullscreen) */}
               {onSettingsOpen && (
                 <button
@@ -718,6 +736,18 @@ export function PresentationView({
                 transition: 'opacity 0.3s ease'
               }}
             >
+              {onLikeOpen && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onLikeOpen();
+                  }}
+                  className="p-1.5 bg-gray-200/80 dark:bg-gray-700/80 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 transition-all duration-200"
+                  title="Save phrase"
+                >
+                  <Heart className="h-4 w-4 text-gray-700 dark:text-gray-300" />
+                </button>
+              )}
               {onSettingsOpen && (
                 <button
                   onClick={(e) => {
@@ -1053,6 +1083,7 @@ export function PresentationView({
     isMobile,
     shouldShowNavigationButtons,
     onSettingsOpen,
+    onLikeOpen,
     isMobileInline,
     paused,
     onPause,

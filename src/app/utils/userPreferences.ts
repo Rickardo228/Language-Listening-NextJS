@@ -1,11 +1,10 @@
-import { getFirestore, doc, setDoc, getDoc } from "firebase/firestore";
+import { doc, setDoc, getDoc } from "firebase/firestore";
 import { User } from "firebase/auth";
 import { PresentationConfig } from "../types";
 import { assignAbTestVariant, getVariantConfig } from "./abTesting";
 import { identifyUser } from "../../lib/mixpanelClient";
 import { AbilityLevel } from "./contentRecommendations";
-
-const firestore = getFirestore();
+import { firestore } from "../firebase";
 
 export interface UserProfile {
   // Core user info

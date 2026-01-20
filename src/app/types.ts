@@ -99,6 +99,35 @@ export type Phrase = {
   created_at?: string;
 };
 
+export type TemplatePhraseData = {
+  translated?: string;
+  audioUrl?: string;
+  duration?: number;
+  romanized?: string;
+  voice?: string;
+};
+
+export type TemplateDataForPhrases = {
+  lang: string;
+  phrases: Record<string, TemplatePhraseData>;
+  createdAt?: { toDate?: () => Date };
+};
+
+export type Template = TemplateDataForPhrases & {
+  id: string;
+  groupId: string;
+  complexity: string;
+  phraseCount: number;
+  name?: string;
+  pathId?: string;
+  pathIndex?: number;
+  presentationConfig?: PresentationConfig;
+  tags?: string[];
+  is_path?: boolean;
+  inputLang?: string;
+  targetLang?: string;
+};
+
 export interface ProgressData {
   collectionId: string;
   itemType: "template" | "collection";

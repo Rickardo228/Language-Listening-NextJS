@@ -1,6 +1,7 @@
 import React from 'react'
 import { render, RenderOptions } from '@testing-library/react'
 import { UserContextProvider } from '../../contexts/UserContext'
+import { CollectionsProvider } from '../../contexts/CollectionsContext'
 import { Phrase, AudioSegment } from '../../types'
 import { createMockUser as createFirebaseMockUser } from '../../__mocks__/firebase'
 
@@ -62,7 +63,9 @@ export const renderWithProviders = (
   const Wrapper = ({ children }: { children: React.ReactNode }) => {
     return (
       <UserContextProvider>
-        {children}
+        <CollectionsProvider>
+          {children}
+        </CollectionsProvider>
       </UserContextProvider>
     )
   }

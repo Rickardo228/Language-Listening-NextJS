@@ -10,6 +10,7 @@ import { User } from 'firebase/auth';
 import { getFirestore, collection, getDocs, doc, updateDoc, deleteDoc, query, orderBy, limit as fbLimit } from 'firebase/firestore';
 import { CollectionList } from '../CollectionList';
 import { useUser } from '../contexts/UserContext';
+import { useCollections } from '../contexts/CollectionsContext';
 import { trackSelectList, trackCreatePhrase, track } from '../../lib/mixpanelClient';
 import { createCollection } from '../utils/collectionService';
 import { defaultPresentationConfig, defaultPresentationConfigs } from '../defaultConfig';
@@ -46,7 +47,7 @@ export function LibraryManager({
     userProfile?.preferredTargetLang || 'it-IT'
   );
   const hasSetLanguages = useRef(false);
-  const [savedCollections, setSavedCollections] = useState<Config[]>([])
+  const { collections: savedCollections, setCollections: setSavedCollections, removeCollection } = useCollections();
   const [collectionsLoading, setCollectionsLoading] = useState(false);
   const [collectionsLimited, setCollectionsLimited] = useState(true);
 
@@ -59,61 +60,68 @@ export function LibraryManager({
   }, [userProfile?.preferredInputLang, userProfile?.preferredTargetLang]);
   const [loading, setLoading] = useState<boolean>(false);
 
-  // Load saved collections from Firestore on mount or when user changes
-  const initialiseCollections = useCallback(async (user: User) => {
-    const fetchCollections = async (opts?: { fetchAll?: boolean; limitCount?: number }) => {
-      const colRef = collection(firestore, 'users', user.uid, 'collections');
-      const q = opts?.fetchAll
-        ? query(colRef, orderBy('created_at', 'desc'))
-        : query(colRef, orderBy('created_at', 'desc'), fbLimit(opts?.limitCount || 10));
-      const snapshot = await getDocs(q);
-      const loaded: Config[] = [];
-      snapshot.forEach(docSnap => {
-        const data = docSnap.data();
-        const phrases = data.phrases.map((phrase: Phrase) => ({
-          ...phrase,
-          created_at: phrase.created_at || data.created_at
-        }));
-        loaded.push({
-          ...data,
-          phrases,
-          id: docSnap.id,
-        } as Config);
-      });
-      setSavedCollections(loaded);
-
-      if (loaded.length > 0) {
-        const allPhrases = loaded.flatMap(col => col.phrases);
-        const sortedPhrases = allPhrases.sort((a, b) => {
-          const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
-          const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
-          return dateB - dateA;
-        });
-        const mostRecentPhrase = sortedPhrases[0];
-        if (mostRecentPhrase) {
-          if (!hasSetLanguages.current) {
-            setNewCollectionInputLang(mostRecentPhrase.inputLang);
-            setNewCollectionTargetLang(mostRecentPhrase.targetLang);
-          }
-        }
-      }
-    };
-
-    if (!savedCollections.length) {
-      setCollectionsLoading(true);
+  const fetchCollections = useCallback(async (opts?: { fetchAll?: boolean; limitCount?: number; setMainLoading?: boolean }) => {
+    if (!user) return;
+    setCollectionsLoading(true);
+    if (opts?.setMainLoading) {
       setLoading(true);
-      await fetchCollections({ fetchAll: false, limitCount: 10 });
-      setCollectionsLimited(true);
-      setCollectionsLoading(false);
+    }
+
+    const colRef = collection(firestore, 'users', user.uid, 'collections');
+    const q = opts?.fetchAll
+      ? query(colRef, orderBy('created_at', 'desc'))
+      : query(colRef, orderBy('created_at', 'desc'), fbLimit(opts?.limitCount || 10));
+    const snapshot = await getDocs(q);
+    const loaded: Config[] = [];
+    snapshot.forEach(docSnap => {
+      const data = docSnap.data();
+      const phrases = data.phrases.map((phrase: Phrase) => ({
+        ...phrase,
+        created_at: phrase.created_at || data.created_at
+      }));
+      loaded.push({
+        ...data,
+        phrases,
+        id: docSnap.id,
+      } as Config);
+    });
+    setSavedCollections(loaded);
+    setCollectionsLimited(!opts?.fetchAll);
+
+    if (loaded.length > 0) {
+      const allPhrases = loaded.flatMap(col => col.phrases);
+      const sortedPhrases = allPhrases.sort((a, b) => {
+        const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
+        const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
+        return dateB - dateA;
+      });
+      const mostRecentPhrase = sortedPhrases[0];
+      if (mostRecentPhrase && !hasSetLanguages.current) {
+        setNewCollectionInputLang(mostRecentPhrase.inputLang);
+        setNewCollectionTargetLang(mostRecentPhrase.targetLang);
+      }
+    }
+
+    setCollectionsLoading(false);
+    if (opts?.setMainLoading) {
       setLoading(false);
     }
-  }, [savedCollections.length]);
+  }, [user]);
+
+  // Load saved collections from Firestore on mount or when user changes
+  const initialiseCollections = useCallback(async () => {
+    if (!savedCollections.length) {
+      await fetchCollections({ fetchAll: false, limitCount: 10, setMainLoading: true });
+    }
+  }, [fetchCollections, savedCollections.length]);
 
   useEffect(() => {
     if (user) {
-      initialiseCollections(user);
+      initialiseCollections();
     }
   }, [initialiseCollections, user])
+
+  // Collection updates are handled via CollectionsContext.
 
   // Save a new collection to Firestore
   const handleCreateCollection = async (phrases: Phrase[], prompt?: string, collectionType?: CollectionTypeEnum, userArg?: User, skipTracking?: boolean) => {
@@ -256,7 +264,7 @@ export function LibraryManager({
     try {
       const docRef = doc(firestore, 'users', user.uid, 'collections', id);
       await deleteDoc(docRef);
-      setSavedCollections(prev => prev.filter(col => col.id !== id));
+      removeCollection(id);
 
       // Navigate back based on mode
       if (mode === 'sidebar') {
@@ -272,22 +280,7 @@ export function LibraryManager({
   const handleShowAllClick = async () => {
     if (!user) return;
     track('Show All Collections Clicked');
-    setCollectionsLoading(true);
-    const colRef = collection(firestore, 'users', user.uid, 'collections');
-    const q = query(colRef, orderBy('created_at', 'desc'));
-    const snapshot = await getDocs(q);
-    const loaded: Config[] = [];
-    snapshot.forEach(docSnap => {
-      const data = docSnap.data();
-      const phrases = data.phrases.map((phrase: Phrase) => ({
-        ...phrase,
-        created_at: phrase.created_at || data.created_at
-      }));
-      loaded.push({ ...data, phrases, id: docSnap.id } as Config);
-    });
-    setSavedCollections(loaded);
-    setCollectionsLimited(false);
-    setCollectionsLoading(false);
+    await fetchCollections({ fetchAll: true });
   };
 
   if (!user) {

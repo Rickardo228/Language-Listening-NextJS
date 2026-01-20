@@ -7,7 +7,7 @@ import { API_BASE_URL } from './consts'
 import { Dialog } from '@headlessui/react'
 import { LanguageSelector } from './components/LanguageSelector'
 import { trackGeneratePhrases } from '../lib/mixpanelClient'
-import { Input, Select } from './components/ui'
+import { Combobox, Input, Select } from './components/ui'
 import { toast } from 'sonner'
 
 export interface ImportPhrasesDialogProps {
@@ -22,6 +22,10 @@ export interface ImportPhrasesDialogProps {
     loading: boolean
     onProcess?: (prompt?: string, inputLang?: string, targetLang?: string, collectionType?: CollectionType) => Promise<void>
     onAddToCollection?: (inputLang?: string, targetLang?: string, isSwapped?: boolean) => Promise<void>
+    variant?: 'default' | 'like'
+    collectionOptions?: Array<{ value: string; label: string }>
+    selectedCollectionId?: string
+    setSelectedCollectionId?: (id: string) => void
 }
 
 export function ImportPhrasesDialog({
@@ -36,6 +40,10 @@ export function ImportPhrasesDialog({
     loading,
     onProcess,
     onAddToCollection,
+    variant = 'default',
+    collectionOptions = [],
+    selectedCollectionId,
+    setSelectedCollectionId,
 }: ImportPhrasesDialogProps) {
     const [prompt, setPrompt] = useState('')
     const [generatingPhrases, setGeneratingPhrases] = useState(false)
@@ -43,6 +51,10 @@ export function ImportPhrasesDialog({
     const [isSwapped, setIsSwapped] = useState(false)
     const [isFetchingUrl, setIsFetchingUrl] = useState(false)
     const inputLangLabel = (languageOptions.find(lang => lang.code === (isSwapped ? targetLang : inputLang))?.label || inputLang).split(' (')[0];
+    const isLikeVariant = variant === 'like';
+    const addToCollectionDisabled = loading
+        || !phrasesInput.trim()
+        || (isLikeVariant && collectionOptions.length > 0 && !selectedCollectionId);
 
     const handleGeneratePhrases = async () => {
         if (!prompt.trim()) return;
@@ -116,10 +128,10 @@ export function ImportPhrasesDialog({
         <Dialog open={isOpen} onClose={onClose} className="relative z-50">
             <div className="fixed inset-0 bg-black/50" />
             <div className="fixed inset-0 flex items-center justify-center">
-                <Dialog.Panel className="bg-background text-foreground p-4 rounded-lg shadow-lg w-[500px] max-w-[90vw] overflow-auto max-h-[90vh] border">
+                <Dialog.Panel className={`bg-background text-foreground p-4 rounded-lg shadow-lg w-[500px] max-w-[90vw] ${isLikeVariant ? 'overflow-visible' : 'overflow-auto max-h-[90vh]'} border`}>
                     <div className="flex justify-between items-center mb-4">
                         <h2 className="text-xl font-bold">
-                            {onAddToCollection ? 'Add Phrases' : 'Create New List'}
+                            {isLikeVariant ? 'Add to Collection' : (onAddToCollection ? 'Add Phrases' : 'Create New List')}
                         </h2>
                         <button
                             onClick={onClose}
@@ -132,7 +144,7 @@ export function ImportPhrasesDialog({
 
                     <div className="space-y-4">
                         <div className="flex flex-col gap-4">
-                            {!onAddToCollection && (
+                            {!onAddToCollection && !isLikeVariant && (
                                 <Input
                                     label="List Name"
                                     type="text"
@@ -143,7 +155,7 @@ export function ImportPhrasesDialog({
                                     autoFocus={Boolean(onProcess)}
                                 />
                             )}
-                            {!onAddToCollection && (
+                            {!onAddToCollection && !isLikeVariant && (
                                 <Select
                                     label="List Type"
                                     value={collectionType}
@@ -155,24 +167,46 @@ export function ImportPhrasesDialog({
                                     ]}
                                 />
                             )}
-                            <LanguageSelector
-                                inputLang={inputLang}
-                                setInputLang={setInputLang}
-                                targetLang={targetLang}
-                                setTargetLang={setTargetLang}
-                                direction="row"
-                                mode={onAddToCollection ? 'locked' : 'editable'}
-                                disabled={loading}
-                                isSwapped={onAddToCollection ? isSwapped : undefined}
-                                onSwap={onAddToCollection
-                                    ? () => setIsSwapped(!isSwapped)
-                                    : () => {
-                                        // When creating new collection, swap the actual language values
-                                        const temp = inputLang;
-                                        setInputLang(targetLang);
-                                        setTargetLang(temp);
-                                    }}
-                            />
+                            {!isLikeVariant && (
+                                <LanguageSelector
+                                    inputLang={inputLang}
+                                    setInputLang={setInputLang}
+                                    targetLang={targetLang}
+                                    setTargetLang={setTargetLang}
+                                    direction="row"
+                                    mode={onAddToCollection ? 'locked' : 'editable'}
+                                    disabled={loading}
+                                    isSwapped={onAddToCollection ? isSwapped : undefined}
+                                    onSwap={onAddToCollection
+                                        ? () => setIsSwapped(!isSwapped)
+                                        : () => {
+                                            // When creating new collection, swap the actual language values
+                                            const temp = inputLang;
+                                            setInputLang(targetLang);
+                                            setTargetLang(temp);
+                                        }}
+                                />
+                            )}
+                            {isLikeVariant && (
+                                <div className="space-y-2">
+                                    {collectionOptions.length > 0 ? (
+                                        <Combobox
+                                            label="Collection"
+                                            value={selectedCollectionId || ''}
+                                            onChange={(value) => setSelectedCollectionId?.(value)}
+                                            disabled={loading}
+                                            options={collectionOptions}
+                                            placeholder="Select a collection"
+                                            portalled={true}
+                                        />
+                                    ) : (
+                                        <div>
+                                            <label className="block text-sm font-medium mb-1">Collection</label>
+                                            <div className="text-sm text-muted-foreground">Liked Phrases</div>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                             {prompt.trim() && onProcess && (
                                 <button
                                     onClick={handleGeneratePhrases}
@@ -192,19 +226,21 @@ export function ImportPhrasesDialog({
                                     )}
                                 </button>
                             )}
-                            <div>
-                                <label className="block text-sm font-medium mb-1">{collectionType === 'phrases' ? 'Phrases (one per line)' : 'Article Content'}</label>
-                                <textarea
-                                    value={phrasesInput}
-                                    onChange={(e) => setPhrasesInput(e.target.value)}
-                                    className="w-full h-32 p-2 rounded-md border bg-background resize-none"
-                                    placeholder={collectionType === 'phrases' ? `Enter phrases in ${inputLangLabel} here...` : `Paste article in ${inputLangLabel} here...`}
-                                    disabled={loading}
-                                    autoFocus={Boolean(onAddToCollection)}
-                                />
-                            </div>
+                            {!isLikeVariant && (
+                                <div>
+                                    <label className="block text-sm font-medium mb-1">{collectionType === 'phrases' ? 'Phrases (one per line)' : 'Article Content'}</label>
+                                    <textarea
+                                        value={phrasesInput}
+                                        onChange={(e) => setPhrasesInput(e.target.value)}
+                                        className="w-full h-32 p-2 rounded-md border bg-background resize-none"
+                                        placeholder={collectionType === 'phrases' ? `Enter phrases in ${inputLangLabel} here...` : `Paste article in ${inputLangLabel} here...`}
+                                        disabled={loading}
+                                        autoFocus={Boolean(onAddToCollection)}
+                                    />
+                                </div>
+                            )}
 
-                            {!onProcess && (
+                            {!onProcess && !isLikeVariant && (
                                 <div>
                                     <Input
                                         label="Get phrase suggestions with AI"
@@ -245,13 +281,13 @@ export function ImportPhrasesDialog({
                                             await onAddToCollection?.(inputLang, targetLang, isSwapped)
                                             onClose()
                                         }}
-                                        disabled={loading || !phrasesInput.trim()}
+                                        disabled={addToCollectionDisabled}
                                         className="flex-1 px-4 h-[50px] bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white font-medium rounded-lg transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-md"
                                     >
                                         <div className="flex items-center gap-2 justify-center">
                                             <Plus className="h-5 w-5" />
                                             <span className="text-sm font-semibold">
-                                                {loading ? 'Adding...' : 'Add Phrases'}
+                                                {isLikeVariant ? (loading ? 'Adding...' : 'Add Phrase') : (loading ? 'Adding...' : 'Add Phrases')}
                                             </span>
                                         </div>
                                     </button>
