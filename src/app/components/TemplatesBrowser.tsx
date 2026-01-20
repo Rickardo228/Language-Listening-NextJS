@@ -56,6 +56,11 @@ export function TemplatesBrowser({
         userProfile?.preferredTargetLang || initialTargetLang
     );
     const hasInitialFetch = useRef(false);
+    const normalizeTemplate = (doc: DocumentSnapshot) => {
+        const data = doc.data() as Template | undefined;
+        const createdAt = (data?.createdAt as Timestamp | undefined) || Timestamp.now();
+        return { id: doc.id, ...data, createdAt } as TemplateWithTimestamp;
+    };
 
     // Fetch templates for the current language pair (optionally overridden)
     const fetchTemplates = useCallback(
@@ -123,7 +128,7 @@ export function TemplatesBrowser({
                         querySnapshot.forEach((doc: DocumentSnapshot) => {
                             if (!seenIds.has(doc.id)) {
                                 seenIds.add(doc.id);
-                                const templateData = { id: doc.id, ...doc.data() } as Template;
+                                const templateData = normalizeTemplate(doc);
                                 templatesData.push(templateData);
                             }
                         });
@@ -132,11 +137,11 @@ export function TemplatesBrowser({
                     // Process the results (same as before)
                     const templatesByGroup = templatesData.reduce((acc, template) => {
                         if (!acc[template.groupId]) {
-                            acc[template.groupId] = [] as Template[];
+                            acc[template.groupId] = [] as TemplateWithTimestamp[];
                         }
-                        (acc[template.groupId] as Template[]).push(template);
+                        (acc[template.groupId] as TemplateWithTimestamp[]).push(template);
                         return acc;
-                    }, {} as Record<string, Template[]>);
+                    }, {} as Record<string, TemplateWithTimestamp[]>);
 
                     const uniqueTemplates = Object.values(templatesByGroup)
                         .filter((groupTemplates) => {
@@ -176,19 +181,19 @@ export function TemplatesBrowser({
                     getDocs(query2),
                 ]);
 
-                const templatesData: Template[] = [];
+                const templatesData: TemplateWithTimestamp[] = [];
                 const seenIds = new Set<string>();
 
                 querySnapshot1.forEach((doc: DocumentSnapshot) => {
                     if (!seenIds.has(doc.id)) {
                         seenIds.add(doc.id);
-                        templatesData.push({ id: doc.id, ...doc.data() } as Template);
+                        templatesData.push(normalizeTemplate(doc));
                     }
                 });
                 querySnapshot2.forEach((doc: DocumentSnapshot) => {
                     if (!seenIds.has(doc.id)) {
                         seenIds.add(doc.id);
-                        templatesData.push({ id: doc.id, ...doc.data() } as Template);
+                        templatesData.push(normalizeTemplate(doc));
                     }
                 });
 
