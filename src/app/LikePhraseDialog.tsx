@@ -100,8 +100,8 @@ export function LikePhraseDialog({ isOpen, onClose, phrase }: LikePhraseDialogPr
       toast.success(`Saved to "${name}"`);
       onClose();
     } catch (error) {
-      console.error('Error creating collection:', error);
-      toast.error('Failed to create collection.');
+      console.error('Error creating list:', error);
+      toast.error('Failed to create list.');
     } finally {
       setSaving(false);
     }
@@ -158,13 +158,13 @@ export function LikePhraseDialog({ isOpen, onClose, phrase }: LikePhraseDialogPr
         toast.success('Saved to Liked Phrases.');
       } else {
         if (!selectedCollectionId) {
-          toast.error('Please select a collection.');
+          toast.error('Please select a list.');
           return;
         }
         const docRef = doc(firestore, 'users', user.uid, 'collections', selectedCollectionId);
         const snapshot = await getDoc(docRef);
         if (!snapshot.exists()) {
-          toast.error('Collection not found.');
+          toast.error('List not found.');
           return;
         }
         const data = snapshot.data();

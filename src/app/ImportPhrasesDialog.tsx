@@ -139,7 +139,7 @@ export function ImportPhrasesDialog({
                 <Dialog.Panel className={`bg-background text-foreground p-4 rounded-lg shadow-lg w-[500px] max-w-[90vw] ${isLikeVariant ? 'overflow-visible' : 'overflow-auto max-h-[90vh]'} border`}>
                     <div className="flex justify-between items-center mb-4">
                         <h2 className="text-xl font-bold">
-                            {isLikeVariant ? 'Add to Collection' : (onAddToCollection ? 'Add Phrases' : 'Create New List')}
+                            {isLikeVariant ? 'Add to List' : (onAddToCollection ? 'Add Phrases' : 'Create New List')}
                         </h2>
                         <button
                             onClick={onClose}
@@ -204,16 +204,16 @@ export function ImportPhrasesDialog({
                                         </div>
                                     ) : collectionOptions.length > 0 || onCreateCollection ? (
                                         <Combobox
-                                            label="Collection"
+                                            label="List"
                                             value={selectedCollectionId || ''}
                                             onChange={(value) => setSelectedCollectionId?.(value)}
                                             disabled={loading}
                                             options={collectionOptions}
-                                            placeholder="Select or create a collection"
+                                            placeholder="Select or create a list"
                                             portalled={true}
                                             creatable={Boolean(onCreateCollection)}
                                             onCreateOption={onCreateCollection}
-                                            createLabel="Create collection"
+                                            createLabel="Create list"
                                             autoFocus={autoFocusCollection}
                                             onSubmit={onCollectionSubmit}
                                         />
