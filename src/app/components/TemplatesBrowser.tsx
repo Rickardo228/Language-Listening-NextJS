@@ -121,7 +121,7 @@ export function TemplatesBrowser({
                     const querySnapshots = await Promise.all(allQueries);
 
                     // Process all results
-                    const templatesData: Template[] = [];
+                    const templatesData: TemplateWithTimestamp[] = [];
                     const seenIds = new Set<string>();
 
                     querySnapshots.forEach((querySnapshot: QuerySnapshot) => {
@@ -199,11 +199,11 @@ export function TemplatesBrowser({
 
                 const templatesByGroup = templatesData.reduce((acc, template) => {
                     if (!acc[template.groupId]) {
-                        acc[template.groupId] = [] as Template[];
+                        acc[template.groupId] = [] as TemplateWithTimestamp[];
                     }
-                    (acc[template.groupId] as Template[]).push(template);
+                    (acc[template.groupId] as TemplateWithTimestamp[]).push(template);
                     return acc;
-                }, {} as Record<string, Template[]>);
+                }, {} as Record<string, TemplateWithTimestamp[]>);
 
                 const uniqueTemplates = Object.values(templatesByGroup)
                     .filter((groupTemplates) => {
