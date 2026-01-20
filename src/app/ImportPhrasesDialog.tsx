@@ -20,12 +20,16 @@ export interface ImportPhrasesDialogProps {
     phrasesInput: string
     setPhrasesInput: (input: string) => void
     loading: boolean
+    collectionsLoading?: boolean
     onProcess?: (prompt?: string, inputLang?: string, targetLang?: string, collectionType?: CollectionType) => Promise<void>
     onAddToCollection?: (inputLang?: string, targetLang?: string, isSwapped?: boolean) => Promise<void>
     variant?: 'default' | 'like'
     collectionOptions?: Array<{ value: string; label: string }>
     selectedCollectionId?: string
     setSelectedCollectionId?: (id: string) => void
+    onCreateCollection?: (name: string) => Promise<void>
+    autoFocusCollection?: boolean
+    onCollectionSubmit?: () => void
 }
 
 export function ImportPhrasesDialog({
@@ -38,12 +42,16 @@ export function ImportPhrasesDialog({
     phrasesInput,
     setPhrasesInput,
     loading,
+    collectionsLoading = false,
     onProcess,
     onAddToCollection,
     variant = 'default',
     collectionOptions = [],
     selectedCollectionId,
     setSelectedCollectionId,
+    onCreateCollection,
+    autoFocusCollection = false,
+    onCollectionSubmit,
 }: ImportPhrasesDialogProps) {
     const [prompt, setPrompt] = useState('')
     const [generatingPhrases, setGeneratingPhrases] = useState(false)
@@ -189,15 +197,25 @@ export function ImportPhrasesDialog({
                             )}
                             {isLikeVariant && (
                                 <div className="space-y-2">
-                                    {collectionOptions.length > 0 ? (
+                                    {collectionsLoading ? (
+                                        <div>
+                                            <div className="h-4 w-16 bg-secondary/40 rounded animate-pulse mb-2" />
+                                            <div className="h-10 w-full bg-secondary/40 rounded animate-pulse" />
+                                        </div>
+                                    ) : collectionOptions.length > 0 || onCreateCollection ? (
                                         <Combobox
                                             label="Collection"
                                             value={selectedCollectionId || ''}
                                             onChange={(value) => setSelectedCollectionId?.(value)}
                                             disabled={loading}
                                             options={collectionOptions}
-                                            placeholder="Select a collection"
+                                            placeholder="Select or create a collection"
                                             portalled={true}
+                                            creatable={Boolean(onCreateCollection)}
+                                            onCreateOption={onCreateCollection}
+                                            createLabel="Create collection"
+                                            autoFocus={autoFocusCollection}
+                                            onSubmit={onCollectionSubmit}
                                         />
                                     ) : (
                                         <div>

@@ -48,8 +48,10 @@ export function LikePhraseDialog({ isOpen, onClose, phrase }: LikePhraseDialogPr
         snapshot.forEach((docSnap) => {
           const data = docSnap.data();
           const firstPhrase = Array.isArray(data.phrases) ? data.phrases[0] : null;
-          if (!firstPhrase) return;
-          if (firstPhrase.inputLang === phrase.inputLang && firstPhrase.targetLang === phrase.targetLang) {
+          // Include empty collections (no way to know direction, default to not reversed)
+          if (!firstPhrase) {
+            matched.push({ id: docSnap.id, name: data.name || 'Untitled', isReversed: false });
+          } else if (firstPhrase.inputLang === phrase.inputLang && firstPhrase.targetLang === phrase.targetLang) {
             matched.push({ id: docSnap.id, name: data.name || 'Untitled', isReversed: false });
           } else if (firstPhrase.inputLang === phrase.targetLang && firstPhrase.targetLang === phrase.inputLang) {
             matched.push({ id: docSnap.id, name: data.name || 'Untitled', isReversed: true });
@@ -57,8 +59,7 @@ export function LikePhraseDialog({ isOpen, onClose, phrase }: LikePhraseDialogPr
         });
 
         setMatchingCollections(matched);
-        const preferred = matched.find((collection) => !collection.isReversed);
-        setSelectedCollectionId(preferred?.id || matched[0]?.id || '');
+        setSelectedCollectionId('');
       } catch (error) {
         console.error('Error loading collections:', error);
         toast.error('Failed to load collections.');
@@ -76,6 +77,40 @@ export function LikePhraseDialog({ isOpen, onClose, phrase }: LikePhraseDialogPr
       label: collection.isReversed ? `${collection.name}` : collection.name,
     }));
   }, [matchingCollections]);
+
+  const handleCreateCollection = async (name: string) => {
+    if (!user || !phrase) return;
+
+    setSaving(true);
+    try {
+      const now = new Date().toISOString();
+      const phraseToAdd = { ...phrase, created_at: now };
+      const collectionId = await createCollection([phraseToAdd], name, 'phrases', user, user, { skipTracking: false });
+      upsertCollection({
+        id: collectionId,
+        name,
+        phrases: [phraseToAdd],
+        created_at: now,
+        collectionType: 'phrases',
+        presentationConfig: {
+          ...defaultPresentationConfigs.phrases,
+          name,
+        },
+      });
+      toast.success(`Saved to "${name}"`);
+      onClose();
+    } catch (error) {
+      console.error('Error creating collection:', error);
+      toast.error('Failed to create collection.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSubmit = async () => {
+    await handleAddToCollection();
+    onClose();
+  };
 
   const handleAddToCollection = async (_inputLang?: string, _targetLang?: string, _isSwapped?: boolean) => {
     if (!user) {
@@ -156,12 +191,16 @@ export function LikePhraseDialog({ isOpen, onClose, phrase }: LikePhraseDialogPr
       setTargetLang={setTargetLang}
       phrasesInput={phrasesInput}
       setPhrasesInput={setPhrasesInput}
-      loading={saving || loadingCollections}
+      loading={saving}
+      collectionsLoading={loadingCollections}
       onAddToCollection={handleAddToCollection}
       variant="like"
       collectionOptions={collectionOptions}
       selectedCollectionId={selectedCollectionId}
       setSelectedCollectionId={setSelectedCollectionId}
+      onCreateCollection={handleCreateCollection}
+      autoFocusCollection
+      onCollectionSubmit={handleSubmit}
     />
   );
 }

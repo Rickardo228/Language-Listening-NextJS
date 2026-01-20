@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { Combobox as HeadlessCombobox, ComboboxInput, ComboboxButton, ComboboxOptions, ComboboxOption } from '@headlessui/react';
-import { Check, ChevronsUpDown } from 'lucide-react';
+import { Check, ChevronsUpDown, Plus } from 'lucide-react';
 import { cn } from './utils';
 import { Label } from './Label';
 
@@ -25,6 +25,11 @@ export interface ComboboxProps {
   portalled?: boolean;
   required?: boolean;
   id?: string;
+  creatable?: boolean;
+  onCreateOption?: (inputValue: string) => void;
+  createLabel?: string;
+  autoFocus?: boolean;
+  onSubmit?: () => void;
 }
 
 export function Combobox({
@@ -40,6 +45,11 @@ export function Combobox({
   buttonClassName = '',
   required,
   id,
+  creatable = false,
+  onCreateOption,
+  createLabel = 'Create',
+  autoFocus = false,
+  onSubmit,
 }: ComboboxProps) {
   const [query, setQuery] = useState('');
   const hasError = Boolean(error);
@@ -56,6 +66,28 @@ export function Combobox({
     );
   }, [options, query]);
 
+  const showCreateOption = useMemo(() => {
+    if (!creatable || !query.trim()) return false;
+    const exactMatch = options.some(
+      (option) => option.label.toLowerCase() === query.toLowerCase()
+    );
+    return !exactMatch;
+  }, [creatable, query, options]);
+
+  const handleCreateOption = () => {
+    if (onCreateOption && query.trim()) {
+      onCreateOption(query.trim());
+      setQuery('');
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && value && onSubmit && !query) {
+      e.preventDefault();
+      onSubmit();
+    }
+  };
+
   return (
     <div className={className}>
       {label && <Label htmlFor={id} required={required} className="mb-2">{label}</Label>}
@@ -63,6 +95,7 @@ export function Combobox({
         value={selectedOption}
         onChange={(option) => onChange(option?.value ?? '')}
         disabled={disabled}
+        immediate={true}
       >
         <div className="relative">
           <div
@@ -74,12 +107,14 @@ export function Combobox({
           >
             <ComboboxInput
               id={id}
+              ref={autoFocus ? (e) => { setTimeout(() => e?.focus(), 0) } : undefined}
               className={cn(
                 'w-full border-none py-2.5 pl-3 pr-10 text-sm bg-transparent outline-none',
                 selectedOption ? 'text-foreground' : 'text-muted-foreground'
               )}
               displayValue={(option: ComboboxOption | null) => option?.label ?? ''}
               onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={handleKeyDown}
               placeholder={placeholder}
             />
             <ComboboxButton className="absolute inset-y-0 right-0 flex items-center pr-3">
@@ -89,7 +124,20 @@ export function Combobox({
           <ComboboxOptions
             className="absolute z-50 mt-1 max-h-56 w-full overflow-auto rounded-md border bg-background py-1 shadow-lg focus:outline-none"
           >
-            {filteredOptions.length === 0 && query !== '' ? (
+            {showCreateOption && (
+              <div
+                onClick={handleCreateOption}
+                className="relative cursor-pointer select-none py-2 pl-10 pr-4 text-sm hover:bg-muted text-primary"
+              >
+                <span className="absolute inset-y-0 left-0 flex items-center pl-3">
+                  <Plus className="h-4 w-4" />
+                </span>
+                <span className="block truncate font-medium">
+                  {createLabel} &ldquo;{query}&rdquo;
+                </span>
+              </div>
+            )}
+            {filteredOptions.length === 0 && query !== '' && !showCreateOption ? (
               <div className="px-3 py-2 text-sm text-muted-foreground">No matches found.</div>
             ) : (
               filteredOptions.map((option) => (
