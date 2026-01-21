@@ -81,6 +81,7 @@ function PaywallGuardInner({ children }: PaywallGuardProps) {
                                 updateData={() => { }}
                                 onNext={() => { }}
                                 onBack={() => router.back()}
+                                showBack={false}
                             />
                         </motion.div>
                     </motion.div>

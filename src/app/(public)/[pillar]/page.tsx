@@ -28,6 +28,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   return {
     title: 'Page Not Found',
+    robots: {
+      index: false,
+      follow: false,
+    },
   };
 }
 
@@ -39,7 +43,7 @@ export default async function PillarPage({ params }: PageProps) {
     notFound();
   }
 
-  const schemaMarkup = buildArticleSchema(sanityArticle);
+  const schemaMarkup = buildArticleSchema(sanityArticle, `/${pillar}`);
 
   return (
     <>

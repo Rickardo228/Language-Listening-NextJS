@@ -19,7 +19,7 @@ const basePresentationConfig: PresentationConfig = {
   particleColor: "green",
   particleSpeed: 1.0,
   dustOpacity: 1.0,
-  enableLoop: true,
+  enableLoop: false,
   postProcessDelay: 0,
   delayBetweenPhrases: 1000,
   enableOutputDurationDelay: true,

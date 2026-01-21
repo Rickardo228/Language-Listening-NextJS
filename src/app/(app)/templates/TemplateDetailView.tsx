@@ -11,11 +11,12 @@ import { Select } from '../../components/ui';
 import { presentationConfigDefinition } from '../../configDefinitions';
 import { useUser } from '../../contexts/UserContext';
 import { usePresentationConfig } from '../../hooks/usePresentationConfig';
-import { Phrase, languageOptions, PresentationConfig } from '../../types';
+import { Phrase, Template, languageOptions, PresentationConfig } from '../../types';
 import { uploadBackgroundMedia, deleteBackgroundMedia } from '../../utils/backgroundUpload';
 import { markCompleted } from '../../utils/progressService';
 import { buildTemplateUrl } from '../../utils/templateRoutes';
 import { createOrUpdateUserProfile } from '../../utils/userPreferences';
+import { buildTemplatePhrases } from '../../utils/templatePhrases';
 
 const firestore = getFirestore();
 
@@ -32,27 +33,7 @@ const templateLevelFields: (keyof PresentationConfig)[] = [
     ...adminOnlyFields as (keyof PresentationConfig)[]
 ];
 
-interface TemplatePhrase {
-    translated?: string;
-    audioUrl?: string;
-    duration?: number;
-    romanized?: string;
-    voice?: string;
-}
-
-interface Template {
-    id: string;
-    groupId: string;
-    lang: string;
-    phrases: Record<string, TemplatePhrase>;
-    createdAt: Timestamp;
-    complexity: string;
-    phraseCount: number;
-    name: string;
-    presentationConfig?: PresentationConfig;
-    pathId?: string;
-    pathIndex?: number;
-}
+type TemplateWithTimestamp = Template & { createdAt: Timestamp };
 
 interface TemplateDetailViewProps {
     groupId: string | null;
@@ -92,62 +73,6 @@ const getLanguageLabel = (code: string): string => {
     }
 };
 
-// Helper function to get language name in a specific language context
-const getLanguageNameInContext = (languageCode: string, contextLanguage: string): string => {
-    try {
-        // Extract the language code from BCP47 language tags (e.g., 'en-US' -> 'en')
-        const langCode = languageCode.split('-')[0];
-
-        // Use the context language locale for DisplayNames to get the name in that language
-        const displayNames = new Intl.DisplayNames([contextLanguage], { type: 'language' });
-        const languageName = displayNames.of(langCode);
-
-        return languageName || languageCode;
-    } catch {
-        // Fallback to English DisplayNames if context language fails
-        try {
-            const langCode = languageCode.split('-')[0];
-            const displayNames = new Intl.DisplayNames(['en'], { type: 'language' });
-            return displayNames.of(langCode) || languageCode;
-        } catch {
-            return languageCode;
-        }
-    }
-};
-
-// Helper function to get region name in a specific language context
-const getRegionNameInContext = (languageCode: string, contextLanguage: string): string => {
-    try {
-        // Extract the region code from BCP47 language tags (e.g., 'en-GB' -> 'GB')
-        const parts = languageCode.split('-');
-        if (parts.length < 2) {
-            return languageCode; // No region code available
-        }
-
-        const regionCode = parts[1];
-
-        // Use the context language locale for DisplayNames to get the region name in that language
-        const displayNames = new Intl.DisplayNames([contextLanguage], { type: 'region' });
-        const regionName = displayNames.of(regionCode);
-
-        return regionName || regionCode;
-    } catch {
-        // Fallback to English DisplayNames if context language fails
-        try {
-            const parts = languageCode.split('-');
-            if (parts.length < 2) {
-                return languageCode;
-            }
-
-            const regionCode = parts[1];
-            const displayNames = new Intl.DisplayNames(['en'], { type: 'region' });
-            return displayNames.of(regionCode) || regionCode;
-        } catch {
-            return languageCode;
-        }
-    }
-};
-
 export default function TemplateDetailView({
     groupId,
     initialInputLang = 'en-GB',
@@ -163,7 +88,7 @@ export default function TemplateDetailView({
     const [selectedInputLang, setSelectedInputLang] = useState<string>(initialInputLang);
     const [selectedTargetLang, setSelectedTargetLang] = useState<string>(initialTargetLang);
     const [availableLanguages, setAvailableLanguages] = useState<string[]>([]);
-    const [templateData, setTemplateData] = useState<Template | null>(null);
+    const [templateData, setTemplateData] = useState<TemplateWithTimestamp | null>(null);
     const [templatePresentationConfig, setTemplatePresentationConfig] = useState<PresentationConfig | null>(null);
     const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const [currentPathId, setCurrentPathId] = useState<string | undefined>(undefined);
@@ -242,69 +167,28 @@ export default function TemplateDetailView({
                 ]);
 
                 // Get input template
-                let inputTemplateData: Template | null = null;
+                let inputTemplateData: TemplateWithTimestamp | null = null;
                 if (!inputSnapshot.empty) {
                     const doc = inputSnapshot.docs[0];
                     inputTemplateData = {
                         id: doc.id,
                         ...doc.data()
-                    } as Template;
+                    } as TemplateWithTimestamp;
                 }
 
                 // Get target template
-                let targetTemplateData: Template | null = null;
+                let targetTemplateData: TemplateWithTimestamp | null = null;
                 if (!targetSnapshot.empty) {
                     const doc = targetSnapshot.docs[0];
                     targetTemplateData = {
                         id: doc.id,
                         ...doc.data()
-                    } as Template;
+                    } as TemplateWithTimestamp;
                 }
 
                 // Convert templates to phrases and store in state
                 if (inputTemplateData && targetTemplateData) {
-                    const inputPhrases = inputTemplateData.phrases;
-                    const targetPhrases = targetTemplateData.phrases;
-
-                    const convertedPhrases: Phrase[] = [...Object.keys(inputPhrases)].map((phraseKey) => {
-                        const inputPhrase = inputPhrases[phraseKey];
-                        const targetPhrase = targetPhrases[phraseKey];
-
-                        // Replace placeholders in input text (use input language context)
-                        const inputText = (inputPhrase?.translated || '')
-                            .replace(/\{targetLangName\}/g, getLanguageNameInContext(targetTemplateData.lang, inputTemplateData.lang))
-                            .replace(/\{inputLangName\}/g, getLanguageNameInContext(inputTemplateData.lang, inputTemplateData.lang))
-                            .replace(/\{targetLangRegion\}/g, getRegionNameInContext(targetTemplateData.lang, inputTemplateData.lang))
-                            .replace(/\{inputLangRegion\}/g, getRegionNameInContext(inputTemplateData.lang, inputTemplateData.lang));
-
-                        // Replace placeholders in translated text (use target language context)
-                        const translatedText = (targetPhrase?.translated || '')
-                            .replace(/\{targetLangName\}/g, getLanguageNameInContext(targetTemplateData.lang, targetTemplateData.lang))
-                            .replace(/\{inputLangName\}/g, getLanguageNameInContext(inputTemplateData.lang, targetTemplateData.lang))
-                            .replace(/\{targetLangRegion\}/g, getRegionNameInContext(targetTemplateData.lang, targetTemplateData.lang))
-                            .replace(/\{inputLangRegion\}/g, getRegionNameInContext(inputTemplateData.lang, targetTemplateData.lang));
-
-                        return {
-                            input: inputText,
-                            translated: translatedText,
-                            inputAudio: inputPhrase ? {
-                                audioUrl: inputPhrase.audioUrl || '',
-                                duration: inputPhrase.duration || 0
-                            } : null,
-                            inputLang: inputTemplateData.lang,
-                            inputVoice: inputPhrase?.voice || '',
-                            outputAudio: targetPhrase ? {
-                                audioUrl: targetPhrase.audioUrl || '',
-                                duration: targetPhrase.duration || 0
-                            } : null,
-                            targetLang: targetTemplateData.lang,
-                            targetVoice: targetPhrase?.voice || '',
-                            romanized: targetPhrase?.romanized || '',
-                            created_at: inputTemplateData.createdAt?.toDate?.()?.toISOString() || new Date().toISOString()
-                        };
-                    });
-
-                    setPhrases(convertedPhrases);
+                    setPhrases(buildTemplatePhrases(inputTemplateData, targetTemplateData));
 
                     // Store template data for name extraction
                     setTemplateData(inputTemplateData);

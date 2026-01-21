@@ -1,12 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Button } from './ui/Button'
 import { languageOptions } from '../types'
 import { ROUTES } from '../routes'
+import { track } from '../../lib/mixpanelClient'
 import {
   PlayCircle,
   Volume2,
@@ -21,6 +22,17 @@ import {
 export function LandingPage() {
   const [openFaq, setOpenFaq] = useState<number | null>(null)
   const [currentTestimonial, setCurrentTestimonial] = useState(0)
+  const trackedViewRef = useRef(false)
+
+  useEffect(() => {
+    if (trackedViewRef.current) return
+    track('Landing Page Viewed')
+    trackedViewRef.current = true
+  }, [])
+
+  const trackCtaClick = (label: string, section: string) => {
+    track('Landing Page CTA Clicked', { label, section })
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -59,7 +71,11 @@ export function LandingPage() {
 
               <div className="flex flex-col sm:flex-row gap-4 mb-6">
                 <Link href={ROUTES.GET_STARTED}>
-                  <Button size="lg" className="text-lg px-8">
+                  <Button
+                    size="lg"
+                    className="text-lg px-8"
+                    onClick={() => trackCtaClick('Try 1 Week Free', 'hero')}
+                  >
                     Try 1 Week Free
                   </Button>
                 </Link>
@@ -194,7 +210,13 @@ export function LandingPage() {
 
               <div className="space-y-3 mb-8">
                 <Link href={ROUTES.GET_STARTED}>
-                  <Button size="lg" className="text-lg px-10">Get started</Button>
+                  <Button
+                    size="lg"
+                    className="text-lg px-10"
+                    onClick={() => trackCtaClick('Get started', 'benefits')}
+                  >
+                    Get started
+                  </Button>
                 </Link>
                 <p className="text-sm text-muted-foreground">
                   Takes 30 seconds to start. Cancel anytime.
@@ -251,7 +273,12 @@ export function LandingPage() {
 
             <div className="space-y-3">
               <Link href={ROUTES.GET_STARTED}>
-                <Button size="lg">Try it free</Button>
+                <Button
+                  size="lg"
+                  onClick={() => trackCtaClick('Try it free', 'templates')}
+                >
+                  Try it free
+                </Button>
               </Link>
               <p className="text-sm text-muted-foreground">
                 Unlock the full Template Library
@@ -377,7 +404,12 @@ export function LandingPage() {
 
             <div className="space-y-3">
               <Link href={ROUTES.GET_STARTED}>
-                <Button size="lg">Get started</Button>
+                <Button
+                  size="lg"
+                  onClick={() => trackCtaClick('Get started', 'social-proof')}
+                >
+                  Get started
+                </Button>
               </Link>
               <p className="text-sm text-muted-foreground">
                 See why learners love shadowing
@@ -410,7 +442,12 @@ export function LandingPage() {
                 <p className="text-muted-foreground mb-4">Flexible and commitment-free</p>
                 <div className="text-4xl font-bold mb-4">$11.99<span className="text-lg font-normal text-muted-foreground">/mo</span></div>
                 <Link href={ROUTES.GET_STARTED}>
-                  <Button fullWidth>Start free trial</Button>
+                  <Button
+                    fullWidth
+                    onClick={() => trackCtaClick('Start free trial', 'pricing-monthly')}
+                  >
+                    Start free trial
+                  </Button>
                 </Link>
               </div>
 
@@ -422,7 +459,13 @@ export function LandingPage() {
                 <p className="opacity-90 mb-4">Save 40% with annual billing</p>
                 <div className="text-4xl font-bold mb-4">$79.99<span className="text-lg font-normal opacity-90">/yr</span></div>
                 <Link href={ROUTES.GET_STARTED}>
-                  <Button fullWidth variant="secondary">Start free trial</Button>
+                  <Button
+                    fullWidth
+                    variant="secondary"
+                    onClick={() => trackCtaClick('Start free trial', 'pricing-annual')}
+                  >
+                    Start free trial
+                  </Button>
                 </Link>
               </div>
             </div>
@@ -504,8 +547,13 @@ export function LandingPage() {
               No pressure - just a fair trial and a simple system that makes speaking inevitable.
             </p>
             <Link href={ROUTES.GET_STARTED}>
-              <Button size="lg" className="text-lg px-10">
-                Get Started Free              </Button>
+              <Button
+                size="lg"
+                className="text-lg px-10"
+                onClick={() => trackCtaClick('Get Started Free', 'final-cta')}
+              >
+                Get Started Free
+              </Button>
             </Link>
           </motion.div>
         </div>

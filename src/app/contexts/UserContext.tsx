@@ -12,6 +12,8 @@ interface UserClaims {
     subscribed?: boolean;
     subscriptionId?: string;
     subscribedAt?: string;
+    trialed?: boolean;
+    trialEnd?: string | null;
     [key: string]: unknown; // Allow for other custom claims
 }
 
@@ -22,6 +24,8 @@ interface UserContextType {
     userClaims: UserClaims | null;
     isAdmin: boolean;
     isSubscribed: boolean;
+    hasTrialed: boolean;
+    trialEnd: string | null;
     userProfile: UserProfile | null;
     needsOnboarding: boolean;
     refreshUserProfile: () => Promise<void>;
@@ -88,7 +92,8 @@ export const UserContextProvider: React.FC<UserContextProviderProps> = ({ childr
             if (firebaseUser) {
                 // Set auth-hint cookie for SSR redirect
                 // This is an essential cookie for proper authentication routing
-                document.cookie = "auth-hint=1; path=/; max-age=31536000; SameSite=Lax; Secure";
+                const secureFlag = window.location.protocol === 'https:' ? '; Secure' : '';
+                document.cookie = `auth-hint=1; path=/; max-age=31536000; SameSite=Lax${secureFlag}`;
 
                 // Extract custom claims from ID token
                 try {
@@ -149,7 +154,8 @@ export const UserContextProvider: React.FC<UserContextProviderProps> = ({ childr
                 setUserClaims(null);
                 setUserProfile(null);
                 // Clear the auth-hint cookie by setting it to expire immediately
-                document.cookie = "auth-hint=; path=/; max-age=0; SameSite=Lax; Secure";
+                const secureFlag = window.location.protocol === 'https:' ? '; Secure' : '';
+                document.cookie = `auth-hint=; path=/; max-age=0; SameSite=Lax${secureFlag}`;
                 if (user?.uid) {
                     try {
                         sessionStorage.removeItem(sessionClaimsRefreshKey(user.uid));
@@ -173,6 +179,8 @@ export const UserContextProvider: React.FC<UserContextProviderProps> = ({ childr
         userClaims,
         isAdmin: Boolean(userClaims?.admin),
         isSubscribed: Boolean(userClaims?.subscribed),
+        hasTrialed: Boolean(userClaims?.trialed),
+        trialEnd: userClaims?.trialEnd ?? null,
         userProfile,
         needsOnboarding: Boolean(user && (!userProfile || !userProfile.onboardingCompleted)),
         refreshUserProfile,

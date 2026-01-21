@@ -29,12 +29,16 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   return {
     title: 'Page Not Found',
+    robots: {
+      index: false,
+      follow: false,
+    },
   };
 }
 
 // Main page component (Server-side rendered)
 export default async function ListPage({ params }: PageProps) {
-  const { slug } = await params;
+  const { pillar, slug } = await params;
 
   const sanityArticle = await getSanityArticle(slug);
 
@@ -42,7 +46,7 @@ export default async function ListPage({ params }: PageProps) {
     notFound();
   }
 
-  const schemaMarkup = buildArticleSchema(sanityArticle);
+  const schemaMarkup = buildArticleSchema(sanityArticle, `/${pillar}/${slug}`);
 
   return (
     <>

@@ -1,8 +1,10 @@
 import React from 'react';
 import { PortableText as BasePortableText, PortableTextComponents } from '@portabletext/react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { PhraseBlock } from './PhraseBlock';
 import { TemplateCta } from './TemplateCta';
+import { urlFor } from '@/lib/sanity';
 
 // Helper function to generate slug from heading text
 const generateSlug = (children: any): string => {
@@ -122,6 +124,38 @@ const buildComponents = (articleSlug?: string, hasPhrases?: boolean): PortableTe
     },
   },
   types: {
+    image: ({ value }: any) => {
+      const source = value?.asset ? value : value?.image || value;
+      if (!source) return null;
+
+      const dimensions = value?.asset?.metadata?.dimensions;
+      const width = dimensions?.width || 1200;
+      const height = dimensions?.height || 675;
+      const alt = value?.alt || value?.caption || 'Article image';
+      const imageUrl = urlFor(source).auto('format').fit('max').width(1200).url();
+
+      if (!imageUrl) return null;
+
+      return (
+        <figure className="my-8">
+          <div className="overflow-hidden rounded-xl bg-gray-100 dark:bg-gray-800">
+            <Image
+              src={imageUrl}
+              alt={alt}
+              width={width}
+              height={height}
+              sizes="(min-width: 1024px) 768px, 100vw"
+              className="h-auto w-full"
+            />
+          </div>
+          {value?.caption ? (
+            <figcaption className="mt-3 text-sm text-gray-600 dark:text-gray-400">
+              {value.caption}
+            </figcaption>
+          ) : null}
+        </figure>
+      );
+    },
     phraseBlock: ({ value }: any) => (
       <PhraseBlock
         translated={value.translated}

@@ -19,3 +19,11 @@ export type { InputProps } from './Input';
 
 export { Select } from './Select';
 export type { SelectProps } from './Select';
+
+export { Combobox } from './Combobox';
+export type { ComboboxProps, ComboboxOption } from './Combobox';
+
+export { Popover, PopoverTrigger, PopoverContent } from './Popover';
+
+export { MilestoneCelebrationContent } from './MilestoneCelebrationContent';
+export { showMilestoneCelebrationSnackbar, showStatsSnackbar } from './StatsSnackbars';

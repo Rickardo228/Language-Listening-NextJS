@@ -3,6 +3,7 @@ import { CookieConsent } from '../components/CookieConsent'
 import { Toaster } from 'sonner'
 import { PublicNav } from '../components/PublicNav'
 import { Footer } from '../components/Footer'
+import MixpanelProvider from '../components/MixpanelProvider'
 
 export default function PublicLayout({
   children,
@@ -13,18 +14,22 @@ export default function PublicLayout({
     <ThemeProvider>
       <Toaster
         richColors
+        expand
+        position="top-center"
         toastOptions={{
           classNames: {
             toast: 'bg-background text-foreground border-border',
-          },
-        }}
+        },
+      }}
       />
-      <PublicNav />
-      <main>
-        {children}
-      </main>
-      <Footer />
-      <CookieConsent />
+      <MixpanelProvider>
+        <PublicNav />
+        <main>
+          {children}
+        </main>
+        <Footer />
+        <CookieConsent />
+      </MixpanelProvider>
     </ThemeProvider>
   )
 }

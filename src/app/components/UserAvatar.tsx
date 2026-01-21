@@ -8,6 +8,8 @@ import { LanguagePreferencesModal } from './LanguagePreferencesModal';
 import { ContentPreferencesModal } from './ContentPreferencesModal';
 import { EmailNotificationPreferencesModal } from './EmailNotificationPreferencesModal';
 import { track } from '../../lib/mixpanelClient';
+import { API_BASE_URL } from '../consts';
+import { toast } from 'sonner';
 
 interface UserAvatarProps {
     user: User | null;
@@ -18,6 +20,43 @@ export function UserAvatar({ user }: UserAvatarProps) {
     const [languagePrefsModalOpen, setLanguagePrefsModalOpen] = useState(false);
     const [contentPrefsModalOpen, setContentPrefsModalOpen] = useState(false);
     const [emailPrefsModalOpen, setEmailPrefsModalOpen] = useState(false);
+    const [portalError, setPortalError] = useState<string | null>(null);
+    const [isOpeningPortal, setIsOpeningPortal] = useState(false);
+
+    const handleManageSubscription = async () => {
+        if (!user) return;
+        setPortalError(null);
+        setIsOpeningPortal(true);
+        const toastId = toast.loading('Opening billing portal...');
+        try {
+            const idToken = await user.getIdToken();
+            const returnUrl = `${window.location.origin}/home`;
+            const response = await fetch(`${API_BASE_URL}/api/billing-portal-session`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${idToken}`,
+                },
+                body: JSON.stringify({ returnUrl }),
+            });
+
+            const data = await response.json();
+            if (!response.ok) {
+                throw new Error(data?.error || 'Failed to open billing portal.');
+            }
+            if (!data?.url) {
+                throw new Error('Billing portal URL missing.');
+            }
+            window.location.href = data.url;
+        } catch (error) {
+            const message = error instanceof Error ? error.message : 'Failed to open billing portal.';
+            setPortalError(message);
+            toast.error(message);
+        } finally {
+            setIsOpeningPortal(false);
+            toast.dismiss(toastId);
+        }
+    };
 
     return (
         <div className="relative">
@@ -102,16 +141,18 @@ export function UserAvatar({ user }: UserAvatarProps) {
 
                         <Menu.Item>
                             {({ active }) => (
-                                <a
-                                    href="https://billing.stripe.com/p/login/00w00je6g17XfrSah6dAk00"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className={`block w-full text-left px-4 py-2 flex items-center gap-2 ${active ? 'bg-secondary' : ''}`}
-                                    onClick={() => track('Manage Subscription Clicked')}
+                                <button
+                                    type="button"
+                                    className={`w-full text-left px-4 py-2 flex items-center gap-2 ${active ? 'bg-secondary' : ''}`}
+                                    onClick={() => {
+                                        track('Manage Subscription Clicked');
+                                        handleManageSubscription();
+                                    }}
+                                    disabled={isOpeningPortal}
                                 >
                                     <CreditCard className="w-4 h-4" />
-                                    Subscription
-                                </a>
+                                    {isOpeningPortal ? 'Opening billing portal...' : 'Subscription'}
+                                </button>
                             )}
                         </Menu.Item>
 
@@ -184,6 +225,12 @@ export function UserAvatar({ user }: UserAvatarProps) {
                     onClose={() => setEmailPrefsModalOpen(false)}
                     user={user}
                 />
+            )}
+
+            {portalError && (
+                <div className="absolute right-0 mt-2 w-64 rounded border bg-background p-3 text-xs text-red-600 shadow-lg">
+                    {portalError}
+                </div>
             )}
         </div>
     );

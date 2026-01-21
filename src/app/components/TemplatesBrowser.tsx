@@ -4,43 +4,18 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import { getFirestore, collection, query, where, getDocs, Timestamp, orderBy, limit, QuerySnapshot, DocumentSnapshot, } from 'firebase/firestore';
-import { languageOptions, Config, PresentationConfig } from '../types';
+import { languageOptions, Config, PresentationConfig, Template } from '../types';
 import { CollectionList, CollectionStatus } from '../CollectionList';
 import { LanguageSelector } from './LanguageSelector';
 import { useUser } from '../contexts/UserContext';
 import { track } from '../../lib/mixpanelClient';
 import { loadProgress } from '../utils/progressService';
 import { buildTemplateUrl } from '../utils/templateRoutes';
+type TemplateWithTimestamp = Template & { createdAt: Timestamp };
 import { resetMainScroll } from '../utils/scroll';
 import { ROUTES } from '../routes';
 
 const firestore = getFirestore();
-
-interface TemplatePhrase {
-    translated?: string;
-    audioUrl?: string;
-    duration?: number;
-    romanized?: string;
-    voice?: string;
-}
-
-interface Template {
-    id: string;
-    groupId: string;
-    lang: string;
-    phrases: Record<string, TemplatePhrase>;
-    createdAt: Timestamp;
-    inputLang: string;
-    targetLang: string;
-    complexity: string;
-    phraseCount: number;
-    name?: string;
-    tags?: string[];
-    pathId?: string;
-    pathIndex?: number;
-    is_path?: boolean;
-    presentationConfig?: PresentationConfig;
-}
 
 interface TemplatesBrowserProps {
     initialInputLang?: string;
@@ -67,7 +42,7 @@ export function TemplatesBrowser({
 }: TemplatesBrowserProps) {
     const router = useRouter();
     const { user, userProfile } = useUser();
-    const [templates, setTemplates] = useState<Template[]>([]);
+    const [templates, setTemplates] = useState<TemplateWithTimestamp[]>([]);
     const [loading, setLoading] = useState(true);
     // For learning paths, we fetch all items initially, so isShowingAll should start as true
     const [isShowingAll, setIsShowingAll] = useState(Boolean(pathId));
@@ -81,6 +56,11 @@ export function TemplatesBrowser({
         userProfile?.preferredTargetLang || initialTargetLang
     );
     const hasInitialFetch = useRef(false);
+    const normalizeTemplate = (doc: DocumentSnapshot) => {
+        const data = doc.data() as Template | undefined;
+        const createdAt = (data?.createdAt as Timestamp | undefined) || Timestamp.now();
+        return { id: doc.id, ...data, createdAt } as TemplateWithTimestamp;
+    };
 
     // Fetch templates for the current language pair (optionally overridden)
     const fetchTemplates = useCallback(
@@ -141,14 +121,14 @@ export function TemplatesBrowser({
                     const querySnapshots = await Promise.all(allQueries);
 
                     // Process all results
-                    const templatesData: Template[] = [];
+                    const templatesData: TemplateWithTimestamp[] = [];
                     const seenIds = new Set<string>();
 
                     querySnapshots.forEach((querySnapshot: QuerySnapshot) => {
                         querySnapshot.forEach((doc: DocumentSnapshot) => {
                             if (!seenIds.has(doc.id)) {
                                 seenIds.add(doc.id);
-                                const templateData = { id: doc.id, ...doc.data() } as Template;
+                                const templateData = normalizeTemplate(doc);
                                 templatesData.push(templateData);
                             }
                         });
@@ -157,11 +137,11 @@ export function TemplatesBrowser({
                     // Process the results (same as before)
                     const templatesByGroup = templatesData.reduce((acc, template) => {
                         if (!acc[template.groupId]) {
-                            acc[template.groupId] = [] as Template[];
+                            acc[template.groupId] = [] as TemplateWithTimestamp[];
                         }
-                        (acc[template.groupId] as Template[]).push(template);
+                        (acc[template.groupId] as TemplateWithTimestamp[]).push(template);
                         return acc;
-                    }, {} as Record<string, Template[]>);
+                    }, {} as Record<string, TemplateWithTimestamp[]>);
 
                     const uniqueTemplates = Object.values(templatesByGroup)
                         .filter((groupTemplates) => {
@@ -201,29 +181,29 @@ export function TemplatesBrowser({
                     getDocs(query2),
                 ]);
 
-                const templatesData: Template[] = [];
+                const templatesData: TemplateWithTimestamp[] = [];
                 const seenIds = new Set<string>();
 
                 querySnapshot1.forEach((doc: DocumentSnapshot) => {
                     if (!seenIds.has(doc.id)) {
                         seenIds.add(doc.id);
-                        templatesData.push({ id: doc.id, ...doc.data() } as Template);
+                        templatesData.push(normalizeTemplate(doc));
                     }
                 });
                 querySnapshot2.forEach((doc: DocumentSnapshot) => {
                     if (!seenIds.has(doc.id)) {
                         seenIds.add(doc.id);
-                        templatesData.push({ id: doc.id, ...doc.data() } as Template);
+                        templatesData.push(normalizeTemplate(doc));
                     }
                 });
 
                 const templatesByGroup = templatesData.reduce((acc, template) => {
                     if (!acc[template.groupId]) {
-                        acc[template.groupId] = [] as Template[];
+                        acc[template.groupId] = [] as TemplateWithTimestamp[];
                     }
-                    (acc[template.groupId] as Template[]).push(template);
+                    (acc[template.groupId] as TemplateWithTimestamp[]).push(template);
                     return acc;
-                }, {} as Record<string, Template[]>);
+                }, {} as Record<string, TemplateWithTimestamp[]>);
 
                 const uniqueTemplates = Object.values(templatesByGroup)
                     .filter((groupTemplates) => {
@@ -439,15 +419,13 @@ export function TemplatesBrowser({
                                     const progress = templateProgress[c.id];
                                     const total = t?.phraseCount || 0;
 
-                                    // No progress at all
-                                    if (!progress || !total) return 'not-started';
-
                                     // Treat as completed if we have an explicit completedAt
                                     // OR if we've listened to all phrases in this template
-                                    const isCompleted = Boolean(progress.completedAt) || progress.listenedCount >= total;
+                                    const isCompleted = progress && total && (Boolean(progress.completedAt) || progress.listenedCount >= total);
                                     if (isCompleted) return 'completed';
 
                                     // Check if this is the first incomplete template in the path (i.e., "next")
+                                    // This must be checked BEFORE 'not-started' so the first incomplete item shows as 'next'
                                     if (pathId) {
                                         const firstIncompleteIndex = templates.findIndex((template) => {
                                             const prog = templateProgress[template.groupId];
@@ -460,6 +438,9 @@ export function TemplatesBrowser({
                                         const currentIndex = templates.findIndex(template => template.groupId === c.id);
                                         if (currentIndex === firstIncompleteIndex) return 'next';
                                     }
+
+                                    // No progress at all
+                                    if (!progress || !total) return 'not-started';
 
                                     // Has progress but not complete
                                     return 'in-progress';

@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Calendar,
   ChartBar,
@@ -16,18 +17,16 @@ import { Button } from '../../ui/Button';
 import { Card } from '../../ui/Card';
 import { OnboardingData } from '../types';
 import { useUser } from '../../../contexts/UserContext';
-
-// Stripe Payment Links
-const PAYMENT_LINKS = {
-  annual: 'https://buy.stripe.com/dRmfZh1jubMB0wYexmdAk01',
-  monthly: 'https://buy.stripe.com/00w00je6g17XfrSah6dAk00',
-};
+import { API_BASE_URL } from '../../../consts';
+import { ROUTES } from '../../../routes';
+import { track } from '../../../../lib/mixpanelClient';
 
 interface Props {
   data: OnboardingData;
   updateData: (data: Partial<OnboardingData>) => void;
   onNext: () => void;
   onBack: () => void;
+  showBack?: boolean;
 }
 
 const features = [
@@ -41,7 +40,7 @@ const features = [
   },
   {
     icon: TrendingUp,
-    title: 'Unlimited collections + imports',
+    title: 'unlimited custom phrases + imports',
   },
   {
     icon: ChartBar,
@@ -69,22 +68,157 @@ const plans = [
   },
 ];
 
-export function Paywall({ data, updateData, onNext, onBack }: Props) {
+export function Paywall({ data, updateData, onNext, onBack, showBack = true }: Props) {
+  const router = useRouter();
   const [selectedPlan, setSelectedPlan] = useState(data.selectedPlan || 'annual');
-  const { user } = useUser();
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [loadingStage, setLoadingStage] = useState<string | null>(null);
+  const { user, hasTrialed, refreshUserClaims } = useUser();
+  const paywallTrackedRef = useRef(false);
 
-  const handleStartTrial = () => {
+  const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+  useEffect(() => {
+    if (paywallTrackedRef.current) return;
+    track('Paywall Viewed', {
+      selectedPlan,
+      hasTrialed,
+      nativeLanguage: data.nativeLanguage,
+      targetLanguage: data.targetLanguage,
+      abilityLevel: data.abilityLevel,
+    });
+    paywallTrackedRef.current = true;
+  }, [
+    selectedPlan,
+    hasTrialed,
+    data.nativeLanguage,
+    data.targetLanguage,
+    data.abilityLevel,
+  ]);
+
+  const waitForClaimsUpdate = async () => {
+    if (!user) return;
+    const maxAttempts = 6;
+    for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+      const idTokenResult = await user.getIdTokenResult(true);
+      const claims = idTokenResult.claims as { subscribed?: boolean; trialed?: boolean };
+      if (claims.subscribed || claims.trialed) {
+        await refreshUserClaims();
+        return;
+      }
+      await sleep(750);
+    }
+    await refreshUserClaims();
+  };
+
+  const handlePlanSelect = (planId: string) => {
+    if (planId === selectedPlan) return;
+    setSelectedPlan(planId);
+    track('Paywall Plan Selected', { planId, hasTrialed });
+  };
+
+  const handleStartTrial = async () => {
+    if (!user?.email) {
+      setErrorMessage('Email is required to start a free trial.');
+      return;
+    }
+
+    setErrorMessage(null);
+    setIsSubmitting(true);
+    setLoadingStage('Getting things ready...');
     updateData({ selectedPlan });
 
-    // Build payment link URL with prefilled email
-    const baseUrl = PAYMENT_LINKS[selectedPlan as keyof typeof PAYMENT_LINKS];
-    const email = user?.email;
-    const paymentUrl = email
-      ? `${baseUrl}?prefilled_email=${encodeURIComponent(email)}`
-      : baseUrl;
+    try {
+      const plan = selectedPlan === 'annual' ? 'yearly' : 'monthly';
+      track('Paywall Free Trial Attempt', {
+        planId: selectedPlan,
+        plan,
+        hasTrialed,
+        userId: user.uid,
+        email: user.email,
+      });
+      setLoadingStage('Setting up your access...');
+      const response = await fetch(`${API_BASE_URL}/api/start-free-trial`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: user.email, plan }),
+      });
 
-    // Redirect to Stripe Checkout
-    window.location.href = paymentUrl;
+      setLoadingStage('Almost there...');
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data?.error || 'Failed to start free trial.');
+      }
+
+      setLoadingStage('Finishing up...');
+      await waitForClaimsUpdate();
+      track('Paywall Free Trial Succeeded', {
+        planId: selectedPlan,
+        plan,
+        hasTrialed,
+        userId: user.uid,
+      });
+      router.push(`${ROUTES.HOME}?checkout=success`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to start free trial.';
+      track('Paywall Free Trial Failed', {
+        planId: selectedPlan,
+        hasTrialed,
+        error: message,
+        userId: user?.uid,
+      });
+      setErrorMessage(message);
+    } finally {
+      setIsSubmitting(false);
+      setLoadingStage(null);
+    }
+  };
+
+  const handleManageSubscription = async () => {
+    if (!user) {
+      setErrorMessage('Please sign in to manage your subscription.');
+      return;
+    }
+
+    setErrorMessage(null);
+    setIsSubmitting(true);
+    setLoadingStage('Opening billing portal...');
+
+    try {
+      track('Paywall Manage Subscription Clicked', { hasTrialed, userId: user.uid });
+      const idToken = await user.getIdToken();
+      const returnUrl = `${window.location.origin}${ROUTES.HOME}`;
+      const response = await fetch(`${API_BASE_URL}/api/billing-portal-session`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${idToken}`,
+        },
+        body: JSON.stringify({ returnUrl }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data?.error || 'Failed to open billing portal.');
+      }
+
+      if (!data?.url) {
+        throw new Error('Billing portal URL missing.');
+      }
+
+      track('Paywall Billing Portal Opened', { userId: user.uid });
+      window.location.href = data.url;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to open billing portal.';
+      track('Paywall Billing Portal Failed', { error: message, userId: user?.uid });
+      setErrorMessage(message);
+    } finally {
+      setIsSubmitting(false);
+      setLoadingStage(null);
+    }
   };
 
   return (
@@ -94,10 +228,14 @@ export function Paywall({ data, updateData, onNext, onBack }: Props) {
           <Zap className="w-8 h-8 text-white" />
         </div>
         <h1 className="text-3xl md:text-4xl leading-tight">
-          Start your free trial - your next 7 days are mapped out
+          {hasTrialed
+            ? 'Welcome back! Add a payment method to continue'
+            : 'Start your free trial - your next 7 days are mapped out'}
         </h1>
         <p className="text-gray-600 text-lg">
-          No payment due now. We&apos;ll remind you before your trial ends.
+          {hasTrialed
+            ? 'Your trial has ended. Subscribe to regain full access to all features.'
+            : "No payment due now. We'll remind you before your trial ends."}
         </p>
       </div>
 
@@ -112,96 +250,126 @@ export function Paywall({ data, updateData, onNext, onBack }: Props) {
         ))}
       </div>
 
-      <div className="space-y-3">
-        {plans.map((plan) => {
-          const isSelected = selectedPlan === plan.id;
-          return (
-            <Card
-              key={plan.id}
-              className={`relative p-5 cursor-pointer transition-all hover:shadow-md ${isSelected ? 'border-indigo-400 bg-indigo-50 dark:border-indigo-400/70 dark:bg-indigo-500/10' : ''
-                }`}
-              onClick={() => setSelectedPlan(plan.id)}
-            >
-              {plan.popular && (
-                <Badge className="absolute -top-2 left-1/2 -translate-x-1/2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white">
-                  Most Popular
-                </Badge>
-              )}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div
-                    className="w-5 h-5 rounded-full border-2 flex items-center justify-center"
-                    style={{
-                      borderColor: isSelected ? '#6366f1' : '#d1d5db',
-                    }}
-                  >
-                    {isSelected && (
-                      <div className="w-3 h-3 rounded-full bg-indigo-600" />
-                    )}
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span>{plan.name}</span>
-                      {plan.savings && (
-                        <Badge variant="outline" className="text-xs">
-                          {plan.savings}
-                        </Badge>
+      {!hasTrialed && (
+        <div className="space-y-3">
+          {plans.map((plan) => {
+            const isSelected = selectedPlan === plan.id;
+            return (
+              <Card
+                key={plan.id}
+                className={`relative p-5 cursor-pointer transition-all hover:shadow-md ${isSelected ? 'border-indigo-400 bg-indigo-50 dark:border-indigo-400/70 dark:bg-indigo-500/10' : ''
+                  }`}
+                onClick={() => handlePlanSelect(plan.id)}
+              >
+                {plan.popular && (
+                  <Badge className="absolute -top-2 left-1/2 -translate-x-1/2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white">
+                    Most Popular
+                  </Badge>
+                )}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div
+                      className="w-5 h-5 rounded-full border-2 flex items-center justify-center"
+                      style={{
+                        borderColor: isSelected ? '#6366f1' : '#d1d5db',
+                      }}
+                    >
+                      {isSelected && (
+                        <div className="w-3 h-3 rounded-full bg-indigo-600" />
                       )}
                     </div>
-                    {plan.pricePerMonth && (
-                      <p className="text-sm text-gray-600">
-                        {plan.pricePerMonth}
-                      </p>
-                    )}
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span>{plan.name}</span>
+                        {plan.savings && (
+                          <Badge variant="outline" className="text-xs">
+                            {plan.savings}
+                          </Badge>
+                        )}
+                      </div>
+                      {plan.pricePerMonth && (
+                        <p className="text-sm text-gray-600">
+                          {plan.pricePerMonth}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="flex items-baseline">
+                      <span className="text-2xl">{plan.price}</span>
+                      <span className="text-gray-600 text-sm">{plan.period}</span>
+                    </div>
                   </div>
                 </div>
-                <div className="text-right">
-                  <div className="flex items-baseline">
-                    <span className="text-2xl">{plan.price}</span>
-                    <span className="text-gray-600 text-sm">{plan.period}</span>
-                  </div>
-                </div>
-              </div>
-            </Card>
-          );
-        })}
-      </div>
+              </Card>
+            );
+          })}
+        </div>
+      )}
 
       <div className="bg-gray-50 dark:bg-slate-900/60 border border-gray-200 dark:border-slate-800 rounded-lg p-5 space-y-3">
-        <div className="flex items-start gap-3">
-          <CircleCheck className="w-5 h-5 text-green-600 dark:text-green-400 shrink-0 mt-0.5" />
-          <p className="text-sm">
-            <strong>7-day free trial</strong> - No payment due now
-          </p>
-        </div>
+        {!hasTrialed && (
+          <div className="flex items-start gap-3">
+            <CircleCheck className="w-5 h-5 text-green-600 dark:text-green-400 shrink-0 mt-0.5" />
+            <p className="text-sm">
+              <strong>7-day free trial</strong> - No payment due now
+            </p>
+          </div>
+        )}
         <div className="flex items-start gap-3">
           <Shield className="w-5 h-5 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
           <p className="text-sm">
             <strong>Cancel anytime</strong> - Easy cancellation in settings
           </p>
         </div>
-        <div className="flex items-start gap-3">
-          <Calendar className="w-5 h-5 text-purple-600 dark:text-purple-400 shrink-0 mt-0.5" />
-          <p className="text-sm">
-            <strong>Reminder before billing</strong> - We&apos;ll email you 3 days
-            before your trial ends
-          </p>
-        </div>
+        {!hasTrialed && (
+          <div className="flex items-start gap-3">
+            <Calendar className="w-5 h-5 text-purple-600 dark:text-purple-400 shrink-0 mt-0.5" />
+            <p className="text-sm">
+              <strong>Reminder before billing</strong> - We&apos;ll email you 3 days
+              before your trial ends
+            </p>
+          </div>
+        )}
       </div>
 
       <div className="flex gap-3">
-        <Button onClick={onBack} variant="outline" size="md" className="px-4 gap-2">
-          <ChevronLeft className="w-4 h-4" />
-          Back
-        </Button>
-        <Button onClick={handleStartTrial} className="flex-1" size="lg">
-          Start free trial
+        {showBack && (
+          <Button onClick={onBack} variant="outline" size="md" className="px-4 gap-2">
+            <ChevronLeft className="w-4 h-4" />
+            Back
+          </Button>
+        )}
+        <Button
+          onClick={hasTrialed ? handleManageSubscription : handleStartTrial}
+          className="flex-1"
+          size="lg"
+          disabled={isSubmitting}
+        >
+          {hasTrialed ? 'Add payment method' : isSubmitting ? 'Starting trial...' : 'Start free trial'}
         </Button>
       </div>
 
+      {errorMessage && (
+        <p className="text-center text-sm text-red-600">{errorMessage}</p>
+      )}
+
+      {isSubmitting && loadingStage && (
+        <div className="flex items-center justify-center gap-3 text-sm text-gray-600">
+          <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-gray-700" />
+          <span>{loadingStage}</span>
+        </div>
+      )}
+
       <div className="space-y-1 text-center text-xs text-gray-500">
-        <p>Your trial starts today and converts after 7 days.</p>
-        <p>Secure checkout powered by Stripe.</p>
+        {hasTrialed ? (
+          <p>Manage your subscription securely with Stripe.</p>
+        ) : (
+          <>
+            <p>Your trial starts today and converts after 7 days.</p>
+            <p>Secure checkout powered by Stripe.</p>
+          </>
+        )}
       </div>
     </div>
   );

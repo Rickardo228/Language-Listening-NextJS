@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import { useUpdateUserStats } from '../../utils/userStats'
+import { useUpdateUserStats } from '../../utils/userStats/userStats'
 import { UserContextProvider } from '../../contexts/UserContext'
 import React from 'react'
 

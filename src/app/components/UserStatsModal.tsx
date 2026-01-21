@@ -30,7 +30,7 @@ ChartJS.register(
 );
 
 // Import timezone utilities from userStats
-import { getUserLocalDateBoundary, getUserTimezone } from '../utils/userStats';
+import { getUserLocalDateBoundary, getUserTimezone } from '../utils/userStats/userStats';
 
 /**
  * DEVELOPMENT ONLY: Personal Best Debug Mode
@@ -602,314 +602,314 @@ export function UserStatsModal({ isOpen, onClose, user }: UserStatsModalProps) {
             panelClassName="max-h-[80vh]"
         >
 
-                    {loading ? (
-                        <div className="text-center py-4">Loading stats...</div>
-                    ) : mainStats ? (
-                        <div className="space-y-6">
-                            {/* Total Phrases - Prominent display at top */}
-                            <div className="bg-gradient-to-r from-secondary/10 to-primary/10 p-6 rounded-lg border border-secondary/20">
-                                <h3 className="text-lg font-semibold mb-3">Total Progress</h3>
-                                <div className="text-center">
+            {loading ? (
+                <div className="text-center py-4">Loading stats...</div>
+            ) : mainStats ? (
+                <div className="space-y-6">
+                    {/* Total Phrases - Prominent display at top */}
+                    <div className="bg-gradient-to-r from-secondary/10 to-primary/10 p-6 rounded-lg border border-secondary/20">
+                        <h3 className="text-lg font-semibold mb-3">Total Progress</h3>
+                        <div className="text-center">
 
-                                    <>
-                                        {/* Streak count above total */}
-                                        {currentStreak > 0 && (() => {
-                                            const streakData = getStreakMessage(currentStreak);
-                                            return (
-                                                <div className="bg-gray-100 dark:bg-gray-900 p-3 rounded-xl border-2 border-gray-300 dark:border-gray-600 shadow-md mb-4 inline-block">
-                                                    <div className="flex items-center justify-center mb-1">
-                                                        <span className="text-2xl font-bold text-gray-900 dark:text-white mr-2">{currentStreak}</span>
-                                                        <span className="text-2xl animate-pulse">{streakData.emoji}</span>
-                                                    </div>
-                                                    <div className="text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wide">Day Streak</div>
-                                                </div>
-                                            );
-                                        })()}
-
-                                        <div className="text-4xl font-bold text-primary mb-2">
-                                            {totalPhrases.toLocaleString()}
-                                        </div>
-                                        <div className="text-sm text-foreground/60 mb-3">
-                                            🎧 {(mainStats.phrasesListened || 0).toLocaleString()} listened • 👀 {(mainStats.phrasesViewed || 0).toLocaleString()} viewed
-                                        </div>
-                                        <div className="text-lg font-medium mb-2">
-                                            <span className={getPhraseRankTitle(totalPhrases).color}>
-                                                {getPhraseRankTitle(totalPhrases).title}
-                                            </span>
-                                        </div>
-                                        <div className="text-sm text-foreground/70 mb-3 italic">
-                                            {getPhraseRankTitle(totalPhrases).description}
-                                        </div>
-
-
-                                        {getPhraseRankTitle(totalPhrases).nextMilestone > 0 && (
-                                            <div className="text-sm text-foreground/60 mb-4">
-                                                🎯 Next milestone: {getPhraseRankTitle(totalPhrases).nextMilestone.toLocaleString()} phrases
+                            <>
+                                {/* Streak count above total */}
+                                {currentStreak > 0 && (() => {
+                                    const streakData = getStreakMessage(currentStreak);
+                                    return (
+                                        <div className="bg-gray-100 dark:bg-gray-900 p-3 rounded-xl border-2 border-gray-300 dark:border-gray-600 shadow-md mb-4 inline-block">
+                                            <div className="flex items-center justify-center mb-1">
+                                                <span className="text-2xl font-bold text-gray-900 dark:text-white mr-2">{currentStreak}</span>
+                                                <span className="text-2xl animate-pulse">{streakData.emoji}</span>
                                             </div>
-                                        )}
+                                            <div className="text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wide">Day Streak</div>
+                                        </div>
+                                    );
+                                })()}
 
-                                        {/* Progress bar from last milestone to next */}
-                                        {(() => {
-                                            const rankInfo = getPhraseRankTitle(totalPhrases);
-                                            if (rankInfo.nextMilestone > 0) {
-                                                const currentPhrases = totalPhrases;
-                                                const nextMilestone = rankInfo.nextMilestone;
-
-                                                // Find the last milestone we passed using PRODUCTION_PHRASE_RANKS
-                                                let lastMilestone = 0;
-                                                for (const rank of PRODUCTION_PHRASE_RANKS) {
-                                                    if (rank.threshold <= currentPhrases && rank.threshold > lastMilestone) {
-                                                        lastMilestone = rank.threshold;
-                                                    }
-                                                }
-
-                                                const progressRange = nextMilestone - lastMilestone;
-                                                const currentProgress = currentPhrases - lastMilestone;
-                                                const progressPercentage = (currentProgress / progressRange) * 100;
-
-                                                return (
-                                                    <div className="mt-3">
-                                                        <div className="flex justify-between text-xs text-foreground/60 mb-1">
-                                                            <span>{lastMilestone.toLocaleString()}</span>
-                                                            <span>{nextMilestone.toLocaleString()}</span>
-                                                        </div>
-                                                        <div className="w-full bg-secondary/50 rounded-full h-2">
-                                                            <div
-                                                                className="bg-primary h-2 rounded-full transition-all duration-500"
-                                                                style={{ width: `${Math.min(100, Math.max(0, progressPercentage))}%` }}
-                                                            ></div>
-                                                        </div>
-                                                        <div className="text-xs text-center text-foreground/50 mt-1">
-                                                            {currentProgress.toLocaleString()} of {progressRange.toLocaleString()} to next milestone
-                                                        </div>
-                                                    </div>
-                                                );
-                                            }
-                                            return null;
-                                        })()}
-                                    </>
-
-
+                                <div className="text-4xl font-bold text-primary mb-2">
+                                    {totalPhrases.toLocaleString()}
                                 </div>
-                            </div>
+                                <div className="text-sm text-foreground/60 mb-3">
+                                    🎧 {(mainStats.phrasesListened || 0).toLocaleString()} listened • 👀 {(mainStats.phrasesViewed || 0).toLocaleString()} viewed
+                                </div>
+                                <div className="text-lg font-medium mb-2">
+                                    <span className={getPhraseRankTitle(totalPhrases).color}>
+                                        {getPhraseRankTitle(totalPhrases).title}
+                                    </span>
+                                </div>
+                                <div className="text-sm text-foreground/70 mb-3 italic">
+                                    {getPhraseRankTitle(totalPhrases).description}
+                                </div>
 
-                            {/* Today's Focus - Prominent Display */}
-                            <div className="bg-gradient-to-r from-primary/10 to-secondary/10 p-6 rounded-lg border border-primary/20">
-                                <h3 className="text-lg font-semibold mb-3">Today&apos;s Progress</h3>
-                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-6">
-                                    <div className="text-center relative">
-                                        <div className="flex items-center justify-center gap-2 mb-2">
-                                            {(() => {
-                                                // Show flag with phrases on mobile always - use most recent language for "today's" focus
-                                                const mostRecentLanguage = getMostRecentLanguage(languageStats, userProfile?.nativeLanguage || userProfile?.preferredInputLang);
 
-                                                if (mostRecentLanguage) {
-                                                    return (
-                                                        <div className="text-2xl sm:hidden" title={getLanguageName(mostRecentLanguage.language)}>
-                                                            {getFlagEmoji(mostRecentLanguage.language)}
-                                                        </div>
-                                                    );
-                                                }
-                                                return null;
-                                            })()}
-                                            <div className="text-3xl font-bold text-primary">{todayCount}</div>
-                                        </div>
-                                        <div className="text-sm text-foreground/60">Phrases Today</div>
-                                        {/* Personal Best Flag */}
-                                        {isTodayPersonalBest && (
-                                            <div className="absolute -top-2 -right-2">
-                                                <div className="bg-amber-500 text-white text-xs px-2 py-1 rounded-full font-bold shadow-lg border-2 border-amber-600 animate-pulse">
-                                                    🏆 PB
+                                {getPhraseRankTitle(totalPhrases).nextMilestone > 0 && (
+                                    <div className="text-sm text-foreground/60 mb-4">
+                                        🎯 Next milestone: {getPhraseRankTitle(totalPhrases).nextMilestone.toLocaleString()} phrases
+                                    </div>
+                                )}
+
+                                {/* Progress bar from last milestone to next */}
+                                {(() => {
+                                    const rankInfo = getPhraseRankTitle(totalPhrases);
+                                    if (rankInfo.nextMilestone > 0) {
+                                        const currentPhrases = totalPhrases;
+                                        const nextMilestone = rankInfo.nextMilestone;
+
+                                        // Find the last milestone we passed using PRODUCTION_PHRASE_RANKS
+                                        let lastMilestone = 0;
+                                        for (const rank of PRODUCTION_PHRASE_RANKS) {
+                                            if (rank.threshold <= currentPhrases && rank.threshold > lastMilestone) {
+                                                lastMilestone = rank.threshold;
+                                            }
+                                        }
+
+                                        const progressRange = nextMilestone - lastMilestone;
+                                        const currentProgress = currentPhrases - lastMilestone;
+                                        const progressPercentage = (currentProgress / progressRange) * 100;
+
+                                        return (
+                                            <div className="mt-3">
+                                                <div className="flex justify-between text-xs text-foreground/60 mb-1">
+                                                    <span>{lastMilestone.toLocaleString()}</span>
+                                                    <span>{nextMilestone.toLocaleString()}</span>
+                                                </div>
+                                                <div className="w-full bg-secondary/50 rounded-full h-2">
+                                                    <div
+                                                        className="bg-primary h-2 rounded-full transition-all duration-500"
+                                                        style={{ width: `${Math.min(100, Math.max(0, progressPercentage))}%` }}
+                                                    ></div>
+                                                </div>
+                                                <div className="text-xs text-center text-foreground/50 mt-1">
+                                                    {currentProgress.toLocaleString()} of {progressRange.toLocaleString()} to next milestone
                                                 </div>
                                             </div>
-                                        )}
-                                    </div>
-                                    {/* Flag column - only visible on desktop */}
+                                        );
+                                    }
+                                    return null;
+                                })()}
+                            </>
+
+
+                        </div>
+                    </div>
+
+                    {/* Today's Focus - Prominent Display */}
+                    <div className="bg-gradient-to-r from-primary/10 to-secondary/10 p-6 rounded-lg border border-primary/20">
+                        <h3 className="text-lg font-semibold mb-3">Today&apos;s Progress</h3>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-6">
+                            <div className="text-center relative">
+                                <div className="flex items-center justify-center gap-2 mb-2">
                                     {(() => {
+                                        // Show flag with phrases on mobile always - use most recent language for "today's" focus
                                         const mostRecentLanguage = getMostRecentLanguage(languageStats, userProfile?.nativeLanguage || userProfile?.preferredInputLang);
 
                                         if (mostRecentLanguage) {
                                             return (
-                                                <div className="text-center hidden sm:block">
-                                                    <div className="text-4xl mb-2" title={getLanguageName(mostRecentLanguage.language)}>
-                                                        {getFlagEmoji(mostRecentLanguage.language)}
-                                                    </div>
-                                                    <div className="text-sm text-foreground/60">
-                                                        {getLanguageName(mostRecentLanguage.language)}
-                                                    </div>
+                                                <div className="text-2xl sm:hidden" title={getLanguageName(mostRecentLanguage.language)}>
+                                                    {getFlagEmoji(mostRecentLanguage.language)}
                                                 </div>
                                             );
                                         }
                                         return null;
                                     })()}
-                                    {trend === 'up' && (
-                                        <div className="text-center">
-                                            <div className="text-lg font-semibold">
-                                                <TrendingUp className="w-6 h-6 text-green-500 mx-auto" strokeWidth={2} />
-                                            </div>
-                                            <div className="text-sm text-foreground/60">
-                                                vs Yesterday (+{difference})
-                                            </div>
-                                            <div className="text-xs text-green-600 font-medium mt-1">
-                                                {`You're accelerating! 🚀`}
-                                            </div>
-                                        </div>
-                                    )}
-                                    {trend === 'down' && (
-                                        <div className="text-center">
-                                            <div className="text-lg font-semibold">
-                                                <TrendingDown className="w-6 h-6 text-red-500 mx-auto" strokeWidth={2} />
-                                            </div>
-                                            <div className="text-sm text-foreground/60">
-                                                vs Yesterday ({difference})
-                                            </div>
-                                            <div className="text-xs text-red-600 font-medium mt-1">
-                                                {`Slower pace today 📉`}
-                                            </div>
-                                        </div>
-                                    )}
-                                    {trend === 'same' && (
-                                        <div className="text-center">
-                                            <div className="text-lg font-semibold">
-                                                <Minus className="w-6 h-6 text-blue-500 mx-auto" strokeWidth={2} />
-                                            </div>
-                                            <div className="text-sm text-foreground/60">
-                                                vs Yesterday ({difference >= 0 ? '+' : ''}{difference})
-                                            </div>
-                                            <div className="text-xs text-blue-600 font-medium mt-1">
-                                                {`Steady progress 📊`}
-                                            </div>
-                                        </div>
-                                    )}
+                                    <div className="text-3xl font-bold text-primary">{todayCount}</div>
                                 </div>
+                                <div className="text-sm text-foreground/60">Phrases Today</div>
+                                {/* Personal Best Flag */}
+                                {isTodayPersonalBest && (
+                                    <div className="absolute -top-2 -right-2">
+                                        <div className="bg-amber-500 text-white text-xs px-2 py-1 rounded-full font-bold shadow-lg border-2 border-amber-600 animate-pulse">
+                                            🏆 PB
+                                        </div>
+                                    </div>
+                                )}
                             </div>
+                            {/* Flag column - only visible on desktop */}
+                            {(() => {
+                                const mostRecentLanguage = getMostRecentLanguage(languageStats, userProfile?.nativeLanguage || userProfile?.preferredInputLang);
 
-                            {/* Weekly Chart */}
-                            {dailyStats.length > 0 && (
-                                <div>
-                                    <h3 className="font-semibold mb-4">Last 7 Days</h3>
-                                    <DailyStatsChart dailyStats={dailyStats} personalBest={personalBest} />
-                                </div>
-                            )}
-
-
-                            {/* Personal Best Section */}
-                            {personalBest && personalBest.count > 0 && (
-                                <div className="bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-900/20 dark:to-yellow-900/20 p-6 rounded-lg border border-amber-200 dark:border-amber-700">
-                                    <h3 className="text-lg font-semibold mb-4 flex items-center">
-                                        <span className="mr-2">🏆</span>
-                                        Personal Best
-                                    </h3>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div className="text-center">
-                                            <div className="text-2xl font-bold text-amber-600 dark:text-amber-400">
-                                                {personalBest.count}
+                                if (mostRecentLanguage) {
+                                    return (
+                                        <div className="text-center hidden sm:block">
+                                            <div className="text-4xl mb-2" title={getLanguageName(mostRecentLanguage.language)}>
+                                                {getFlagEmoji(mostRecentLanguage.language)}
                                             </div>
-                                            <div className="text-sm text-foreground/60">Phrases in One Day</div>
-                                        </div>
-                                        <div className="text-center">
                                             <div className="text-sm text-foreground/60">
-                                                Achieved on
-                                            </div>
-                                            <div className="text-sm font-medium">
-                                                {new Date(personalBest.achievedAt).toLocaleDateString('en-US', {
-                                                    weekday: 'long',
-                                                    month: 'short',
-                                                    day: 'numeric'
-                                                })}
+                                                {getLanguageName(mostRecentLanguage.language)}
                                             </div>
                                         </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Languages with Ranking */}
-                            {languageStats.length > 0 && (
-                                <div>
-                                    <h3 className="font-semibold mb-3">Languages You&apos;re Learning</h3>
-                                    {/* Polyglot recognition - only show if learning multiple languages */}
-                                    {(() => {
-                                        const aggregatedLanguages = aggregateLanguageStats(languageStats, userProfile?.nativeLanguage || userProfile?.preferredInputLang);
-                                        return aggregatedLanguages.length > 1 ? (
-                                            <div className="bg-gradient-to-r from-purple-500/20 to-blue-500/20 p-3 rounded-lg border border-purple-300/30 mb-4">
-                                                <div className="text-sm font-medium text-purple-700 dark:text-purple-300 mb-1">
-                                                    🌍 Polyglot Learner
-                                                </div>
-                                                <div className="text-xs text-foreground/70">
-                                                    You&apos;re practicing {aggregatedLanguages.length} different languages
-                                                </div>
-                                            </div>
-                                        ) : null;
-                                    })()}
-                                    <div className="space-y-2">
-                                        {(() => {
-                                            const aggregatedLanguages = aggregateLanguageStats(languageStats, userProfile?.nativeLanguage || userProfile?.preferredInputLang);
-                                            return aggregatedLanguages.map((langStat) => {
-                                                const rankInfo = getLanguageRankTitle(langStat.totalCount);
-                                                return (
-                                                    <div key={langStat.language} className="bg-secondary/20 p-3 rounded">
-                                                        <div className="flex items-center gap-3">
-                                                            <LanguageSymbol
-                                                                language={langStat.language}
-                                                                count={langStat.totalCount}
-                                                            />
-                                                            <div className="flex-1">
-                                                                <div className="flex justify-between items-center">
-                                                                    <span className="font-medium">
-                                                                        {getLanguageName(langStat.language)}
-                                                                    </span>
-                                                                    <span className="font-semibold">{(langStat.totalCount || 0).toLocaleString()} phrases</span>
-                                                                </div>
-                                                                <div className="flex justify-between items-center mt-1">
-                                                                    <div className="text-sm text-foreground/60">
-                                                                        First practiced: {new Date(langStat.firstListened).toLocaleDateString()}
-                                                                    </div>
-                                                                    <div className={`text-sm font-medium ${rankInfo.color}`}>
-                                                                        {rankInfo.title}
-                                                                    </div>
-                                                                </div>
-                                                                <div className="text-xs text-foreground/50 mt-1 italic">
-                                                                    {rankInfo.description}
-                                                                </div>
-                                                                {rankInfo.nextMilestone > 0 && (
-                                                                    <div className="text-xs text-foreground/40 mt-1">
-                                                                        Next milestone: {rankInfo.nextMilestone.toLocaleString()} phrases
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                );
-                                            });
-                                        })()}
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Last Activity - Simple summary */}
-                            <div className="pt-4 border-t border-secondary/30">
-                                <h3 className="font-semibold mb-3 text-foreground/60">Recent Activity</h3>
+                                    );
+                                }
+                                return null;
+                            })()}
+                            {trend === 'up' && (
                                 <div className="text-center">
-                                    <div className="text-lg">
-                                        {(() => {
-                                            const lastListened = mainStats.lastListenedAt ? new Date(mainStats.lastListenedAt) : null;
-                                            const lastViewed = mainStats.lastViewedAt ? new Date(mainStats.lastViewedAt) : null;
-
-                                            let mostRecent = lastListened;
-                                            if (lastViewed && (!lastListened || lastViewed > lastListened)) {
-                                                mostRecent = lastViewed;
-                                            }
-
-                                            return mostRecent ? mostRecent.toLocaleDateString() : 'No activity yet';
-                                        })()}
+                                    <div className="text-lg font-semibold">
+                                        <TrendingUp className="w-6 h-6 text-green-500 mx-auto" strokeWidth={2} />
                                     </div>
-                                    <div className="text-sm text-foreground/60">Last Practice Session</div>
+                                    <div className="text-sm text-foreground/60">
+                                        vs Yesterday (+{difference})
+                                    </div>
+                                    <div className="text-xs text-green-600 font-medium mt-1">
+                                        {`You're accelerating! 🚀`}
+                                    </div>
+                                </div>
+                            )}
+                            {trend === 'down' && (
+                                <div className="text-center">
+                                    <div className="text-lg font-semibold">
+                                        <TrendingDown className="w-6 h-6 text-red-500 mx-auto" strokeWidth={2} />
+                                    </div>
+                                    <div className="text-sm text-foreground/60">
+                                        vs Yesterday ({difference})
+                                    </div>
+                                    <div className="text-xs text-red-600 font-medium mt-1">
+                                        {`Slower pace today 📉`}
+                                    </div>
+                                </div>
+                            )}
+                            {trend === 'same' && (
+                                <div className="text-center">
+                                    <div className="text-lg font-semibold">
+                                        <Minus className="w-6 h-6 text-blue-500 mx-auto" strokeWidth={2} />
+                                    </div>
+                                    <div className="text-sm text-foreground/60">
+                                        vs Yesterday ({difference >= 0 ? '+' : ''}{difference})
+                                    </div>
+                                    <div className="text-xs text-blue-600 font-medium mt-1">
+                                        {`Steady progress 📊`}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Weekly Chart */}
+                    {dailyStats.length > 0 && (
+                        <div>
+                            <h3 className="font-semibold mb-4">Last 7 Days</h3>
+                            <DailyStatsChart dailyStats={dailyStats} personalBest={personalBest} />
+                        </div>
+                    )}
+
+
+                    {/* Personal Best Section */}
+                    {personalBest && personalBest.count > 0 && (
+                        <div className="bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-900/20 dark:to-yellow-900/20 p-6 rounded-lg border border-amber-200 dark:border-amber-700">
+                            <h3 className="text-lg font-semibold mb-4 flex items-center">
+                                <span className="mr-2">🏆</span>
+                                Personal Best
+                            </h3>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="text-center">
+                                    <div className="text-2xl font-bold text-amber-600 dark:text-amber-400">
+                                        {personalBest.count}
+                                    </div>
+                                    <div className="text-sm text-foreground/60">Phrases in One Day</div>
+                                </div>
+                                <div className="text-center">
+                                    <div className="text-sm text-foreground/60">
+                                        Achieved on
+                                    </div>
+                                    <div className="text-sm font-medium">
+                                        {new Date(personalBest.achievedAt).toLocaleDateString('en-US', {
+                                            weekday: 'long',
+                                            month: 'short',
+                                            day: 'numeric'
+                                        })}
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    ) : (
-                        <div className="text-center py-4">No stats available yet</div>
                     )}
+
+                    {/* Languages with Ranking */}
+                    {languageStats.length > 0 && (
+                        <div>
+                            <h3 className="font-semibold mb-3">Languages You&apos;re Learning</h3>
+                            {/* Polyglot recognition - only show if learning multiple languages */}
+                            {(() => {
+                                const aggregatedLanguages = aggregateLanguageStats(languageStats, userProfile?.nativeLanguage || userProfile?.preferredInputLang);
+                                return aggregatedLanguages.length > 1 ? (
+                                    <div className="bg-gradient-to-r from-purple-500/20 to-blue-500/20 p-3 rounded-lg border border-purple-300/30 mb-4">
+                                        <div className="text-sm font-medium text-purple-700 dark:text-purple-300 mb-1">
+                                            🌍 Polyglot Learner
+                                        </div>
+                                        <div className="text-xs text-foreground/70">
+                                            You&apos;re practicing {aggregatedLanguages.length} different languages
+                                        </div>
+                                    </div>
+                                ) : null;
+                            })()}
+                            <div className="space-y-2">
+                                {(() => {
+                                    const aggregatedLanguages = aggregateLanguageStats(languageStats, userProfile?.nativeLanguage || userProfile?.preferredInputLang);
+                                    return aggregatedLanguages.map((langStat) => {
+                                        const rankInfo = getLanguageRankTitle(langStat.totalCount);
+                                        return (
+                                            <div key={langStat.language} className="bg-secondary/20 p-3 rounded">
+                                                <div className="flex items-center gap-3">
+                                                    <LanguageSymbol
+                                                        language={langStat.language}
+                                                        count={langStat.totalCount}
+                                                    />
+                                                    <div className="flex-1">
+                                                        <div className="flex justify-between items-center">
+                                                            <span className="font-medium">
+                                                                {getLanguageName(langStat.language)}
+                                                            </span>
+                                                            <span className="font-semibold">{(langStat.totalCount || 0).toLocaleString()} phrases</span>
+                                                        </div>
+                                                        <div className="flex justify-between items-center mt-1">
+                                                            <div className="text-sm text-foreground/60">
+                                                                First practiced: {new Date(langStat.firstListened).toLocaleDateString()}
+                                                            </div>
+                                                            <div className={`text-sm font-medium ${rankInfo.color}`}>
+                                                                {rankInfo.title}
+                                                            </div>
+                                                        </div>
+                                                        <div className="text-xs text-foreground/50 mt-1 italic">
+                                                            {rankInfo.description}
+                                                        </div>
+                                                        {rankInfo.nextMilestone > 0 && (
+                                                            <div className="text-xs text-foreground/40 mt-1">
+                                                                Next milestone: {rankInfo.nextMilestone.toLocaleString()} phrases
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    });
+                                })()}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Last Activity - Simple summary */}
+                    <div className="pt-4 border-t border-secondary/30">
+                        <h3 className="font-semibold mb-3 text-foreground/60">Recent Activity</h3>
+                        <div className="text-center">
+                            <div className="text-lg">
+                                {(() => {
+                                    const lastListened = mainStats.lastListenedAt ? new Date(mainStats.lastListenedAt) : null;
+                                    const lastViewed = mainStats.lastViewedAt ? new Date(mainStats.lastViewedAt) : null;
+
+                                    let mostRecent = lastListened;
+                                    if (lastViewed && (!lastListened || lastViewed > lastListened)) {
+                                        mostRecent = lastViewed;
+                                    }
+
+                                    return mostRecent ? mostRecent.toLocaleDateString() : 'No activity yet';
+                                })()}
+                            </div>
+                            <div className="text-sm text-foreground/60">Last Practice Session</div>
+                        </div>
+                    </div>
+                </div>
+            ) : (
+                <div className="text-center py-4">No stats available yet</div>
+            )}
 
             {/* Settings Modal */}
             <StatsSettingsModal
