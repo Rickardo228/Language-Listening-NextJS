@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Calendar,
@@ -19,6 +19,7 @@ import { OnboardingData } from '../types';
 import { useUser } from '../../../contexts/UserContext';
 import { API_BASE_URL } from '../../../consts';
 import { ROUTES } from '../../../routes';
+import { track } from '../../../../lib/mixpanelClient';
 
 interface Props {
   data: OnboardingData;
@@ -74,8 +75,27 @@ export function Paywall({ data, updateData, onNext, onBack, showBack = true }: P
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loadingStage, setLoadingStage] = useState<string | null>(null);
   const { user, hasTrialed, refreshUserClaims } = useUser();
+  const paywallTrackedRef = useRef(false);
 
   const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+  useEffect(() => {
+    if (paywallTrackedRef.current) return;
+    track('Paywall Viewed', {
+      selectedPlan,
+      hasTrialed,
+      nativeLanguage: data.nativeLanguage,
+      targetLanguage: data.targetLanguage,
+      abilityLevel: data.abilityLevel,
+    });
+    paywallTrackedRef.current = true;
+  }, [
+    selectedPlan,
+    hasTrialed,
+    data.nativeLanguage,
+    data.targetLanguage,
+    data.abilityLevel,
+  ]);
 
   const waitForClaimsUpdate = async () => {
     if (!user) return;
@@ -92,6 +112,12 @@ export function Paywall({ data, updateData, onNext, onBack, showBack = true }: P
     await refreshUserClaims();
   };
 
+  const handlePlanSelect = (planId: string) => {
+    if (planId === selectedPlan) return;
+    setSelectedPlan(planId);
+    track('Paywall Plan Selected', { planId, hasTrialed });
+  };
+
   const handleStartTrial = async () => {
     if (!user?.email) {
       setErrorMessage('Email is required to start a free trial.');
@@ -105,6 +131,13 @@ export function Paywall({ data, updateData, onNext, onBack, showBack = true }: P
 
     try {
       const plan = selectedPlan === 'annual' ? 'yearly' : 'monthly';
+      track('Paywall Free Trial Attempt', {
+        planId: selectedPlan,
+        plan,
+        hasTrialed,
+        userId: user.uid,
+        email: user.email,
+      });
       setLoadingStage('Setting up your access...');
       const response = await fetch(`${API_BASE_URL}/api/start-free-trial`, {
         method: 'POST',
@@ -121,9 +154,22 @@ export function Paywall({ data, updateData, onNext, onBack, showBack = true }: P
 
       setLoadingStage('Finishing up...');
       await waitForClaimsUpdate();
+      track('Paywall Free Trial Succeeded', {
+        planId: selectedPlan,
+        plan,
+        hasTrialed,
+        userId: user.uid,
+      });
       router.push(`${ROUTES.HOME}?checkout=success`);
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : 'Failed to start free trial.');
+      const message = error instanceof Error ? error.message : 'Failed to start free trial.';
+      track('Paywall Free Trial Failed', {
+        planId: selectedPlan,
+        hasTrialed,
+        error: message,
+        userId: user?.uid,
+      });
+      setErrorMessage(message);
     } finally {
       setIsSubmitting(false);
       setLoadingStage(null);
@@ -141,6 +187,7 @@ export function Paywall({ data, updateData, onNext, onBack, showBack = true }: P
     setLoadingStage('Opening billing portal...');
 
     try {
+      track('Paywall Manage Subscription Clicked', { hasTrialed, userId: user.uid });
       const idToken = await user.getIdToken();
       const returnUrl = `${window.location.origin}${ROUTES.HOME}`;
       const response = await fetch(`${API_BASE_URL}/api/billing-portal-session`, {
@@ -162,9 +209,12 @@ export function Paywall({ data, updateData, onNext, onBack, showBack = true }: P
         throw new Error('Billing portal URL missing.');
       }
 
+      track('Paywall Billing Portal Opened', { userId: user.uid });
       window.location.href = data.url;
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : 'Failed to open billing portal.');
+      const message = error instanceof Error ? error.message : 'Failed to open billing portal.';
+      track('Paywall Billing Portal Failed', { error: message, userId: user?.uid });
+      setErrorMessage(message);
     } finally {
       setIsSubmitting(false);
       setLoadingStage(null);
@@ -209,7 +259,7 @@ export function Paywall({ data, updateData, onNext, onBack, showBack = true }: P
                 key={plan.id}
                 className={`relative p-5 cursor-pointer transition-all hover:shadow-md ${isSelected ? 'border-indigo-400 bg-indigo-50 dark:border-indigo-400/70 dark:bg-indigo-500/10' : ''
                   }`}
-                onClick={() => setSelectedPlan(plan.id)}
+                onClick={() => handlePlanSelect(plan.id)}
               >
                 {plan.popular && (
                   <Badge className="absolute -top-2 left-1/2 -translate-x-1/2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white">

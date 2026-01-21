@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { useState, useEffect, memo } from "react";
+import { useState, useEffect, memo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { getFirestore, doc, collection, getDocs } from "firebase/firestore";
 import { getUserLocalDateBoundary, getUserTimezone } from "../utils/userStats/userStats";
@@ -9,6 +9,7 @@ import { getPhraseRankTitle, getLanguageRankTitle, PRODUCTION_PHRASE_RANKS } fro
 import { getFlagEmoji, getLanguageName } from "../utils/languageUtils";
 import { Button } from "./ui/Button";
 import { ROUTES } from "../routes";
+import { track } from "../../lib/mixpanelClient";
 
 interface ListCompletionScreenProps {
   isOpen: boolean;
@@ -263,6 +264,7 @@ export function ListCompletionScreen({
   const [totalStats, setTotalStats] = useState({ listened: 0, viewed: 0 });
   const [languageStats, setLanguageStats] = useState<LanguageStats[]>([]);
   const [mostRecentLanguage, setMostRecentLanguage] = useState<{ language: string; count: number } | null>(null);
+  const isOpenTrackedRef = useRef(false);
 
   // Fetch stats when moving to step 2
   const fetchStats = async () => {
@@ -319,10 +321,22 @@ export function ListCompletionScreen({
   // Reset to step 1 when opened, reset session when closed
   useEffect(() => {
     if (isOpen) {
+      if (!isOpenTrackedRef.current) {
+        track("List Completion Screen Viewed", {
+          step: 1,
+          currentStreak,
+          sessionListened,
+          sessionViewed,
+          hasMilestones: recentMilestones.length > 0,
+        });
+        isOpenTrackedRef.current = true;
+      }
       setStep(1);
+    } else {
+      isOpenTrackedRef.current = false;
     }
     // Don't reset stats when closing - keep them so next animation starts from previous value
-  }, [isOpen]);
+  }, [isOpen, currentStreak, sessionListened, sessionViewed, recentMilestones.length]);
 
   // Handler for navigating from step 2 to milestone or step 3
   const handleStep2Continue = () => {
@@ -426,6 +440,7 @@ export function ListCompletionScreen({
                         fullWidth
                         className="font-black text-2xl py-6 rounded-2xl shadow-2xl uppercase"
                         onClick={() => {
+                          track("List Completion Continue Clicked", { step: 1 });
                           fetchStats();
                           setStep(2);
                         }}
@@ -499,7 +514,13 @@ export function ListCompletionScreen({
                         size="lg"
                         fullWidth
                         className="font-black text-2xl py-6 rounded-2xl shadow-2xl uppercase"
-                        onClick={handleStep2Continue}
+                        onClick={() => {
+                          track("List Completion Continue Clicked", {
+                            step: 2,
+                            hasMilestones: recentMilestones.length > 0,
+                          });
+                          handleStep2Continue();
+                        }}
                       >
                         Continue
                       </Button>
@@ -559,12 +580,13 @@ export function ListCompletionScreen({
                           variant="primary"
                           size="lg"
                           fullWidth
-                          className="font-black text-xl py-5 rounded-xl shadow-xl uppercase"
-                          onClick={async () => {
-                            if (onGoNext) {
-                              await onGoNext();
-                            }
-                            onClose();
+                        className="font-black text-xl py-5 rounded-xl shadow-xl uppercase"
+                        onClick={async () => {
+                          track("List Completion Go Next Clicked");
+                          if (onGoNext) {
+                            await onGoNext();
+                          }
+                          onClose();
                           }}
                         >
                           Go Next
@@ -577,12 +599,13 @@ export function ListCompletionScreen({
                           variant="secondary"
                           size="lg"
                           fullWidth
-                          className="font-bold text-lg py-4 rounded-xl shadow-lg"
-                          onClick={async () => {
-                            if (onGoAgain) {
-                              await onGoAgain();
-                            }
-                            onClose();
+                        className="font-bold text-lg py-4 rounded-xl shadow-lg"
+                        onClick={async () => {
+                          track("List Completion Go Again Clicked");
+                          if (onGoAgain) {
+                            await onGoAgain();
+                          }
+                          onClose();
                           }}
                         >
                           Continue
@@ -595,11 +618,12 @@ export function ListCompletionScreen({
                           variant="primary"
                           size="lg"
                           fullWidth
-                          className="font-bold text-lg py-4 rounded-xl shadow-lg"
-                          onClick={async () => {
-                            await router.push(ROUTES.HOME);
-                            onClose();
-                          }}
+                        className="font-bold text-lg py-4 rounded-xl shadow-lg"
+                        onClick={async () => {
+                          track("List Completion Home Clicked");
+                          await router.push(ROUTES.HOME);
+                          onClose();
+                        }}
                         >
                           Home
                         </Button>

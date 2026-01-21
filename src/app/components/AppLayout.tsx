@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { Home, Sun, Moon, CircleCheck } from 'lucide-react';
 import { useTheme } from '../ThemeProvider';
@@ -32,6 +32,8 @@ export function AppLayout({ children }: AppLayoutProps) {
   const { theme, toggleTheme } = useTheme();
   const { isCollapsed, setIsCollapsed } = useSidebar();
   const [showCheckoutSuccessModal, setShowCheckoutSuccessModal] = useState(false);
+  const checkoutSuccessTrackedRef = useRef(false);
+  const checkoutSuccessSourceRef = useRef<'query_param' | 'cookie' | 'session_storage' | 'unknown' | null>(null);
 
   const isPublicPath = isPublicRoute(resolvedPathname);
   const isOnLandingPage = isLandingPage(resolvedPathname);
@@ -50,6 +52,9 @@ export function AppLayout({ children }: AppLayoutProps) {
     const cookieMatch = document.cookie.match(/(?:^|;\s*)checkout-success=([^;]+)/);
     const hasCheckoutSuccessCookie = cookieMatch?.[1] === '1';
     if (hasCheckoutSuccessParam || hasCheckoutSuccessCookie) {
+      if (!checkoutSuccessSourceRef.current) {
+        checkoutSuccessSourceRef.current = hasCheckoutSuccessParam ? 'query_param' : 'cookie';
+      }
       try {
         sessionStorage.setItem('checkout-success', '1');
       } catch (error) {
@@ -80,6 +85,13 @@ export function AppLayout({ children }: AppLayoutProps) {
       sessionStorage.removeItem('checkout-success');
     } catch (error) {
       console.warn('Unable to clear checkout success flag:', error);
+    }
+    if (!checkoutSuccessSourceRef.current) {
+      checkoutSuccessSourceRef.current = 'session_storage';
+    }
+    if (!checkoutSuccessTrackedRef.current) {
+      track('Checkout Success', { source: checkoutSuccessSourceRef.current ?? 'unknown' });
+      checkoutSuccessTrackedRef.current = true;
     }
     refreshUserClaims();
     setShowCheckoutSuccessModal(true);
@@ -244,7 +256,12 @@ export function AppLayout({ children }: AppLayoutProps) {
             : 'Your free trial is active and everything is unlocked.'}
           icon={<CircleCheck className="w-6 h-6 text-green-600" />}
           footer={(
-            <Button onClick={() => setShowCheckoutSuccessModal(false)}>
+            <Button
+              onClick={() => {
+                track('Checkout Success Modal Continue Clicked');
+                setShowCheckoutSuccessModal(false);
+              }}
+            >
               Start learning
             </Button>
           )}
