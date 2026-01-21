@@ -5,6 +5,7 @@ import { Sun, Moon } from 'lucide-react'
 import { useTheme } from '../ThemeProvider'
 import { Button } from './ui/Button'
 import { ROUTES } from '../routes'
+import { track } from '../../lib/mixpanelClient'
 
 export function PublicNav() {
   const { theme, toggleTheme } = useTheme()
@@ -24,12 +25,19 @@ export function PublicNav() {
       {/* Right - CTA + Theme */}
       <div className="flex items-center gap-4">
         <Link href={`${ROUTES.SIGNIN}?mode=signin`}>
-          <Button variant="ghost" size="sm">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => track('Landing Page CTA Clicked', { label: 'Log in', section: 'public-nav' })}
+          >
             Log in
           </Button>
         </Link>
         <Link href={ROUTES.GET_STARTED}>
-          <Button size="sm">
+          <Button
+            size="sm"
+            onClick={() => track('Landing Page CTA Clicked', { label: 'Get started', section: 'public-nav' })}
+          >
             Get started
           </Button>
         </Link>
