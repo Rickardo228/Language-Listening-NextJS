@@ -1397,7 +1397,7 @@ export function PhrasePlaybackView({
     }, [presentationConfig.enableInputPlayback, presentationConfig.enableOutputBeforeInput, currentPhase, setCurrentPhaseWithMetadata, isRecallPhase, getShadowPhase]);
 
     // Update phase when playback order settings change (stop playback but preserve position)
-    const prevPlaybackSettingsRef = useRef<{ enableOutputBeforeInput?: boolean; enableInputPlayback?: boolean }>();
+    const prevPlaybackSettingsRef = useRef<{ enableOutputBeforeInput?: boolean; enableInputPlayback?: boolean } | null>(null);
     useEffect(() => {
         const prev = prevPlaybackSettingsRef.current;
         const playbackOrderChanged = prev &&
