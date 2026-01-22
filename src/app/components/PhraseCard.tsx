@@ -92,6 +92,8 @@ type ActiveWord = {
   sentence: string;
   sourceLang: string;
   targetLang: string;
+  phraseInputLang: string;
+  phraseTargetLang: string;
   voice?: string;
 };
 
@@ -490,15 +492,19 @@ function WordTooltipPanel({ payload, cacheRef, audioRef, autoPlayOnOpen }: WordT
   const handleOpenLikeDialog = async (event: MouseEvent) => {
     event.stopPropagation();
     if (!tooltipState.translation || likeDialogLoading) return;
+    const shouldSwapToPhrase = payload.sourceLang !== payload.phraseInputLang;
+    const inputText = shouldSwapToPhrase ? tooltipState.translation : payload.lookupWord;
+    const translatedText = shouldSwapToPhrase ? payload.lookupWord : tooltipState.translation;
     const requestId = ++likeDialogRequestIdRef.current;
     setLikeDialogPhrase({
-      input: payload.lookupWord,
-      translated: tooltipState.translation,
+      input: inputText,
+      translated: translatedText,
       inputAudio: null,
-      inputLang: payload.sourceLang,
-      inputVoice: payload.voice,
+      inputLang: payload.phraseInputLang,
+      inputVoice: shouldSwapToPhrase ? undefined : payload.voice,
       outputAudio: null,
-      targetLang: payload.targetLang,
+      targetLang: payload.phraseTargetLang,
+      targetVoice: shouldSwapToPhrase ? payload.voice : undefined,
       romanized: "",
     });
     setLikeDialogOpen(true);
@@ -508,13 +514,18 @@ function WordTooltipPanel({ payload, cacheRef, audioRef, autoPlayOnOpen }: WordT
       if (requestId !== likeDialogRequestIdRef.current) return;
       setLikeDialogPhrase((prev) => {
         if (!prev) return null;
+        const inputAudio = shouldSwapToPhrase ? audio.outputAudio : audio.inputAudio;
+        const outputAudio = shouldSwapToPhrase ? audio.inputAudio : audio.outputAudio;
+        const inputVoice = shouldSwapToPhrase ? audio.targetVoice : audio.inputVoice;
+        const targetVoice = shouldSwapToPhrase ? audio.inputVoice : audio.targetVoice;
+        const romanized = shouldSwapToPhrase ? prev.romanized : (audio.romanized || prev.romanized);
         return {
           ...prev,
-          inputAudio: audio.inputAudio,
-          outputAudio: audio.outputAudio,
-          inputVoice: audio.inputVoice || prev.inputVoice,
-          targetVoice: audio.targetVoice,
-          romanized: audio.romanized || prev.romanized,
+          inputAudio,
+          outputAudio,
+          inputVoice: inputVoice || prev.inputVoice,
+          targetVoice,
+          romanized,
         };
       });
     } catch (error) {
@@ -612,6 +623,8 @@ type WordTokenProps = {
   sentence: string;
   sourceLang: string;
   targetLang: string;
+  phraseInputLang: string;
+  phraseTargetLang: string;
   voice?: string;
   cacheRef: MutableRefObject<Map<string, TooltipCacheEntry>>;
   audioRef: MutableRefObject<HTMLAudioElement | null>;
@@ -698,6 +711,8 @@ function WordToken({
   sentence,
   sourceLang,
   targetLang,
+  phraseInputLang,
+  phraseTargetLang,
   voice,
   cacheRef,
   audioRef,
@@ -710,6 +725,8 @@ function WordToken({
     sentence,
     sourceLang,
     targetLang,
+    phraseInputLang,
+    phraseTargetLang,
     voice,
   };
 
@@ -800,6 +817,8 @@ export function PhraseCard({
     sourceLang?: string,
     targetLang?: string,
     voice?: string,
+    phraseInputLang?: string,
+    phraseTargetLang?: string,
     enableTooltips: boolean = true
   ) => {
     if (!text) return null;
@@ -832,6 +851,8 @@ export function PhraseCard({
           sentence={sentence}
           sourceLang={sourceLang}
           targetLang={targetLang}
+          phraseInputLang={phraseInputLang || sourceLang}
+          phraseTargetLang={phraseTargetLang || targetLang}
           voice={voice}
           cacheRef={cacheRef}
           audioRef={audioRef}
@@ -999,6 +1020,8 @@ export function PhraseCard({
                   inputLang,
                   targetLang,
                   inputVoice,
+                  inputLang,
+                  targetLang,
                   enableInputWordTooltips
                 )}
               </h2>
@@ -1046,6 +1069,8 @@ export function PhraseCard({
                   targetLang,
                   inputLang,
                   targetVoice,
+                  inputLang,
+                  targetLang,
                   enableOutputWordTooltips
                 )}
               </h2>
@@ -1160,6 +1185,8 @@ export function PhraseCard({
             inputLang,
             targetLang,
             inputVoice,
+            inputLang,
+            targetLang,
             enableInputWordTooltips
           )
           : renderInteractiveText(
@@ -1168,6 +1195,8 @@ export function PhraseCard({
             targetLang,
             inputLang,
             targetVoice,
+            inputLang,
+            targetLang,
             enableOutputWordTooltips
           )}
       </h2>
