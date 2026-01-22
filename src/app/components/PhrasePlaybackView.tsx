@@ -12,6 +12,7 @@ import { WebMediaSessionTransport } from '../../transport/webMediaSessionTranspo
 import { loadProgress, saveProgress } from '../utils/progressService';
 import { useUser } from '../contexts/UserContext';
 import { cn } from './ui/utils';
+import { showListCompletionSnackbar } from './ui/StatsSnackbars';
 // Removed useVirtualDelay import - reverting to simpler timeout-based approach
 
 interface NavigatorWithMediaSession extends Navigator {
@@ -993,7 +994,12 @@ export function PhrasePlaybackView({
                         setCurrentPhraseIndexWithMetadata(indexRef.current + 1);
                     } else {
                         if (presentationConfig.enableLoop) {
-                            // If looping is enabled, restart from beginning
+                            // If looping is enabled, show snackbar and restart from beginning
+                            showListCompletionSnackbar({ eventType: 'listened' });
+                            // Mark template/collection as completed
+                            if (onCompleted) {
+                                onCompleted(user?.uid || '', collectionId || '', currentPhrase?.inputLang || '', currentPhrase?.targetLang || '');
+                            }
                             setCurrentPhraseIndexWithMetadata(0);
                         } else {
                             showStatsUpdate(true, 'listened', true, handleReplay, onNavigateToNextInPath)
@@ -1035,7 +1041,12 @@ export function PhrasePlaybackView({
                             setCurrentPhaseWithMetadata('output');
                         } else {
                             if (presentationConfig.enableLoop) {
-                                // If looping is enabled, restart from beginning
+                                // If looping is enabled, show snackbar and restart from beginning
+                                showListCompletionSnackbar({ eventType: 'listened' });
+                                // Mark template/collection as completed
+                                if (onCompleted) {
+                                    onCompleted(user?.uid || '', collectionId || '', currentPhrase?.inputLang || '', currentPhrase?.targetLang || '');
+                                }
                                 setCurrentPhraseIndexWithMetadata(0);
                                 setCurrentPhaseWithMetadata('output');
                             } else {
@@ -1059,7 +1070,12 @@ export function PhrasePlaybackView({
                         }
                     } else {
                         if (presentationConfig.enableLoop) {
-                            // If looping is enabled, restart from beginning
+                            // If looping is enabled, show snackbar and restart from beginning
+                            showListCompletionSnackbar({ eventType: 'listened' });
+                            // Mark template/collection as completed
+                            if (onCompleted) {
+                                onCompleted(user?.uid || '', collectionId || '', currentPhrase?.inputLang || '', currentPhrase?.targetLang || '');
+                            }
                             setCurrentPhraseIndexWithMetadata(0);
                             // Check if input playback is enabled
                             if (presentationConfig.enableInputPlayback) {

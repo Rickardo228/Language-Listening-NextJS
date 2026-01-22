@@ -75,3 +75,28 @@ export function showMilestoneCelebrationSnackbar({
     }
   );
 }
+
+export function showListCompletionSnackbar({ eventType, durationMs = 3000 }: { eventType: "listened" | "viewed"; durationMs?: number }) {
+  const emoji = "🎉";
+  const label = eventType === "viewed" ? "List completed! Looping..." : "List completed! Looping...";
+
+  return toast.custom(
+    () => (
+      <div style={{
+        ...DISPLAY_FONT_STYLE, display: 'flex', alignItems: 'center'
+      }}>
+        <div
+          style={{ margin: '0 auto' }}
+          className="flex text-base font-bold !bg-green-600 !text-white !border-green-700 shadow-lg px-5 py-3 rounded-lg"
+        >
+          <div className="mr-2">{emoji}</div> {label}
+        </div>
+      </div>
+    ),
+    {
+      id: "list-completion-snackbar",
+      duration: durationMs,
+      className: "pointer-events-auto bg-transparent"
+    }
+  );
+}
