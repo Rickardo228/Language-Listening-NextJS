@@ -988,6 +988,8 @@ export function PhraseCard({
             ? (phase !== "output" ? "hover:opacity-50" : "hover:opacity-90")
             : "";
 
+          const renderOutputFirst = Boolean(enableOutputBeforeInput);
+
           const inputPhraseContent = phrase && (
             <motion.div
               key={phrase.trim()}
@@ -1001,8 +1003,8 @@ export function PhraseCard({
                 style={{
                   margin: 0,
                   padding: 0,
-                  marginBottom: isMobileInline && !enableOutputBeforeInput ? '12px' : undefined,
-                  fontSize: isMobileInline ? '16px' : (enableOutputBeforeInput ? commonFontSize : inputFontSize),
+                  marginBottom: isMobileInline && !renderOutputFirst ? '12px' : undefined,
+                  fontSize: isMobileInline ? '16px' : inputFontSize,
                   transform: isPlayingAudio && phase === "input" ? "scale(1.02)" : "scale(1)",
                   filter: isPlayingAudio && phase === "input" ? "drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3))" : "none",
                   transition: "opacity 0.3s ease, transform 0.3s ease, filter 0.3s ease",
@@ -1050,8 +1052,8 @@ export function PhraseCard({
                 style={{
                   margin: 0,
                   padding: 0,
-                  marginBottom: isMobileInline && enableOutputBeforeInput ? '12px' : undefined,
-                  fontSize: isMobileInline ? '16px' : (enableOutputBeforeInput ? inputFontSize : commonFontSize),
+                  marginBottom: isMobileInline && renderOutputFirst ? '12px' : undefined,
+                  fontSize: isMobileInline ? '16px' : commonFontSize,
                   transform: isPlayingAudio && phase === "output" ? "scale(1.02)" : "scale(1)",
                   filter: isPlayingAudio && phase === "output" ? "drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3))" : "none",
                   transition: "opacity 0.3s ease, transform 0.3s ease, filter 0.3s ease",
@@ -1080,7 +1082,7 @@ export function PhraseCard({
                   style={{
                     margin: 0,
                     padding: 0,
-                    fontSize: enableOutputBeforeInput ? inputFontSize : commonFontSize,
+                    fontSize: commonFontSize,
                     transform: isPlayingAudio && phase === "output" ? "scale(1.02)" : "scale(1)",
                     filter: isPlayingAudio && phase === "output" ? "drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3))" : "none",
                     transition: "opacity 0.3s ease, transform 0.3s ease, filter 0.3s ease"
@@ -1116,11 +1118,17 @@ export function PhraseCard({
             />
           );
 
-          return (
+          return renderOutputFirst ? (
             <>
               {outputPhrase}
               {divider}
               {inputPhrase}
+            </>
+          ) : (
+            <>
+              {inputPhrase}
+              {divider}
+              {outputPhrase}
             </>
           );
         })()}
