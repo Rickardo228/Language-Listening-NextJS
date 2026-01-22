@@ -687,9 +687,9 @@ export function PresentationView({
             </button>
           )}
 
-          {/* Final Phrase Button - Juicy centered button when on last phrase */}
-          {currentPhraseIndex !== undefined && totalPhrases !== undefined && currentPhraseIndex === totalPhrases - 1 && onNext && (
-            <div className="absolute bottom-4 left-0 right-0 flex justify-center z-20">
+          {/* Final Phrase Button - Juicy centered button when on last phrase (hidden on mobile inline) */}
+          {currentPhraseIndex !== undefined && totalPhrases !== undefined && currentPhraseIndex === totalPhrases - 1 && onNext && !isMobileInline && (
+            <div className="absolute bottom-4 left-0 right-0 flex justify-center z-20 pointer-events-none">
               <motion.div
                 key={'finish-list'}
                 initial={{ opacity: 0, y: 20, scale: 0.9 }}
@@ -701,7 +701,7 @@ export function PresentationView({
                   e.stopPropagation();
                   onNext();
                 }}
-                className={`${verticalScroll ? 'px-4 py-3' : 'px-8 py-4'} bg-primary hover:bg-primary/90 text-primary-foreground font-black ${verticalScroll ? 'text-lg' : 'text-xl'} rounded-2xl shadow-2xl border-2 border-white/20`}
+                className={`pointer-events-auto cursor-pointer ${verticalScroll ? 'px-4 py-3' : 'px-8 py-4'} bg-primary hover:bg-primary/90 text-primary-foreground font-black ${verticalScroll ? 'text-lg' : 'text-xl'} rounded-2xl shadow-2xl border-2 border-white/20`}
                 style={{
                   boxShadow: '0 10px 40px hsl(var(--primary) / 0.4), 0 0 20px hsl(var(--primary) / 0.2)',
                 }}
