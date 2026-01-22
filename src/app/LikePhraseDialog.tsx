@@ -37,6 +37,22 @@ export function LikePhraseDialog({ isOpen, onClose, phrase, submitDisabled }: Li
     });
     return sanitized as Phrase;
   };
+  const buildSwappedPhrase = (value: Phrase, now: string) => ({
+    ...value,
+    input: value.translated,
+    translated: value.input,
+    inputAudio: value.outputAudio,
+    outputAudio: value.inputAudio,
+    inputLang: value.targetLang,
+    targetLang: value.inputLang,
+    inputVoice: value.targetVoice,
+    targetVoice: value.inputVoice,
+    romanized: '',
+    created_at: now,
+  });
+  const buildPhraseForNewList = (value: Phrase, now: string) => (
+    { ...value, created_at: now }
+  );
 
   useEffect(() => {
     if (!phrase) return;
@@ -94,7 +110,7 @@ export function LikePhraseDialog({ isOpen, onClose, phrase, submitDisabled }: Li
     setSaving(true);
     try {
       const now = new Date().toISOString();
-      const phraseToAdd = sanitizePhrase({ ...phrase, created_at: now });
+      const phraseToAdd = sanitizePhrase(buildPhraseForNewList(phrase, now));
       const collectionId = await createCollection([phraseToAdd], name, 'phrases', user, user, { skipTracking: false });
       upsertCollection({
         id: collectionId,
@@ -137,27 +153,16 @@ export function LikePhraseDialog({ isOpen, onClose, phrase, submitDisabled }: Li
       const now = new Date().toISOString();
       const selectedCollection = matchingCollections.find((collection) => collection.id === selectedCollectionId);
       const phraseToAdd = sanitizePhrase(selectedCollection?.isReversed
-        ? {
-          ...phrase,
-          input: phrase.translated,
-          translated: phrase.input,
-          inputAudio: phrase.outputAudio,
-          outputAudio: phrase.inputAudio,
-          inputLang: phrase.targetLang,
-          targetLang: phrase.inputLang,
-          inputVoice: phrase.targetVoice,
-          targetVoice: phrase.inputVoice,
-          romanized: '',
-          created_at: now,
-        }
+        ? buildSwappedPhrase(phrase, now)
         : { ...phrase, created_at: now });
 
       if (matchingCollections.length === 0) {
-        const collectionId = await createCollection([phraseToAdd], 'Liked Phrases', 'phrases', user, user, { skipTracking: false });
+        const newListPhrase = sanitizePhrase(buildPhraseForNewList(phrase, now));
+        const collectionId = await createCollection([newListPhrase], 'Liked Phrases', 'phrases', user, user, { skipTracking: false });
         upsertCollection({
           id: collectionId,
           name: 'Liked Phrases',
-          phrases: [phraseToAdd],
+          phrases: [newListPhrase],
           created_at: now,
           collectionType: 'phrases',
           presentationConfig: {

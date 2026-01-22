@@ -11,6 +11,7 @@ import { useUser } from '../contexts/UserContext';
 import { track } from '../../lib/mixpanelClient';
 import { loadProgress } from '../utils/progressService';
 import { buildTemplateUrl } from '../utils/templateRoutes';
+import { recordTemplateBrowserUsage } from '../utils/templateBrowserRecency';
 type TemplateWithTimestamp = Template & { createdAt: Timestamp };
 import { resetMainScroll } from '../utils/scroll';
 import { ROUTES } from '../routes';
@@ -27,6 +28,7 @@ interface TemplatesBrowserProps {
     noTemplatesComponent?: React.ReactNode;
     pathId?: string;
     showAllOverride?: boolean;
+    browserId?: string;
 }
 
 export function TemplatesBrowser({
@@ -39,6 +41,7 @@ export function TemplatesBrowser({
     noTemplatesComponent,
     pathId,
     showAllOverride = false,
+    browserId,
 }: TemplatesBrowserProps) {
     const router = useRouter();
     const { user, userProfile } = useUser();
@@ -286,6 +289,16 @@ export function TemplatesBrowser({
         return languageOptions.find((option) => option.code === value)?.label || value;
     };
 
+    const recordBrowserUsage = useCallback(() => {
+        if (!browserId) return;
+        recordTemplateBrowserUsage({
+            browserId,
+            userId: user?.uid,
+            inputLang,
+            targetLang,
+        });
+    }, [browserId, user?.uid, inputLang, targetLang]);
+
     // Load progress for visible templates for the current user and language pair
     useEffect(() => {
         const fetchCompletionStatus = async () => {
@@ -407,6 +420,8 @@ export function TemplatesBrowser({
                                 savedCollections={mapped}
                                 selectedCollection={undefined}
                                 loading={loading}
+                                cardBackgroundKey={pathId}
+                                showItemIndex={Boolean(pathId)}
                                 getPhraseCount={(c) => templateByGroup.get(c.id)?.phraseCount || 0}
                                 getLanguagePair={() => ({ inputLang, targetLang })}
                                 getHref={(c) => buildTemplateUrl({
@@ -461,6 +476,7 @@ export function TemplatesBrowser({
 
                                     // Reset scroll position
                                     resetMainScroll();
+                                    recordBrowserUsage();
 
                                     // Track analytics (non-blocking)
                                     setTimeout(() => {
@@ -481,6 +497,7 @@ export function TemplatesBrowser({
                                 }}
                                 onPlayClick={(c) => {
                                     const template = templateByGroup.get(c.id);
+                                    recordBrowserUsage();
                                     track('Template Play Clicked', {
                                         templateId: c.id,
                                         templateName: template?.name || c.name,

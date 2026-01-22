@@ -1,13 +1,16 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { TemplateBrowserStack } from '../../components/TemplateBrowserStack';
+import { getTemplateBrowserStorageKey } from '../../utils/templateBrowserRecency';
 import { UserProfile } from 'firebase/auth';
 
 // Mock UserContext
 let mockUserProfile: UserProfile | null = null;
+let mockUser: { uid: string } | null = null;
 
 vi.mock('../../contexts/UserContext', () => ({
   useUser: () => ({
+    user: mockUser,
     userProfile: mockUserProfile,
   }),
 }));
@@ -15,12 +18,13 @@ vi.mock('../../contexts/UserContext', () => ({
 // Mock TemplatesBrowser component for simplified testing
 vi.mock('../../components/TemplatesBrowser', () => ({
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  TemplatesBrowser: ({ title, pathId, showHeader, showAllOverride }: any) => (
+  TemplatesBrowser: ({ title, pathId, showHeader, showAllOverride, browserId }: any) => (
     <div
       data-testid={`template-browser-${pathId || 'no-path'}`}
       data-title={title}
       data-show-header={showHeader}
       data-show-all-override={showAllOverride}
+      data-browser-id={browserId}
     >
       {title}
     </div>
@@ -31,6 +35,8 @@ describe('TemplateBrowserStack', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockUserProfile = null;
+    mockUser = null;
+    localStorage.clear();
   });
 
   describe('Ability level filtering - Beginner users', () => {
@@ -57,7 +63,7 @@ describe('TemplateBrowserStack', () => {
 
       render(<TemplateBrowserStack />);
 
-      expect(screen.getByText('New Playlists')).toBeInTheDocument();
+      expect(screen.getByText('New Lists')).toBeInTheDocument();
       expect(screen.getByText('Recommended for You')).toBeInTheDocument();
     });
   });
@@ -104,7 +110,7 @@ describe('TemplateBrowserStack', () => {
 
       render(<TemplateBrowserStack />);
 
-      expect(screen.getByText('New Playlists')).toBeInTheDocument();
+      expect(screen.getByText('New Lists')).toBeInTheDocument();
       expect(screen.getByText('Recommended for You')).toBeInTheDocument();
     });
   });
@@ -142,7 +148,7 @@ describe('TemplateBrowserStack', () => {
 
       render(<TemplateBrowserStack />);
 
-      expect(screen.getByText('New Playlists')).toBeInTheDocument();
+      expect(screen.getByText('New Lists')).toBeInTheDocument();
       expect(screen.getByText('Recommended for You')).toBeInTheDocument();
     });
   });
@@ -155,7 +161,7 @@ describe('TemplateBrowserStack', () => {
 
       expect(screen.getByText('Learn the Basics')).toBeInTheDocument();
       expect(screen.getByText('Skyward Gate')).toBeInTheDocument();
-      expect(screen.getByText('New Playlists')).toBeInTheDocument();
+      expect(screen.getByText('New Lists')).toBeInTheDocument();
       expect(screen.getByText('Recommended for You')).toBeInTheDocument();
     });
 
@@ -179,14 +185,14 @@ describe('TemplateBrowserStack', () => {
   });
 
   describe('Static sections rendering', () => {
-    it('should always render "New Playlists" section regardless of ability level', () => {
+    it('should always render "New Lists" section regardless of ability level', () => {
       const abilityLevels = ['beginner', 'elementary', 'intermediate', 'advanced', 'native'];
 
       abilityLevels.forEach((level) => {
         mockUserProfile = { abilityLevel: level };
         const { unmount } = render(<TemplateBrowserStack />);
 
-        expect(screen.getByText('New Playlists')).toBeInTheDocument();
+        expect(screen.getByText('New Lists')).toBeInTheDocument();
 
         unmount();
       });
@@ -247,7 +253,7 @@ describe('TemplateBrowserStack', () => {
 
       render(<TemplateBrowserStack />);
 
-      // New Playlists and Recommended for You don't have pathId
+      // New Lists and Recommended for You don't have pathId
       const noPathBrowsers = screen.getAllByTestId('template-browser-no-path');
       expect(noPathBrowsers.length).toBeGreaterThanOrEqual(2);
     });
@@ -266,25 +272,19 @@ describe('TemplateBrowserStack', () => {
   });
 
   describe('Rendering order', () => {
-    it('should render learning paths before static sections', () => {
+    it('should render the default order when no recent data is stored', () => {
       mockUserProfile = { abilityLevel: 'beginner' };
 
       render(<TemplateBrowserStack />);
 
       const allSections = screen.getAllByTestId(/template-browser/);
-      const titles = allSections.map(section => section.getAttribute('data-title'));
+      const browserIds = allSections.map(section => section.getAttribute('data-browser-id'));
 
-      // Learning paths come first
-      expect(titles[0]).toBe('Learn the Basics');
+      expect(browserIds[0]).toBe('new_lists');
 
-      // Then static sections
-      expect(titles).toContain('New Playlists');
-      expect(titles).toContain('Recommended for You');
-
-      // New Playlists should come before Recommended for You
-      const newPlaylistsIndex = titles.indexOf('New Playlists');
-      const recommendedIndex = titles.indexOf('Recommended for You');
-      expect(newPlaylistsIndex).toBeLessThan(recommendedIndex);
+      const newListsIndex = browserIds.indexOf('new_lists');
+      const recommendedIndex = browserIds.indexOf('recommended_for_you');
+      expect(newListsIndex).toBeLessThan(recommendedIndex);
     });
 
     it('should render multiple learning paths in correct order when available', () => {
@@ -303,6 +303,31 @@ describe('TemplateBrowserStack', () => {
       const skywardIndex = allBrowsers.indexOf(learningPaths[1]);
 
       expect(beginnerIndex).toBeLessThan(skywardIndex);
+    });
+
+    it('should sort browsers by recent usage when stored', () => {
+      mockUserProfile = { abilityLevel: undefined, preferredInputLang: 'en-GB', preferredTargetLang: 'it-IT' };
+      mockUser = { uid: 'user-1' };
+
+      const storageKey = getTemplateBrowserStorageKey({
+        userId: mockUser.uid,
+        inputLang: 'en-GB',
+        targetLang: 'it-IT',
+      });
+
+      localStorage.setItem(
+        storageKey,
+        JSON.stringify(['recommended_for_you', 'beginner_path', 'new_lists'])
+      );
+
+      render(<TemplateBrowserStack />);
+
+      const allSections = screen.getAllByTestId(/template-browser/);
+      const browserIds = allSections.map(section => section.getAttribute('data-browser-id'));
+
+      expect(browserIds[0]).toBe('recommended_for_you');
+      expect(browserIds[1]).toBe('beginner_path');
+      expect(browserIds[2]).toBe('new_lists');
     });
   });
 

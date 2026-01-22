@@ -62,6 +62,8 @@ interface PresentationViewProps {
   onSettingsOpen?: () => void; // New prop for opening settings
   onLikeOpen?: () => void; // Optional handler for liking a phrase
   verticalScroll?: boolean; // New prop to enable vertical scroll mode with top/bottom navigation
+  onSwipeNext?: () => void; // Swipe-specific next handler (skips phase logic, goes directly to next phrase)
+  onSwipePrevious?: () => void; // Swipe-specific previous handler (skips phase logic, goes directly to previous phrase)
   // New props for seamless swipe animation (Spotify-style)
   nextPhrase?: string;
   nextTranslated?: string;
@@ -122,6 +124,8 @@ export function PresentationView({
   onSettingsOpen,
   onLikeOpen,
   verticalScroll = false,
+  onSwipeNext,
+  onSwipePrevious,
   nextPhrase,
   nextTranslated,
   nextRomanized,
@@ -687,9 +691,9 @@ export function PresentationView({
             </button>
           )}
 
-          {/* Final Phrase Button - Juicy centered button when on last phrase */}
-          {currentPhraseIndex !== undefined && totalPhrases !== undefined && currentPhraseIndex === totalPhrases - 1 && onNext && (
-            <div className="absolute bottom-4 left-0 right-0 flex justify-center z-20">
+          {/* Final Phrase Button - Juicy centered button when on last phrase (hidden on mobile inline) */}
+          {currentPhraseIndex !== undefined && totalPhrases !== undefined && currentPhraseIndex === totalPhrases - 1 && onNext && !isMobileInline && (
+            <div className="absolute bottom-4 left-0 right-0 flex justify-center z-20 pointer-events-none">
               <motion.div
                 key={'finish-list'}
                 initial={{ opacity: 0, y: 20, scale: 0.9 }}
@@ -701,7 +705,7 @@ export function PresentationView({
                   e.stopPropagation();
                   onNext();
                 }}
-                className={`${verticalScroll ? 'px-4 py-3' : 'px-8 py-4'} bg-primary hover:bg-primary/90 text-primary-foreground font-black ${verticalScroll ? 'text-lg' : 'text-xl'} rounded-2xl shadow-2xl border-2 border-white/20`}
+                className={`pointer-events-auto cursor-pointer ${verticalScroll ? 'px-4 py-3' : 'px-8 py-4'} bg-primary hover:bg-primary/90 text-primary-foreground font-black ${verticalScroll ? 'text-lg' : 'text-xl'} rounded-2xl shadow-2xl border-2 border-white/20`}
                 style={{
                   boxShadow: '0 10px 40px hsl(var(--primary) / 0.4), 0 0 20px hsl(var(--primary) / 0.2)',
                 }}
@@ -815,7 +819,9 @@ export function PresentationView({
 
             // Check if we have 3-phrase stack enabled
             const has3PhraseStack = (previousPhrase || previousTranslated) && (nextPhrase || nextTranslated);
-            const inputTooltipsEnabled = enableInputPlayback ?? true;
+            // Disable word tooltips on mobile inline (not fullscreen)
+            const inputTooltipsEnabled = !isMobileInline && (enableInputPlayback ?? true);
+            const outputTooltipsEnabled = !isMobileInline;
 
             // Drag handlers for swipe navigation
             const handleDragStart = () => setIsDragging(true);
@@ -832,6 +838,10 @@ export function PresentationView({
               setIsDragging(false);
               const swipeThreshold = 50;
 
+              // Use swipe-specific handlers if available (skip phase logic), otherwise fall back to regular handlers
+              const swipePrev = onSwipePrevious ?? onPrevious;
+              const swipeNext = onSwipeNext ?? onNext;
+
               if (verticalScroll) {
                 // Vertical swipe: down to go back, up to go forward
                 if (info.offset.y > swipeThreshold && canGoBack) {
@@ -841,30 +851,27 @@ export function PresentationView({
                   if (has3PhraseStack) {
                     // All 3 cards slide down together
                     await animate(dragY, windowHeight, { duration: 0.3, ease: "easeOut" });
-                    onPrevious?.();
+                    swipePrev?.();
                   } else {
                     // Fallback to old animation
                     await animate(dragY, windowHeight, { duration: 0.2, ease: "easeOut" });
-                    onPrevious?.();
+                    swipePrev?.();
                     dragY.set(-windowHeight);
                     await animate(dragY, 0, { duration: 0.3, ease: "easeOut" });
                   }
                   setAnimationDirection(null);
-                } else if (info.offset.y < -swipeThreshold && onNext) {
-                  // Swipe up - allow even on last phrase (atomicAdvance will handle completion popup)
+                } else if (info.offset.y < -swipeThreshold && swipeNext) {
+                  // Swipe up - allow even on last phrase (swipeAdvance will handle completion popup)
                   setAnimationDirection('up');
                   isSwipeTransitionRef.current = true;
                   if (has3PhraseStack) {
                     // All 3 cards slide up together
                     await animate(dragY, -windowHeight, { duration: 0.3, ease: "easeOut" });
-                    console.log("On next")
-                    onNext?.();
+                    swipeNext?.();
                   } else {
                     // Fallback to old animation
                     await animate(dragY, -windowHeight, { duration: 0.2, ease: "easeOut" });
-                    console.log("On next 2")
-
-                    onNext?.();
+                    swipeNext?.();
                     dragY.set(windowHeight);
                     await animate(dragY, 0, { duration: 0.3, ease: "easeOut" });
                   }
@@ -882,27 +889,27 @@ export function PresentationView({
                   if (has3PhraseStack) {
                     // All 3 cards slide right together
                     await animate(dragX, windowWidth, { duration: 0.3, ease: "easeOut" });
-                    onPrevious?.();
+                    swipePrev?.();
                   } else {
                     // Fallback to old animation
                     await animate(dragX, windowWidth, { duration: 0.2, ease: "easeOut" });
-                    onPrevious?.();
+                    swipePrev?.();
                     dragX.set(-windowWidth);
                     await animate(dragX, 0, { duration: 0.3, ease: "easeOut" });
                   }
                   setAnimationDirection(null);
-                } else if (info.offset.x < -swipeThreshold && onNext) {
-                  // Swipe left - allow even on last phrase (atomicAdvance will handle completion popup)
+                } else if (info.offset.x < -swipeThreshold && swipeNext) {
+                  // Swipe left - allow even on last phrase (swipeAdvance will handle completion popup)
                   setAnimationDirection('left');
                   isSwipeTransitionRef.current = true;
                   if (has3PhraseStack) {
                     // All 3 cards slide left together
                     await animate(dragX, -windowWidth, { duration: 0.3, ease: "easeOut" });
-                    onNext?.();
+                    swipeNext?.();
                   } else {
                     // Fallback to old animation
                     await animate(dragX, -windowWidth, { duration: 0.2, ease: "easeOut" });
-                    onNext?.();
+                    swipeNext?.();
                     dragX.set(windowWidth);
                     await animate(dragX, 0, { duration: 0.3, ease: "easeOut" });
                   }
@@ -970,7 +977,7 @@ export function PresentationView({
                     offsetX={0}
                     offsetY={0}
                     enableInputWordTooltips={inputTooltipsEnabled}
-                    enableOutputWordTooltips={true}
+                    enableOutputWordTooltips={outputTooltipsEnabled}
                     {...commonCardProps}
                   />
 
@@ -1002,7 +1009,7 @@ export function PresentationView({
                     offsetX={0}
                     offsetY={0}
                     enableInputWordTooltips={inputTooltipsEnabled}
-                    enableOutputWordTooltips={true}
+                    enableOutputWordTooltips={outputTooltipsEnabled}
                     {...commonCardProps}
                   />
                 </AnimatePresence>
@@ -1060,6 +1067,8 @@ export function PresentationView({
     onPrevious,
     canGoBack,
     onNext,
+    onSwipeNext,
+    onSwipePrevious,
     setFullscreen,
     enableOrtonEffect,
     bgImage,

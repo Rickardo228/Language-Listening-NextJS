@@ -39,7 +39,7 @@ export function showStatsSnackbar({ eventType, count }: { eventType: "listened" 
     {
       id: STATS_SNACKBAR_ID,
       duration: 2000,
-      className: "pointer-events-auto bg-transparent"
+      className: "pointer-events-none bg-transparent"
     }
   );
 }
@@ -71,7 +71,54 @@ export function showMilestoneCelebrationSnackbar({
     {
       id: MILESTONE_SNACKBAR_ID,
       duration: durationMs,
-      className: "pointer-events-auto bg-transparent"
+      className: "pointer-events-none bg-transparent"
+    }
+  );
+}
+
+export function showListCompletionSnackbar({
+  eventType,
+  durationMs = 3000,
+  onViewStats
+}: {
+  eventType: "listened" | "viewed";
+  durationMs?: number;
+  onViewStats?: () => void;
+}) {
+  const emoji = "🎉";
+  const label = eventType === "viewed" ? "List completed! Looping..." : "List completed! Looping...";
+
+  return toast.custom(
+    () => (
+      <div style={{
+        ...DISPLAY_FONT_STYLE, display: 'flex', alignItems: 'center'
+      }}>
+        <div
+          style={{ margin: '0 auto' }}
+          className="flex flex-col items-center text-base font-bold bg-gradient-to-r from-yellow-400 to-amber-500 !text-slate-900 shadow-lg px-5 py-3 rounded-lg gap-2"
+        >
+          <div className="flex items-center">
+            <div className="mr-2">{emoji}</div> {label}
+          </div>
+          {onViewStats && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                toast.dismiss("list-completion-snackbar");
+                onViewStats();
+              }}
+              className="px-3 py-1 bg-slate-800/20 hover:bg-slate-800/30 rounded-md text-sm font-semibold transition-colors pointer-events-auto"
+            >
+              View Stats 📊
+            </button>
+          )}
+        </div>
+      </div>
+    ),
+    {
+      id: "list-completion-snackbar",
+      duration: durationMs,
+      className: "pointer-events-none bg-transparent"
     }
   );
 }

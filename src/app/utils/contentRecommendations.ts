@@ -30,7 +30,7 @@ const LEARNING_PATHS: ContentSection[] = [
     id: "beginner_path",
     type: "path",
     pathId: "beginner_path",
-    title: "Learn the Basics",
+    title: "Your Learning Path",
     maxAbilityLevel: "elementary", // Only beginner and elementary
   },
   {

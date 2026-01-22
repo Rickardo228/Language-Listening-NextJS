@@ -12,6 +12,7 @@ import { WebMediaSessionTransport } from '../../transport/webMediaSessionTranspo
 import { loadProgress, saveProgress } from '../utils/progressService';
 import { useUser } from '../contexts/UserContext';
 import { cn } from './ui/utils';
+import { showListCompletionSnackbar } from './ui/StatsSnackbars';
 // Removed useVirtualDelay import - reverting to simpler timeout-based approach
 
 interface NavigatorWithMediaSession extends Navigator {
@@ -527,87 +528,141 @@ export function PhrasePlaybackView({
                 : (presentationConfig.outputPlaybackSpeed || 1.0);
 
         // Handle list completion
-        if (isCompletingList && !presentationConfig.enableLoop) {
-            // Show completion popup (persistent, requires user interaction)
-            // Use the appropriate event type based on whether we were playing or not
-            const completionEventType = wasPlaying ? 'listened' : 'viewed';
+        if (isCompletingList) {
+            if (presentationConfig.enableLoop) {
+                // Loop mode: show snackbar, track completion, and wrap to beginning
+                const currentPhrase = phrases[indexRef.current];
 
-            // Pass a callback that will be resolved later when user clicks "Go Again"
-            // We can't reference handleReplay here due to dependency ordering
-            const goAgainCallback = async () => {
-                clearAllTimeouts();
-                setCurrentPhraseIndexWithMetadata(prev => prev < 0 ? prev - 1 : -1);
-
-                // Determine starting phase based on playback order and enableInputPlayback
-                const startPhase = presentationConfig.enableInputPlayback
-                    ? getRecallPhase()  // Start with recall phase (first audio)
-                    : getShadowPhase(); // Skip recall phase, start with shadow phase (second audio)
-                setCurrentPhaseWithMetadata(startPhase);
-
-                if (startPhase === 'input' && audioRef.current && phrases[0]?.inputAudio?.audioUrl) {
-                    setSrcSafely(phrases[0].inputAudio?.audioUrl || '');
-                    const speed = presentationConfig.inputPlaybackSpeed || 1.0;
-                    if (speed !== 1.0 && audioRef.current) {
-                        audioRef.current.playbackRate = speed;
+                // Create callback to show full stats popup (pauses if playing)
+                const handleViewStats = () => {
+                    // Inline pause logic (can't reference handlePause due to definition order)
+                    const el = audioRef.current;
+                    if (el) {
+                        ++playSeqRef.current;
+                        clearAllTimeouts();
+                        setShowProgressBar(false);
+                        el.pause();
+                        setPaused(true);
+                        setMSState('paused');
                     }
-                } else if (startPhase === 'output' && audioRef.current && phrases[0]?.outputAudio?.audioUrl) {
-                    setSrcSafely(phrases[0].outputAudio?.audioUrl || '');
-                    const speed = presentationConfig.outputPlaybackSpeed || 1.0;
-                    if (speed !== 1.0 && audioRef.current) {
-                        audioRef.current.playbackRate = speed;
-                    }
+                    // Show the full completion popup with inline go-again callback
+                    // (similar to goAgainCallback in non-loop case)
+                    const goAgainCallback = async () => {
+                        clearAllTimeouts();
+                        setCurrentPhraseIndexWithMetadata(prev => prev < 0 ? prev - 1 : -1);
+                        const startPhase = presentationConfig.enableInputPlayback
+                            ? getRecallPhase()
+                            : getShadowPhase();
+                        setCurrentPhaseWithMetadata(startPhase);
+                        if (startPhase === 'input' && audioRef.current && phrases[0]?.inputAudio?.audioUrl) {
+                            setSrcSafely(phrases[0].inputAudio?.audioUrl || '');
+                        } else if (startPhase === 'output' && audioRef.current && phrases[0]?.outputAudio?.audioUrl) {
+                            setSrcSafely(phrases[0].outputAudio?.audioUrl || '');
+                        }
+                        setShowTitle(true);
+                        setPaused(false);
+                        const timeoutId1 = window.setTimeout(() => setShowTitle(false), presentationConfig.postProcessDelay + BLEED_START_DELAY - 1000);
+                        timeoutIds.current.push(timeoutId1);
+                        const timeoutId = window.setTimeout(() => setCurrentPhraseIndexWithMetadata(0), presentationConfig.postProcessDelay + BLEED_START_DELAY);
+                        timeoutIds.current.push(timeoutId);
+                    };
+                    showStatsUpdate(true, 'listened', true, goAgainCallback, onNavigateToNextInPath);
+                };
+
+                showListCompletionSnackbar({ eventType: 'listened', onViewStats: handleViewStats });
+
+                // Mark template/collection as completed
+                if (onCompleted) {
+                    onCompleted(user?.uid || '', collectionId || '', currentPhrase?.inputLang || '', currentPhrase?.targetLang || '');
                 }
 
-                setShowTitle(true);
-                // Respect the user's autoplay preference - if they were playing, resume playing
-                setPaused(!wasPlaying);
+                // Wrap to beginning
+                targetIndex = 0;
+                // Set phase based on playback order and enableInputPlayback
+                targetPhase = presentationConfig.enableInputPlayback
+                    ? getRecallPhase()
+                    : getShadowPhase();
+            } else {
+                // Non-loop mode: Show completion popup (persistent, requires user interaction)
+                // Use the appropriate event type based on whether we were playing or not
+                const completionEventType = wasPlaying ? 'listened' : 'viewed';
 
-                const timeoutId1 = window.setTimeout(() => {
-                    setShowTitle(false);
-                }, presentationConfig.postProcessDelay + BLEED_START_DELAY - 1000);
-                timeoutIds.current.push(timeoutId1);
+                // Pass a callback that will be resolved later when user clicks "Go Again"
+                // We can't reference handleReplay here due to dependency ordering
+                const goAgainCallback = async () => {
+                    clearAllTimeouts();
+                    setCurrentPhraseIndexWithMetadata(prev => prev < 0 ? prev - 1 : -1);
 
-                const timeoutId = window.setTimeout(() => {
-                    setCurrentPhraseIndexWithMetadata(0);
-                }, presentationConfig.postProcessDelay + BLEED_START_DELAY);
-                timeoutIds.current.push(timeoutId);
+                    // Determine starting phase based on playback order and enableInputPlayback
+                    const startPhase = presentationConfig.enableInputPlayback
+                        ? getRecallPhase()  // Start with recall phase (first audio)
+                        : getShadowPhase(); // Skip recall phase, start with shadow phase (second audio)
+                    setCurrentPhaseWithMetadata(startPhase);
 
-                // Track replay event
-                if (phrases[0]) {
-                    const speed = startPhase === 'input'
-                        ? (presentationConfig.inputPlaybackSpeed || 1.0)
-                        : (presentationConfig.outputPlaybackSpeed || 1.0);
-                    trackPlaybackEvent('replay', `${collectionId || 'unknown'}-0`, startPhase, 0, speed);
+                    if (startPhase === 'input' && audioRef.current && phrases[0]?.inputAudio?.audioUrl) {
+                        setSrcSafely(phrases[0].inputAudio?.audioUrl || '');
+                        const speed = presentationConfig.inputPlaybackSpeed || 1.0;
+                        if (speed !== 1.0 && audioRef.current) {
+                            audioRef.current.playbackRate = speed;
+                        }
+                    } else if (startPhase === 'output' && audioRef.current && phrases[0]?.outputAudio?.audioUrl) {
+                        setSrcSafely(phrases[0].outputAudio?.audioUrl || '');
+                        const speed = presentationConfig.outputPlaybackSpeed || 1.0;
+                        if (speed !== 1.0 && audioRef.current) {
+                            audioRef.current.playbackRate = speed;
+                        }
+                    }
+
+                    setShowTitle(true);
+                    // Respect the user's autoplay preference - if they were playing, resume playing
+                    setPaused(!wasPlaying);
+
+                    const timeoutId1 = window.setTimeout(() => {
+                        setShowTitle(false);
+                    }, presentationConfig.postProcessDelay + BLEED_START_DELAY - 1000);
+                    timeoutIds.current.push(timeoutId1);
+
+                    const timeoutId = window.setTimeout(() => {
+                        setCurrentPhraseIndexWithMetadata(0);
+                    }, presentationConfig.postProcessDelay + BLEED_START_DELAY);
+                    timeoutIds.current.push(timeoutId);
+
+                    // Track replay event
+                    if (phrases[0]) {
+                        const speed = startPhase === 'input'
+                            ? (presentationConfig.inputPlaybackSpeed || 1.0)
+                            : (presentationConfig.outputPlaybackSpeed || 1.0);
+                        trackPlaybackEvent('replay', `${collectionId || 'unknown'}-0`, startPhase, 0, speed);
+                    }
+                };
+
+                showStatsUpdate(true, completionEventType, true, goAgainCallback, onNavigateToNextInPath);
+
+                // Mark as completed in progress tracking
+                const currentPhrase = phrases[indexRef.current];
+                if (onCompleted) {
+                    onCompleted(user?.uid || '', collectionId || '', currentPhrase?.inputLang || '', currentPhrase?.targetLang || '');
                 }
-            };
 
-            showStatsUpdate(true, completionEventType, true, goAgainCallback, onNavigateToNextInPath);
-
-            // Mark as completed in progress tracking
-            const currentPhrase = phrases[indexRef.current];
-            if (onCompleted) {
-                onCompleted(user?.uid || '', collectionId || '', currentPhrase?.inputLang || '', currentPhrase?.targetLang || '');
+                // Don't advance to next phrase, stay paused
+                setPaused(true);
+                setMSState('paused');
+                return;
             }
-
-            // Don't advance to next phrase, stay paused
-            setPaused(true);
-            setMSState('paused');
-            return;
-        } else {
-            // swap state + src (no pause)
-            setCurrentPhraseIndexWithMetadata(targetIndex);
-            setCurrentPhaseWithMetadata(targetPhase);
-
-            const url =
-                targetPhase === 'input'
-                    ? (phrases[targetIndex].inputAudio?.audioUrl || '')
-                    : (phrases[targetIndex].outputAudio?.audioUrl || '');
-
-            setSrcSafely(url);
-
-
-            if (audioRef.current) audioRef.current.playbackRate = speed;
         }
+
+        // swap state + src (no pause)
+        setCurrentPhraseIndexWithMetadata(targetIndex);
+        setCurrentPhaseWithMetadata(targetPhase);
+
+        const url =
+            targetPhase === 'input'
+                ? (phrases[targetIndex].inputAudio?.audioUrl || '')
+                : (phrases[targetIndex].outputAudio?.audioUrl || '');
+
+        setSrcSafely(url);
+
+        if (audioRef.current) audioRef.current.playbackRate = speed;
 
         // Track navigation events (stats tracking now handled in setCurrentPhraseIndexWithMetadata)
         if (targetIndex >= 0 && phrases[targetIndex] && targetPhase === 'output') {
@@ -627,8 +682,167 @@ export function PhrasePlaybackView({
             setPaused(true);
             setMSState('paused');
         }
-    }, [phrases, presentationConfig.enableOutputBeforeInput, presentationConfig.enableInputPlayback, presentationConfig.inputPlaybackSpeed, presentationConfig.outputPlaybackSpeed, presentationConfig.enableLoop, presentationConfig.postProcessDelay, setCurrentPhraseIndexWithMetadata, setCurrentPhaseWithMetadata, collectionId, safePlay, showStatsUpdate, user?.uid, getRecallPhase, getShadowPhase]);
+    }, [phrases, presentationConfig.enableOutputBeforeInput, presentationConfig.enableInputPlayback, presentationConfig.inputPlaybackSpeed, presentationConfig.outputPlaybackSpeed, presentationConfig.enableLoop, presentationConfig.postProcessDelay, setCurrentPhraseIndexWithMetadata, setCurrentPhaseWithMetadata, collectionId, safePlay, showStatsUpdate, user?.uid, getRecallPhase, getShadowPhase, onCompleted, onNavigateToNextInPath]);
 
+    // Swipe-specific advance: skips phase logic, just moves to next/previous phrase
+    const swipeAdvance = useCallback(async (delta: 1 | -1) => {
+        // Shared setup
+        clearAllTimeouts();
+        setShowProgressBar(false);
+        setProgressDuration(0);
+        setProgressDelay(0);
+
+        if (!phrases.length) return;
+
+        const wasPlaying = !pausedRef.current;
+        const targetIndex = indexRef.current + delta;
+
+        // Handle boundaries
+        if (targetIndex < 0) {
+            if (presentationConfig.enableLoop) {
+                // Wrap to last phrase
+                const newIndex = phrases.length - 1;
+                const startPhase = presentationConfig.enableInputPlayback ? getRecallPhase() : getShadowPhase();
+                setCurrentPhraseIndexWithMetadata(newIndex);
+                setCurrentPhaseWithMetadata(startPhase);
+                const url = startPhase === 'input'
+                    ? (phrases[newIndex].inputAudio?.audioUrl || '')
+                    : (phrases[newIndex].outputAudio?.audioUrl || '');
+                setSrcSafely(url);
+                const speed = startPhase === 'input'
+                    ? (presentationConfig.inputPlaybackSpeed || 1.0)
+                    : (presentationConfig.outputPlaybackSpeed || 1.0);
+                if (audioRef.current) audioRef.current.playbackRate = speed;
+                if (wasPlaying) {
+                    setPaused(false);
+                    setMSState('playing');
+                    await safePlay('swipeAdvance');
+                }
+            }
+            return;
+        }
+
+        if (targetIndex >= phrases.length) {
+            // Completing the list
+            if (presentationConfig.enableLoop) {
+                // Show snackbar and wrap to beginning
+                const currentPhrase = phrases[indexRef.current];
+
+                const handleViewStats = () => {
+                    const el = audioRef.current;
+                    if (el) {
+                        ++playSeqRef.current;
+                        clearAllTimeouts();
+                        setShowProgressBar(false);
+                        el.pause();
+                        setPaused(true);
+                        setMSState('paused');
+                    }
+                    const goAgainCallback = async () => {
+                        clearAllTimeouts();
+                        setCurrentPhraseIndexWithMetadata(prev => prev < 0 ? prev - 1 : -1);
+                        const startPhase = presentationConfig.enableInputPlayback ? getRecallPhase() : getShadowPhase();
+                        setCurrentPhaseWithMetadata(startPhase);
+                        if (startPhase === 'input' && audioRef.current && phrases[0]?.inputAudio?.audioUrl) {
+                            setSrcSafely(phrases[0].inputAudio?.audioUrl || '');
+                        } else if (startPhase === 'output' && audioRef.current && phrases[0]?.outputAudio?.audioUrl) {
+                            setSrcSafely(phrases[0].outputAudio?.audioUrl || '');
+                        }
+                        setShowTitle(true);
+                        setPaused(false);
+                        const timeoutId1 = window.setTimeout(() => setShowTitle(false), presentationConfig.postProcessDelay + BLEED_START_DELAY - 1000);
+                        timeoutIds.current.push(timeoutId1);
+                        const timeoutId = window.setTimeout(() => setCurrentPhraseIndexWithMetadata(0), presentationConfig.postProcessDelay + BLEED_START_DELAY);
+                        timeoutIds.current.push(timeoutId);
+                    };
+                    showStatsUpdate(true, 'listened', true, goAgainCallback, onNavigateToNextInPath);
+                };
+
+                showListCompletionSnackbar({ eventType: 'listened', onViewStats: handleViewStats });
+
+                if (onCompleted) {
+                    onCompleted(user?.uid || '', collectionId || '', currentPhrase?.inputLang || '', currentPhrase?.targetLang || '');
+                }
+
+                // Wrap to beginning
+                const startPhase = presentationConfig.enableInputPlayback ? getRecallPhase() : getShadowPhase();
+                setCurrentPhraseIndexWithMetadata(0);
+                setCurrentPhaseWithMetadata(startPhase);
+                const url = startPhase === 'input'
+                    ? (phrases[0].inputAudio?.audioUrl || '')
+                    : (phrases[0].outputAudio?.audioUrl || '');
+                setSrcSafely(url);
+                const speed = startPhase === 'input'
+                    ? (presentationConfig.inputPlaybackSpeed || 1.0)
+                    : (presentationConfig.outputPlaybackSpeed || 1.0);
+                if (audioRef.current) audioRef.current.playbackRate = speed;
+                if (wasPlaying) {
+                    setPaused(false);
+                    setMSState('playing');
+                    await safePlay('swipeAdvance');
+                }
+            } else {
+                // Non-loop: show completion popup
+                const completionEventType = wasPlaying ? 'listened' : 'viewed';
+                const goAgainCallback = async () => {
+                    clearAllTimeouts();
+                    setCurrentPhraseIndexWithMetadata(prev => prev < 0 ? prev - 1 : -1);
+                    const startPhase = presentationConfig.enableInputPlayback ? getRecallPhase() : getShadowPhase();
+                    setCurrentPhaseWithMetadata(startPhase);
+                    if (startPhase === 'input' && audioRef.current && phrases[0]?.inputAudio?.audioUrl) {
+                        setSrcSafely(phrases[0].inputAudio?.audioUrl || '');
+                        const speed = presentationConfig.inputPlaybackSpeed || 1.0;
+                        if (audioRef.current) audioRef.current.playbackRate = speed;
+                    } else if (startPhase === 'output' && audioRef.current && phrases[0]?.outputAudio?.audioUrl) {
+                        setSrcSafely(phrases[0].outputAudio?.audioUrl || '');
+                        const speed = presentationConfig.outputPlaybackSpeed || 1.0;
+                        if (audioRef.current) audioRef.current.playbackRate = speed;
+                    }
+                    setShowTitle(true);
+                    setPaused(!wasPlaying);
+                    const timeoutId1 = window.setTimeout(() => setShowTitle(false), presentationConfig.postProcessDelay + BLEED_START_DELAY - 1000);
+                    timeoutIds.current.push(timeoutId1);
+                    const timeoutId = window.setTimeout(() => setCurrentPhraseIndexWithMetadata(0), presentationConfig.postProcessDelay + BLEED_START_DELAY);
+                    timeoutIds.current.push(timeoutId);
+                };
+
+                showStatsUpdate(true, completionEventType, true, goAgainCallback, onNavigateToNextInPath);
+
+                const currentPhrase = phrases[indexRef.current];
+                if (onCompleted) {
+                    onCompleted(user?.uid || '', collectionId || '', currentPhrase?.inputLang || '', currentPhrase?.targetLang || '');
+                }
+
+                setPaused(true);
+                setMSState('paused');
+            }
+            return;
+        }
+
+        // Normal case: move to target phrase
+        const startPhase = presentationConfig.enableInputPlayback ? getRecallPhase() : getShadowPhase();
+        setCurrentPhraseIndexWithMetadata(targetIndex);
+        setCurrentPhaseWithMetadata(startPhase);
+
+        const url = startPhase === 'input'
+            ? (phrases[targetIndex].inputAudio?.audioUrl || '')
+            : (phrases[targetIndex].outputAudio?.audioUrl || '');
+        setSrcSafely(url);
+
+        const speed = startPhase === 'input'
+            ? (presentationConfig.inputPlaybackSpeed || 1.0)
+            : (presentationConfig.outputPlaybackSpeed || 1.0);
+        if (audioRef.current) audioRef.current.playbackRate = speed;
+
+        if (wasPlaying) {
+            setPaused(false);
+            setMSState('playing');
+            await safePlay('swipeAdvance');
+        } else {
+            setPaused(true);
+            setMSState('paused');
+        }
+    }, [phrases, presentationConfig.enableInputPlayback, presentationConfig.inputPlaybackSpeed, presentationConfig.outputPlaybackSpeed, presentationConfig.enableLoop, presentationConfig.postProcessDelay, setCurrentPhraseIndexWithMetadata, setCurrentPhaseWithMetadata, collectionId, safePlay, showStatsUpdate, user?.uid, getRecallPhase, getShadowPhase, onCompleted, onNavigateToNextInPath]);
 
     const handleAudioError = useCallback(async (phase: 'input' | 'output', autoPlay?: boolean) => {
         const currentIndex = indexRef.current;
@@ -993,7 +1207,16 @@ export function PhrasePlaybackView({
                         setCurrentPhraseIndexWithMetadata(indexRef.current + 1);
                     } else {
                         if (presentationConfig.enableLoop) {
-                            // If looping is enabled, restart from beginning
+                            // If looping is enabled, show snackbar and restart from beginning
+                            const handleViewStats = () => {
+                                handlePause();
+                                showStatsUpdate(true, 'listened', true, handleReplay, onNavigateToNextInPath);
+                            };
+                            showListCompletionSnackbar({ eventType: 'listened', onViewStats: handleViewStats });
+                            // Mark template/collection as completed
+                            if (onCompleted) {
+                                onCompleted(user?.uid || '', collectionId || '', currentPhrase?.inputLang || '', currentPhrase?.targetLang || '');
+                            }
                             setCurrentPhraseIndexWithMetadata(0);
                         } else {
                             showStatsUpdate(true, 'listened', true, handleReplay, onNavigateToNextInPath)
@@ -1035,7 +1258,16 @@ export function PhrasePlaybackView({
                             setCurrentPhaseWithMetadata('output');
                         } else {
                             if (presentationConfig.enableLoop) {
-                                // If looping is enabled, restart from beginning
+                                // If looping is enabled, show snackbar and restart from beginning
+                                const handleViewStats = () => {
+                                    handlePause();
+                                    showStatsUpdate(true, 'listened', true, handleReplay, onNavigateToNextInPath);
+                                };
+                                showListCompletionSnackbar({ eventType: 'listened', onViewStats: handleViewStats });
+                                // Mark template/collection as completed
+                                if (onCompleted) {
+                                    onCompleted(user?.uid || '', collectionId || '', currentPhrase?.inputLang || '', currentPhrase?.targetLang || '');
+                                }
                                 setCurrentPhraseIndexWithMetadata(0);
                                 setCurrentPhaseWithMetadata('output');
                             } else {
@@ -1059,7 +1291,16 @@ export function PhrasePlaybackView({
                         }
                     } else {
                         if (presentationConfig.enableLoop) {
-                            // If looping is enabled, restart from beginning
+                            // If looping is enabled, show snackbar and restart from beginning
+                            const handleViewStats = () => {
+                                handlePause();
+                                showStatsUpdate(true, 'listened', true, handleReplay, onNavigateToNextInPath);
+                            };
+                            showListCompletionSnackbar({ eventType: 'listened', onViewStats: handleViewStats });
+                            // Mark template/collection as completed
+                            if (onCompleted) {
+                                onCompleted(user?.uid || '', collectionId || '', currentPhrase?.inputLang || '', currentPhrase?.targetLang || '');
+                            }
                             setCurrentPhraseIndexWithMetadata(0);
                             // Check if input playback is enabled
                             if (presentationConfig.enableInputPlayback) {
@@ -1155,6 +1396,28 @@ export function PhrasePlaybackView({
         // to avoid disrupting the user's current state
     }, [presentationConfig.enableInputPlayback, presentationConfig.enableOutputBeforeInput, currentPhase, setCurrentPhaseWithMetadata, isRecallPhase, getShadowPhase]);
 
+    // Update phase when playback order settings change (stop playback but preserve position)
+    const prevPlaybackSettingsRef = useRef<{ enableOutputBeforeInput?: boolean; enableInputPlayback?: boolean } | null>(null);
+    useEffect(() => {
+        const prev = prevPlaybackSettingsRef.current;
+        const playbackOrderChanged = prev &&
+            (prev.enableOutputBeforeInput !== presentationConfig.enableOutputBeforeInput ||
+                prev.enableInputPlayback !== presentationConfig.enableInputPlayback);
+
+        if (playbackOrderChanged) {
+            handleStop();
+            const initialPhase = presentationConfig.enableOutputBeforeInput
+                ? 'output'
+                : (presentationConfig.enableInputPlayback ? 'input' : 'output');
+            setCurrentPhaseWithMetadata(initialPhase);
+        }
+
+        prevPlaybackSettingsRef.current = {
+            enableOutputBeforeInput: presentationConfig.enableOutputBeforeInput,
+            enableInputPlayback: presentationConfig.enableInputPlayback,
+        };
+    }, [presentationConfig.enableOutputBeforeInput, presentationConfig.enableInputPlayback, setCurrentPhaseWithMetadata]);
+
     // Keyboard navigation
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -1242,6 +1505,10 @@ export function PhrasePlaybackView({
         progressDelay={progressDelay}
         onPrevious={() => atomicAdvance(-1)}
         onNext={() => atomicAdvance(+1)}
+        // Only use swipeAdvance (skip phase logic) when showAllPhrases is on OR input playback is off
+        // When showAllPhrases is off AND input playback is on, swipe should cycle through phases
+        onSwipePrevious={(presentationConfig.showAllPhrases || !presentationConfig.enableInputPlayback) ? () => swipeAdvance(-1) : undefined}
+        onSwipeNext={(presentationConfig.showAllPhrases || !presentationConfig.enableInputPlayback) ? () => swipeAdvance(+1) : undefined}
         canGoBack={
             presentationConfig.enableLoop ||
             currentPhraseIndex > 0 ||

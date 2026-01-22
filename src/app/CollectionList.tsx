@@ -46,6 +46,10 @@ interface CollectionListProps {
     scrollBehavior?: ScrollBehavior;
     // Optional callback to get the href for a collection (for prefetching)
     getHref?: (collection: Config) => string;
+    // Optional key to make all card backgrounds share the same palette selection
+    cardBackgroundKey?: string;
+    // Optional flag to show numeric order badge for card items
+    showItemIndex?: boolean;
 }
 
 export function CollectionList({
@@ -74,6 +78,8 @@ export function CollectionList({
     scrollToIndex,
     scrollBehavior = 'smooth',
     getHref,
+    cardBackgroundKey,
+    showItemIndex = false,
 }: CollectionListProps) {
     const router = useRouter();
     const containerRef = useRef<HTMLDivElement | null>(null);
@@ -241,7 +247,7 @@ export function CollectionList({
                                 : 'space-y-2'
                         }
                     >
-                        {savedCollections.map((collection) => {
+                        {savedCollections.map((collection, index) => {
                             // Determine phrase count and languages
                             const phraseCount = getPhraseCount ? getPhraseCount(collection) : collection.phrases.length;
                             const languages = getLanguagePair ? getLanguagePair(collection) : (collection.phrases[0]
@@ -256,8 +262,18 @@ export function CollectionList({
 
                             if (itemVariant === 'card') {
                                 const hasBackgroundImage = Boolean(collection.presentationConfig?.bgImage);
+                                const useShiftedBackground = Boolean(cardBackgroundKey) && !hasBackgroundImage;
+                                const baseHueRangeStart = 200;
+                                const baseHueRangeSize = 40;
+                                const baseHueOffset = cardBackgroundKey
+                                    ? hashStringToNumber(cardBackgroundKey) % baseHueRangeSize
+                                    : 0;
+                                const shiftedHue =
+                                    baseHueRangeStart +
+                                    ((baseHueOffset + index * 6) % baseHueRangeSize);
+                                const paletteSeed = cardBackgroundKey ?? collection.id;
                                 const paletteIndex = tileBackgroundPalette.length
-                                    ? hashStringToNumber(collection.id) % tileBackgroundPalette.length
+                                    ? hashStringToNumber(paletteSeed) % tileBackgroundPalette.length
                                     : 0;
                                 const tileBackgroundClass = tileBackgroundPalette[paletteIndex] || 'bg-secondary';
                                 const baseBackgroundClass =
@@ -265,9 +281,14 @@ export function CollectionList({
                                         ? 'bg-primary text-primary-foreground'
                                         : hasBackgroundImage
                                             ? 'bg-black/40 text-white'
-                                            : `${tileBackgroundClass} text-white`;
+                                            : useShiftedBackground
+                                                ? 'text-white'
+                                                : `${tileBackgroundClass} text-white`;
                                 const href = getHref ? getHref(collection) : undefined;
                                 const wrapperClassName = `group cursor-pointer transition-colors ${layout === 'horizontal' ? 'min-w-[220px] max-w-[220px]' : ''}`;
+                                const backgroundStyle = useShiftedBackground
+                                    ? { backgroundColor: `hsl(${shiftedHue} 65% 45%)` }
+                                    : undefined;
 
                                 const cardContent = (
                                     <>
@@ -282,9 +303,14 @@ export function CollectionList({
                                                         backgroundSize: 'cover',
                                                         backgroundPosition: 'center',
                                                     }
-                                                    : undefined
+                                                    : backgroundStyle
                                             }
                                         >
+                                            {showItemIndex && (
+                                                <div className="absolute top-2 right-2 inline-flex items-center justify-center h-6 w-6 rounded-full bg-black/30 text-white text-xs font-semibold">
+                                                    {index + 1}
+                                                </div>
+                                            )}
                                             {hasBackgroundImage && (
                                                 <div className="pointer-events-none absolute inset-0 z-0 bg-black/35" />
                                             )}
