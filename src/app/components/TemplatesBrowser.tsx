@@ -420,6 +420,8 @@ export function TemplatesBrowser({
                                 savedCollections={mapped}
                                 selectedCollection={undefined}
                                 loading={loading}
+                                cardBackgroundKey={pathId}
+                                showItemIndex={Boolean(pathId)}
                                 getPhraseCount={(c) => templateByGroup.get(c.id)?.phraseCount || 0}
                                 getLanguagePair={() => ({ inputLang, targetLang })}
                                 getHref={(c) => buildTemplateUrl({
