@@ -134,18 +134,6 @@ export default function CollectionPage() {
     loadCollection();
   }, [user, collectionId]);
 
-  // Reset playback state when presentation config changes
-  useEffect(() => {
-    if (!collectionConfig || !isReady || !playbackMethodsRef.current) return;
-
-    playbackMethodsRef.current.handleStop();
-    playbackMethodsRef.current.setCurrentPhraseIndex(0);
-    const initialPhase = presentationConfig.enableOutputBeforeInput
-      ? 'output'
-      : (presentationConfig.enableInputPlayback ? 'input' : 'output');
-    playbackMethodsRef.current.setCurrentPhase(initialPhase);
-  }, [collectionConfig, presentationConfig, isReady]);
-
   const handleAddToCollection = async (inputLang?: string, targetLang?: string, isSwapped?: boolean) => {
     const splitPhrases = phrasesInput
       .split('\n')

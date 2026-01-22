@@ -1237,6 +1237,28 @@ export function PhrasePlaybackView({
         // to avoid disrupting the user's current state
     }, [presentationConfig.enableInputPlayback, presentationConfig.enableOutputBeforeInput, currentPhase, setCurrentPhaseWithMetadata, isRecallPhase, getShadowPhase]);
 
+    // Update phase when playback order settings change (stop playback but preserve position)
+    const prevPlaybackSettingsRef = useRef<{ enableOutputBeforeInput?: boolean; enableInputPlayback?: boolean }>();
+    useEffect(() => {
+        const prev = prevPlaybackSettingsRef.current;
+        const playbackOrderChanged = prev &&
+            (prev.enableOutputBeforeInput !== presentationConfig.enableOutputBeforeInput ||
+                prev.enableInputPlayback !== presentationConfig.enableInputPlayback);
+
+        if (playbackOrderChanged) {
+            handleStop();
+            const initialPhase = presentationConfig.enableOutputBeforeInput
+                ? 'output'
+                : (presentationConfig.enableInputPlayback ? 'input' : 'output');
+            setCurrentPhaseWithMetadata(initialPhase);
+        }
+
+        prevPlaybackSettingsRef.current = {
+            enableOutputBeforeInput: presentationConfig.enableOutputBeforeInput,
+            enableInputPlayback: presentationConfig.enableInputPlayback,
+        };
+    }, [presentationConfig.enableOutputBeforeInput, presentationConfig.enableInputPlayback, setCurrentPhaseWithMetadata]);
+
     // Keyboard navigation
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
