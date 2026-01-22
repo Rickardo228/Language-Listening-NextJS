@@ -272,7 +272,11 @@ export function OnboardingFlow({
         authenticatedUser.uid,
         data.abilityLevel,
         data.nativeLanguage,
-        data.targetLanguage
+        data.targetLanguage,
+        data.dreamOutcomes,
+        data.painPoints,
+        data.interests,
+        data.practiceTime
       );
     } catch (error) {
       console.error('Error completing onboarding:', error);

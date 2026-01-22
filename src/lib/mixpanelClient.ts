@@ -196,7 +196,11 @@ export const trackOnboardingCompleted = (
   userId: string,
   abilityLevel: string,
   inputLang: string,
-  targetLang: string
+  targetLang: string,
+  dreamOutcomes: string[],
+  painPoints: string[],
+  interests: string[],
+  practiceTime?: string
 ) => {
   if (!MIXPANEL_TOKEN || !isInitialized) return;
   mixpanel.track("Onboarding Completed", {
@@ -204,6 +208,10 @@ export const trackOnboardingCompleted = (
     abilityLevel,
     inputLang,
     targetLang,
+    dreamOutcomes,
+    painPoints,
+    interests,
+    practiceTime: practiceTime || null,
     timestamp: new Date().toISOString(),
   });
 };

@@ -314,7 +314,11 @@ describe('OnboardingModal', () => {
           'test-user-123',
           'beginner',
           expect.any(String),
-          expect.any(String)
+          expect.any(String),
+          expect.any(Array),
+          expect.any(Array),
+          expect.any(Array),
+          undefined
         )
       })
     })
