@@ -62,6 +62,8 @@ interface PresentationViewProps {
   onSettingsOpen?: () => void; // New prop for opening settings
   onLikeOpen?: () => void; // Optional handler for liking a phrase
   verticalScroll?: boolean; // New prop to enable vertical scroll mode with top/bottom navigation
+  onSwipeNext?: () => void; // Swipe-specific next handler (skips phase logic, goes directly to next phrase)
+  onSwipePrevious?: () => void; // Swipe-specific previous handler (skips phase logic, goes directly to previous phrase)
   // New props for seamless swipe animation (Spotify-style)
   nextPhrase?: string;
   nextTranslated?: string;
@@ -122,6 +124,8 @@ export function PresentationView({
   onSettingsOpen,
   onLikeOpen,
   verticalScroll = false,
+  onSwipeNext,
+  onSwipePrevious,
   nextPhrase,
   nextTranslated,
   nextRomanized,
@@ -834,6 +838,10 @@ export function PresentationView({
               setIsDragging(false);
               const swipeThreshold = 50;
 
+              // Use swipe-specific handlers if available (skip phase logic), otherwise fall back to regular handlers
+              const swipePrev = onSwipePrevious ?? onPrevious;
+              const swipeNext = onSwipeNext ?? onNext;
+
               if (verticalScroll) {
                 // Vertical swipe: down to go back, up to go forward
                 if (info.offset.y > swipeThreshold && canGoBack) {
@@ -843,30 +851,27 @@ export function PresentationView({
                   if (has3PhraseStack) {
                     // All 3 cards slide down together
                     await animate(dragY, windowHeight, { duration: 0.3, ease: "easeOut" });
-                    onPrevious?.();
+                    swipePrev?.();
                   } else {
                     // Fallback to old animation
                     await animate(dragY, windowHeight, { duration: 0.2, ease: "easeOut" });
-                    onPrevious?.();
+                    swipePrev?.();
                     dragY.set(-windowHeight);
                     await animate(dragY, 0, { duration: 0.3, ease: "easeOut" });
                   }
                   setAnimationDirection(null);
-                } else if (info.offset.y < -swipeThreshold && onNext) {
-                  // Swipe up - allow even on last phrase (atomicAdvance will handle completion popup)
+                } else if (info.offset.y < -swipeThreshold && swipeNext) {
+                  // Swipe up - allow even on last phrase (swipeAdvance will handle completion popup)
                   setAnimationDirection('up');
                   isSwipeTransitionRef.current = true;
                   if (has3PhraseStack) {
                     // All 3 cards slide up together
                     await animate(dragY, -windowHeight, { duration: 0.3, ease: "easeOut" });
-                    console.log("On next")
-                    onNext?.();
+                    swipeNext?.();
                   } else {
                     // Fallback to old animation
                     await animate(dragY, -windowHeight, { duration: 0.2, ease: "easeOut" });
-                    console.log("On next 2")
-
-                    onNext?.();
+                    swipeNext?.();
                     dragY.set(windowHeight);
                     await animate(dragY, 0, { duration: 0.3, ease: "easeOut" });
                   }
@@ -884,27 +889,27 @@ export function PresentationView({
                   if (has3PhraseStack) {
                     // All 3 cards slide right together
                     await animate(dragX, windowWidth, { duration: 0.3, ease: "easeOut" });
-                    onPrevious?.();
+                    swipePrev?.();
                   } else {
                     // Fallback to old animation
                     await animate(dragX, windowWidth, { duration: 0.2, ease: "easeOut" });
-                    onPrevious?.();
+                    swipePrev?.();
                     dragX.set(-windowWidth);
                     await animate(dragX, 0, { duration: 0.3, ease: "easeOut" });
                   }
                   setAnimationDirection(null);
-                } else if (info.offset.x < -swipeThreshold && onNext) {
-                  // Swipe left - allow even on last phrase (atomicAdvance will handle completion popup)
+                } else if (info.offset.x < -swipeThreshold && swipeNext) {
+                  // Swipe left - allow even on last phrase (swipeAdvance will handle completion popup)
                   setAnimationDirection('left');
                   isSwipeTransitionRef.current = true;
                   if (has3PhraseStack) {
                     // All 3 cards slide left together
                     await animate(dragX, -windowWidth, { duration: 0.3, ease: "easeOut" });
-                    onNext?.();
+                    swipeNext?.();
                   } else {
                     // Fallback to old animation
                     await animate(dragX, -windowWidth, { duration: 0.2, ease: "easeOut" });
-                    onNext?.();
+                    swipeNext?.();
                     dragX.set(windowWidth);
                     await animate(dragX, 0, { duration: 0.3, ease: "easeOut" });
                   }
@@ -1062,6 +1067,8 @@ export function PresentationView({
     onPrevious,
     canGoBack,
     onNext,
+    onSwipeNext,
+    onSwipePrevious,
     setFullscreen,
     enableOrtonEffect,
     bgImage,
