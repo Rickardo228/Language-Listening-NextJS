@@ -815,7 +815,9 @@ export function PresentationView({
 
             // Check if we have 3-phrase stack enabled
             const has3PhraseStack = (previousPhrase || previousTranslated) && (nextPhrase || nextTranslated);
-            const inputTooltipsEnabled = enableInputPlayback ?? true;
+            // Disable word tooltips on mobile inline (not fullscreen)
+            const inputTooltipsEnabled = !isMobileInline && (enableInputPlayback ?? true);
+            const outputTooltipsEnabled = !isMobileInline;
 
             // Drag handlers for swipe navigation
             const handleDragStart = () => setIsDragging(true);
@@ -970,7 +972,7 @@ export function PresentationView({
                     offsetX={0}
                     offsetY={0}
                     enableInputWordTooltips={inputTooltipsEnabled}
-                    enableOutputWordTooltips={true}
+                    enableOutputWordTooltips={outputTooltipsEnabled}
                     {...commonCardProps}
                   />
 
@@ -1002,7 +1004,7 @@ export function PresentationView({
                     offsetX={0}
                     offsetY={0}
                     enableInputWordTooltips={inputTooltipsEnabled}
-                    enableOutputWordTooltips={true}
+                    enableOutputWordTooltips={outputTooltipsEnabled}
                     {...commonCardProps}
                   />
                 </AnimatePresence>
