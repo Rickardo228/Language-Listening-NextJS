@@ -1997,6 +1997,7 @@ export function PhrasePlaybackView({
                             newPhrases.splice(insertAtIndex, 0, ...processedPhrases);
                             await setPhrases(newPhrases, collectionId);
                             setInsertDialogOpen(false);
+                            setCurrentPhraseIndexWithMetadata(insertAtIndex);
                         } catch (error) {
                             console.error('Error processing phrases:', error);
                         } finally {
