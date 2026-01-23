@@ -1,8 +1,9 @@
-import { Phrase } from './types';
+import { Phrase, languageOptions } from './types';
 import { useState, useEffect, useRef } from 'react';
-import { SpeakerWaveIcon, MicrophoneIcon, EllipsisVerticalIcon } from '@heroicons/react/24/solid';
+import { SpeakerWaveIcon, MicrophoneIcon, EllipsisVerticalIcon, ArrowPathIcon } from '@heroicons/react/24/solid';
 import { Menu } from './Menu';
 import { generateAudio } from './utils/audioUtils';
+import { API_BASE_URL } from './consts';
 // import { ClipboardIcon, ClipboardDocumentCheckIcon } from '@heroicons/react/24/outline';
 
 interface EditablePhrasesProps {
@@ -50,9 +51,11 @@ interface PhraseComponentProps {
     onPlayPhrase?: (index: number, phase: 'input' | 'output') => void;
     ref?: React.RefObject<HTMLDivElement>;
     readOnly?: boolean;
+    inputLanguage?: string;
+    outputLanguage?: string;
 }
 
-function PhraseComponent({ phrase, phrases, isSelected, currentPhase, onPhraseClick, onDelete, onPlayPhrase, ref, setPhrases, enableOutputBeforeInput, isMultiSelectMode, setIsMultiSelectMode, isChecked, onCheckChange, readOnly }: PhraseComponentProps & {
+function PhraseComponent({ phrase, phrases, isSelected, currentPhase, onPhraseClick, onDelete, onPlayPhrase, ref, setPhrases, enableOutputBeforeInput, isMultiSelectMode, setIsMultiSelectMode, isChecked, onCheckChange, readOnly, inputLanguage, outputLanguage }: PhraseComponentProps & {
     setPhrases: (phrases: Phrase[]) => void,
     enableOutputBeforeInput?: boolean,
     isMultiSelectMode: boolean,
@@ -67,6 +70,12 @@ function PhraseComponent({ phrase, phrases, isSelected, currentPhase, onPhraseCl
     const [prevInput, setPrevInput] = useState(phrase.input);
     const [prevTranslated, setPrevTranslated] = useState(phrase.translated);
     const [prevRomanized, setPrevRomanized] = useState(phrase.romanized);
+
+    const getLanguageLabel = (code?: string, fallback?: string) => {
+        if (!code && !fallback) return '';
+        const label = languageOptions.find((lang) => lang.code === (code || fallback))?.label || code || fallback || '';
+        return label.split(' (')[0];
+    };
 
     const handleBlur = async (field: keyof Phrase) => {
         if (field !== 'input' && field !== 'translated' && field !== 'romanized') return;
@@ -153,6 +162,49 @@ function PhraseComponent({ phrase, phrases, isSelected, currentPhase, onPhraseCl
             setPhrases(newPhrases);
         } catch (error) {
             console.error('Error generating TTS:', error);
+        } finally {
+            setOutputLoading(false);
+        }
+    };
+
+    const handleRegenerateOutput = async () => {
+        if (!phrase.input) return;
+        setOutputLoading(true);
+
+        try {
+            const inputVoice = phrase.inputVoice || `${phrase.inputLang}-Standard-D`;
+            const targetVoice = phrase.targetVoice || `${phrase.targetLang}-Standard-D`;
+            const response = await fetch(`${API_BASE_URL}/process`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    phrases: [phrase.input],
+                    inputLang: phrase.inputLang,
+                    targetLang: phrase.targetLang,
+                    inputVoice,
+                    targetVoice
+                }),
+            });
+            const data = await response.json();
+            const translated = data?.translated?.[0] ?? phrase.translated;
+            const outputAudio = data?.outputAudioSegments?.[0] ?? phrase.outputAudio;
+            const romanized = data?.romanizedOutput?.[0];
+
+            const newPhrases = [...phrases];
+            const phraseIndex = phrases.indexOf(phrase);
+            newPhrases[phraseIndex] = {
+                ...newPhrases[phraseIndex],
+                translated,
+                outputAudio,
+                romanized: romanized ?? newPhrases[phraseIndex].romanized
+            };
+            setPhrases(newPhrases);
+            setPrevTranslated(translated);
+            if (romanized !== undefined) {
+                setPrevRomanized(romanized);
+            }
+        } catch (error) {
+            console.error('Error regenerating output:', error);
         } finally {
             setOutputLoading(false);
         }
@@ -245,6 +297,11 @@ function PhraseComponent({ phrase, phrases, isSelected, currentPhase, onPhraseCl
                             newPhrases[phrases.indexOf(phrase)] = { ...newPhrases[phrases.indexOf(phrase)], input: e.target.value };
                             setPhrases(newPhrases);
                         }}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                                e.currentTarget.blur();
+                            }
+                        }}
                         onBlur={() => {
                             handleBlur('input');
                         }}
@@ -275,6 +332,10 @@ function PhraseComponent({ phrase, phrases, isSelected, currentPhase, onPhraseCl
             </div>
         );
 
+        const inputLanguageLabel = getLanguageLabel(inputLanguage, phrase.inputLang);
+        const outputLanguageLabel = getLanguageLabel(outputLanguage, phrase.targetLang);
+        const regenerateTooltip = `Regenerate ${outputLanguageLabel || 'output'} from ${inputLanguageLabel || 'input'}`;
+
         const outputField = (
             <div className="flex items-center gap-2">
                 {isReadOnly ? (
@@ -289,6 +350,11 @@ function PhraseComponent({ phrase, phrases, isSelected, currentPhase, onPhraseCl
                             newPhrases[phrases.indexOf(phrase)] = { ...newPhrases[phrases.indexOf(phrase)], translated: e.target.value };
                             setPhrases(newPhrases);
                         }}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                                e.currentTarget.blur();
+                            }
+                        }}
                         onBlur={() => {
                             handleBlur('translated');
                         }}
@@ -301,6 +367,19 @@ function PhraseComponent({ phrase, phrases, isSelected, currentPhase, onPhraseCl
                             ${outputLoading ? 'opacity-50' : ''} ${focusClasses}`}
                         disabled={outputLoading}
                     />
+                )}
+                {!isReadOnly && (
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            handleRegenerateOutput();
+                        }}
+                        disabled={outputLoading || !phrase.input}
+                        className={`px-3 py-1 text-sm bg-indigo-100 hover:bg-indigo-200 dark:bg-indigo-600 dark:hover:bg-indigo-500 rounded text-indigo-700 dark:text-white transition-colors ${outputLoading || !phrase.input ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        title={regenerateTooltip}
+                    >
+                        <ArrowPathIcon className="w-4 h-4" />
+                    </button>
                 )}
                 {!phrase.useRomanizedForAudio && <PlayOutputAudioButton />}
                 {phrase.useRomanizedForAudio && !isReadOnly && (
@@ -397,10 +476,12 @@ function PhraseComponent({ phrase, phrases, isSelected, currentPhase, onPhraseCl
     );
 }
 
-export function EditablePhrases({ phrases, setPhrases, currentPhraseIndex, currentPhase, onPhraseClick, onPlayPhrase, enableOutputBeforeInput, readOnly = false, onInsertPhrase }: EditablePhrasesProps) {
+export function EditablePhrases({ phrases, setPhrases, inputLanguage, outputLanguage, currentPhraseIndex, currentPhase, onPhraseClick, onPlayPhrase, enableOutputBeforeInput, readOnly = false, onInsertPhrase }: EditablePhrasesProps) {
     const selectedPhraseRef = useRef<HTMLDivElement>(null!);
+    const topRef = useRef<HTMLDivElement>(null!);
     const [isArrowVisible, setIsArrowVisible] = useState(false);
     const [scrollDirection, setScrollDirection] = useState<'up' | 'down' | null>(null);
+    const [showScrollToTop, setShowScrollToTop] = useState(false);
     const [isMultiSelectMode, setIsMultiSelectMode] = useState(false);
     const [selectedPhrases, setSelectedPhrases] = useState<Set<number>>(new Set());
 
@@ -424,8 +505,31 @@ export function EditablePhrases({ phrases, setPhrases, currentPhraseIndex, curre
         };
     }, [currentPhraseIndex]);
 
+    useEffect(() => {
+        if (!topRef.current) return;
+        const element = topRef.current;
+        const observer = new IntersectionObserver(
+            ([entry]) => {
+                setShowScrollToTop(!entry.isIntersecting);
+            },
+            { root: null, threshold: 0 }
+        );
+
+        observer.observe(element);
+
+        return () => {
+            if (element) {
+                observer.unobserve(element);
+            }
+        };
+    }, []);
+
     const scrollToSelectedPhrase = () => {
         selectedPhraseRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    };
+
+    const scrollToTop = () => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
     const handleDeletePhrase = (index: number) => {
@@ -477,11 +581,11 @@ export function EditablePhrases({ phrases, setPhrases, currentPhraseIndex, curre
 
     return (
         <div className="mb-4">
-            <div className='h-0 sticky top-[90%]'>
+            <div className='h-0 sticky top-[90%] z-[100]'>
                 {isArrowVisible && scrollDirection && !isMultiSelectMode && (
                     <button
                         onClick={scrollToSelectedPhrase}
-                        className={`w-10 z-50 ml-[10%] p-2 bg-blue-500 text-white rounded-full shadow-lg hover:bg-blue-600 transition`}
+                        className={`w-10 ml-[10%] p-2 bg-blue-500 text-white rounded-full shadow-lg hover:bg-blue-600 transition`}
                         title={`Scroll ${scrollDirection === 'up' ? 'up' : 'down'} to selected phrase`}
                     >
                         {scrollDirection === 'up' ? '↑' : '↓'}
@@ -514,6 +618,18 @@ export function EditablePhrases({ phrases, setPhrases, currentPhraseIndex, curre
                     </div>
                 )}
             </div>
+            <div ref={topRef} className="h-0" />
+            {showScrollToTop && !isMultiSelectMode && (
+                <div className="h-0 sticky top-[180px] z-50">
+                    <button
+                        onClick={scrollToTop}
+                        className="ml-[10%] px-3 py-2 bg-blue-500 text-white rounded-full shadow-lg hover:bg-blue-600 transition flex items-center gap-1 text-sm"
+                        title="Scroll to top"
+                    >
+                        ↑ Scroll to top
+                    </button>
+                </div>
+            )}
             {onInsertPhrase && (
                 <InsertionLine onInsert={() => onInsertPhrase(0)} readOnly={readOnly} />
             )}
@@ -536,6 +652,8 @@ export function EditablePhrases({ phrases, setPhrases, currentPhraseIndex, curre
                             isChecked={selectedPhrases.has(index)}
                             onCheckChange={(checked) => handleCheckChange(index, checked)}
                             readOnly={readOnly}
+                            inputLanguage={inputLanguage}
+                            outputLanguage={outputLanguage}
                             {...(isSelected && { ref: selectedPhraseRef })}
                         />
                         {onInsertPhrase && (
