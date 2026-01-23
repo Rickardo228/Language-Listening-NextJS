@@ -3,7 +3,9 @@ import { PresentationView } from '../PresentationView';
 import { EditablePhrases } from '../EditablePhrases';
 import { SettingsModal } from '../SettingsModal';
 import { LikePhraseDialog } from '../LikePhraseDialog';
+import { ImportPhrasesDialog } from '../ImportPhrasesDialog';
 import { Phrase, PresentationConfig } from '../types';
+import { API_BASE_URL } from '../consts';
 import { generateAudio } from '../utils/audioUtils';
 import { BLEED_START_DELAY, DELAY_AFTER_INPUT_PHRASES_MULTIPLIER, DELAY_AFTER_OUTPUT_PHRASES_MULTIPLIER, } from '../consts';
 import { useUpdateUserStats } from '../utils/userStats/userStats';
@@ -109,6 +111,10 @@ export function PhrasePlaybackView({
     const [settingsOpen, setSettingsOpen] = useState(false);
     const [likeDialogOpen, setLikeDialogOpen] = useState(false);
     const [likedPhrase, setLikedPhrase] = useState<Phrase | null>(null);
+    const [insertDialogOpen, setInsertDialogOpen] = useState(false);
+    const [insertAtIndex, setInsertAtIndex] = useState<number>(0);
+    const [insertPhrasesInput, setInsertPhrasesInput] = useState('');
+    const [insertLoading, setInsertLoading] = useState(false);
 
     // Debouncing refs for spam prevention
     const updateUserStatsTimeout = useRef<NodeJS.Timeout | null>(null);
@@ -1898,6 +1904,11 @@ export function PhrasePlaybackView({
                                     }}
                                     onPlayPhrase={handlePlayPhrase}
                                     enableOutputBeforeInput={presentationConfig.enableOutputBeforeInput}
+                                    onInsertPhrase={setPhrases && !readOnly ? (index) => {
+                                        setInsertAtIndex(index);
+                                        setInsertPhrasesInput('');
+                                        setInsertDialogOpen(true);
+                                    } : undefined}
                                 />
                             </div>
                         )}
@@ -1929,6 +1940,69 @@ export function PhrasePlaybackView({
                     isOpen={likeDialogOpen}
                     onClose={() => setLikeDialogOpen(false)}
                     phrase={likedPhrase}
+                />
+            )}
+            {insertDialogOpen && (
+                <ImportPhrasesDialog
+                    isOpen={insertDialogOpen}
+                    onClose={() => setInsertDialogOpen(false)}
+                    inputLang={phrases[0]?.inputLang || 'en-GB'}
+                    setInputLang={() => {}}
+                    targetLang={phrases[0]?.targetLang || 'it-IT'}
+                    setTargetLang={() => {}}
+                    phrasesInput={insertPhrasesInput}
+                    setPhrasesInput={setInsertPhrasesInput}
+                    loading={insertLoading}
+                    onAddToCollection={async (inputLang, targetLang, isSwapped) => {
+                        if (!setPhrases) return;
+                        const splitPhrases = insertPhrasesInput
+                            .split('\n')
+                            .map((line) => line.trim())
+                            .filter(Boolean);
+                        if (!splitPhrases.length) return;
+
+                        setInsertLoading(true);
+                        try {
+                            const firstPhrase = phrases[0];
+                            const inputVoice = firstPhrase?.inputVoice || `${inputLang}-Standard-D`;
+                            const targetVoice = firstPhrase?.targetVoice || `${targetLang}-Standard-D`;
+
+                            const response = await fetch(`${API_BASE_URL}/process`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    phrases: splitPhrases,
+                                    inputLang: isSwapped ? targetLang : inputLang,
+                                    targetLang: isSwapped ? inputLang : targetLang,
+                                    inputVoice: isSwapped ? targetVoice : inputVoice,
+                                    targetVoice: isSwapped ? inputVoice : targetVoice
+                                }),
+                            });
+                            const data = await response.json();
+                            const now = new Date().toISOString();
+                            const processedPhrases: Phrase[] = splitPhrases.map((p, index) => ({
+                                input: isSwapped ? data.translated?.[index] || '' : p,
+                                translated: isSwapped ? p : data.translated?.[index] || '',
+                                inputAudio: isSwapped ? data.outputAudioSegments?.[index] || null : data.inputAudioSegments?.[index] || null,
+                                outputAudio: isSwapped ? data.inputAudioSegments?.[index] || null : data.outputAudioSegments?.[index] || null,
+                                romanized: data.romanizedOutput?.[index] || '',
+                                inputLang: inputLang || phrases[0]?.inputLang || 'en-GB',
+                                targetLang: targetLang || phrases[0]?.targetLang || 'it-IT',
+                                inputVoice,
+                                targetVoice,
+                                created_at: now,
+                            }));
+
+                            const newPhrases = [...phrases];
+                            newPhrases.splice(insertAtIndex, 0, ...processedPhrases);
+                            await setPhrases(newPhrases, collectionId);
+                            setInsertDialogOpen(false);
+                        } catch (error) {
+                            console.error('Error processing phrases:', error);
+                        } finally {
+                            setInsertLoading(false);
+                        }
+                    }}
                 />
             )}
         </div>);

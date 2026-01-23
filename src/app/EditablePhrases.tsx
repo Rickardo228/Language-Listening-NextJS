@@ -16,6 +16,27 @@ interface EditablePhrasesProps {
     onPlayPhrase?: (index: number, phase: 'input' | 'output') => void;
     enableOutputBeforeInput?: boolean;
     readOnly?: boolean;
+    onInsertPhrase?: (index: number) => void;
+}
+
+function InsertionLine({ onInsert, readOnly }: { onInsert: () => void; readOnly?: boolean }) {
+    const [isHovered, setIsHovered] = useState(false);
+
+    if (readOnly) return <div className="h-4" />;
+
+    return (
+        <div
+            className="relative h-4 group cursor-pointer"
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
+            onClick={onInsert}
+        >
+            <div className={`absolute inset-x-0 top-1/2 -translate-y-1/2 h-0.5 transition-all duration-150 ${isHovered ? 'bg-blue-500' : 'bg-transparent'}`} />
+            <div className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-blue-500 text-white flex items-center justify-center text-sm font-bold transition-all duration-150 ${isHovered ? 'opacity-100 scale-100' : 'opacity-0 scale-75'}`}>
+                +
+            </div>
+        </div>
+    );
 }
 
 
@@ -315,11 +336,12 @@ function PhraseComponent({ phrase, phrases, isSelected, currentPhase, onPhraseCl
 
     return (
         <div
-            className={`mb-4 border p-2 rounded transition-colors flex flex-col gap-2
+            className={`border p-2 rounded transition-colors flex flex-col gap-2
                 ${isSelected
                     ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-400'
-                    : 'border-gray-200 dark:border-gray-700 bg-background hover:bg-secondary dark:hover:bg-blue-900/20'} 
-                ${onPhraseClick ? 'cursor-pointer' : ''}`}
+                    : 'border-gray-200 dark:border-gray-700 bg-background hover:bg-secondary dark:hover:bg-blue-900/20'}
+                ${onPhraseClick ? 'cursor-pointer' : ''}
+                ${isReadOnly ? 'mb-4' : ''}`}
             onClick={(e) => {
                 if (!(e.target as HTMLElement).closest('input[type="checkbox"]')) {
                     onPhraseClick?.();
@@ -375,7 +397,7 @@ function PhraseComponent({ phrase, phrases, isSelected, currentPhase, onPhraseCl
     );
 }
 
-export function EditablePhrases({ phrases, setPhrases, currentPhraseIndex, currentPhase, onPhraseClick, onPlayPhrase, enableOutputBeforeInput, readOnly = false }: EditablePhrasesProps) {
+export function EditablePhrases({ phrases, setPhrases, currentPhraseIndex, currentPhase, onPhraseClick, onPlayPhrase, enableOutputBeforeInput, readOnly = false, onInsertPhrase }: EditablePhrasesProps) {
     const selectedPhraseRef = useRef<HTMLDivElement>(null!);
     const [isArrowVisible, setIsArrowVisible] = useState(false);
     const [scrollDirection, setScrollDirection] = useState<'up' | 'down' | null>(null);
@@ -492,27 +514,34 @@ export function EditablePhrases({ phrases, setPhrases, currentPhraseIndex, curre
                     </div>
                 )}
             </div>
+            {onInsertPhrase && (
+                <InsertionLine onInsert={() => onInsertPhrase(0)} readOnly={readOnly} />
+            )}
             {phrases.map((phrase, index) => {
                 const isSelected = currentPhraseIndex === index;
                 return (
-                    <PhraseComponent
-                        key={index}
-                        phrase={phrase}
-                        phrases={phrases}
-                        isSelected={isSelected}
-                        currentPhase={currentPhase}
-                        onPhraseClick={() => handlePhraseClick(index)}
-                        onDelete={() => handleDeletePhrase(index)}
-                        onPlayPhrase={onPlayPhrase}
-                        setPhrases={setPhrases}
-                        enableOutputBeforeInput={enableOutputBeforeInput}
-                        isMultiSelectMode={isMultiSelectMode}
-                        setIsMultiSelectMode={setIsMultiSelectMode}
-                        isChecked={selectedPhrases.has(index)}
-                        onCheckChange={(checked) => handleCheckChange(index, checked)}
-                        readOnly={readOnly}
-                        {...(isSelected && { ref: selectedPhraseRef })}
-                    />
+                    <div key={index}>
+                        <PhraseComponent
+                            phrase={phrase}
+                            phrases={phrases}
+                            isSelected={isSelected}
+                            currentPhase={currentPhase}
+                            onPhraseClick={() => handlePhraseClick(index)}
+                            onDelete={() => handleDeletePhrase(index)}
+                            onPlayPhrase={onPlayPhrase}
+                            setPhrases={setPhrases}
+                            enableOutputBeforeInput={enableOutputBeforeInput}
+                            isMultiSelectMode={isMultiSelectMode}
+                            setIsMultiSelectMode={setIsMultiSelectMode}
+                            isChecked={selectedPhrases.has(index)}
+                            onCheckChange={(checked) => handleCheckChange(index, checked)}
+                            readOnly={readOnly}
+                            {...(isSelected && { ref: selectedPhraseRef })}
+                        />
+                        {onInsertPhrase && (
+                            <InsertionLine onInsert={() => onInsertPhrase(index + 1)} readOnly={readOnly} />
+                        )}
+                    </div>
                 );
             })}
             <div className="h-20"></div>
