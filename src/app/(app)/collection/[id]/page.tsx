@@ -141,6 +141,9 @@ export default function CollectionPage() {
       .filter(Boolean);
     if (!splitPhrases.length) return;
 
+    // Store the index where new phrases will be added
+    const firstNewPhraseIndex = phrases.length;
+
     setLoading(true);
 
     try {
@@ -178,8 +181,19 @@ export default function CollectionPage() {
 
       // Add new phrases to existing collection
       const updatedPhrases = [...phrases, ...processedPhrases];
-      setPhrases(updatedPhrases);
+      await setPhrases(updatedPhrases);
       setPhrasesInput('');
+
+      // Navigate to the first newly added phrase
+      if (playbackMethodsRef.current) {
+        // Determine the first phase based on playback settings
+        const firstPhase = presentationConfig?.enableOutputBeforeInput
+          ? 'output'
+          : (presentationConfig?.enableInputPlayback !== false ? 'input' : 'output');
+
+        playbackMethodsRef.current.setCurrentPhraseIndex(firstNewPhraseIndex);
+        playbackMethodsRef.current.setCurrentPhase(firstPhase);
+      }
     } catch (err) {
       console.error('Processing error:', err);
       toast.error(String(err))
