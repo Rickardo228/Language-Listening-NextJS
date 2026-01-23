@@ -31,7 +31,7 @@ function InsertionLine({ onInsert, readOnly }: { onInsert: () => void; readOnly?
             onMouseLeave={() => setIsHovered(false)}
             onClick={onInsert}
         >
-            <div className={`absolute inset-x-0 top-1/2 -translate-y-1/2 h-0.5 transition-all duration-150 ${isHovered ? 'bg-blue-500' : 'bg-transparent'}`} />
+            <div className={`absolute inset-x-0 top-1/2 -translate-y-1/2 h-1 rounded-full transition-all duration-150 ${isHovered ? 'bg-blue-500' : 'bg-transparent'}`} />
             <div className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-blue-500 text-white flex items-center justify-center text-sm font-bold transition-all duration-150 ${isHovered ? 'opacity-100 scale-100' : 'opacity-0 scale-75'}`}>
                 +
             </div>
