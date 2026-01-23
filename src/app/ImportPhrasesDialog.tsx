@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { languageOptions, CollectionType } from './types'
 import { X, Plus, Lightbulb } from 'lucide-react'
 import { API_BASE_URL } from './consts'
@@ -60,6 +60,19 @@ export function ImportPhrasesDialog({
     const [collectionType, setCollectionType] = useState<CollectionType>('phrases')
     const [isSwapped, setIsSwapped] = useState(false)
     const [isFetchingUrl, setIsFetchingUrl] = useState(false)
+    const [isMobile, setIsMobile] = useState(false)
+    const [isMac, setIsMac] = useState(false)
+    const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+    useEffect(() => {
+        const checkMobile = () => {
+            setIsMobile(window.innerWidth < 768 || 'ontouchstart' in window)
+        }
+        checkMobile()
+        setIsMac(navigator.platform.toUpperCase().includes('MAC'))
+        window.addEventListener('resize', checkMobile)
+        return () => window.removeEventListener('resize', checkMobile)
+    }, [])
     const inputLangLabel = (languageOptions.find(lang => lang.code === (isSwapped ? targetLang : inputLang))?.label || inputLang).split(' (')[0];
     const isLikeVariant = variant === 'like';
     const addToCollectionDisabled = loading
@@ -135,8 +148,46 @@ export function ImportPhrasesDialog({
         }
     };
 
+    const handleSubmit = async () => {
+        if (onAddToCollection) {
+            if (addToCollectionDisabled) return;
+            await onAddToCollection(inputLang, targetLang, isSwapped);
+            onClose();
+        } else if (onProcess) {
+            if (loading || !phrasesInput.trim()) return;
+            await onProcess(prompt, inputLang, targetLang, collectionType);
+            onClose();
+        }
+    };
+
+    const handleTextareaKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+        if (e.key === 'Enter') {
+            if (isMobile) {
+                // On mobile, Enter adds new line (default behavior)
+                return;
+            }
+            // On desktop: Cmd/Ctrl+Enter adds new line, plain Enter submits
+            if (e.ctrlKey || e.metaKey) {
+                // Manually insert newline at cursor position
+                e.preventDefault();
+                const textarea = e.currentTarget;
+                const start = textarea.selectionStart;
+                const end = textarea.selectionEnd;
+                const newValue = phrasesInput.slice(0, start) + '\n' + phrasesInput.slice(end);
+                setPhrasesInput(newValue);
+                // Move cursor after the newline
+                setTimeout(() => {
+                    textarea.selectionStart = textarea.selectionEnd = start + 1;
+                }, 0);
+                return;
+            }
+            e.preventDefault();
+            handleSubmit();
+        }
+    };
+
     return (
-        <Dialog open={isOpen} onClose={onClose} className="relative z-[400]">
+        <Dialog open={isOpen} onClose={onClose} className="relative z-[400]" initialFocus={textareaRef}>
             <div className="fixed inset-0 bg-black/50" />
             <div className="fixed inset-0 flex items-center justify-center">
                 <Dialog.Panel className={`bg-background text-foreground p-4 rounded-lg shadow-lg w-[500px] max-w-[90vw] ${isLikeVariant ? 'overflow-visible' : 'overflow-auto max-h-[90vh]'} border`}>
@@ -163,7 +214,6 @@ export function ImportPhrasesDialog({
                                     onChange={(e) => setPrompt(e.target.value)}
                                     placeholder="Enter a name or paste a URL (YouTube/website)..."
                                     disabled={loading}
-                                    autoFocus={Boolean(onProcess)}
                                 />
                             )}
                             {!onAddToCollection && !isLikeVariant && (
@@ -251,13 +301,20 @@ export function ImportPhrasesDialog({
                                 <div>
                                     <label className="block text-sm font-medium mb-1">{collectionType === 'phrases' ? 'Phrases (one per line)' : 'Article Content'}</label>
                                     <textarea
+                                        ref={textareaRef}
                                         value={phrasesInput}
                                         onChange={(e) => setPhrasesInput(e.target.value)}
+                                        onKeyDown={handleTextareaKeyDown}
                                         className="w-full h-32 p-2 rounded-md border bg-background resize-none"
                                         placeholder={collectionType === 'phrases' ? `Enter phrases in ${inputLangLabel} here...` : `Paste article in ${inputLangLabel} here...`}
                                         disabled={loading}
-                                        autoFocus={Boolean(onAddToCollection)}
+                                        autoFocus
                                     />
+                                    {!isMobile && (
+                                        <p className="text-xs text-muted-foreground mt-1">
+                                            {isMac ? '⌘' : 'Ctrl'}+Enter for new line
+                                        </p>
+                                    )}
                                 </div>
                             )}
 
