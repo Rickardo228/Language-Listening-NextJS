@@ -1191,7 +1191,7 @@ export function PhrasePlaybackView({
 
         // Set progress bar for recall (input duration delay)
         setShowProgressBar(true);
-        const totalDelayMs = playOutputBeforeInput ? outputDuration + 1000 : inputDuration + presentationConfig.delayBetweenPhrases;
+        const totalDelayMs = playOutputBeforeInput ? outputDuration + 1000 : (inputDuration * DELAY_AFTER_INPUT_PHRASES_MULTIPLIER) + presentationConfig.delayBetweenPhrases;
         setProgressDuration(totalDelayMs);
         setProgressDelay(0);
 
