@@ -12,6 +12,7 @@ import { DustEffect } from "./Effects/DustEffect";
 import { PhraseCard } from "./components/PhraseCard";
 
 export { TITLE_ANIMATION_DURATION } from "./components/PhraseCard";
+export const presentationContainerSizeClass = "w-full h-48 lg:h-[70vh] lg:max-h-[80vh]";
 
 interface PresentationViewProps {
   currentPhrase: string;
@@ -214,7 +215,7 @@ export function PresentationView({
 
   const containerClass =
     `inset-0 flex flex-col items-center overflow-hidden ${alignPhraseTop ? '' : 'justify-center'} ` +
-    (fullScreen ? "fixed z-50" : "relative p-4 lg:rounded shadow w-full h-48 lg:h-[70vh] lg:max-h-[80vh]") +
+    (fullScreen ? "fixed z-50" : `relative p-4 lg:rounded shadow ${presentationContainerSizeClass}`) +
     (!containerBg ? " bg-gray-100 dark:bg-gray-900" : "");
 
   const titlePropClass = fullScreen

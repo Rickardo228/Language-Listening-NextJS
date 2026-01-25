@@ -6,6 +6,7 @@ import {
   ChevronLeft,
   Zap,
 } from 'lucide-react';
+import { presentationContainerSizeClass } from '../../../PresentationView';
 import {
   PhrasePlaybackView,
   type PhrasePlaybackMethods,
@@ -213,8 +214,10 @@ export function QuickWin({ data, onNext, onBack }: Props) {
         className="p-0 overflow-hidden from-indigo-50 to-purple-50 dark:from-slate-900 dark:to-slate-950"
       >
         {isLoadingPhrases ? (
-          <div className="p-6 text-center text-sm text-gray-600">
-            Loading your phrases...
+          <div className={`flex ${presentationContainerSizeClass} flex-col items-center justify-center gap-6 p-6`}>
+            <div className="h-6 w-2/3 max-w-md rounded bg-gray-200/70 dark:bg-slate-700/50" />
+            <div className="h-px w-24 bg-gray-200/80 dark:bg-slate-700/60" />
+            <div className="h-6 w-2/3 max-w-md rounded bg-gray-200/70 dark:bg-slate-700/50" />
           </div>
         ) : (
           <PhrasePlaybackView
