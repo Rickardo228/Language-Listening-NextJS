@@ -5,13 +5,15 @@ interface PhraseCounterProps {
   totalPhrases?: number;
   className?: string;
   style?: React.CSSProperties;
+  'data-tour'?: string;
 }
 
-export function PhraseCounter({ 
-  currentPhraseIndex, 
-  totalPhrases, 
-  className = "", 
-  style = {} 
+export function PhraseCounter({
+  currentPhraseIndex,
+  totalPhrases,
+  className = "",
+  style = {},
+  'data-tour': dataTour,
 }: PhraseCounterProps) {
   if (currentPhraseIndex === undefined || totalPhrases === undefined || totalPhrases === 0) {
     return null;
@@ -21,6 +23,7 @@ export function PhraseCounter({
     <div
       className={`px-3 py-2 bg-gray-200 dark:bg-gray-700 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 ${className}`}
       style={style}
+      data-tour={dataTour}
     >
       {currentPhraseIndex + 1} / {totalPhrases}
     </div>

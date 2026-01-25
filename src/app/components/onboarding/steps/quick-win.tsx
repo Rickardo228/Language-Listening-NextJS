@@ -15,10 +15,13 @@ import { Button } from '../../ui/Button';
 import { Card } from '../../ui/Card';
 import { Label } from '../../ui/Label';
 import { RadioGroup, RadioGroupItem } from '../../ui/RadioGroup';
+import { Slider } from '../../ui/Slider';
 import { OnboardingData } from '../types';
 import { defaultPresentationConfig } from '../../../defaultConfig';
-import { Phrase, PresentationConfig, Template } from '../../../types';
+import { Phrase, PresentationConfig, Template, languageOptions } from '../../../types';
+import { toast } from 'sonner';
 import { buildTemplatePhrases } from '../../../utils/templatePhrases';
+import { track } from '../../../../lib/mixpanelClient';
 
 const firestore = getFirestore();
 const QUICK_WIN_TEMPLATE_GROUP_ID = 'beginner_001';
@@ -28,6 +31,7 @@ type QuickWinMode = 'shadowing' | 'recall' | 'comprehension';
 
 interface Props {
   data: OnboardingData;
+  updateData: (data: Partial<OnboardingData>) => void;
   onNext: () => void;
   onBack: () => void;
 }
@@ -76,17 +80,26 @@ const quickWinModes: Array<{
   },
 ];
 
-export function QuickWin({ data, onNext, onBack }: Props) {
+const getLanguageLabel = (code: string) => {
+  const label = languageOptions.find((lang) => lang.code === code)?.label || code;
+  // Remove region suffix like "(UK)" but keep the flag emoji
+  return label.split(' (')[0];
+};
+
+export function QuickWin({ data, updateData, onNext, onBack }: Props) {
   const [practiceMode, setPracticeMode] = useState<QuickWinMode>('shadowing');
+  const [outputPlaybackSpeed, setOutputPlaybackSpeed] = useState<number>(
+    data.defaultPresentationConfig?.outputPlaybackSpeed ?? defaultPresentationConfig.outputPlaybackSpeed ?? 1.0
+  );
   const [completedPhrases, setCompletedPhrases] = useState<number[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [templatePhrases, setTemplatePhrases] = useState<Phrase[]>([]);
   const [isLoadingPhrases, setIsLoadingPhrases] = useState(true);
   const playbackMethodsRef = useRef<PhrasePlaybackMethods | null>(null);
   const playbackCardRef = useRef<HTMLDivElement | null>(null);
-  const isFirstModeSelection = useRef(true);
   const currentIndexRef = useRef(currentIndex);
   const completedRef = useRef(completedPhrases);
+  const quickWinTrackedRef = useRef(false);
 
   useEffect(() => {
     currentIndexRef.current = currentIndex;
@@ -95,6 +108,18 @@ export function QuickWin({ data, onNext, onBack }: Props) {
   useEffect(() => {
     completedRef.current = completedPhrases;
   }, [completedPhrases]);
+
+  useEffect(() => {
+    if (quickWinTrackedRef.current) return;
+    track('Quick Win Viewed', {
+      nativeLanguage: data.nativeLanguage,
+      targetLanguage: data.targetLanguage,
+      abilityLevel: data.abilityLevel,
+      practiceMode,
+      outputPlaybackSpeed,
+    });
+    quickWinTrackedRef.current = true;
+  }, [data.nativeLanguage, data.targetLanguage, data.abilityLevel, practiceMode, outputPlaybackSpeed]);
 
   useEffect(() => {
     const intervalId = window.setInterval(() => {
@@ -164,6 +189,14 @@ export function QuickWin({ data, onNext, onBack }: Props) {
   }, [data.nativeLanguage, data.targetLanguage]);
 
   const onCompleted = () => {
+    track('Quick Win Completed', {
+      nativeLanguage: data.nativeLanguage,
+      targetLanguage: data.targetLanguage,
+      abilityLevel: data.abilityLevel,
+      practiceMode,
+      outputPlaybackSpeed,
+      totalPhrases: phrases.length,
+    });
     onNext();
   };
 
@@ -178,15 +211,50 @@ export function QuickWin({ data, onNext, onBack }: Props) {
     () => ({
       ...defaultPresentationConfig,
       ...selectedMode.config,
+      outputPlaybackSpeed,
     }),
-    [selectedMode.config]
+    [selectedMode.config, outputPlaybackSpeed]
   );
 
+  // Persist the selected mode's config to onboarding data
   useEffect(() => {
-    if (isFirstModeSelection.current) {
-      isFirstModeSelection.current = false;
-      return;
+    updateData({
+      defaultPresentationConfig: {
+        ...defaultPresentationConfig,
+        ...selectedMode.config,
+        outputPlaybackSpeed,
+      },
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedMode.config, outputPlaybackSpeed]);
+
+  const handleModeChange = (newMode: QuickWinMode) => {
+    setPracticeMode(newMode);
+    track('Quick Win Mode Selected', {
+      mode: newMode,
+      nativeLanguage: data.nativeLanguage,
+      targetLanguage: data.targetLanguage,
+      abilityLevel: data.abilityLevel,
+      outputPlaybackSpeed,
+    });
+
+    const inputLabel = getLanguageLabel(data.nativeLanguage || 'en-GB');
+    const targetLabel = getLanguageLabel(data.targetLanguage || 'it-IT');
+
+    let toastMessage = '';
+    switch (newMode) {
+      case 'shadowing':
+        toastMessage = 'Listen and repeat';
+        break;
+      case 'recall':
+        toastMessage = `Try to remember the ${targetLabel} based on the ${inputLabel}`;
+        break;
+      case 'comprehension':
+        toastMessage = `Try to understand the ${inputLabel} based on the ${targetLabel}`;
+        break;
     }
+
+    toast(toastMessage);
 
     if (!playbackCardRef.current) return;
     window.requestAnimationFrame(() => {
@@ -195,7 +263,7 @@ export function QuickWin({ data, onNext, onBack }: Props) {
         block: 'center',
       });
     });
-  }, [practiceMode]);
+  };
 
   return (
     <div className="space-y-6">
@@ -235,7 +303,7 @@ export function QuickWin({ data, onNext, onBack }: Props) {
       <Card className="p-5 space-y-5">
         <div className="space-y-3">
           <Label className="text-base">Choose your practice style</Label>
-          <RadioGroup value={practiceMode} onValueChange={(value) => setPracticeMode(value as QuickWinMode)}>
+          <RadioGroup value={practiceMode} onValueChange={(value) => handleModeChange(value as QuickWinMode)}>
             <div className="grid gap-3">
               {quickWinModes.map((mode) => (
                 <label
@@ -267,6 +335,30 @@ export function QuickWin({ data, onNext, onBack }: Props) {
             </div>
           </RadioGroup>
         </div>
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <Label className="text-base">Output playback speed</Label>
+            <span className="text-sm text-gray-600">{outputPlaybackSpeed.toFixed(2)}x</span>
+          </div>
+          <Slider
+            min={0.75}
+            max={2}
+            step={0.05}
+            value={[outputPlaybackSpeed]}
+            onValueChange={(value) => setOutputPlaybackSpeed(value[0] ?? defaultPresentationConfig.outputPlaybackSpeed ?? 1.0)}
+            onValueCommit={(value) => {
+              const nextValue = value[0] ?? defaultPresentationConfig.outputPlaybackSpeed ?? 1.0;
+              track('Quick Win Output Speed Updated', {
+                outputPlaybackSpeed: nextValue,
+                nativeLanguage: data.nativeLanguage,
+                targetLanguage: data.targetLanguage,
+                abilityLevel: data.abilityLevel,
+                practiceMode,
+              });
+            }}
+          />
+          <p className="text-sm text-gray-600">Adjust how fast the target language audio plays.</p>
+        </div>
       </Card>
 
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
@@ -277,11 +369,38 @@ export function QuickWin({ data, onNext, onBack }: Props) {
       </div>
 
       <div className="flex gap-3">
-        <Button onClick={onBack} variant="outline" size="md" className="px-4 gap-2">
+        <Button
+          onClick={() => {
+            track('Quick Win Back Clicked', {
+              nativeLanguage: data.nativeLanguage,
+              targetLanguage: data.targetLanguage,
+              abilityLevel: data.abilityLevel,
+              practiceMode,
+              outputPlaybackSpeed,
+            });
+            onBack();
+          }}
+          variant="outline"
+          size="md"
+          className="px-4 gap-2"
+        >
           <ChevronLeft className="w-4 h-4" />
           Back
         </Button>
-        <Button onClick={onNext} className="flex-1" size="lg">
+        <Button
+          onClick={() => {
+            track('Quick Win Continue Clicked', {
+              nativeLanguage: data.nativeLanguage,
+              targetLanguage: data.targetLanguage,
+              abilityLevel: data.abilityLevel,
+              practiceMode,
+              outputPlaybackSpeed,
+            });
+            onNext();
+          }}
+          className="flex-1"
+          size="lg"
+        >
           Continue
         </Button>
       </div>

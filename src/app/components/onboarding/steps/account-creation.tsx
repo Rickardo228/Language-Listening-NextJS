@@ -31,9 +31,9 @@ export function AccountCreation({
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-indigo-100 dark:bg-indigo-500/20 mx-auto">
             <UserPlus className="w-8 h-8 text-indigo-600 dark:text-indigo-300" />
           </div>
-          <h1 className="text-3xl md:text-4xl">Create your account</h1>
+          <h1 className="text-3xl md:text-4xl">You're ready to go</h1>
           <p className="text-gray-600 text-lg">
-            Save your plan and keep your progress.
+            Save your setup and goals. Unlock the full library. Create your own lists.
           </p>
         </div>
       )}

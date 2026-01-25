@@ -154,6 +154,7 @@ export const saveOnboardingData = async (
     dreamOutcomes?: string[];
     painPoints?: string[];
     practiceTime?: string;
+    defaultPresentationConfig?: Partial<PresentationConfig>;
   },
   firebaseUser?: User // Optional Firebase user object for additional data
 ): Promise<void> => {
@@ -196,6 +197,9 @@ export const saveOnboardingData = async (
   }
   if (data.practiceTime !== undefined) {
     profileData.practiceTime = data.practiceTime;
+  }
+  if (data.defaultPresentationConfig !== undefined) {
+    profileData.defaultPresentationConfig = data.defaultPresentationConfig as PresentationConfig;
   }
 
   await createOrUpdateUserProfile(userId, profileData);

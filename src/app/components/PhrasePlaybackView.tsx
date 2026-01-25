@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { PresentationView } from '../PresentationView';
+import { PresentationTourWrapper } from './PresentationTourWrapper';
 import { EditablePhrases } from '../EditablePhrases';
 import { SettingsModal } from '../SettingsModal';
 import { LikePhraseDialog } from '../LikePhraseDialog';
@@ -1187,7 +1188,7 @@ export function PhrasePlaybackView({
 
         const playOutputBeforeInput = presentationConfig.enableOutputBeforeInput;
         const inputDuration = presentationConfig.enableInputDurationDelay ? (audioRef.current?.duration || 1) * 1000 : 0;
-        const outputDuration = presentationConfig.enableOutputDurationDelay ? (audioRef.current?.duration || 1) * 1000 * DELAY_AFTER_INPUT_PHRASES_MULTIPLIER : 0;
+        const outputDuration = presentationConfig.enableOutputDurationDelay ? (audioRef.current?.duration || 1) * 1000 : 0;
 
         // Set progress bar for recall (input duration delay)
         setShowProgressBar(true);
@@ -1471,7 +1472,8 @@ export function PhrasePlaybackView({
         getCurrentPhase: () => currentPhase
     };
 
-    const presentationView = <PresentationView
+    const presentationView = <PresentationTourWrapper fullScreen={fullscreen}>
+      <PresentationView
         currentPhrase={phrases[currentPhraseIndex]?.input || ''}
         currentTranslated={phrases[currentPhraseIndex]?.translated || ''}
         currentPhase={currentPhase}
@@ -1824,7 +1826,8 @@ export function PhrasePlaybackView({
                 }
             }
         })()}
-    />
+      />
+    </PresentationTourWrapper>
 
     return (
         <div className="flex-1">

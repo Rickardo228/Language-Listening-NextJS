@@ -15,12 +15,15 @@ export default function PublicLayout({
       <Toaster
         richColors
         expand
-        position="top-center"
+        position="bottom-center"
         toastOptions={{
           classNames: {
-            toast: 'bg-background text-foreground border-border',
-        },
-      }}
+            toast: 'bg-background text-foreground border-border font-sans text-center whitespace-pre-line',
+          },
+          style: {
+            fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif',
+          },
+        }}
       />
       <MixpanelProvider>
         <PublicNav />

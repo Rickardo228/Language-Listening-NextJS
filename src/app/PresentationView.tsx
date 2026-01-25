@@ -10,6 +10,7 @@ import ParticleAnimation from "./Effects/ParticleGlow";
 import { PhraseCounter } from "./components/PhraseCounter";
 import { DustEffect } from "./Effects/DustEffect";
 import { PhraseCard } from "./components/PhraseCard";
+import { useTourActive } from "./components/PresentationTourWrapper";
 
 export { TITLE_ANIMATION_DURATION } from "./components/PhraseCard";
 export const presentationContainerSizeClass = "w-full h-48 lg:h-[70vh] lg:max-h-[80vh]";
@@ -148,6 +149,7 @@ export function PresentationView({
   const isSwipeTransitionRef = useRef(false); // Track if we're in a swipe transition
   const ignorePresentationClickRef = useRef(false);
   const tooltipOpenRef = useRef(false);
+  const isTourActive = useTourActive();
 
   const resetDrag = showAllPhrases ? false : currentPhase
   // Reset drag position when currentPhrase changes
@@ -204,7 +206,8 @@ export function PresentationView({
   };
 
   // Determine if navigation buttons should be visible
-  const shouldShowNavigationButtons = isMobile || isHovering;
+  // Show controls when: on mobile, hovering, or tour is active
+  const shouldShowNavigationButtons = isMobile || isHovering || isTourActive;
 
   const totalPhraseLength = (currentPhrase?.length + (romanizedOutput?.length ?? 0));
 
@@ -406,6 +409,7 @@ export function PresentationView({
           {/* Progress Indicator at the top */}
           {totalPhrases && currentPhraseIndex !== undefined && (
             <div
+              data-tour="progress-bar"
               className="absolute top-0 left-0 w-full h-1.5 overflow-hidden z-20"
               style={{
                 backgroundColor: textBg
@@ -435,6 +439,7 @@ export function PresentationView({
           {/* Top left X button for mobile fullscreen */}
           {fullScreen && isMobile && (
             <button
+              data-tour="close-button-mobile"
               onClick={(e) => {
                 e.stopPropagation();
                 setFullscreen(false);
@@ -455,6 +460,7 @@ export function PresentationView({
             <div className="absolute top-2 right-2 flex items-center gap-1 z-10">
               {onLikeOpen && (
                 <button
+                  data-tour="like-button"
                   onClick={(e) => {
                     e.stopPropagation();
                     onLikeOpen();
@@ -472,6 +478,7 @@ export function PresentationView({
               {/* Settings Button - visible on desktop and mobile inline (not mobile fullscreen) */}
               {onSettingsOpen && (
                 <button
+                  data-tour="settings-button"
                   onClick={(e) => {
                     e.stopPropagation();
                     onSettingsOpen();
@@ -508,6 +515,7 @@ export function PresentationView({
               {/* Fullscreen/Close Button - hidden on mobile inline and when not in fullscreen */}
               {!isMobileInline && fullScreen && (
                 <button
+                  data-tour="close-button"
                   onClick={(e) => {
                     e.stopPropagation();
                     setFullscreen(prev => !prev);
@@ -530,7 +538,9 @@ export function PresentationView({
             <>
               {fullScreen && isMobile && !verticalScroll ? (
                 // Mobile fullscreen horizontal: Spotify-style bottom center layout
-                <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex items-center gap-8 z-10"
+                <div
+                  data-tour="nav-buttons-mobile"
+                  className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex items-center gap-8 z-10"
                   style={{
                     opacity: shouldShowNavigationButtons ? 1 : 0,
                     transition: 'opacity 0.3s ease'
@@ -619,6 +629,7 @@ export function PresentationView({
                 <>
                   {canGoBack && (
                     <button
+                      data-tour="nav-previous"
                       onClick={(e) => {
                         e.stopPropagation();
                         onPrevious();
@@ -634,6 +645,7 @@ export function PresentationView({
                     </button>
                   )}
                   <button
+                    data-tour="nav-next"
                     onClick={(e) => {
                       e.stopPropagation();
                       onNext();
@@ -655,6 +667,7 @@ export function PresentationView({
           {/* Pause/Play button for fullscreen - bottom left */}
           {fullScreen && !verticalScroll && onPause && onPlay && (
             <button
+              data-tour="play-pause-button"
               onClick={(e) => {
                 e.stopPropagation();
                 paused ? onPlay() : onPause();
@@ -768,12 +781,14 @@ export function PresentationView({
               <PhraseCounter
                 currentPhraseIndex={currentPhraseIndex}
                 totalPhrases={totalPhrases}
+                data-tour="phrase-counter"
               />
             </div>
           ) : (
             <PhraseCounter
               currentPhraseIndex={currentPhraseIndex}
               totalPhrases={totalPhrases}
+              data-tour="phrase-counter"
               className={`absolute z-10 ${isMobileInline
                 ? "bottom-1 right-2 text-xs" // Smaller position on mobile inline
                 : "bottom-4 right-4"

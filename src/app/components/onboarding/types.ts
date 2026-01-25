@@ -1,3 +1,5 @@
+import { PresentationConfig } from '../../types';
+
 export interface OnboardingData {
   dreamOutcomes: string[];
   painPoints: string[];
@@ -9,4 +11,5 @@ export interface OnboardingData {
   email?: string;
   accountType?: string;
   selectedPlan?: string;
+  defaultPresentationConfig?: Partial<PresentationConfig>;
 }

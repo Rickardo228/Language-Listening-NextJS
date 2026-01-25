@@ -82,7 +82,7 @@ export function LandingPage() {
               </div>
 
               <p className="text-sm text-muted-foreground">
-                No charge. Cancel anytime.
+                No commitment required. Start learning now.
               </p>
             </motion.div>
           </div>
@@ -213,13 +213,13 @@ export function LandingPage() {
                   <Button
                     size="lg"
                     className="text-lg px-10"
-                    onClick={() => trackCtaClick('Get started', 'benefits')}
+                    onClick={() => trackCtaClick('Start practicing', 'benefits')}
                   >
-                    Get started
+                    Start practicing
                   </Button>
                 </Link>
                 <p className="text-sm text-muted-foreground">
-                  Takes 30 seconds to start. Cancel anytime.
+                  Takes 30 seconds to start. No payment required.
                 </p>
               </div>
             </motion.div>
@@ -275,13 +275,13 @@ export function LandingPage() {
               <Link href={ROUTES.GET_STARTED}>
                 <Button
                   size="lg"
-                  onClick={() => trackCtaClick('Try it free', 'templates')}
+                  onClick={() => trackCtaClick('Start practicing', 'templates')}
                 >
-                  Try it free
+                  Start practicing
                 </Button>
               </Link>
               <p className="text-sm text-muted-foreground">
-                Unlock the full Template Library
+                Unlock the full Template Library.
               </p>
             </div>
           </motion.div>
@@ -412,7 +412,7 @@ export function LandingPage() {
                 </Button>
               </Link>
               <p className="text-sm text-muted-foreground">
-                See why learners love shadowing
+                See why learners love shadowing.
               </p>
             </div>
           </motion.div>
@@ -433,7 +433,7 @@ export function LandingPage() {
               Try it free
             </h2>
             <p className="text-lg text-foreground/90 mb-12">
-              Start with a free trial. If you don't feel more confident speaking in a week, cancel in two clicks.
+              Start with a free trial. No payment required to begin.
             </p>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl mx-auto mb-8">
@@ -471,7 +471,7 @@ export function LandingPage() {
             </div>
 
             <p className="text-sm text-muted-foreground">
-              Cancel anytime · Reminder before billing · Secure payments
+              No card required · Reminder before billing · Secure payments
             </p>
           </motion.div>
         </div>
@@ -544,15 +544,15 @@ export function LandingPage() {
               Your next conversation starts with 10 minutes today.
             </h2>
             <p className="text-lg text-muted-foreground mb-10">
-              No pressure - just a fair trial and a simple system that makes speaking inevitable.
+              No pressure — no card required. A simple system that makes speaking inevitable.
             </p>
             <Link href={ROUTES.GET_STARTED}>
               <Button
                 size="lg"
                 className="text-lg px-10"
-                onClick={() => trackCtaClick('Get Started Free', 'final-cta')}
+                onClick={() => trackCtaClick('Start practicing', 'final-cta')}
               >
-                Get Started Free
+                Start practicing
               </Button>
             </Link>
           </motion.div>

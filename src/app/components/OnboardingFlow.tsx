@@ -116,7 +116,7 @@ export function OnboardingFlow({
       'ability-level',
       'interests',
       // 'plan-reveal',
-      // 'quick-win',
+      'quick-win',
     ];
 
     if (includeAuthStep) list.push('account-creation');
@@ -255,6 +255,7 @@ export function OnboardingFlow({
           dreamOutcomes: data.dreamOutcomes,
           painPoints: data.painPoints,
           practiceTime: data.practiceTime,
+          defaultPresentationConfig: data.defaultPresentationConfig,
         },
         authenticatedUser
       );
@@ -372,6 +373,7 @@ export function OnboardingFlow({
               {currentStepId === 'quick-win' && (
                 <QuickWin
                   data={data}
+                  updateData={updateData}
                   onNext={() => {
                     triggerConfetti();
                     nextStep();
