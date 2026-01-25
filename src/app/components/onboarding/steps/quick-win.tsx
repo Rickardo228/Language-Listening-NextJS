@@ -4,11 +4,6 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { collection, getDocs, getFirestore, query, where } from 'firebase/firestore';
 import {
   ChevronLeft,
-  CircleCheck,
-  Clock,
-  Eye,
-  EyeOff,
-  Volume2,
   Zap,
 } from 'lucide-react';
 import {
@@ -18,8 +13,7 @@ import {
 import { Button } from '../../ui/Button';
 import { Card } from '../../ui/Card';
 import { Label } from '../../ui/Label';
-import { Slider } from '../../ui/Slider';
-import { Switch } from '../../ui/Switch';
+import { RadioGroup, RadioGroupItem } from '../../ui/RadioGroup';
 import { OnboardingData } from '../types';
 import { defaultPresentationConfig } from '../../../defaultConfig';
 import { Phrase, PresentationConfig, Template } from '../../../types';
@@ -29,6 +23,7 @@ const firestore = getFirestore();
 const QUICK_WIN_TEMPLATE_GROUP_ID = 'beginner_001';
 
 type TemplateForQuickWin = Template;
+type QuickWinMode = 'shadowing' | 'recall' | 'comprehension';
 
 interface Props {
   data: OnboardingData;
@@ -36,47 +31,59 @@ interface Props {
   onBack: () => void;
 }
 
-const lauraMipsoPhrases = [
+const quickWinModes: Array<{
+  value: QuickWinMode;
+  label: string;
+  description: string;
+  config: Pick<
+    PresentationConfig,
+    'showAllPhrases' | 'enableInputPlayback' | 'enableInputDurationDelay' | 'enableOutputBeforeInput'
+  >;
+}> = [
   {
-    native: 'Hello, how are you?',
-    target: '¿Hola, cómo estás?',
-    phonetic: 'OH-lah, KOH-moh ehs-TAHS',
+    value: 'shadowing',
+    label: 'Shadowing Practice',
+    description: 'Good for exposure and pronunciation',
+    config: {
+      showAllPhrases: true,
+      enableInputPlayback: false,
+      enableInputDurationDelay: false,
+      enableOutputBeforeInput: false,
+    },
   },
   {
-    native: "I'm doing well, thank you",
-    target: 'Estoy bien, gracias',
-    phonetic: 'ehs-TOY bee-EN, GRAH-see-ahs',
+    value: 'recall',
+    label: 'Recall Practice',
+    description: 'Good for speaking',
+    config: {
+      showAllPhrases: false,
+      enableInputPlayback: true,
+      enableInputDurationDelay: true,
+      enableOutputBeforeInput: false,
+    },
   },
   {
-    native: 'What is your name?',
-    target: '¿Cómo te llamas?',
-    phonetic: 'KOH-moh teh YAH-mahs',
-  },
-  {
-    native: 'Nice to meet you',
-    target: 'Mucho gusto',
-    phonetic: 'MOO-choh GOO-stoh',
-  },
-  {
-    native: 'Where are you from?',
-    target: '¿De dónde eres?',
-    phonetic: 'deh DOHN-deh EH-rehs',
-  },
-  {
-    native: 'I am learning Spanish',
-    target: 'Estoy aprendiendo español',
-    phonetic: 'ehs-TOY ah-prehn-dee-EN-doh ehs-pah-NYOL',
+    value: 'comprehension',
+    label: 'Comprehension Practice',
+    description: 'Good for understanding',
+    config: {
+      showAllPhrases: false,
+      enableInputPlayback: true,
+      enableInputDurationDelay: false,
+      enableOutputBeforeInput: true,
+    },
   },
 ];
 
 export function QuickWin({ data, onNext, onBack }: Props) {
-  const [playTranslation, setPlayTranslation] = useState(true);
-  const [speed, setSpeed] = useState([1]);
-  const [shadowPause, setShadowPause] = useState([2]);
+  const [practiceMode, setPracticeMode] = useState<QuickWinMode>('shadowing');
   const [completedPhrases, setCompletedPhrases] = useState<number[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [templatePhrases, setTemplatePhrases] = useState<Phrase[]>([]);
+  const [isLoadingPhrases, setIsLoadingPhrases] = useState(true);
   const playbackMethodsRef = useRef<PhrasePlaybackMethods | null>(null);
+  const playbackCardRef = useRef<HTMLDivElement | null>(null);
+  const isFirstModeSelection = useRef(true);
   const currentIndexRef = useRef(currentIndex);
   const completedRef = useRef(completedPhrases);
 
@@ -106,6 +113,7 @@ export function QuickWin({ data, onNext, onBack }: Props) {
 
   useEffect(() => {
     let isMounted = true;
+    setIsLoadingPhrases(true);
 
     const fetchTemplatePhrases = async () => {
       try {
@@ -142,6 +150,8 @@ export function QuickWin({ data, onNext, onBack }: Props) {
       } catch (error) {
         console.error('Error fetching quick win template:', error);
         if (isMounted) setTemplatePhrases([]);
+      } finally {
+        if (isMounted) setIsLoadingPhrases(false);
       }
     };
 
@@ -156,40 +166,35 @@ export function QuickWin({ data, onNext, onBack }: Props) {
     onNext();
   };
 
-  const fallbackPhrases = useMemo<Phrase[]>(
-    () =>
-      lauraMipsoPhrases.map((phrase) => ({
-        input: phrase.native,
-        translated: phrase.target,
-        romanized: phrase.phonetic,
-        inputLang: data.nativeLanguage || 'en-GB',
-        targetLang: data.targetLanguage || 'es-ES',
-        inputAudio: null,
-        outputAudio: null,
-        inputVoice: `${data.nativeLanguage || 'en-GB'}-Standard-D`,
-        targetVoice: `${data.targetLanguage || 'es-ES'}-Standard-D`,
-      })),
-    [data.nativeLanguage, data.targetLanguage]
-  );
+  const phrases = useMemo<Phrase[]>(() => templatePhrases, [templatePhrases]);
 
-  const phrases = useMemo<Phrase[]>(
-    () => (templatePhrases.length > 0 ? templatePhrases : fallbackPhrases),
-    [fallbackPhrases, templatePhrases]
+  const selectedMode = useMemo(
+    () => quickWinModes.find((mode) => mode.value === practiceMode) ?? quickWinModes[0],
+    [practiceMode]
   );
 
   const presentationConfig = useMemo<PresentationConfig>(
     () => ({
       ...defaultPresentationConfig,
-      containerBg: '',
-      enableLoop: false,
-      enableInputPlayback: false,
-      enableOutputBeforeInput: !playTranslation,
-      inputPlaybackSpeed: speed[0],
-      outputPlaybackSpeed: speed[0],
-      delayBetweenPhrases: shadowPause[0] * 1000,
+      ...selectedMode.config,
     }),
-    [playTranslation, shadowPause, speed]
+    [selectedMode.config]
   );
+
+  useEffect(() => {
+    if (isFirstModeSelection.current) {
+      isFirstModeSelection.current = false;
+      return;
+    }
+
+    if (!playbackCardRef.current) return;
+    window.requestAnimationFrame(() => {
+      playbackCardRef.current?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+      });
+    });
+  }, [practiceMode]);
 
   return (
     <div className="space-y-6">
@@ -203,67 +208,61 @@ export function QuickWin({ data, onNext, onBack }: Props) {
         </p>
       </div>
 
-      <Card className="p-0 overflow-hidden from-indigo-50 to-purple-50 dark:from-slate-900 dark:to-slate-950">
-        <PhrasePlaybackView
-          phrases={phrases}
-          presentationConfig={presentationConfig}
-          methodsRef={playbackMethodsRef}
-          readOnly
-          showImportPhrases={false}
-          hidePhrases={true}
-          onCompleted={onCompleted}
-        />
+      <Card
+        ref={playbackCardRef}
+        className="p-0 overflow-hidden from-indigo-50 to-purple-50 dark:from-slate-900 dark:to-slate-950"
+      >
+        {isLoadingPhrases ? (
+          <div className="p-6 text-center text-sm text-gray-600">
+            Loading your phrases...
+          </div>
+        ) : (
+          <PhrasePlaybackView
+            phrases={phrases}
+            presentationConfig={presentationConfig}
+            methodsRef={playbackMethodsRef}
+            readOnly
+            showImportPhrases={false}
+            hidePhrases={true}
+            onCompleted={onCompleted}
+          />
+        )}
       </Card>
 
       <Card className="p-5 space-y-5">
-        <div className="flex items-center justify-between">
-          <Label htmlFor="play-translation" className="flex items-center gap-2">
-            {playTranslation ? (
-              <Eye className="w-4 h-4" />
-            ) : (
-              <EyeOff className="w-4 h-4" />
-            )}
-            Play translation
-          </Label>
-          <Switch
-            id="play-translation"
-            checked={playTranslation}
-            onCheckedChange={setPlayTranslation}
-          />
-        </div>
-
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <Label className="flex items-center gap-2">
-              <Volume2 className="w-4 h-4" />
-              Playback speed
-            </Label>
-            <span className="text-sm text-gray-600">{speed[0]}x</span>
-          </div>
-          <Slider
-            value={speed}
-            onValueChange={setSpeed}
-            min={0.5}
-            max={1.5}
-            step={0.25}
-          />
-        </div>
-
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <Label className="flex items-center gap-2">
-              <Clock className="w-4 h-4" />
-              Shadow pause
-            </Label>
-            <span className="text-sm text-gray-600">{shadowPause[0]}s</span>
-          </div>
-          <Slider
-            value={shadowPause}
-            onValueChange={setShadowPause}
-            min={1}
-            max={5}
-            step={1}
-          />
+        <div className="space-y-3">
+          <Label className="text-base">Choose your practice style</Label>
+          <RadioGroup value={practiceMode} onValueChange={(value) => setPracticeMode(value as QuickWinMode)}>
+            <div className="grid gap-3">
+              {quickWinModes.map((mode) => (
+                <label
+                  key={mode.value}
+                  className={[
+                    'flex items-start gap-3 p-4 rounded-lg border-2 border-gray-200 hover:border-indigo-300 cursor-pointer transition-all',
+                    'dark:border-slate-700 dark:hover:bg-slate-800/40',
+                    practiceMode === mode.value && 'border-indigo-400 bg-indigo-50 dark:border-indigo-400/70 dark:bg-indigo-500/10',
+                  ]
+                    .filter(Boolean)
+                    .join(' ')}
+                >
+                  <RadioGroupItem value={mode.value} id={mode.value} className="mt-1" />
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <Label htmlFor={mode.value} className="cursor-pointer">
+                        {mode.label}
+                      </Label>
+                      {mode.value === 'shadowing' ? (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-200">
+                          Recommended
+                        </span>
+                      ) : null}
+                    </div>
+                    <p className="text-sm text-gray-600">{mode.description}</p>
+                  </div>
+                </label>
+              ))}
+            </div>
+          </RadioGroup>
         </div>
       </Card>
 
