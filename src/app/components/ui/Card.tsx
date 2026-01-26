@@ -1,26 +1,28 @@
 'use client';
 
-import { ComponentPropsWithRef, ElementType, forwardRef } from 'react';
+import { ComponentPropsWithoutRef, ElementType, forwardRef } from 'react';
 import { cn } from './utils';
 
-type CardProps<T extends ElementType> = {
+type CardProps<T extends ElementType = 'div'> = {
   as?: T;
   className?: string;
-} & ComponentPropsWithRef<T>;
+} & ComponentPropsWithoutRef<T>;
 
-export const Card = forwardRef(<T extends ElementType = 'div'>(
-  { as, className, ...props }: CardProps<T>,
-  ref: ComponentPropsWithRef<T>['ref']
-) => {
-  const Component = as || 'div';
+type CardComponent = <T extends ElementType = 'div'>(
+  props: CardProps<T> & { ref?: React.ComponentPropsWithRef<T>['ref'] }
+) => React.ReactElement | null;
+
+export const Card: CardComponent = forwardRef(function Card(
+  { as, className, ...props }: CardProps<ElementType>,
+  ref: React.ForwardedRef<Element>
+) {
+  const Component = (as || 'div') as ElementType;
 
   return (
     <Component
-      ref={ref}
+      ref={ref as React.Ref<never>}
       className={cn('rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900/60', className)}
       {...props}
     />
   );
-});
-
-Card.displayName = 'Card';
+}) as CardComponent;
