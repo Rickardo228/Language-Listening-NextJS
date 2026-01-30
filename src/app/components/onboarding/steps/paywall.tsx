@@ -136,9 +136,12 @@ export function Paywall({ data, updateData, onNext, onBack, showBack = true }: P
 
       setLoadingStage('Finishing up...');
       await waitForClaimsUpdate();
+      const planDetails = plans.find((p) => p.id === selectedPlan);
+      const ltv = planDetails?.price.replace('$', '') || '0.00';
       trackMetaPixel('StartTrial', {
-        planId: selectedPlan,
-        plan,
+        value: '0.00',
+        currency: 'USD',
+        predicted_ltv: ltv,
       });
       track('Paywall Free Trial Succeeded', {
         planId: selectedPlan,
