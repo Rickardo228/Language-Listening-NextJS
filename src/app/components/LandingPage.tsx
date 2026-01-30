@@ -150,7 +150,7 @@ export function LandingPage() {
           languages={prioritizedLanguages}
           onLanguageClick={(lang) => {
             track('Landing Page Language Clicked', { language: lang.code })
-            router.push(ROUTES.GET_STARTED)
+            router.push(`${ROUTES.GET_STARTED}?targetLanguage=${encodeURIComponent(lang.code)}`)
           }}
           autoScroll
           autoScrollSpeed={30}
