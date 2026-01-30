@@ -12,13 +12,15 @@ import { useUser } from "../../contexts/UserContext";
 import { AnimatePresence } from "framer-motion";
 import { UserStatsModal } from "../../components/UserStatsModal";
 import { ListCompletionScreen } from "../../components/ListCompletionScreen";
+import { UnauthenticatedListCompletionScreen } from "../../components/UnauthenticatedListCompletionScreen";
 import { trackPhrasesListenedPopup } from "../../../lib/mixpanelClient";
 import { getPhraseRankTitle, DEBUG_MILESTONE_THRESHOLDS } from "../rankingSystem";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { createOrUpdateUserProfile } from "../userPreferences";
 import { Check } from "lucide-react";
 import { showMilestoneCelebrationSnackbar, showStatsSnackbar } from "../../components/ui/StatsSnackbars";
 import { MilestoneInfo } from "./types";
+import { ROUTES } from "../../routes";
 
 const firestore = getFirestore();
 
@@ -267,6 +269,7 @@ const playCompletionSound = () => {
 
 export const useUpdateUserStats = () => {
   const router = useRouter();
+  const pathname = usePathname();
   const [showPopup, setShowPopup] = useState(false);
   const [countToShow, setCountToShow] = useState(0);
   const [persistUntilInteraction, setPersistUntilInteraction] = useState(false);
@@ -855,9 +858,11 @@ export const useUpdateUserStats = () => {
     // Stats update completed successfully
   }, [user, userProfile, syncTotalIfNeeded, showStatsUpdate]);
 
+  const isOnGetStarted = pathname?.startsWith(ROUTES.GET_STARTED) ?? false;
+
   const StatsPopups = mounted ? createPortal(
     <AnimatePresence mode="wait">
-      {/* Fullscreen List Completion - Two Step Flow */}
+      {/* Fullscreen List Completion - Two Step Flow (Authenticated) */}
       {showPopup && isListCompleted && user && (
         <ListCompletionScreen
           key="list-completion"
@@ -871,6 +876,18 @@ export const useUpdateUserStats = () => {
           sessionListened={phrasesListenedRef.current}
           sessionViewed={phrasesViewedRef.current}
           recentMilestones={recentMilestones}
+        />
+      )}
+
+      {/* Fullscreen List Completion - Unauthenticated (not on get-started) */}
+      {showPopup && isListCompleted && !user && !isOnGetStarted && (
+        <UnauthenticatedListCompletionScreen
+          key="unauthenticated-list-completion"
+          isOpen={true}
+          onClose={closeStatsPopup}
+          sessionListened={phrasesListenedRef.current}
+          sessionViewed={phrasesViewedRef.current}
+          onGoAgain={onGoAgainCallback || undefined}
         />
       )}
 
