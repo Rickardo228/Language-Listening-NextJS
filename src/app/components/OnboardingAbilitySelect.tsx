@@ -1,5 +1,5 @@
 import { Check } from 'lucide-react';
-import { Card } from './ui/Card';
+import { OptionCard } from './ui/OptionCard';
 
 interface AbilityLevel {
     id: string;
@@ -73,17 +73,15 @@ export function OnboardingAbilitySelect({
                 {abilityLevels.map((level) => {
                     const isSelected = selectedLevel === level.id;
                     return (
-                        <Card
+                        <OptionCard
                             key={level.id}
                             as="button"
                             type="button"
                             onClick={() => onLevelChange(level.id)}
                             disabled={disabled}
-                            className={`p-5 text-left transition-all hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed ${
-                                isSelected
-                                    ? 'border-emerald-400 bg-emerald-50 dark:border-emerald-400/70 dark:bg-emerald-500/10'
-                                    : 'hover:border-emerald-200'
-                            }`}
+                            tone="emerald"
+                            selected={isSelected}
+                            className="p-5 text-left hover:shadow-md"
                         >
                             <div className="flex items-start gap-4">
                                 <div
@@ -115,7 +113,7 @@ export function OnboardingAbilitySelect({
                                     </div>
                                 )}
                             </div>
-                        </Card>
+                        </OptionCard>
                     );
                 })}
             </div>

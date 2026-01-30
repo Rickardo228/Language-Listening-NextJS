@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion';
 import { Check } from 'lucide-react';
+import { OptionCard } from './ui/OptionCard';
 
 interface ContentPreference {
     id: string;
@@ -70,25 +71,21 @@ export function OnboardingContentPreferences({
                 {contentOptions.map((option) => {
                     const isSelected = selectedPreferences.includes(option.id);
                     return (
-                        <motion.button
+                        <OptionCard
+                            as={motion.button}
                             key={option.id}
                             onClick={() => handleTogglePreference(option.id)}
                             disabled={disabled}
+                            tone="blue"
+                            selected={isSelected}
                             whileHover={!disabled ? { scale: 1.02 } : {}}
                             whileTap={!disabled ? { scale: 0.98 } : {}}
-                            className={`
-                                p-4 rounded-lg border-2 transition-all duration-200 text-left
-                                ${isSelected
-                                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-                                    : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
-                                }
-                                ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
-                            `}
+                            className="p-4 text-left"
                         >
                             <div className="flex items-center space-x-3">
                                 <span className="text-2xl">{option.emoji}</span>
                                 <div className="flex-1">
-                                    <div className={`font-medium ${isSelected ? 'text-blue-700 dark:text-blue-300' : 'text-gray-900 dark:text-gray-100'}`}>
+                                    <div className={`font-medium ${isSelected ? 'text-blue-700 dark:text-blue-300' : 'text-slate-900 dark:text-slate-100'}`}>
                                         {option.label}
                                     </div>
                                 </div>
@@ -98,7 +95,7 @@ export function OnboardingContentPreferences({
                                     </div>
                                 )}
                             </div>
-                        </motion.button>
+                        </OptionCard>
                     );
                 })}
             </div>

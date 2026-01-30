@@ -7,6 +7,7 @@ export type { ButtonProps } from './Button';
 export { Badge } from './Badge';
 export { Card } from './Card';
 export { Checkbox } from './Checkbox';
+export { OptionCard } from './OptionCard';
 export { Progress } from './Progress';
 export { Label } from './Label';
 export type { LabelProps } from './Label';
