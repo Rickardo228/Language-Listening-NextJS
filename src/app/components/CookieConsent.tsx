@@ -8,28 +8,15 @@ export function CookieConsent() {
     const [isLoading, setIsLoading] = useState(false);
 
     useEffect(() => {
-        // Check if user is in EEA/UK/Switzerland region (simplified check)
-        const isEEARegion = () => {
-            const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-            const eeaTimezones = [
-                'Europe/London', 'Europe/Dublin', 'Europe/Paris', 'Europe/Berlin', 
-                'Europe/Rome', 'Europe/Madrid', 'Europe/Amsterdam', 'Europe/Brussels',
-                'Europe/Vienna', 'Europe/Prague', 'Europe/Budapest', 'Europe/Warsaw',
-                'Europe/Stockholm', 'Europe/Copenhagen', 'Europe/Helsinki', 'Europe/Oslo',
-                'Europe/Zurich', 'Europe/Athens', 'Europe/Lisbon', 'Europe/Luxembourg'
-            ];
-            return eeaTimezones.some(tz => timezone.includes(tz));
-        };
+        const consentStatus = localStorage.getItem('clarity-consent');
 
-        // Check if consent has already been given
-        const hasConsent = localStorage.getItem('clarity-consent');
-        
-        // Show banner only for EEA users who haven't given consent
-        if (isEEARegion() && !hasConsent) {
+        // Always initialize Clarity (cookieless mode by default)
+        // Only enable cookie tracking if user has granted consent
+        initializeClarity(consentStatus === 'granted');
+
+        // Show banner if user hasn't made a choice yet
+        if (!consentStatus) {
             setShowBanner(true);
-        } else if (hasConsent === 'granted') {
-            // Initialize Clarity with consent if already granted
-            initializeClarity(true);
         }
     }, []);
 
@@ -51,15 +38,17 @@ export function CookieConsent() {
 
     const handleAccept = async () => {
         setIsLoading(true);
-        
+
         try {
             // Store consent in localStorage
             localStorage.setItem('clarity-consent', 'granted');
             localStorage.setItem('clarity-consent-date', new Date().toISOString());
-            
-            // Initialize Clarity with consent
-            initializeClarity(true);
-            
+
+            // Enable cookie tracking (Clarity is already initialized)
+            if (typeof window !== 'undefined') {
+                clarity.consent();
+            }
+
             // Hide banner
             setShowBanner(false);
         } catch (error) {
@@ -71,15 +60,14 @@ export function CookieConsent() {
 
     const handleReject = () => {
         setIsLoading(true);
-        
+
         try {
             // Store rejection in localStorage
             localStorage.setItem('clarity-consent', 'denied');
             localStorage.setItem('clarity-consent-date', new Date().toISOString());
-            
-            // Initialize Clarity without consent (limited functionality)
-            initializeClarity(false);
-            
+
+            // Clarity continues running in cookieless mode (already initialized)
+
             // Hide banner
             setShowBanner(false);
         } catch (error) {
