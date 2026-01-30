@@ -188,7 +188,7 @@ export function QuickWin({ data, updateData, onNext, onBack }: Props) {
     };
   }, [data.nativeLanguage, data.targetLanguage]);
 
-  const onCompleted = () => {
+  const handleCompleted = () => {
     track('Quick Win Completed', {
       nativeLanguage: data.nativeLanguage,
       targetLanguage: data.targetLanguage,
@@ -197,7 +197,7 @@ export function QuickWin({ data, updateData, onNext, onBack }: Props) {
       outputPlaybackSpeed,
       totalPhrases: phrases.length,
     });
-    onNext();
+    // Don't call onNext() here - let the completion popup handle progression
   };
 
   const phrases = useMemo<Phrase[]>(() => templatePhrases, [templatePhrases]);
@@ -295,7 +295,8 @@ export function QuickWin({ data, updateData, onNext, onBack }: Props) {
             readOnly
             showImportPhrases={false}
             hidePhrases={true}
-            onCompleted={onCompleted}
+            onCompleted={handleCompleted}
+            onNavigateToNextInPath={onNext}
           />
         )}
       </Card>

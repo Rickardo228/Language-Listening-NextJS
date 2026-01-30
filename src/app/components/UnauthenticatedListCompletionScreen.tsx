@@ -14,7 +14,48 @@ interface UnauthenticatedListCompletionScreenProps {
   sessionListened?: number;
   sessionViewed?: number;
   onGoAgain?: () => void | Promise<void>;
+  onGoNext?: () => void | Promise<void>;
 }
+
+const BenefitsList = () => (
+  <div className="space-y-3">
+    <div className="flex items-start gap-3 p-4 rounded-xl bg-slate-100 dark:bg-slate-800">
+      <div className="p-2 rounded-lg bg-indigo-100 dark:bg-indigo-500/20">
+        <TrendingUp className="w-5 h-5 text-indigo-600 dark:text-indigo-300" />
+      </div>
+      <div>
+        <h3 className="font-semibold text-slate-900 dark:text-white">Track Your Streak</h3>
+        <p className="text-sm text-slate-600 dark:text-slate-400">
+          Build consistency with daily practice streaks
+        </p>
+      </div>
+    </div>
+
+    <div className="flex items-start gap-3 p-4 rounded-xl bg-slate-100 dark:bg-slate-800">
+      <div className="p-2 rounded-lg bg-amber-100 dark:bg-amber-500/20">
+        <Sparkles className="w-5 h-5 text-amber-600 dark:text-amber-300" />
+      </div>
+      <div>
+        <h3 className="font-semibold text-slate-900 dark:text-white">Earn Milestones</h3>
+        <p className="text-sm text-slate-600 dark:text-slate-400">
+          Unlock achievements as you progress
+        </p>
+      </div>
+    </div>
+
+    <div className="flex items-start gap-3 p-4 rounded-xl bg-slate-100 dark:bg-slate-800">
+      <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-500/20">
+        <Shield className="w-5 h-5 text-emerald-600 dark:text-emerald-300" />
+      </div>
+      <div>
+        <h3 className="font-semibold text-slate-900 dark:text-white">Sync Across Devices</h3>
+        <p className="text-sm text-slate-600 dark:text-slate-400">
+          Your progress, available everywhere
+        </p>
+      </div>
+    </div>
+  </div>
+);
 
 export function UnauthenticatedListCompletionScreen({
   isOpen,
@@ -22,6 +63,7 @@ export function UnauthenticatedListCompletionScreen({
   sessionListened = 0,
   sessionViewed = 0,
   onGoAgain,
+  onGoNext,
 }: UnauthenticatedListCompletionScreenProps) {
   const router = useRouter();
   const [step, setStep] = useState<1 | 2>(1);
@@ -44,6 +86,17 @@ export function UnauthenticatedListCompletionScreen({
   }, [isOpen, sessionListened, sessionViewed]);
 
   const totalPhrases = sessionListened + sessionViewed;
+
+  const handlePrimaryAction = async () => {
+    if (onGoNext) {
+      track("Unauthenticated List Completion Sign Up Clicked", { variant: "onboarding" });
+      await onGoNext();
+    } else {
+      track("Unauthenticated List Completion Sign Up Clicked");
+      router.push(ROUTES.GET_STARTED);
+    }
+    onClose();
+  };
 
   return (
     <AnimatePresence>
@@ -143,58 +196,25 @@ export function UnauthenticatedListCompletionScreen({
                     transition={{ delay: 0.1 }}
                   >
                     <h2 className="text-3xl md:text-4xl font-black text-slate-900 dark:text-white">
-                      Save Your Progress
+                      {onGoNext ? "Great start!" : "Save Your Progress"}
                     </h2>
                     <p className="text-lg text-slate-600 dark:text-slate-300">
-                      Create a free account to track your learning journey
+                      {onGoNext
+                        ? "Create a free account to save your progress"
+                        : "Create a free account to track your learning journey"}
                     </p>
                   </motion.div>
 
                   <motion.div
-                    className="space-y-3"
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.2 }}
                   >
-                    <div className="flex items-start gap-3 p-4 rounded-xl bg-slate-100 dark:bg-slate-800">
-                      <div className="p-2 rounded-lg bg-indigo-100 dark:bg-indigo-500/20">
-                        <TrendingUp className="w-5 h-5 text-indigo-600 dark:text-indigo-300" />
-                      </div>
-                      <div>
-                        <h3 className="font-semibold text-slate-900 dark:text-white">Track Your Streak</h3>
-                        <p className="text-sm text-slate-600 dark:text-slate-400">
-                          Build consistency with daily practice streaks
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-start gap-3 p-4 rounded-xl bg-slate-100 dark:bg-slate-800">
-                      <div className="p-2 rounded-lg bg-amber-100 dark:bg-amber-500/20">
-                        <Sparkles className="w-5 h-5 text-amber-600 dark:text-amber-300" />
-                      </div>
-                      <div>
-                        <h3 className="font-semibold text-slate-900 dark:text-white">Earn Milestones</h3>
-                        <p className="text-sm text-slate-600 dark:text-slate-400">
-                          Unlock achievements as you progress
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-start gap-3 p-4 rounded-xl bg-slate-100 dark:bg-slate-800">
-                      <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-500/20">
-                        <Shield className="w-5 h-5 text-emerald-600 dark:text-emerald-300" />
-                      </div>
-                      <div>
-                        <h3 className="font-semibold text-slate-900 dark:text-white">Sync Across Devices</h3>
-                        <p className="text-sm text-slate-600 dark:text-slate-400">
-                          Your progress, available everywhere
-                        </p>
-                      </div>
-                    </div>
+                    <BenefitsList />
                   </motion.div>
 
                   <motion.div
-                    className="space-y-3 pt-2"
+                    className={onGoNext ? "pt-2" : "space-y-3 pt-2"}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.4 }}
@@ -204,16 +224,12 @@ export function UnauthenticatedListCompletionScreen({
                       size="lg"
                       fullWidth
                       className="font-bold text-xl py-5 rounded-xl shadow-xl"
-                      onClick={() => {
-                        track("Unauthenticated List Completion Sign Up Clicked");
-                        router.push(ROUTES.GET_STARTED);
-                        onClose();
-                      }}
+                      onClick={handlePrimaryAction}
                     >
                       Create Free Account
                     </Button>
 
-                    {onGoAgain && (
+                    {!onGoNext && onGoAgain && (
                       <Button
                         variant="secondary"
                         size="lg"
@@ -221,9 +237,7 @@ export function UnauthenticatedListCompletionScreen({
                         className="font-semibold text-lg py-4 rounded-xl"
                         onClick={async () => {
                           track("Unauthenticated List Completion Go Again Clicked");
-                          if (onGoAgain) {
-                            await onGoAgain();
-                          }
+                          await onGoAgain();
                           onClose();
                         }}
                       >
@@ -231,7 +245,7 @@ export function UnauthenticatedListCompletionScreen({
                       </Button>
                     )}
 
-                    {!onGoAgain && (
+                    {!onGoNext && !onGoAgain && (
                       <Button
                         variant="ghost"
                         size="lg"
