@@ -506,7 +506,7 @@ export function LandingPage() {
                 },
                 {
                   q: "Is this better than flashcards?",
-                  a: "No - flashcards test memory; shadowing builds fluency. Flashcards help you recognize words. Shadowing is different: native audio with adjustable playback speed and configurable pauses for speaking, immersive full-screen. You're training your ears and mouth to work at conversation speed, not just testing if you remember a translation. It's the difference between knowing a word and being able to use it when someone's actually talking to you. (We also have active recall mode if you want traditional memory testing.)"
+                  a: "Flashcards mainly test memory. Shadowing is different: you listen to native audio with adjustable playback speed and configurable pauses for speaking. It's immersive listening and speaking practice. You're training your ears and mouth to work at conversation speed, not just testing if you remember a translation. It's the difference between knowing a word and being able to use it when someone's actually talking to you. (We also have a quiz mode if you want traditional memory testing.)"
                 }
               ].map((faq, index) => (
                 <div key={index} className="bg-card border border-border rounded-lg overflow-hidden">
@@ -544,7 +544,7 @@ export function LandingPage() {
               Your next conversation starts with 10 minutes today.
             </h2>
             <p className="text-lg text-muted-foreground mb-10">
-              No pressure — no card required. A simple system that makes speaking inevitable.
+              No pressure - no card required. A simple system that makes speaking inevitable.
             </p>
             <Link href={ROUTES.GET_STARTED}>
               <Button
