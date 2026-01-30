@@ -15,7 +15,7 @@ export default function PublicLayout({
       <Toaster
         richColors
         expand
-        position="bottom-center"
+        position="top-center"
         toastOptions={{
           classNames: {
             toast: 'bg-background text-foreground border-border font-sans text-center whitespace-pre-line',
