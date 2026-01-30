@@ -20,6 +20,7 @@ import { useUser } from '../../../contexts/UserContext';
 import { API_BASE_URL } from '../../../consts';
 import { ROUTES } from '../../../routes';
 import { track } from '../../../../lib/mixpanelClient';
+import { trackMetaPixel } from '../../../../lib/metaPixel';
 import { plans } from './plans';
 
 interface Props {
@@ -135,6 +136,10 @@ export function Paywall({ data, updateData, onNext, onBack, showBack = true }: P
 
       setLoadingStage('Finishing up...');
       await waitForClaimsUpdate();
+      trackMetaPixel('StartTrial', {
+        planId: selectedPlan,
+        plan,
+      });
       track('Paywall Free Trial Succeeded', {
         planId: selectedPlan,
         plan,

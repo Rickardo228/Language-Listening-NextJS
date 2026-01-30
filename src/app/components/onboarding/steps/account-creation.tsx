@@ -6,6 +6,7 @@ import { Button } from '../../ui/Button';
 import { OnboardingAuth } from '../../OnboardingAuth';
 import { OnboardingData } from '../types';
 import { User } from 'firebase/auth';
+import { trackMetaPixel } from '../../../../lib/metaPixel';
 
 interface Props {
   data: OnboardingData;
@@ -24,6 +25,14 @@ export function AccountCreation({
   isLoading,
   isAuthenticated,
 }: Props) {
+  const handleAuthSuccess = (user: User) => {
+    const providerId = user.providerData?.[0]?.providerId;
+    trackMetaPixel('CompleteRegistration', {
+      method: providerId || 'email',
+    });
+    onAuthSuccess(user);
+  };
+
   return (
     <div className="space-y-6">
       {!isAuthenticated && (
@@ -51,7 +60,7 @@ export function AccountCreation({
         </div>
       ) : (
         <>
-          <OnboardingAuth onAuthSuccess={onAuthSuccess} disabled={isLoading} showHeader={false} />
+          <OnboardingAuth onAuthSuccess={handleAuthSuccess} disabled={isLoading} showHeader={false} />
           <div className="text-center text-sm text-muted-foreground">
             <p>
               By signing in, you agree to our{' '}
