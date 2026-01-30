@@ -28,12 +28,13 @@ export default function RootLayout({
   return (
     <html lang="en" className="antialiased" suppressHydrationWarning>
       <head>
-        {META_PIXEL_ID && (
-          <Script
-            id="meta-pixel"
-            strategy="beforeInteractive"
-            dangerouslySetInnerHTML={{
-              __html: `
+        <>
+          {META_PIXEL_ID && (
+            <Script
+              id="meta-pixel"
+              strategy="beforeInteractive"
+              dangerouslySetInnerHTML={{
+                __html: `
                 !function(f,b,e,v,n,t,s)
                 {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
                 n.callMethod.apply(n,arguments):n.queue.push(arguments)};
@@ -45,22 +46,24 @@ export default function RootLayout({
                 fbq('init', '${META_PIXEL_ID}');
                 fbq('track', 'PageView');
               `,
-            }}
-          />
-        )}
+              }}
+            />)}
+
+          {META_PIXEL_ID && (
+            <noscript>
+              <img
+                height="1"
+                width="1"
+                style={{ display: 'none' }}
+                src={`https://www.facebook.com/tr?id=${META_PIXEL_ID}&ev=PageView&noscript=1`}
+                alt=""
+              />
+            </noscript>
+          )}
+        </>
       </head>
       <body>
-        {META_PIXEL_ID && (
-          <noscript>
-            <img
-              height="1"
-              width="1"
-              style={{ display: 'none' }}
-              src={`https://www.facebook.com/tr?id=${META_PIXEL_ID}&ev=PageView&noscript=1`}
-              alt=""
-            />
-          </noscript>
-        )}
+
         {children}
       </body>
     </html>
