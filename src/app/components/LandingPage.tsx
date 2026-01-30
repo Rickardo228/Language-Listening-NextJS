@@ -180,14 +180,17 @@ export function LandingPage() {
               {' '}<span className="font-semibold">Simple steps. Real progress.</span>
             </p>
             <div className="flex justify-center">
-              <Button
-                size="lg"
-                variant="secondary"
-                className="text-lg px-8 bg-secondary/80 hover:bg-secondary shadow-sm"
-                leftIcon={<PlayCircle className="w-5 h-5" />}
-              >
-                Try a sample lesson
-              </Button>
+              <Link href={ROUTES.GET_STARTED}>
+                <Button
+                  size="lg"
+                  variant="secondary"
+                  className="text-lg px-8 bg-secondary/80 hover:bg-secondary shadow-sm"
+                  leftIcon={<PlayCircle className="w-5 h-5" />}
+                  onClick={() => trackCtaClick('Try a sample lesson', 'what-is-shadowing')}
+                >
+                  Try a sample lesson
+                </Button>
+              </Link>
             </div>
           </motion.div>
         </div>
