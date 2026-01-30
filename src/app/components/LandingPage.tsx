@@ -4,7 +4,11 @@ import { useEffect, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
 import Image from 'next/image'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { Button } from './ui/Button'
+import { LanguageCarousel, LanguageItem } from './ui/LanguageCarousel'
+import { TestimonialCarousel } from './TestimonialCarousel'
+import { plans } from './onboarding/steps/plans'
 import { languageOptions } from '../types'
 import { ROUTES } from '../routes'
 import { track } from '../../lib/mixpanelClient'
@@ -15,13 +19,47 @@ import {
   Zap,
   Check,
   ChevronDown,
-  ChevronLeft,
-  ChevronRight,
 } from 'lucide-react'
 
+// Prioritized languages - most popular learning targets first
+const prioritizedLanguageCodes = [
+  'en-US',    // English (US)
+  'es-ES',    // Spanish
+  'fr-FR',    // French
+  'de-DE',    // German
+  'it-IT',    // Italian
+  'pt-BR',    // Portuguese (Brazil)
+  'ja-JP',    // Japanese
+  'cmn-CN',   // Chinese
+  'ko-KR',    // Korean
+  'ru-RU',    // Russian
+  'ar-XA',    // Arabic
+  'hi-IN',    // Hindi
+  'nl-NL',    // Dutch
+  'pl-PL',    // Polish
+  'tr-TR',    // Turkish
+  'sv-SE',    // Swedish
+  'el-GR',    // Greek
+  'vi-VN',    // Vietnamese
+  'th-TH',    // Thai
+  'uk-UA',    // Ukrainian
+  'id-ID',    // Indonesian
+  'bn-IN',    // Bengali
+  'ta-IN',    // Tamil
+  'yue-HK',   // Cantonese
+  'pt-PT',    // Portuguese (Portugal)
+  'fr-CA',    // French (Canada)
+  'en-GB',    // English (UK)
+  'en-AU',    // English (Australia)
+]
+
+const prioritizedLanguages: LanguageItem[] = prioritizedLanguageCodes
+  .map(code => languageOptions.find(lang => lang.code === code))
+  .filter((lang): lang is LanguageItem => lang !== undefined)
+
 export function LandingPage() {
+  const router = useRouter()
   const [openFaq, setOpenFaq] = useState<number | null>(null)
-  const [currentTestimonial, setCurrentTestimonial] = useState(0)
   const trackedViewRef = useRef(false)
 
   useEffect(() => {
@@ -92,9 +130,9 @@ export function LandingPage() {
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}
-            className="relative hidden lg:block"
+            className="relative h-56 sm:h-72 lg:h-auto mx-4 sm:mx-6 lg:mx-0 mb-10 lg:mb-0 overflow-hidden rounded-2xl lg:rounded-none"
           >
-            <div className="absolute inset-0 bg-gradient-to-r from-background/20 to-transparent z-10" />
+            <div className="absolute inset-0 bg-gradient-to-r from-background/30 to-transparent z-10" />
             <Image
               src="/hero-image.jpg"
               alt="Language learning"
@@ -107,39 +145,16 @@ export function LandingPage() {
       </section>
 
       {/* Language Strip */}
-      <section className="border-y border-border bg-secondary/30 py-8 overflow-hidden">
-        <div className="relative">
-          <div className="flex gap-8 animate-scroll">
-            {/* Duplicate the array twice for seamless looping */}
-            {[...languageOptions, ...languageOptions].map((lang, index) => (
-              <div
-                key={`${lang.code}-${index}`}
-                className="flex items-center gap-2 whitespace-nowrap px-4 py-2 bg-background/50 rounded-lg border border-border flex-shrink-0"
-              >
-                <span className="text-2xl">{lang.label.split(' ')[0]}</span>
-                <span className="text-sm font-medium text-foreground">
-                  {lang.label.substring(lang.label.indexOf(' ') + 1)}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-        <style jsx>{`
-          @keyframes scroll {
-            0% {
-              transform: translateX(0);
-            }
-            100% {
-              transform: translateX(-50%);
-            }
-          }
-          .animate-scroll {
-            animation: scroll 60s linear infinite;
-          }
-          .animate-scroll:hover {
-            animation-play-state: paused;
-          }
-        `}</style>
+      <section className="border-y border-border bg-secondary/30 py-6 overflow-hidden">
+        <LanguageCarousel
+          languages={prioritizedLanguages}
+          onLanguageClick={(lang) => {
+            track('Landing Page Language Clicked', { language: lang.code })
+            router.push(`${ROUTES.GET_STARTED}?targetLanguage=${encodeURIComponent(lang.code)}`)
+          }}
+          autoScroll
+          autoScrollSpeed={30}
+        />
       </section>
 
       {/* What is Language Shadowing */}
@@ -159,11 +174,24 @@ export function LandingPage() {
               Listen → Repeat
             </p>
             <p className="text-lg text-foreground/90 mb-8 leading-relaxed">
-              Shadowing is one of the most natural ways we learn language. As children, we mimic our parents and peers, until words and phrases become part of our every day speech.
+              As children, we mimic our parents and peers, until words and phrases become part of our every day speech.
               Using the shadowing method, you listen to a native phrase, then repeat it out loud - at a pace that matches your level.
               Over time, understanding and speaking become more automatic.
-              Simple steps. Real progress.
+              {' '}<span className="font-semibold">Simple steps. Real progress.</span>
             </p>
+            <div className="flex justify-center">
+              <Link href={ROUTES.GET_STARTED}>
+                <Button
+                  size="lg"
+                  variant="secondary"
+                  className="text-lg px-8 bg-secondary/80 hover:bg-secondary shadow-sm"
+                  leftIcon={<PlayCircle className="w-5 h-5" />}
+                  onClick={() => trackCtaClick('Try a sample lesson', 'what-is-shadowing')}
+                >
+                  Try a sample lesson
+                </Button>
+              </Link>
+            </div>
           </motion.div>
         </div>
       </section>
@@ -177,7 +205,7 @@ export function LandingPage() {
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.8 }}
-            className="relative hidden lg:block"
+            className="relative h-56 sm:h-72 lg:h-auto mx-4 sm:mx-6 lg:mx-0 mb-10 lg:mb-0 overflow-hidden rounded-2xl lg:rounded-none"
           >
             <div className="absolute inset-0 bg-gradient-to-l from-secondary/20 to-transparent z-10" />
             <Image
@@ -306,100 +334,7 @@ export function LandingPage() {
             </p>
 
             <div className="mb-10">
-              {(() => {
-                const testimonials = [
-                  {
-                    quote: "This is the only method that made speaking feel automatic instead of forced. I don't think about grammar anymore - I just talk.",
-                    author: "Ana V., learning Portuguese",
-                    image: "/landing/Ana-Testimonial.png"
-                  },
-                  {
-                    quote: "After years of classes, I still couldn't hold a conversation. Three months of shadowing changed everything. Wish I'd found this sooner.",
-                    author: "Marie S., learning Spanish",
-                    image: "/landing/Marie-Testimonial.png"
-                  },
-                  {
-                    quote: "I practice while doing dishes, walking the dog, anywhere. Finally, a method that fits real life instead of requiring desk time. Thanks!",
-                    author: "Tom H., learning Korean",
-                    image: "/landing/Tom-Testimonial.png"
-                  },
-                ]
-
-                const handlePrevious = () => {
-                  setCurrentTestimonial((prev) =>
-                    prev === 0 ? testimonials.length - 1 : prev - 1
-                  )
-                }
-
-                const handleNext = () => {
-                  setCurrentTestimonial((prev) =>
-                    prev === testimonials.length - 1 ? 0 : prev + 1
-                  )
-                }
-
-                return (
-                  <>
-                    <div className="relative flex items-center justify-center gap-4 mb-6">
-                      <button
-                        onClick={handlePrevious}
-                        className="p-2 rounded-full hover:bg-secondary/50 transition-colors flex-shrink-0"
-                        aria-label="Previous testimonial"
-                      >
-                        <ChevronLeft className="w-6 h-6 text-muted-foreground" />
-                      </button>
-
-                      <div className="bg-card border border-border rounded-lg p-8 max-w-2.2xl w-full min-h-[180px] flex flex-col justify-center">
-                        <motion.div
-                          key={currentTestimonial}
-                          initial={{ opacity: 0, x: 20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          exit={{ opacity: 0, x: -20 }}
-                          transition={{ duration: 0.3 }}
-                          className="flex items-start gap-4"
-                        >
-                          <Image
-                            src={testimonials[currentTestimonial].image}
-                            alt={testimonials[currentTestimonial].author}
-                            width={60}
-                            height={60}
-                            className="rounded-full flex-shrink-0 object-cover"
-                          />
-                          <div className="flex-1">
-                            <p className="text-lg text-foreground/90 mb-4 italic">
-                              "{testimonials[currentTestimonial].quote}"
-                            </p>
-                            <p className="text-sm text-muted-foreground">
-                              - {testimonials[currentTestimonial].author}
-                            </p>
-                          </div>
-                        </motion.div>
-                      </div>
-
-                      <button
-                        onClick={handleNext}
-                        className="p-2 rounded-full hover:bg-secondary/50 transition-colors flex-shrink-0"
-                        aria-label="Next testimonial"
-                      >
-                        <ChevronRight className="w-6 h-6 text-muted-foreground" />
-                      </button>
-                    </div>
-
-                    <div className="flex justify-center gap-2">
-                      {testimonials.map((_, index) => (
-                        <button
-                          key={index}
-                          onClick={() => setCurrentTestimonial(index)}
-                          className={`w-2 h-2 rounded-full transition-all ${index === currentTestimonial
-                            ? 'bg-primary w-8'
-                            : 'bg-muted-foreground/30 hover:bg-muted-foreground/50'
-                            }`}
-                          aria-label={`View testimonial ${index + 1}`}
-                        />
-                      ))}
-                    </div>
-                  </>
-                )
-              })()}
+              <TestimonialCarousel />
             </div>
 
             <div className="space-y-3">
@@ -437,37 +372,49 @@ export function LandingPage() {
             </p>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl mx-auto mb-8">
-              <div className="bg-card border-2 border-border rounded-lg p-8">
-                <h3 className="text-2xl font-bold mb-2">Monthly</h3>
-                <p className="text-muted-foreground mb-4">Flexible and commitment-free</p>
-                <div className="text-4xl font-bold mb-4">$11.99<span className="text-lg font-normal text-muted-foreground">/mo</span></div>
-                <Link href={ROUTES.GET_STARTED}>
-                  <Button
-                    fullWidth
-                    onClick={() => trackCtaClick('Start free trial', 'pricing-monthly')}
+              {plans.map((plan) => {
+                const isAnnual = plan.id === 'annual'
+                return (
+                  <div
+                    key={plan.id}
+                    className={`border-2 rounded-lg p-8 relative ${isAnnual
+                      ? 'bg-primary text-primary-foreground border-primary'
+                      : 'bg-card border-border'
+                      }`}
                   >
-                    Start free trial
-                  </Button>
-                </Link>
-              </div>
-
-              <div className="bg-primary text-primary-foreground border-2 border-primary rounded-lg p-8 relative">
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-accent text-accent-foreground px-3 py-1 rounded-full text-sm font-semibold">
-                  Best value
-                </div>
-                <h3 className="text-2xl font-bold mb-2">Annual</h3>
-                <p className="opacity-90 mb-4">Save 40% with annual billing</p>
-                <div className="text-4xl font-bold mb-4">$79.99<span className="text-lg font-normal opacity-90">/yr</span></div>
-                <Link href={ROUTES.GET_STARTED}>
-                  <Button
-                    fullWidth
-                    variant="secondary"
-                    onClick={() => trackCtaClick('Start free trial', 'pricing-annual')}
-                  >
-                    Start free trial
-                  </Button>
-                </Link>
-              </div>
+                    {plan.popular && (
+                      <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-accent text-accent-foreground px-3 py-1 rounded-full text-sm font-semibold">
+                        Best value
+                      </div>
+                    )}
+                    <h3 className="text-2xl font-bold mb-2">{plan.name}</h3>
+                    <p className={`mb-4 ${isAnnual ? 'opacity-90' : 'text-muted-foreground'}`}>
+                      {plan.savings ? `${plan.savings} with annual billing` : 'Flexible and commitment-free'}
+                    </p>
+                    <div className="text-4xl font-bold mb-2">
+                      {plan.price}
+                      <span className={`text-lg font-normal ${isAnnual ? 'opacity-90' : 'text-muted-foreground'}`}>
+                        {plan.period}
+                      </span>
+                    </div>
+                    {plan.pricePerMonth && (
+                      <p className={`text-sm mb-4 ${isAnnual ? 'opacity-90' : 'text-muted-foreground'}`}>
+                        {plan.pricePerMonth}
+                      </p>
+                    )}
+                    <Link href={ROUTES.GET_STARTED}>
+                      <Button
+                        fullWidth
+                        variant={isAnnual ? 'secondary' : 'primary'}
+                        className={isAnnual ? 'border border-white text-white hover:bg-white/10' : ''}
+                        onClick={() => trackCtaClick('Start free trial', `pricing-${plan.id}`)}
+                      >
+                        Start free trial
+                      </Button>
+                    </Link>
+                  </div>
+                )
+              })}
             </div>
 
             <p className="text-sm text-muted-foreground">
@@ -506,7 +453,7 @@ export function LandingPage() {
                 },
                 {
                   q: "Is this better than flashcards?",
-                  a: "No - flashcards test memory; shadowing builds fluency. Flashcards help you recognize words. Shadowing is different: native audio with adjustable playback speed and configurable pauses for speaking, immersive full-screen. You're training your ears and mouth to work at conversation speed, not just testing if you remember a translation. It's the difference between knowing a word and being able to use it when someone's actually talking to you. (We also have active recall mode if you want traditional memory testing.)"
+                  a: "Flashcards mainly test memory. Shadowing is different: you listen to native audio with adjustable playback speed and configurable pauses for speaking. It's immersive listening and speaking practice. You're training your ears and mouth to work at conversation speed, not just testing if you remember a translation. It's the difference between knowing a word and being able to use it when someone's actually talking to you. (We also have a quiz mode if you want traditional memory testing.)"
                 }
               ].map((faq, index) => (
                 <div key={index} className="bg-card border border-border rounded-lg overflow-hidden">
@@ -544,7 +491,7 @@ export function LandingPage() {
               Your next conversation starts with 10 minutes today.
             </h2>
             <p className="text-lg text-muted-foreground mb-10">
-              No pressure — no card required. A simple system that makes speaking inevitable.
+              No pressure - no card required. A simple system that makes speaking inevitable.
             </p>
             <Link href={ROUTES.GET_STARTED}>
               <Button

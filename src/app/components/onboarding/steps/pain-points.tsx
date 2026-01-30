@@ -6,7 +6,7 @@ import { Button } from '../../ui/Button';
 import { Checkbox } from '../../ui/Checkbox';
 import { Label } from '../../ui/Label';
 import { RadioGroup, RadioGroupItem } from '../../ui/RadioGroup';
-import { cn } from '../../ui/utils';
+import { OptionCard } from '../../ui/OptionCard';
 import { OnboardingData } from '../types';
 
 interface Props {
@@ -64,13 +64,12 @@ export function PainPoints({ data, updateData, onNext, onBack }: Props) {
         {painPoints.map((point) => {
           const isSelected = selected.includes(point);
           return (
-            <label
+            <OptionCard
               key={point}
-              className={cn(
-                'flex items-start gap-3 p-4 rounded-lg border-2 border-gray-200 hover:border-amber-300 hover:bg-amber-50/50 cursor-pointer transition-all',
-                'dark:border-slate-700 dark:hover:bg-slate-800/40',
-                isSelected && 'border-amber-300 bg-amber-50 dark:border-amber-300/70 dark:bg-amber-500/10'
-              )}
+              as="label"
+              tone="amber"
+              selected={isSelected}
+              className="flex items-start gap-3 p-4"
             >
               <Checkbox
                 checked={isSelected}
@@ -78,7 +77,7 @@ export function PainPoints({ data, updateData, onNext, onBack }: Props) {
                 className="mt-1"
               />
               <span className="flex-1">{point}</span>
-            </label>
+            </OptionCard>
           );
         })}
       </div>
@@ -88,19 +87,18 @@ export function PainPoints({ data, updateData, onNext, onBack }: Props) {
         <RadioGroup value={practiceTime} onValueChange={setPracticeTime}>
           <div className="flex gap-3">
             {practiceTimes.map((time) => (
-              <label
+              <OptionCard
                 key={time.value}
-                className={cn(
-                  'flex-1 flex items-center gap-2 p-3 rounded-lg border-2 border-gray-200 hover:border-indigo-300 cursor-pointer transition-all',
-                  'dark:border-slate-700 dark:hover:bg-slate-800/40',
-                  practiceTime === time.value && 'border-indigo-400 bg-indigo-50 dark:border-indigo-400/70 dark:bg-indigo-500/10'
-                )}
+                as="label"
+                tone="indigo"
+                selected={practiceTime === time.value}
+                className="flex-1 flex items-center gap-2 p-3"
               >
                 <RadioGroupItem value={time.value} id={time.value} />
                 <Label htmlFor={time.value} className="cursor-pointer flex-1">
                   {time.label}
                 </Label>
-              </label>
+              </OptionCard>
             ))}
           </div>
         </RadioGroup>

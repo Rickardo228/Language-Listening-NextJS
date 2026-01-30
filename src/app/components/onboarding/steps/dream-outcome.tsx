@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Sparkles } from 'lucide-react';
 import { Button } from '../../ui/Button';
 import { Checkbox } from '../../ui/Checkbox';
-import { cn } from '../../ui/utils';
+import { OptionCard } from '../../ui/OptionCard';
 import { OnboardingData } from '../types';
 
 interface Props {
@@ -55,13 +55,12 @@ export function DreamOutcome({ data, updateData, onNext }: Props) {
         {outcomes.map((outcome) => {
           const isSelected = selected.includes(outcome);
           return (
-            <label
+            <OptionCard
               key={outcome}
-              className={cn(
-                'flex items-start gap-3 p-4 rounded-lg border border-slate-200 bg-transparent hover:border-indigo-300 hover:bg-indigo-50/50 cursor-pointer transition-all',
-                'dark:border-slate-700 dark:hover:bg-slate-800/40',
-                isSelected && 'border-indigo-400 bg-indigo-50 dark:border-indigo-400/70 dark:bg-indigo-500/10'
-              )}
+              as="label"
+              tone="indigo"
+              selected={isSelected}
+              className="flex items-start gap-3 p-4"
             >
               <Checkbox
                 checked={isSelected}
@@ -69,7 +68,7 @@ export function DreamOutcome({ data, updateData, onNext }: Props) {
                 className="mt-1"
               />
               <span className="flex-1">{outcome}</span>
-            </label>
+            </OptionCard>
           );
         })}
       </div>

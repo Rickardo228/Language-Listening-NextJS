@@ -20,6 +20,7 @@ import { useUser } from '../../../contexts/UserContext';
 import { API_BASE_URL } from '../../../consts';
 import { ROUTES } from '../../../routes';
 import { track } from '../../../../lib/mixpanelClient';
+import { plans } from './plans';
 
 interface Props {
   data: OnboardingData;
@@ -45,26 +46,6 @@ const features = [
   {
     icon: ChartBar,
     title: 'Progress stats + milestones',
-  },
-];
-
-const plans = [
-  {
-    id: 'annual',
-    name: 'Annual',
-    price: '$79.99',
-    period: '/year',
-    savings: 'Save 40%',
-    pricePerMonth: '$6.67/month',
-    popular: true,
-  },
-  {
-    id: 'monthly',
-    name: 'Monthly',
-    price: '$11.99',
-    period: '/month',
-    pricePerMonth: null,
-    popular: false,
   },
 ];
 

@@ -12,6 +12,7 @@ import { useUser } from "../../contexts/UserContext";
 import { AnimatePresence } from "framer-motion";
 import { UserStatsModal } from "../../components/UserStatsModal";
 import { ListCompletionScreen } from "../../components/ListCompletionScreen";
+import { UnauthenticatedListCompletionScreen } from "../../components/UnauthenticatedListCompletionScreen";
 import { trackPhrasesListenedPopup } from "../../../lib/mixpanelClient";
 import { getPhraseRankTitle, DEBUG_MILESTONE_THRESHOLDS } from "../rankingSystem";
 import { useRouter } from "next/navigation";
@@ -600,11 +601,7 @@ export const useUpdateUserStats = () => {
     eventType: 'listened' | 'viewed' = 'listened',
     skipSessionIncrement: boolean = false
   ) => {
-    if (!user) {
-      return;
-    }
-
-    // Increment the session ref counter FIRST (before dev check) to ensure UI popups work in dev mode
+    // Increment the session ref counter FIRST (before auth check) to ensure UI popups work for unauthenticated users
     if (!skipSessionIncrement) {
       if (eventType === 'listened') {
         phrasesListenedRef.current += 1;
@@ -622,10 +619,10 @@ export const useUpdateUserStats = () => {
       }
     }
 
-    // // Skip Firestore updates in development environment (but keep session counters above)
-    // if (process.env.NODE_ENV === 'development') {
-    //   return;
-    // }
+    // Skip Firestore updates for unauthenticated users (session counters above still work)
+    if (!user) {
+      return;
+    }
 
     // Smart sync: every N phrases or when forced
     await syncTotalIfNeeded();
@@ -861,7 +858,7 @@ export const useUpdateUserStats = () => {
 
   const StatsPopups = mounted ? createPortal(
     <AnimatePresence mode="wait">
-      {/* Fullscreen List Completion - Two Step Flow */}
+      {/* Fullscreen List Completion - Two Step Flow (Authenticated) */}
       {showPopup && isListCompleted && user && (
         <ListCompletionScreen
           key="list-completion"
@@ -875,6 +872,19 @@ export const useUpdateUserStats = () => {
           sessionListened={phrasesListenedRef.current}
           sessionViewed={phrasesViewedRef.current}
           recentMilestones={recentMilestones}
+        />
+      )}
+
+      {/* Fullscreen List Completion - Unauthenticated */}
+      {showPopup && isListCompleted && !user && (
+        <UnauthenticatedListCompletionScreen
+          key="unauthenticated-list-completion"
+          isOpen={true}
+          onClose={closeStatsPopup}
+          sessionListened={phrasesListenedRef.current}
+          sessionViewed={phrasesViewedRef.current}
+          onGoAgain={onGoAgainCallback || undefined}
+          onGoNext={onGoNextCallback || undefined}
         />
       )}
 
