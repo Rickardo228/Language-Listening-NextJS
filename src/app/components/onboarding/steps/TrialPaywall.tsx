@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft } from 'lucide-react';
 import { Button } from '../../ui/Button';
 import { OnboardingData } from '../types';
@@ -12,6 +13,9 @@ import { track } from '../../../../lib/mixpanelClient';
 import { trackMetaPixel } from '../../../../lib/metaPixel';
 import { plans } from './plans';
 import { PlanSelector } from './PlanSelector';
+import { FeatureHighlights } from './FeatureHighlights';
+import { TrialReminder } from './TrialReminder';
+import { GoalSetting } from './GoalSetting';
 
 interface Props {
   data: OnboardingData;
@@ -21,8 +25,11 @@ interface Props {
   showBack?: boolean;
 }
 
+type PaywallStep = 'welcome' | 'reminder' | 'goal' | 'plan';
+
 export function TrialPaywall({ data, updateData, onNext, onBack, showBack = true }: Props) {
   const router = useRouter();
+  const [internalStep, setInternalStep] = useState<PaywallStep>('welcome');
   const [selectedPlan, setSelectedPlan] = useState(data.selectedPlan || 'annual');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -32,24 +39,31 @@ export function TrialPaywall({ data, updateData, onNext, onBack, showBack = true
 
   const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
+  // Track internal step views
   useEffect(() => {
-    if (paywallTrackedRef.current) return;
-    track('Paywall Viewed', {
-      selectedPlan,
+    const stepNames: Record<PaywallStep, string> = {
+      welcome: 'Paywall Welcome Viewed',
+      reminder: 'Paywall Reminder Viewed',
+      goal: 'Paywall Goal Viewed',
+      plan: 'Paywall Viewed',
+    };
+
+    track(stepNames[internalStep], {
+      step: internalStep,
       hasTrialed,
       nativeLanguage: data.nativeLanguage,
       targetLanguage: data.targetLanguage,
       abilityLevel: data.abilityLevel,
       variant: 'trial',
+      ...(internalStep === 'plan' && { selectedPlan }),
     });
+  }, [internalStep]);
+
+  useEffect(() => {
+    if (paywallTrackedRef.current) return;
+    if (internalStep !== 'plan') return;
     paywallTrackedRef.current = true;
-  }, [
-    selectedPlan,
-    hasTrialed,
-    data.nativeLanguage,
-    data.targetLanguage,
-    data.abilityLevel,
-  ]);
+  }, [internalStep]);
 
   const waitForClaimsUpdate = async () => {
     if (!user) return;
@@ -140,7 +154,7 @@ export function TrialPaywall({ data, updateData, onNext, onBack, showBack = true
     }
   };
 
-  return (
+  const renderPlanStep = () => (
     <div className="space-y-6">
       <div className="text-center">
         <h1 className="text-3xl md:text-4xl">
@@ -172,7 +186,7 @@ export function TrialPaywall({ data, updateData, onNext, onBack, showBack = true
             disabled={isSubmitting}
             style={{ fontFamily: 'var(--font-playpen-sans)', fontWeight: 700 }}
           >
-            {isSubmitting ? 'Starting trial...' : 'START MY FREE 7 DAYS'}
+            {isSubmitting ? 'Starting trial...' : 'START LEARNING'}
           </Button>
         </div>
       </div>
@@ -188,5 +202,32 @@ export function TrialPaywall({ data, updateData, onNext, onBack, showBack = true
         </div>
       )}
     </div>
+  );
+
+  return (
+    <AnimatePresence mode="wait">
+      <motion.div
+        key={internalStep}
+        initial={{ opacity: 0, x: 20 }}
+        animate={{ opacity: 1, x: 0 }}
+        exit={{ opacity: 0, x: -20 }}
+        transition={{ duration: 0.3 }}
+      >
+        {internalStep === 'welcome' && (
+          <FeatureHighlights onNext={() => setInternalStep('reminder')} />
+        )}
+        {internalStep === 'reminder' && (
+          <TrialReminder onNext={() => setInternalStep('goal')} />
+        )}
+        {internalStep === 'goal' && (
+          <GoalSetting onNext={(goal) => {
+            updateData({ dailyGoal: goal });
+            track('Paywall Goal Selected', { goal, variant: 'trial' });
+            setInternalStep('plan');
+          }} />
+        )}
+        {internalStep === 'plan' && renderPlanStep()}
+      </motion.div>
+    </AnimatePresence>
   );
 }

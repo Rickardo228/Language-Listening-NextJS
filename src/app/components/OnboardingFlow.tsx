@@ -111,7 +111,7 @@ export function OnboardingFlow({
   const steps = useMemo(() => {
     const list: OnboardingStepId[] = [
       'dream-outcome',
-      'pain-points',
+      // 'pain-points',
       'language-pair',
       'ability-level',
       'interests',

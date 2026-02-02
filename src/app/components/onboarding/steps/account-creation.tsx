@@ -53,7 +53,7 @@ export function AccountCreation({
             Signed in
           </div>
           <h1 className="text-3xl md:text-4xl">You're all set</h1>
-          <p className="text-gray-600 text-lg">Continue to finish onboarding.</p>
+          <p className="text-gray-600 text-lg">Continue to finish setting up your account.</p>
           <Button onClick={onNext} fullWidth disabled={isLoading}>
             Continue
           </Button>

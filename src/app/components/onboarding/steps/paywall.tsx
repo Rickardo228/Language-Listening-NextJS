@@ -30,22 +30,30 @@ interface Props {
   showBack?: boolean;
 }
 
-const features = [
+export const features = [
   {
     icon: Calendar,
     title: 'Shadowing sessions built for your level',
+    highlight: 'Shadowing',
+    description: 'Train your ears and voice to speak with natives',
   },
   {
     icon: Library,
     title: 'Full template library + learning paths',
+    highlight: 'template library',
+    description: 'Dive into pre-made learning paths and phrase lists',
   },
   {
     icon: TrendingUp,
     title: 'Unlimited custom phrases + imports',
+    highlight: 'custom phrases',
+    description: 'Keep your phrases organised and ready to review',
   },
   {
     icon: ChartBar,
     title: 'Progress stats + milestones',
+    highlight: 'Progress',
+    description: 'Track your stats and hit milestones',
   },
 ];
 

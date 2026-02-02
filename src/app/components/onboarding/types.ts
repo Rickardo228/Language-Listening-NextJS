@@ -11,5 +11,6 @@ export interface OnboardingData {
   email?: string;
   accountType?: string;
   selectedPlan?: string;
+  dailyGoal?: string;
   defaultPresentationConfig?: Partial<PresentationConfig>;
 }
