@@ -12,7 +12,7 @@ import { Interests } from './onboarding/steps/interests';
 import { PlanReveal } from './onboarding/steps/plan-reveal';
 import { QuickWin } from './onboarding/steps/quick-win';
 import { AccountCreation } from './onboarding/steps/account-creation';
-import { Paywall } from './onboarding/steps/paywall';
+import { TrialPaywall } from './onboarding/steps/TrialPaywall';
 import { SuccessScreen } from './onboarding/steps/success-screen';
 import { OnboardingData } from './onboarding/types';
 import { languageOptions, Phrase, CollectionType as CollectionTypeEnum } from '../types';
@@ -393,11 +393,12 @@ export function OnboardingFlow({
                 />
               )}
               {currentStepId === 'paywall' && (
-                <Paywall
+                <TrialPaywall
                   data={data}
                   updateData={updateData}
                   onNext={nextStep}
                   onBack={prevStep}
+                  showBack={false}
                 />
               )}
               {currentStepId === 'success' && (

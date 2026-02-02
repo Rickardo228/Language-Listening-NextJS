@@ -12,9 +12,7 @@ import {
   TrendingUp,
   Zap,
 } from 'lucide-react';
-import { Badge } from '../../ui/Badge';
 import { Button } from '../../ui/Button';
-import { Card } from '../../ui/Card';
 import { OnboardingData } from '../types';
 import { useUser } from '../../../contexts/UserContext';
 import { API_BASE_URL } from '../../../consts';
@@ -22,6 +20,7 @@ import { ROUTES } from '../../../routes';
 import { track } from '../../../../lib/mixpanelClient';
 import { trackMetaPixel } from '../../../../lib/metaPixel';
 import { plans } from './plans';
+import { PlanSelector } from './PlanSelector';
 
 interface Props {
   data: OnboardingData;
@@ -42,7 +41,7 @@ const features = [
   },
   {
     icon: TrendingUp,
-    title: 'unlimited custom phrases + imports',
+    title: 'Unlimited custom phrases + imports',
   },
   {
     icon: ChartBar,
@@ -69,6 +68,7 @@ export function Paywall({ data, updateData, onNext, onBack, showBack = true }: P
       nativeLanguage: data.nativeLanguage,
       targetLanguage: data.targetLanguage,
       abilityLevel: data.abilityLevel,
+      variant: 'subscription',
     });
     paywallTrackedRef.current = true;
   }, [
@@ -97,7 +97,7 @@ export function Paywall({ data, updateData, onNext, onBack, showBack = true }: P
   const handlePlanSelect = (planId: string) => {
     if (planId === selectedPlan) return;
     setSelectedPlan(planId);
-    track('Paywall Plan Selected', { planId, hasTrialed });
+    track('Paywall Plan Selected', { planId, hasTrialed, variant: 'subscription' });
   };
 
   const handleStartTrial = async () => {
@@ -119,6 +119,7 @@ export function Paywall({ data, updateData, onNext, onBack, showBack = true }: P
         hasTrialed,
         userId: user.uid,
         email: user.email,
+        variant: 'subscription',
       });
       setLoadingStage('Setting up your access...');
       const response = await fetch(`${API_BASE_URL}/api/start-free-trial`, {
@@ -128,10 +129,10 @@ export function Paywall({ data, updateData, onNext, onBack, showBack = true }: P
       });
 
       setLoadingStage('Almost there...');
-      const data = await response.json();
+      const responseData = await response.json();
 
       if (!response.ok) {
-        throw new Error(data?.error || 'Failed to start free trial.');
+        throw new Error(responseData?.error || 'Failed to start free trial.');
       }
 
       setLoadingStage('Finishing up...');
@@ -148,6 +149,7 @@ export function Paywall({ data, updateData, onNext, onBack, showBack = true }: P
         plan,
         hasTrialed,
         userId: user.uid,
+        variant: 'subscription',
       });
       router.push(`${ROUTES.HOME}?checkout=success`);
     } catch (error) {
@@ -157,6 +159,7 @@ export function Paywall({ data, updateData, onNext, onBack, showBack = true }: P
         hasTrialed,
         error: message,
         userId: user?.uid,
+        variant: 'subscription',
       });
       setErrorMessage(message);
     } finally {
@@ -188,18 +191,18 @@ export function Paywall({ data, updateData, onNext, onBack, showBack = true }: P
         body: JSON.stringify({ returnUrl }),
       });
 
-      const data = await response.json();
+      const responseData = await response.json();
 
       if (!response.ok) {
-        throw new Error(data?.error || 'Failed to open billing portal.');
+        throw new Error(responseData?.error || 'Failed to open billing portal.');
       }
 
-      if (!data?.url) {
+      if (!responseData?.url) {
         throw new Error('Billing portal URL missing.');
       }
 
       track('Paywall Billing Portal Opened', { userId: user.uid });
-      window.location.href = data.url;
+      window.location.href = responseData.url;
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to open billing portal.';
       track('Paywall Billing Portal Failed', { error: message, userId: user?.uid });
@@ -239,62 +242,7 @@ export function Paywall({ data, updateData, onNext, onBack, showBack = true }: P
         ))}
       </div>
 
-      {!hasTrialed && (
-        <div className="space-y-3">
-          {plans.map((plan) => {
-            const isSelected = selectedPlan === plan.id;
-            return (
-              <Card
-                key={plan.id}
-                className={`relative p-5 cursor-pointer transition-all hover:shadow-md ${isSelected ? 'border-indigo-400 bg-indigo-50 dark:border-indigo-400/70 dark:bg-indigo-500/10' : ''
-                  }`}
-                onClick={() => handlePlanSelect(plan.id)}
-              >
-                {plan.popular && (
-                  <Badge className="absolute -top-2 left-1/2 -translate-x-1/2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white">
-                    Most Popular
-                  </Badge>
-                )}
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div
-                      className="w-5 h-5 rounded-full border-2 flex items-center justify-center"
-                      style={{
-                        borderColor: isSelected ? '#6366f1' : '#d1d5db',
-                      }}
-                    >
-                      {isSelected && (
-                        <div className="w-3 h-3 rounded-full bg-indigo-600" />
-                      )}
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span>{plan.name}</span>
-                        {plan.savings && (
-                          <Badge variant="outline" className="text-xs">
-                            {plan.savings}
-                          </Badge>
-                        )}
-                      </div>
-                      {plan.pricePerMonth && (
-                        <p className="text-sm text-gray-600">
-                          {plan.pricePerMonth}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="flex items-baseline">
-                      <span className="text-2xl">{plan.price}</span>
-                      <span className="text-gray-600 text-sm">{plan.period}</span>
-                    </div>
-                  </div>
-                </div>
-              </Card>
-            );
-          })}
-        </div>
-      )}
+      <PlanSelector selectedPlan={selectedPlan} onPlanSelect={handlePlanSelect} />
 
       <div className="bg-gray-50 dark:bg-slate-900/60 border border-gray-200 dark:border-slate-800 rounded-lg p-5 space-y-3">
         {!hasTrialed && (

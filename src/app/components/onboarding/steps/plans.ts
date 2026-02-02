@@ -10,6 +10,14 @@ export type Plan = {
 
 export const plans: Plan[] = [
   {
+    id: 'monthly',
+    name: 'Monthly',
+    price: '$11.99',
+    period: '/month',
+    pricePerMonth: null,
+    popular: false,
+  },
+  {
     id: 'annual',
     name: 'Annual',
     price: '$79.99',
@@ -17,13 +25,5 @@ export const plans: Plan[] = [
     savings: 'Save 40%',
     pricePerMonth: '$6.67/month',
     popular: true,
-  },
-  {
-    id: 'monthly',
-    name: 'Monthly',
-    price: '$11.99',
-    period: '/month',
-    pricePerMonth: null,
-    popular: false,
   },
 ];
