@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft } from 'lucide-react';
+import { ChevronLeft, CircleCheck } from 'lucide-react';
 import { Button } from '../../ui/Button';
 import { OnboardingData } from '../types';
 import { useUser } from '../../../contexts/UserContext';
@@ -168,8 +168,9 @@ export function TrialPaywall({ data, updateData, onNext, onBack, showBack = true
       <PlanSelector selectedPlan={selectedPlan} onPlanSelect={handlePlanSelect} />
 
       <div className="space-y-3 pt-2">
-        <p className="text-center" style={{ fontFamily: 'var(--font-playpen-sans)' }}>
-          <span className="text-green-500">✓</span> No Payment Due Now
+        <p className="flex items-center justify-center gap-2" style={{ fontFamily: 'var(--font-playpen-sans)' }}>
+          <CircleCheck className="w-5 h-5 text-green-600 dark:text-green-400 shrink-0" />
+          No Payment Due Now
         </p>
 
         <div className="flex gap-3">

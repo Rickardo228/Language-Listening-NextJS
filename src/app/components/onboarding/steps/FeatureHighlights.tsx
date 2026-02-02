@@ -1,5 +1,6 @@
 'use client'
 
+import { Hand } from 'lucide-react';
 import { Button } from '../../ui/Button';
 import { useUser } from '../../../contexts/UserContext';
 import { features } from './paywall';
@@ -14,7 +15,10 @@ export function FeatureHighlights({ onNext }: Props) {
 
   return (
     <div className="space-y-8">
-      <div className="space-y-4">
+      <div className="text-center space-y-3">
+        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 dark:bg-green-500/20 mx-auto">
+          <Hand className="w-8 h-8 text-green-600 dark:text-green-400" />
+        </div>
         <h1 className="text-3xl md:text-4xl">
           {displayName ? `Welcome ${displayName}!` : 'Welcome!'}
         </h1>
