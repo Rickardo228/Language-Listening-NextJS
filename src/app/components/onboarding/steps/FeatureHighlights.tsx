@@ -20,7 +20,7 @@ export function FeatureHighlights({ onNext }: Props) {
           <Hand className="w-8 h-8 text-green-600 dark:text-green-400" />
         </div>
         <h1 className="text-3xl md:text-4xl">
-          {displayName ? `Welcome ${displayName}!` : 'Welcome!'}
+          {displayName ? `Welcome, ${displayName}!` : 'Welcome!'}
         </h1>
         <p className="text-lg text-gray-600 dark:text-slate-300">
           Language Shadowing can be done anywhere, any time, to get you speaking faster.
@@ -40,13 +40,13 @@ export function FeatureHighlights({ onNext }: Props) {
               >
                 {feature.highlight
                   ? feature.title.split(feature.highlight).map((part, i, arr) => (
-                      <span key={i}>
-                        {part}
-                        {i < arr.length - 1 && (
-                          <span className="text-green-500">{feature.highlight}</span>
-                        )}
-                      </span>
-                    ))
+                    <span key={i}>
+                      {part}
+                      {i < arr.length - 1 && (
+                        <span className="text-green-500">{feature.highlight}</span>
+                      )}
+                    </span>
+                  ))
                   : feature.title}
               </p>
               <p className="text-sm text-gray-600 dark:text-slate-300">
