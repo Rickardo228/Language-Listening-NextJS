@@ -7,6 +7,7 @@ export const ROUTES = {
   HOME: '/home',
   SIGNIN: '/signin',
   GET_STARTED: '/get-started',
+  TRY_LESSON: '/try-a-lesson',
   TEMPLATES: '/templates',
   TEMPLATE_PUBLIC: '/t',
   LIBRARY: '/library',
@@ -29,6 +30,7 @@ const SEO_PILLAR_PATTERNS = [
 export const PUBLIC_ROUTE_ROOTS = [
   ROUTES.LANDING,
   ROUTES.GET_STARTED,
+  ROUTES.TRY_LESSON,
   ROUTES.TEMPLATE_PUBLIC,
   ROUTES.SHARE,
   ROUTES.PRIVACY,

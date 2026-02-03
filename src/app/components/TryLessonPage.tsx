@@ -5,7 +5,7 @@ import { LanguageItem } from './ui/LanguageCarousel'
 import { languageOptions } from '../types'
 import { track } from '../../lib/mixpanelClient'
 import {
-  HeroSection,
+  TryLessonHeroSection,
   LanguageStripSection,
   WhatIsShadowingSection,
   BenefitsSection,
@@ -71,23 +71,23 @@ const faqs = [
   }
 ]
 
-export function LandingPage() {
+export function TryLessonPage() {
   const [openFaq, setOpenFaq] = useState<number | null>(null)
   const trackedViewRef = useRef(false)
 
   useEffect(() => {
     if (trackedViewRef.current) return
-    track('Landing Page Viewed')
+    track('Try Lesson Page Viewed')
     trackedViewRef.current = true
   }, [])
 
   const trackCtaClick = (label: string, section: string) => {
-    track('Landing Page CTA Clicked', { label, section })
+    track('Try Lesson Page CTA Clicked', { label, section })
   }
 
   return (
     <div className="min-h-screen bg-background">
-      <HeroSection trackCtaClick={trackCtaClick} />
+      <TryLessonHeroSection trackCtaClick={trackCtaClick} />
       <LanguageStripSection languages={prioritizedLanguages} />
       <WhatIsShadowingSection trackCtaClick={trackCtaClick} />
       <BenefitsSection trackCtaClick={trackCtaClick} />
