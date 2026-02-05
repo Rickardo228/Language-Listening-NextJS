@@ -12,7 +12,7 @@ import { SignInPage } from '../SignInPage';
 import { OnboardingGuard } from './OnboardingGuard';
 import { PaywallGuard } from './PaywallGuard';
 import { BottomNavigation } from './BottomNavigation';
-import { shouldHideSidebar, shouldHideBottomNav, shouldHideTopNav, getCollectionIdFromPath, ROUTES, isPublicRoute, isLandingPage } from '../routes';
+import { shouldHideSidebar, shouldHideBottomNav, shouldHideTopNav, getCollectionIdFromPath, ROUTES, isPublicRoute, isLandingPage, isTemplatesPage, isCollectionDetailPage } from '../routes';
 import { LibraryManager } from './LibraryManager';
 import { Button } from './ui/Button';
 import { CheckoutSuccessHandler } from './CheckoutSuccessHandler';
@@ -109,7 +109,7 @@ export function AppLayout({ children }: AppLayoutProps) {
 
     // On mobile, if on a collection page, navigate to library instead of home
     const isMobile = window.innerWidth < 1024; // lg breakpoint
-    const isOnCollectionPage = pathname.startsWith('/collection/');
+    const isOnCollectionPage = isCollectionDetailPage(resolvedPathname);
 
     if (isMobile && isOnCollectionPage) {
       router.push(ROUTES.LIBRARY);
@@ -136,7 +136,9 @@ export function AppLayout({ children }: AppLayoutProps) {
     );
   }
 
-  const sidebarOffsetClass = pathname !== '/templates' && !hideSidebar && user
+  const isOnTemplatesPage = isTemplatesPage(resolvedPathname);
+
+  const sidebarOffsetClass = !isOnTemplatesPage && !hideSidebar && user
     ? (isCollapsed ? 'lg:pl-[60px]' : 'lg:pl-[460px]')
     : '';
 
@@ -145,7 +147,7 @@ export function AppLayout({ children }: AppLayoutProps) {
       <PaywallGuard>
         <CheckoutSuccessHandler />
         {/* Saved Configs List - hide for certain routes */}
-        {pathname !== '/templates' && !hideSidebar && user && (
+        {!isOnTemplatesPage && !hideSidebar && user && (
           <div className={`fixed top-0 h-screen pt-[74px] z-20 group hidden lg:flex flex-col gap-10 bg-background lg:bg-secondary/50 p-5 ${isCollapsed ? 'lg:w-[60px] overflow-hidden' : 'lg:w-[460px] min-w-[300px]'} max-w-[100vw] overflow-visible lg:overflow-y-auto transition-all duration-300`}>
             <LibraryManager
               mode="sidebar"

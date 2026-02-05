@@ -6,7 +6,7 @@ import { Suspense, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Paywall } from './onboarding/steps/paywall';
 import { OnboardingData } from './onboarding/types';
-import { ROUTES } from '../routes';
+import { isPublicRoute } from '../routes';
 
 interface PaywallGuardProps {
     children: React.ReactNode;
@@ -18,8 +18,7 @@ function PaywallGuardInner({ children }: PaywallGuardProps) {
     const pathname = usePathname();
 
     // Determine if paywall should be shown
-    const isGetStartedRoute = pathname?.startsWith(ROUTES.GET_STARTED);
-    const showPaywall = user && !isAdmin && !isSubscribed && !isAuthLoading && !isGetStartedRoute;
+    const showPaywall = user && !isAdmin && !isSubscribed && !isAuthLoading && !isPublicRoute(pathname);
 
     // Disable body scroll when paywall is open
     useEffect(() => {

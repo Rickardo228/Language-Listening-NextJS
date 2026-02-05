@@ -12,7 +12,7 @@ import { track } from '../../../../lib/mixpanelClient';
 import { trackMetaPixel } from '../../../../lib/metaPixel';
 import { FeatureHighlights } from './FeatureHighlights';
 import { TrialReminder } from './TrialReminder';
-// import { GoalSetting } from './GoalSetting'; // commented out for now
+import { GoalSetting } from './GoalSetting';
 
 interface Props {
   data: OnboardingData;
@@ -22,7 +22,7 @@ interface Props {
   showBack?: boolean;
 }
 
-type PaywallStep = 'welcome' | 'reminder' | 'starting'; // 'goal' commented out for now
+type PaywallStep = 'welcome' | 'reminder' | 'goal' | 'starting';
 
 export function TrialPaywall({ data, updateData, onNext, onBack, showBack = true }: Props) {
   const router = useRouter();
@@ -39,6 +39,7 @@ export function TrialPaywall({ data, updateData, onNext, onBack, showBack = true
     const stepNames: Record<PaywallStep, string> = {
       welcome: 'Paywall Welcome Viewed',
       reminder: 'Paywall Reminder Viewed',
+      goal: 'Paywall Goal Viewed',
       starting: 'Trial Starting',
     };
 
@@ -184,9 +185,8 @@ export function TrialPaywall({ data, updateData, onNext, onBack, showBack = true
           <FeatureHighlights onNext={() => setInternalStep('reminder')} />
         )}
         {internalStep === 'reminder' && (
-          <TrialReminder onNext={() => setInternalStep('starting')} />
+          <TrialReminder onNext={() => setInternalStep('goal')} />
         )}
-        {/* Goal step commented out - may re-enable later
         {internalStep === 'goal' && (
           <GoalSetting onNext={(goal) => {
             updateData({ dailyGoal: goal });
@@ -194,7 +194,6 @@ export function TrialPaywall({ data, updateData, onNext, onBack, showBack = true
             setInternalStep('starting');
           }} />
         )}
-        */}
         {internalStep === 'starting' && renderStartingStep()}
       </motion.div>
     </AnimatePresence>
