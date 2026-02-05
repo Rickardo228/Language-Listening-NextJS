@@ -7,6 +7,8 @@ import { Progress } from './ui/Progress';
 import { DreamOutcome } from './onboarding/steps/dream-outcome';
 import { PainPoints } from './onboarding/steps/pain-points';
 import { LanguagePair } from './onboarding/steps/language-pair';
+import { TargetLanguage } from './onboarding/steps/target-language';
+import { NativeLanguage } from './onboarding/steps/native-language';
 import { AbilityLevel } from './onboarding/steps/ability-level';
 import { Interests } from './onboarding/steps/interests';
 import { PlanReveal } from './onboarding/steps/plan-reveal';
@@ -42,6 +44,8 @@ const firestore = getFirestore();
 type OnboardingStepId =
   | 'dream-outcome'
   | 'pain-points'
+  | 'target-language'
+  | 'native-language'
   | 'language-pair'
   | 'ability-level'
   | 'interests'
@@ -110,9 +114,11 @@ export function OnboardingFlow({
   const { user } = useUser();
   const steps = useMemo(() => {
     const list: OnboardingStepId[] = [
-      'dream-outcome',
+      // 'dream-outcome',
       // 'pain-points',
-      'language-pair',
+      'target-language',
+      'native-language',
+      // 'language-pair',
       'ability-level',
       'interests',
       // 'plan-reveal',
@@ -339,6 +345,23 @@ export function OnboardingFlow({
               )}
               {currentStepId === 'pain-points' && (
                 <PainPoints data={data} updateData={updateData} onNext={nextStep} onBack={prevStep} />
+              )}
+              {currentStepId === 'target-language' && (
+                <TargetLanguage
+                  data={data}
+                  updateData={updateData}
+                  onNext={nextStep}
+                  isLoading={isLoading}
+                />
+              )}
+              {currentStepId === 'native-language' && (
+                <NativeLanguage
+                  data={data}
+                  updateData={updateData}
+                  onNext={nextStep}
+                  onBack={prevStep}
+                  isLoading={isLoading}
+                />
               )}
               {currentStepId === 'language-pair' && (
                 <LanguagePair

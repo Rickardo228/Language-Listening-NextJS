@@ -1,9 +1,8 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, CircleCheck } from 'lucide-react';
 import { Button } from '../../ui/Button';
 import { OnboardingData } from '../types';
 import { useUser } from '../../../contexts/UserContext';
@@ -11,11 +10,9 @@ import { API_BASE_URL } from '../../../consts';
 import { ROUTES } from '../../../routes';
 import { track } from '../../../../lib/mixpanelClient';
 import { trackMetaPixel } from '../../../../lib/metaPixel';
-import { plans } from './plans';
-import { PlanSelector } from './PlanSelector';
 import { FeatureHighlights } from './FeatureHighlights';
 import { TrialReminder } from './TrialReminder';
-import { GoalSetting } from './GoalSetting';
+// import { GoalSetting } from './GoalSetting'; // commented out for now
 
 interface Props {
   data: OnboardingData;
@@ -25,17 +22,15 @@ interface Props {
   showBack?: boolean;
 }
 
-type PaywallStep = 'welcome' | 'reminder' | 'goal' | 'plan';
+type PaywallStep = 'welcome' | 'reminder' | 'starting'; // 'goal' commented out for now
 
 export function TrialPaywall({ data, updateData, onNext, onBack, showBack = true }: Props) {
   const router = useRouter();
   const [internalStep, setInternalStep] = useState<PaywallStep>('welcome');
-  const [selectedPlan, setSelectedPlan] = useState(data.selectedPlan || 'annual');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [loadingStage, setLoadingStage] = useState<string | null>(null);
   const { user, hasTrialed, refreshUserClaims } = useUser();
-  const paywallTrackedRef = useRef(false);
+  const trialStartedRef = useRef(false);
 
   const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -44,8 +39,7 @@ export function TrialPaywall({ data, updateData, onNext, onBack, showBack = true
     const stepNames: Record<PaywallStep, string> = {
       welcome: 'Paywall Welcome Viewed',
       reminder: 'Paywall Reminder Viewed',
-      goal: 'Paywall Goal Viewed',
-      plan: 'Paywall Viewed',
+      starting: 'Trial Starting',
     };
 
     track(stepNames[internalStep], {
@@ -55,17 +49,10 @@ export function TrialPaywall({ data, updateData, onNext, onBack, showBack = true
       targetLanguage: data.targetLanguage,
       abilityLevel: data.abilityLevel,
       variant: 'trial',
-      ...(internalStep === 'plan' && { selectedPlan }),
     });
   }, [internalStep]);
 
-  useEffect(() => {
-    if (paywallTrackedRef.current) return;
-    if (internalStep !== 'plan') return;
-    paywallTrackedRef.current = true;
-  }, [internalStep]);
-
-  const waitForClaimsUpdate = async () => {
+  const waitForClaimsUpdate = useCallback(async () => {
     if (!user) return;
     const maxAttempts = 6;
     for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
@@ -78,128 +65,107 @@ export function TrialPaywall({ data, updateData, onNext, onBack, showBack = true
       await sleep(750);
     }
     await refreshUserClaims();
-  };
+  }, [user, refreshUserClaims]);
 
-  const handlePlanSelect = (planId: string) => {
-    if (planId === selectedPlan) return;
-    setSelectedPlan(planId);
-    track('Paywall Plan Selected', { planId, hasTrialed, variant: 'trial' });
-  };
+  // Auto-start trial when entering 'starting' step
+  useEffect(() => {
+    if (internalStep !== 'starting') return;
+    if (trialStartedRef.current) return;
+    trialStartedRef.current = true;
 
-  const handleStartTrial = async () => {
-    if (!user?.email) {
-      setErrorMessage('Email is required to start a free trial.');
-      return;
-    }
-
-    setErrorMessage(null);
-    setIsSubmitting(true);
-    setLoadingStage('Getting things ready...');
-    updateData({ selectedPlan });
-
-    try {
-      const plan = selectedPlan === 'annual' ? 'yearly' : 'monthly';
-      track('Paywall Free Trial Attempt', {
-        planId: selectedPlan,
-        plan,
-        hasTrialed,
-        userId: user.uid,
-        email: user.email,
-        variant: 'trial',
-      });
-      setLoadingStage('Setting up your access...');
-      const response = await fetch(`${API_BASE_URL}/api/start-free-trial`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: user.email, plan }),
-      });
-
-      setLoadingStage('Almost there...');
-      const responseData = await response.json();
-
-      if (!response.ok) {
-        throw new Error(responseData?.error || 'Failed to start free trial.');
+    const startTrial = async () => {
+      if (!user?.email) {
+        setErrorMessage('Email is required to start a free trial.');
+        return;
       }
 
-      setLoadingStage('Finishing up...');
-      await waitForClaimsUpdate();
-      const planDetails = plans.find((p) => p.id === selectedPlan);
-      const ltv = planDetails?.price.replace('$', '') || '0.00';
-      trackMetaPixel('StartTrial', {
-        value: '0.00',
-        currency: 'USD',
-        predicted_ltv: ltv,
-      });
-      track('Paywall Free Trial Succeeded', {
-        planId: selectedPlan,
-        plan,
-        hasTrialed,
-        userId: user.uid,
-        variant: 'trial',
-      });
-      router.push(`${ROUTES.HOME}?checkout=success`);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to start free trial.';
-      track('Paywall Free Trial Failed', {
-        planId: selectedPlan,
-        hasTrialed,
-        error: message,
-        userId: user?.uid,
-        variant: 'trial',
-      });
-      setErrorMessage(message);
-    } finally {
-      setIsSubmitting(false);
-      setLoadingStage(null);
-    }
-  };
+      setErrorMessage(null);
+      setLoadingStage('Getting things ready...');
 
-  const renderPlanStep = () => (
-    <div className="space-y-6">
-      <div className="text-center">
+      try {
+        track('Paywall Free Trial Attempt', {
+          hasTrialed,
+          userId: user.uid,
+          email: user.email,
+          variant: 'trial-no-plan-selection',
+        });
+
+        setLoadingStage('Setting up your access...');
+        const response = await fetch(`${API_BASE_URL}/api/start-free-trial`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: user.email, plan: 'yearly' }),
+        });
+
+        setLoadingStage('Almost there...');
+        const responseData = await response.json();
+
+        if (!response.ok) {
+          throw new Error(responseData?.error || 'Failed to start free trial.');
+        }
+
+        setLoadingStage('Finishing up...');
+        await waitForClaimsUpdate();
+
+        trackMetaPixel('StartTrial', {
+          value: '0.00',
+          currency: 'USD',
+        });
+
+        track('Paywall Free Trial Succeeded', {
+          hasTrialed,
+          userId: user.uid,
+          variant: 'trial-no-plan-selection',
+        });
+
+        router.push(`${ROUTES.HOME}?checkout=success`);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Failed to start free trial.';
+        track('Paywall Free Trial Failed', {
+          hasTrialed,
+          error: message,
+          userId: user?.uid,
+          variant: 'trial-no-plan-selection',
+        });
+        setErrorMessage(message);
+        setLoadingStage(null);
+      }
+    };
+
+    startTrial();
+  }, [internalStep, user, hasTrialed, router, waitForClaimsUpdate]);
+
+  const renderStartingStep = () => (
+    <div className="space-y-6 text-center">
+      <div>
         <h1 className="text-3xl md:text-4xl">
-          Choose a plan for after your
+          Starting your
         </h1>
         <h1 className="text-3xl md:text-4xl text-green-500 mt-1">
           7 day free trial
         </h1>
       </div>
 
-      <PlanSelector selectedPlan={selectedPlan} onPlanSelect={handlePlanSelect} />
-
-      <div className="space-y-3 pt-2">
-        <p className="flex items-center justify-center gap-2" style={{ fontFamily: 'var(--font-playpen-sans)' }}>
-          <CircleCheck className="w-5 h-5 text-green-600 dark:text-green-400 shrink-0" />
-          No Payment Due Now
-        </p>
-
-        <div className="flex gap-3">
-          {showBack && (
-            <Button onClick={onBack} variant="outline" size="md" className="px-4 gap-2">
-              <ChevronLeft className="w-4 h-4" />
-              Back
-            </Button>
-          )}
-          <Button
-            onClick={handleStartTrial}
-            className="flex-1"
-            size="lg"
-            disabled={isSubmitting}
-            style={{ fontFamily: 'var(--font-playpen-sans)', fontWeight: 700 }}
-          >
-            {isSubmitting ? 'Starting trial...' : 'START LEARNING'}
-          </Button>
+      {loadingStage && (
+        <div className="flex items-center justify-center gap-3 text-gray-600">
+          <span className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-gray-300 border-t-gray-700" />
+          <span>{loadingStage}</span>
         </div>
-      </div>
-
-      {errorMessage && (
-        <p className="text-center text-sm text-red-600">{errorMessage}</p>
       )}
 
-      {isSubmitting && loadingStage && (
-        <div className="flex items-center justify-center gap-3 text-sm text-gray-600">
-          <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-gray-700" />
-          <span>{loadingStage}</span>
+      {errorMessage && (
+        <div className="space-y-4">
+          <p className="text-sm text-red-600">{errorMessage}</p>
+          <Button
+            onClick={() => {
+              trialStartedRef.current = false;
+              setInternalStep('reminder');
+            }}
+            variant="outline"
+            size="md"
+          >
+            Try Again
+          </Button>
         </div>
       )}
     </div>
@@ -218,16 +184,18 @@ export function TrialPaywall({ data, updateData, onNext, onBack, showBack = true
           <FeatureHighlights onNext={() => setInternalStep('reminder')} />
         )}
         {internalStep === 'reminder' && (
-          <TrialReminder onNext={() => setInternalStep('goal')} />
+          <TrialReminder onNext={() => setInternalStep('starting')} />
         )}
+        {/* Goal step commented out - may re-enable later
         {internalStep === 'goal' && (
           <GoalSetting onNext={(goal) => {
             updateData({ dailyGoal: goal });
             track('Paywall Goal Selected', { goal, variant: 'trial' });
-            setInternalStep('plan');
+            setInternalStep('starting');
           }} />
         )}
-        {internalStep === 'plan' && renderPlanStep()}
+        */}
+        {internalStep === 'starting' && renderStartingStep()}
       </motion.div>
     </AnimatePresence>
   );

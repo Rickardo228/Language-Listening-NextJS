@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { collection, getDocs, getFirestore, query, where } from 'firebase/firestore';
 import {
   ChevronLeft,
-  Zap,
+  MessageCircle,
 } from 'lucide-react';
 import { presentationContainerSizeClass } from '../../../PresentationView';
 import {
@@ -269,7 +269,7 @@ export function QuickWin({ data, updateData, onNext, onBack }: Props) {
     <div className="space-y-6">
       <div className="text-center space-y-3">
         <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-indigo-100 dark:bg-indigo-500/20 mx-auto">
-          <Zap className="w-8 h-8 text-indigo-600 dark:text-indigo-300" />
+          <MessageCircle className="w-8 h-8 text-indigo-600 dark:text-indigo-300" />
         </div>
         <h1 className="text-3xl md:text-4xl">Try shadowing in action</h1>
         <p className="text-gray-600 text-lg">
