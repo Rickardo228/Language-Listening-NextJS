@@ -276,13 +276,12 @@ export function SignInPage({
                 </form>
 
                 <div className="text-center">
-                    <button
-                        onClick={() => setIsSignUp(!isSignUp)}
-                        disabled={isLoading}
-                        className="text-sm text-primary hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
+                    <Link
+                        href={ROUTES.GET_STARTED}
+                        className="text-sm text-primary hover:underline"
                     >
-                        {isSignUp ? 'Already have an account? Sign in' : "Don't have an account? Sign up"}
-                    </button>
+                        Don&apos;t have an account? Sign up
+                    </Link>
                 </div>
             </div>
 
