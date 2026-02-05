@@ -9,6 +9,20 @@ import { LanguageSelector } from './components/LanguageSelector'
 import { trackGeneratePhrases } from '../lib/mixpanelClient'
 import { Combobox, Input, Select } from './components/ui'
 import { toast } from 'sonner'
+import { AnimatePresence, motion } from 'framer-motion'
+
+const motivationalPhrases = [
+    "Every word brings you closer to fluency",
+    "Building your language superpowers",
+    "Your future self will thank you",
+    "Great things take a little patience",
+    "Unlocking a whole new world for you",
+    "One phrase at a time, one step at a time",
+    "Making these phrases sound perfect",
+    "You're investing in yourself right now",
+    "Language is the road map of a culture",
+    "Almost there, hang tight!",
+]
 
 export interface ImportPhrasesDialogProps {
     isOpen: boolean
@@ -20,6 +34,7 @@ export interface ImportPhrasesDialogProps {
     phrasesInput: string
     setPhrasesInput: (input: string) => void
     loading: boolean
+    processProgress?: { completed: number; total: number } | null
     collectionsLoading?: boolean
     onProcess?: (prompt?: string, inputLang?: string, targetLang?: string, collectionType?: CollectionType) => Promise<void>
     onAddToCollection?: (inputLang?: string, targetLang?: string, isSwapped?: boolean) => Promise<void>
@@ -43,6 +58,7 @@ export function ImportPhrasesDialog({
     phrasesInput,
     setPhrasesInput,
     loading,
+    processProgress,
     collectionsLoading = false,
     onProcess,
     onAddToCollection,
@@ -62,6 +78,7 @@ export function ImportPhrasesDialog({
     const [isFetchingUrl, setIsFetchingUrl] = useState(false)
     const [isMobile, setIsMobile] = useState(false)
     const [isMac, setIsMac] = useState(false)
+    const [motivationalIndex, setMotivationalIndex] = useState(() => Math.floor(Math.random() * motivationalPhrases.length))
     const textareaRef = useRef<HTMLTextAreaElement>(null)
 
     useEffect(() => {
@@ -73,6 +90,16 @@ export function ImportPhrasesDialog({
         window.addEventListener('resize', checkMobile)
         return () => window.removeEventListener('resize', checkMobile)
     }, [])
+
+    const isProcessing = !!processProgress
+    useEffect(() => {
+        if (!isProcessing) return
+        setMotivationalIndex(Math.floor(Math.random() * motivationalPhrases.length))
+        const interval = setInterval(() => {
+            setMotivationalIndex(i => (i + 1) % motivationalPhrases.length)
+        }, 4000)
+        return () => clearInterval(interval)
+    }, [isProcessing])
     const inputLangLabel = (languageOptions.find(lang => lang.code === (isSwapped ? targetLang : inputLang))?.label || inputLang).split(' (')[0];
     const isLikeVariant = variant === 'like';
     const addToCollectionDisabled = loading
@@ -191,199 +218,222 @@ export function ImportPhrasesDialog({
             <div className="fixed inset-0 bg-black/50" />
             <div className="fixed inset-0 flex items-center justify-center">
                 <Dialog.Panel className={`bg-background text-foreground p-4 rounded-lg shadow-lg w-[500px] max-w-[90vw] ${isLikeVariant ? 'overflow-visible' : 'overflow-auto max-h-[90vh]'} border`}>
-                    <div className="flex justify-between items-center mb-4">
-                        <h2 className="text-xl font-bold">
-                            {isLikeVariant ? 'Add to List' : (onAddToCollection ? 'Add Phrases' : 'Create New List')}
-                        </h2>
-                        <button
-                            onClick={onClose}
-                            className="p-2 text-muted-foreground hover:text-foreground"
-                            title="Close"
-                        >
-                            <X className="h-6 w-6" />
-                        </button>
-                    </div>
+                    {processProgress ? (
+                        <div className="flex flex-col items-center py-8 px-4 gap-4">
+                            <div className="h-6 relative w-full">
+                                <AnimatePresence mode="wait">
+                                    <motion.p
+                                        key={motivationalIndex}
+                                        initial={{ opacity: 0, y: 8 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, y: -8 }}
+                                        transition={{ duration: 0.3 }}
+                                        className="text-sm text-muted-foreground italic text-center absolute inset-0"
+                                    >
+                                        {motivationalPhrases[motivationalIndex]}
+                                    </motion.p>
+                                </AnimatePresence>
+                            </div>
+                            <div className="w-8 h-8 border-3 border-primary border-t-transparent rounded-full animate-spin" />
+                            <div className="text-center">
+                                <p className="text-lg font-semibold">Translating phrases</p>
+                                <p className="text-sm text-muted-foreground mt-1">
+                                    {processProgress.completed} of {processProgress.total} phrases
+                                </p>
+                            </div>
+                            <div className="w-full bg-secondary rounded-full h-2 overflow-hidden">
+                                <div
+                                    className="bg-primary h-full rounded-full transition-all duration-300 ease-out"
+                                    style={{ width: `${Math.round((processProgress.completed / processProgress.total) * 100)}%` }}
+                                />
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                                {Math.round((processProgress.completed / processProgress.total) * 100)}%
+                            </p>
+                        </div>
+                    ) : (<>
+                        <div className="flex justify-between items-center mb-4">
+                            <h2 className="text-xl font-bold">
+                                {isLikeVariant ? 'Add to List' : (onAddToCollection ? 'Add Phrases' : 'Create New List')}
+                            </h2>
+                            <button
+                                onClick={onClose}
+                                className="p-2 text-muted-foreground hover:text-foreground"
+                                title="Close"
+                            >
+                                <X className="h-6 w-6" />
+                            </button>
+                        </div>
 
-                    <div className="space-y-4">
-                        <div className="flex flex-col gap-4">
-                            {!onAddToCollection && !isLikeVariant && (
-                                <Input
-                                    label="List Name"
-                                    type="text"
-                                    value={prompt}
-                                    onChange={(e) => setPrompt(e.target.value)}
-                                    placeholder="Enter a name or paste a URL (YouTube/website)..."
-                                    disabled={loading}
-                                />
-                            )}
-                            {!onAddToCollection && !isLikeVariant && (
-                                <Select
-                                    label="List Type"
-                                    value={collectionType}
-                                    onChange={(e) => setCollectionType(e.target.value as CollectionType)}
-                                    disabled={loading}
-                                    options={[
-                                        { value: 'phrases', label: 'Phrases' },
-                                        { value: 'article', label: 'Article' }
-                                    ]}
-                                />
-                            )}
-                            {!isLikeVariant && (
-                                <LanguageSelector
-                                    inputLang={inputLang}
-                                    setInputLang={setInputLang}
-                                    targetLang={targetLang}
-                                    setTargetLang={setTargetLang}
-                                    direction="row"
-                                    mode={onAddToCollection ? 'locked' : 'editable'}
-                                    disabled={loading}
-                                    isSwapped={onAddToCollection ? isSwapped : undefined}
-                                    onSwap={onAddToCollection
-                                        ? () => setIsSwapped(!isSwapped)
-                                        : () => {
-                                            // When creating new collection, swap the actual language values
-                                            const temp = inputLang;
-                                            setInputLang(targetLang);
-                                            setTargetLang(temp);
-                                        }}
-                                />
-                            )}
-                            {isLikeVariant && (
-                                <div className="space-y-2">
-                                    {collectionsLoading ? (
-                                        <div>
-                                            <div className="h-4 w-16 bg-secondary/40 rounded animate-pulse mb-2" />
-                                            <div className="h-10 w-full bg-secondary/40 rounded animate-pulse" />
-                                        </div>
-                                    ) : collectionOptions.length > 0 || onCreateCollection ? (
-                                        <Combobox
-                                            label="List"
-                                            value={selectedCollectionId || ''}
-                                            onChange={(value) => setSelectedCollectionId?.(value)}
-                                            disabled={loading}
-                                            options={collectionOptions}
-                                            placeholder="Select or create a list"
-                                            portalled={true}
-                                            creatable={Boolean(onCreateCollection)}
-                                            onCreateOption={onCreateCollection}
-                                            createLabel="Create list"
-                                            autoFocus={autoFocusCollection}
-                                            onSubmit={onCollectionSubmit}
-                                        />
-                                    ) : (
-                                        <div>
-                                            <label className="block text-sm font-medium mb-1">Collection</label>
-                                            <div className="text-sm text-muted-foreground">Liked Phrases</div>
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-                            {prompt.trim() && onProcess && (
-                                <button
-                                    onClick={handleGeneratePhrases}
-                                    disabled={generatingPhrases || !prompt.trim()}
-                                    className="px-4 py-2 bg-secondary text-secondary-foreground rounded hover:bg-secondary/90 disabled:bg-gray-400 whitespace-nowrap"
-                                >
-                                    {generatingPhrases ? (
-                                        <div className="flex items-center gap-2">
-                                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                            <span>{isFetchingUrl ? 'Fetching from URL...' : 'Generating...'}</span>
-                                        </div>
-                                    ) : (
-                                        <div className="flex items-center gap-1">
-                                            <Lightbulb className="w-5 h-5" />
-                                            {collectionType === 'phrases' ? 'Generate Phrases with AI' : 'Generate Article with AI'}
-                                        </div>
-                                    )}
-                                </button>
-                            )}
-                            {!isLikeVariant && (
-                                <div>
-                                    <label className="block text-sm font-medium mb-1">{collectionType === 'phrases' ? 'Phrases (one per line)' : 'Article Content'}</label>
-                                    <textarea
-                                        ref={textareaRef}
-                                        value={phrasesInput}
-                                        onChange={(e) => setPhrasesInput(e.target.value)}
-                                        onKeyDown={handleTextareaKeyDown}
-                                        className="w-full h-32 p-2 rounded-md border bg-background resize-none"
-                                        placeholder={collectionType === 'phrases' ? `Enter phrases in ${inputLangLabel} here...` : `Paste article in ${inputLangLabel} here...`}
-                                        disabled={loading}
-                                        autoFocus
-                                    />
-                                    {!isMobile && (
-                                        <p className="text-xs text-muted-foreground mt-1">
-                                            {isMac ? '⌘' : 'Ctrl'}+Enter for new line
-                                        </p>
-                                    )}
-                                </div>
-                            )}
-
-                            {!onProcess && !isLikeVariant && (
-                                <div>
+                        <div className="space-y-4">
+                            <div className="flex flex-col gap-4">
+                                {!onAddToCollection && !isLikeVariant && (
                                     <Input
-                                        label="Get phrase suggestions with AI"
+                                        label="List Name"
                                         type="text"
                                         value={prompt}
                                         onChange={(e) => setPrompt(e.target.value)}
-                                        placeholder="Ask for suggestions or paste a URL..."
+                                        placeholder="Enter a name or paste a URL (YouTube/website)..."
                                         disabled={loading}
                                     />
-                                    <div className="flex flex-wrap gap-2 mt-2">
-                                        {prompt.trim() && (
-                                            <button
-                                                onClick={handleGeneratePhrases}
-                                                disabled={generatingPhrases || !prompt.trim()}
-                                                className="px-4 py-2 bg-secondary text-secondary-foreground rounded hover:bg-secondary/90 disabled:bg-gray-400 whitespace-nowrap"
-                                            >
-                                                {generatingPhrases ? (
-                                                    <div className="flex items-center gap-2">
-                                                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                                        <span>{isFetchingUrl ? 'Fetching from URL...' : 'Generating...'}</span>
-                                                    </div>
-                                                ) : (
-                                                    <div className="flex items-center gap-1">
-                                                        <Lightbulb className="w-5 h-5" />
-                                                        {collectionType === 'phrases' ? 'Get Phrase Suggestions' : 'Get Sentence Suggestions'}
-                                                    </div>
-                                                )}
-                                            </button>
+                                )}
+                                {!isLikeVariant && (
+                                    <LanguageSelector
+                                        inputLang={inputLang}
+                                        setInputLang={setInputLang}
+                                        targetLang={targetLang}
+                                        setTargetLang={setTargetLang}
+                                        direction="row"
+                                        mode={onAddToCollection ? 'locked' : 'editable'}
+                                        disabled={loading}
+                                        isSwapped={onAddToCollection ? isSwapped : undefined}
+                                        onSwap={onAddToCollection
+                                            ? () => setIsSwapped(!isSwapped)
+                                            : () => {
+                                                // When creating new collection, swap the actual language values
+                                                const temp = inputLang;
+                                                setInputLang(targetLang);
+                                                setTargetLang(temp);
+                                            }}
+                                    />
+                                )}
+                                {isLikeVariant && (
+                                    <div className="space-y-2">
+                                        {collectionsLoading ? (
+                                            <div>
+                                                <div className="h-4 w-16 bg-secondary/40 rounded animate-pulse mb-2" />
+                                                <div className="h-10 w-full bg-secondary/40 rounded animate-pulse" />
+                                            </div>
+                                        ) : collectionOptions.length > 0 || onCreateCollection ? (
+                                            <Combobox
+                                                label="List"
+                                                value={selectedCollectionId || ''}
+                                                onChange={(value) => setSelectedCollectionId?.(value)}
+                                                disabled={loading}
+                                                options={collectionOptions}
+                                                placeholder="Select or create a list"
+                                                portalled={true}
+                                                creatable={Boolean(onCreateCollection)}
+                                                onCreateOption={onCreateCollection}
+                                                createLabel="Create list"
+                                                autoFocus={autoFocusCollection}
+                                                onSubmit={onCollectionSubmit}
+                                            />
+                                        ) : (
+                                            <div>
+                                                <label className="block text-sm font-medium mb-1">Collection</label>
+                                                <div className="text-sm text-muted-foreground">Liked Phrases</div>
+                                            </div>
                                         )}
                                     </div>
-                                </div>
-                            )}
-
-                            <div className="flex gap-2">
-                                {onAddToCollection ? (
+                                )}
+                                {prompt.trim() && onProcess && (
                                     <button
-                                        onClick={async () => {
-                                            await onAddToCollection?.(inputLang, targetLang, isSwapped)
-                                            onClose()
-                                        }}
-                                        disabled={addToCollectionDisabled}
-                                        className="flex-1 px-4 h-[50px] bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white font-medium rounded-lg transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-md"
+                                        onClick={handleGeneratePhrases}
+                                        disabled={generatingPhrases || !prompt.trim()}
+                                        className="px-4 py-2 bg-secondary text-secondary-foreground rounded hover:bg-secondary/90 disabled:bg-gray-400 whitespace-nowrap"
                                     >
-                                        <div className="flex items-center gap-2 justify-center">
-                                            <Plus className="h-5 w-5" />
-                                            <span className="text-sm font-semibold">
-                                                {isLikeVariant ? (loading ? 'Adding...' : 'Add Phrase') : (loading ? 'Adding...' : 'Add Phrases')}
-                                            </span>
-                                        </div>
-                                    </button>
-                                ) : (
-                                    <button
-                                        onClick={async () => {
-                                            await onProcess?.(prompt, inputLang, targetLang, collectionType)
-                                            onClose()
-                                        }}
-                                        disabled={loading || !phrasesInput.trim()}
-                                        className="flex-1 bg-primary text-primary-foreground px-4 py-2 rounded hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
-                                    >
-                                        {loading ? 'Processing...' : 'Create List'}
+                                        {generatingPhrases ? (
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                                <span>{isFetchingUrl ? 'Fetching from URL...' : 'Generating...'}</span>
+                                            </div>
+                                        ) : (
+                                            <div className="flex items-center gap-1">
+                                                <Lightbulb className="w-5 h-5" />
+                                                Generate with AI
+                                            </div>
+                                        )}
                                     </button>
                                 )}
+                                {!isLikeVariant && (
+                                    <div>
+                                        <label className="block text-sm font-medium mb-1">Phrases</label>
+                                        <textarea
+                                            ref={textareaRef}
+                                            value={phrasesInput}
+                                            onChange={(e) => setPhrasesInput(e.target.value)}
+                                            onKeyDown={handleTextareaKeyDown}
+                                            className="w-full h-32 p-2 rounded-md border bg-background resize-none"
+                                            placeholder={`Enter phrases or paste text in ${inputLangLabel} here...`}
+                                            disabled={loading}
+                                            autoFocus
+                                        />
+                                        {!isMobile && (
+                                            <p className="text-xs text-muted-foreground mt-1">
+                                                {isMac ? '⌘' : 'Ctrl'}+Enter for new line
+                                            </p>
+                                        )}
+                                    </div>
+                                )}
+
+                                {!onProcess && !isLikeVariant && (
+                                    <div>
+                                        <Input
+                                            label="Get phrase suggestions with AI"
+                                            type="text"
+                                            value={prompt}
+                                            onChange={(e) => setPrompt(e.target.value)}
+                                            placeholder="Ask for suggestions or paste a URL..."
+                                            disabled={loading}
+                                        />
+                                        <div className="flex flex-wrap gap-2 mt-2">
+                                            {prompt.trim() && (
+                                                <button
+                                                    onClick={handleGeneratePhrases}
+                                                    disabled={generatingPhrases || !prompt.trim()}
+                                                    className="px-4 py-2 bg-secondary text-secondary-foreground rounded hover:bg-secondary/90 disabled:bg-gray-400 whitespace-nowrap"
+                                                >
+                                                    {generatingPhrases ? (
+                                                        <div className="flex items-center gap-2">
+                                                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                                            <span>{isFetchingUrl ? 'Fetching from URL...' : 'Generating...'}</span>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="flex items-center gap-1">
+                                                            <Lightbulb className="w-5 h-5" />
+                                                            Get Suggestions
+                                                        </div>
+                                                    )}
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+
+                                <div className="flex gap-2">
+                                    {onAddToCollection ? (
+                                        <button
+                                            onClick={async () => {
+                                                await onAddToCollection?.(inputLang, targetLang, isSwapped)
+                                                onClose()
+                                            }}
+                                            disabled={addToCollectionDisabled}
+                                            className="flex-1 px-4 h-[50px] bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white font-medium rounded-lg transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-md"
+                                        >
+                                            <div className="flex items-center gap-2 justify-center">
+                                                <Plus className="h-5 w-5" />
+                                                <span className="text-sm font-semibold">
+                                                    {isLikeVariant ? (loading ? 'Adding...' : 'Add Phrase') : (loading ? 'Adding...' : 'Add Phrases')}
+                                                </span>
+                                            </div>
+                                        </button>
+                                    ) : (
+                                        <button
+                                            onClick={async () => {
+                                                await onProcess?.(prompt, inputLang, targetLang, collectionType)
+                                                onClose()
+                                            }}
+                                            disabled={loading || !phrasesInput.trim()}
+                                            className="flex-1 bg-primary text-primary-foreground px-4 py-2 rounded hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            {loading ? 'Processing...' : 'Create List'}
+                                        </button>
+                                    )}
+                                </div>
                             </div>
                         </div>
-                    </div>
+                    </>)}
                 </Dialog.Panel>
             </div>
         </Dialog>

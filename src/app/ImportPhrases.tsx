@@ -14,6 +14,7 @@ export function ImportPhrases({
     phrasesInput,
     setPhrasesInput,
     loading,
+    processProgress,
     onProcess,
     onAddToCollection,
     className = ''
@@ -47,6 +48,7 @@ export function ImportPhrases({
                 phrasesInput={phrasesInput}
                 setPhrasesInput={setPhrasesInput}
                 loading={loading}
+                processProgress={processProgress}
                 onProcess={onProcess}
                 onAddToCollection={onAddToCollection}
             />

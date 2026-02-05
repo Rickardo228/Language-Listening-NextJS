@@ -59,6 +59,7 @@ export function LibraryManager({
     }
   }, [userProfile?.preferredInputLang, userProfile?.preferredTargetLang]);
   const [loading, setLoading] = useState<boolean>(false);
+  const [processProgress, setProcessProgress] = useState<{ completed: number; total: number } | null>(null);
 
   const fetchCollections = useCallback(async (opts?: { fetchAll?: boolean; limitCount?: number; setMainLoading?: boolean }) => {
     if (!user) return;
@@ -150,47 +151,70 @@ export function LibraryManager({
   };
 
   const handleProcess = async (prompt?: string, inputLang?: string, targetLang?: string, collectionType?: CollectionTypeEnum) => {
-    let splitPhrases = phrasesInput
-      .split('\n')
-      .map((line) => line.trim())
-      .filter(Boolean);
-
-    if (collectionType === 'article') {
-      const text = splitPhrases.join(' ');
-      splitPhrases = text
-        .split(/(?<=[.!?])\s+/)
-        .map(sentence => sentence.trim())
-        .filter(Boolean);
-    }
-
-    if (!splitPhrases.length) return;
+    if (!phrasesInput.trim()) return;
     setLoading(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/process`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          phrases: splitPhrases,
-          inputLang: inputLang || newCollectionInputLang,
-          targetLang: targetLang || newCollectionTargetLang,
-        }),
-      });
-      const data = await response.json();
-      const processedPhrases: Phrase[] = splitPhrases.map((p, index) => ({
-        input: p,
-        translated: data.translated ? data.translated[index] || '' : '',
-        inputAudio: data.inputAudioSegments ? data.inputAudioSegments[index] || null : null,
-        outputAudio: data.outputAudioSegments ? data.outputAudioSegments[index] || null : null,
-        romanized: data.romanizedOutput ? data.romanizedOutput[index] || '' : '',
-        inputLang: inputLang || newCollectionInputLang,
-        targetLang: targetLang || newCollectionTargetLang,
-        inputVoice: data.inputVoice || `${inputLang || newCollectionInputLang}-Standard-A`,
-        targetVoice: data.targetVoice || `${targetLang || newCollectionTargetLang}-Standard-A`
-      }));
+      const effectiveInputLang = inputLang || newCollectionInputLang;
+      const effectiveTargetLang = targetLang || newCollectionTargetLang;
 
-      const collectionId = await handleCreateCollection(processedPhrases, prompt, collectionType, undefined, false);
+      // Split client-side to know total count for progress
+      const segmenter = new Intl.Segmenter(effectiveInputLang || 'en', { granularity: 'sentence' });
+      const allPhrases = phrasesInput
+        .split('\n')
+        .map((line) => line.trim())
+        .filter(Boolean)
+        .flatMap((line) =>
+          [...segmenter.segment(line)].map((s) => s.segment.trim()).filter(Boolean)
+        );
 
-      processedPhrases.forEach((phrase, index) => {
+      if (!allPhrases.length) return;
+
+      const BATCH_SIZE = 10;
+      const skipAudio = allPhrases.length > 10;
+      const allProcessed: Phrase[] = [];
+      let lastVoices = { inputVoice: '', targetVoice: '' };
+
+      setProcessProgress({ completed: 0, total: allPhrases.length });
+
+      for (let i = 0; i < allPhrases.length; i += BATCH_SIZE) {
+        const batch = allPhrases.slice(i, i + BATCH_SIZE);
+        const response = await fetch(`${API_BASE_URL}/process`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            phrases: batch,
+            inputLang: effectiveInputLang,
+            targetLang: effectiveTargetLang,
+            skipAudio,
+          }),
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Processing failed');
+
+        lastVoices = {
+          inputVoice: data.inputVoice || `${effectiveInputLang}-Standard-A`,
+          targetVoice: data.targetVoice || `${effectiveTargetLang}-Standard-A`,
+        };
+
+        const batchPhrases: Phrase[] = batch.map((p: string, index: number) => ({
+          input: p,
+          translated: data.translated?.[index] || '',
+          inputAudio: data.inputAudioSegments?.[index] || null,
+          outputAudio: data.outputAudioSegments?.[index] || null,
+          romanized: data.romanizedOutput?.[index] || '',
+          inputLang: effectiveInputLang,
+          targetLang: effectiveTargetLang,
+          inputVoice: lastVoices.inputVoice,
+          targetVoice: lastVoices.targetVoice,
+        }));
+
+        allProcessed.push(...batchPhrases);
+        setProcessProgress({ completed: Math.min(i + BATCH_SIZE, allPhrases.length), total: allPhrases.length });
+      }
+
+      const collectionId = await handleCreateCollection(allProcessed, prompt, collectionType, undefined, false);
+
+      allProcessed.forEach((phrase, index) => {
         trackCreatePhrase(
           `${collectionId}-${index}`,
           phrase.inputLang,
@@ -200,8 +224,6 @@ export function LibraryManager({
       });
 
       setPhrasesInput('');
-
-      // Navigate to the new collection
       router.push(`/collection/${collectionId}`);
 
     } catch (err) {
@@ -209,6 +231,7 @@ export function LibraryManager({
       toast.error(String(err))
     }
     setLoading(false);
+    setProcessProgress(null);
   };
 
   const handleLoadCollection = async (config: Config, skipTracking?: boolean) => {
@@ -325,6 +348,7 @@ export function LibraryManager({
             phrasesInput={phrasesInput}
             setPhrasesInput={setPhrasesInput}
             loading={loading}
+            processProgress={processProgress}
             onProcess={handleProcess}
           />
         }
