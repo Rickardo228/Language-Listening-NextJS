@@ -42,18 +42,6 @@ export function TemplateBrowserStack({
     );
 
     const defaultBrowsers = [
-        {
-            id: 'new_lists',
-            element: (
-                <TemplatesBrowser
-                    key="new_lists"
-                    showHeader={false}
-                    title="New Lists"
-                    showAllOverride={showAllOverride}
-                    browserId="new_lists"
-                />
-            ),
-        },
         ...learningPaths.map((path) => ({
             id: path.id,
             element: (
@@ -69,6 +57,18 @@ export function TemplateBrowserStack({
                 />
             ),
         })),
+        {
+            id: 'new_lists',
+            element: (
+                <TemplatesBrowser
+                    key="new_lists"
+                    showHeader={false}
+                    title="New Lists"
+                    showAllOverride={showAllOverride}
+                    browserId="new_lists"
+                />
+            ),
+        },
         {
             id: 'recommended_for_you',
             element: (
