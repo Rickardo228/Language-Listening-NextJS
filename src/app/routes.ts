@@ -2,6 +2,8 @@
  * Centralized route definitions and helpers
  */
 
+import { routing } from '@/i18n/routing';
+
 export const ROUTES = {
   LANDING: '/',
   HOME: '/home',
@@ -42,18 +44,51 @@ const PUBLIC_SINGLE_SEGMENT_ROUTES = [
   ...SEO_LANGUAGE_PATTERNS,
 ] as const;
 
-function getRouteRoot(pathname: string | null): string | null {
+const LOCALE_PREFIXES = routing.locales
+  .map((locale) => {
+    if (typeof routing.localePrefix === 'string') {
+      return `/${locale}`;
+    }
+
+    const customPrefix = routing.localePrefix?.prefixes?.[locale as keyof typeof routing.localePrefix.prefixes];
+    if (customPrefix) return customPrefix;
+
+    if (routing.localePrefix?.mode === 'as-needed' && locale === routing.defaultLocale) {
+      return '';
+    }
+
+    return `/${locale}`;
+  })
+  .filter((prefix): prefix is string => Boolean(prefix));
+
+function normalizePathname(pathname: string | null): string | null {
   if (!pathname) return null;
-  if (pathname === ROUTES.LANDING) return ROUTES.LANDING;
-  const [rootSegment] = pathname.split('/').filter(Boolean);
+
+  for (const prefix of LOCALE_PREFIXES) {
+    if (!prefix) continue;
+    if (pathname === prefix) return ROUTES.LANDING;
+    if (pathname.startsWith(`${prefix}/`)) {
+      return pathname.slice(prefix.length) || ROUTES.LANDING;
+    }
+  }
+
+  return pathname;
+}
+
+function getRouteRoot(pathname: string | null): string | null {
+  const normalizedPathname = normalizePathname(pathname);
+  if (!normalizedPathname) return null;
+  if (normalizedPathname === ROUTES.LANDING) return ROUTES.LANDING;
+  const [rootSegment] = normalizedPathname.split('/').filter(Boolean);
   return rootSegment ? `/${rootSegment}` : ROUTES.LANDING;
 }
 
 function matchesRouteRoot(pathname: string | null, roots: readonly string[]): boolean {
-  if (!pathname) return false;
-  const routeRoot = getRouteRoot(pathname);
+  const normalizedPathname = normalizePathname(pathname);
+  if (!normalizedPathname) return false;
+  const routeRoot = getRouteRoot(normalizedPathname);
   return !!routeRoot && roots.some((root) => (
-    root === ROUTES.LANDING ? pathname === ROUTES.LANDING : pathname === root || pathname.startsWith(`${root}/`)
+    root === ROUTES.LANDING ? normalizedPathname === ROUTES.LANDING : normalizedPathname === root || normalizedPathname.startsWith(`${root}/`)
   ));
 }
 
@@ -61,10 +96,11 @@ function matchesRouteRoot(pathname: string | null, roots: readonly string[]): bo
  * Check if the current route is public (no auth required)
  */
 export function isPublicRoute(pathname: string | null): boolean {
-  if (!pathname) return false;
+  const normalizedPathname = normalizePathname(pathname);
+  if (!normalizedPathname) return false;
 
   // Check SEO language pages: /{language}/{slug}
-  const segments = pathname.split('/').filter(Boolean);
+  const segments = normalizedPathname.split('/').filter(Boolean);
   if (
     segments.length >= 2 &&
     (SEO_LANGUAGE_PATTERNS.includes(segments[0] as any) ||
@@ -77,64 +113,71 @@ export function isPublicRoute(pathname: string | null): boolean {
     return true;
   }
 
-  return matchesRouteRoot(pathname, PUBLIC_ROUTE_ROOTS);
+  return matchesRouteRoot(normalizedPathname, PUBLIC_ROUTE_ROOTS);
 }
 
 /**
  * Check if the current route is private (auth required)
  */
 export function isPrivateRoute(pathname: string | null): boolean {
-  if (!pathname) return false;
-  return !isPublicRoute(pathname);
+  const normalizedPathname = normalizePathname(pathname);
+  if (!normalizedPathname) return false;
+  return !isPublicRoute(normalizedPathname);
 }
 
 /**
  * Check if the current path is the authenticated home page
  */
 export function isHomePage(pathname: string | null): boolean {
-  return pathname === ROUTES.HOME;
+  const normalizedPathname = normalizePathname(pathname);
+  return normalizedPathname === ROUTES.HOME;
 }
 
 /**
  * Check if the current path is the landing page
  */
 export function isLandingPage(pathname: string | null): boolean {
-  return pathname === ROUTES.LANDING;
+  const normalizedPathname = normalizePathname(pathname);
+  return normalizedPathname === ROUTES.LANDING;
 }
 
 /**
  * Check if the current path is the templates browse page
  */
 export function isTemplatesPage(pathname: string | null): boolean {
-  return pathname === ROUTES.TEMPLATES;
+  const normalizedPathname = normalizePathname(pathname);
+  return normalizedPathname === ROUTES.TEMPLATES;
 }
 
 /**
  * Check if the current path is a specific template detail page
  */
 export function isTemplateDetailPage(pathname: string | null): boolean {
-  if (!pathname) return false;
-  if (pathname.startsWith(`${ROUTES.TEMPLATE_PUBLIC}/`)) return true;
-  return pathname.startsWith('/templates/') && pathname !== ROUTES.TEMPLATES;
+  const normalizedPathname = normalizePathname(pathname);
+  if (!normalizedPathname) return false;
+  if (normalizedPathname.startsWith(`${ROUTES.TEMPLATE_PUBLIC}/`)) return true;
+  return normalizedPathname.startsWith('/templates/') && normalizedPathname !== ROUTES.TEMPLATES;
 }
 
 /**
  * Check if the current path is a specific collection detail page
  */
 export function isCollectionDetailPage(pathname: string | null): boolean {
-  return !!pathname && pathname.startsWith('/collection/');
+  const normalizedPathname = normalizePathname(pathname);
+  return !!normalizedPathname && normalizedPathname.startsWith('/collection/');
 }
 
 /**
  * Check if sidebar should be hidden for the current route
  */
 export function shouldHideSidebar(pathname: string | null): boolean {
-  return !!pathname && (
-    pathname.startsWith(ROUTES.GET_STARTED) ||
-    pathname.startsWith(ROUTES.LIBRARY) ||
-    pathname.startsWith(ROUTES.SHARE) ||
-    pathname.startsWith(ROUTES.PRIVACY) ||
-    pathname.startsWith(ROUTES.TERMS)
+  const normalizedPathname = normalizePathname(pathname);
+  return !!normalizedPathname && (
+    normalizedPathname.startsWith(ROUTES.GET_STARTED) ||
+    normalizedPathname.startsWith(ROUTES.LIBRARY) ||
+    normalizedPathname.startsWith(ROUTES.SHARE) ||
+    normalizedPathname.startsWith(ROUTES.PRIVACY) ||
+    normalizedPathname.startsWith(ROUTES.TERMS)
   );
 }
 
@@ -143,21 +186,24 @@ export function shouldHideSidebar(pathname: string | null): boolean {
  */
 export function shouldHideBottomNav(pathname: string | null): boolean {
   // Don't hide bottom nav on library page
-  if (pathname === ROUTES.LIBRARY) return false;
+  const normalizedPathname = normalizePathname(pathname);
+  if (normalizedPathname === ROUTES.LIBRARY) return false;
 
-  return shouldHideSidebar(pathname) ||
-    isCollectionDetailPage(pathname) ||
-    isTemplateDetailPage(pathname);
+  return shouldHideSidebar(normalizedPathname) ||
+    isCollectionDetailPage(normalizedPathname) ||
+    isTemplateDetailPage(normalizedPathname);
 }
 
 export function shouldHideTopNav(pathname: string | null): boolean {
-  return !!pathname && pathname.startsWith(ROUTES.GET_STARTED);
+  const normalizedPathname = normalizePathname(pathname);
+  return !!normalizedPathname && normalizedPathname.startsWith(ROUTES.GET_STARTED);
 }
 
 /**
  * Extract collection ID from collection detail route
  */
 export function getCollectionIdFromPath(pathname: string | null): string {
-  if (!pathname || !pathname.startsWith('/collection/')) return '';
-  return pathname.split('/collection/')[1] || '';
+  const normalizedPathname = normalizePathname(pathname);
+  if (!normalizedPathname || !normalizedPathname.startsWith('/collection/')) return '';
+  return normalizedPathname.split('/collection/')[1] || '';
 }

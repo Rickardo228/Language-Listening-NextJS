@@ -1,0 +1,107 @@
+{
+  "landing": {
+    "title": "Welcome to our app!",
+    "cta": "Start learning",
+    "hero": {
+      "title": "Speak naturally and understand natives easily",
+      "subtitle": "Language shadowing is the fastest way to conversational fluency.",
+      "bullets": {
+        "listening": "Build your listening and speaking reflexes with shadowing",
+        "lowEffort": "A low effort, high impact method for any ability level",
+        "progress": "See progress in a week"
+      },
+      "cta": "Try 1 Week Free",
+      "note": "No commitment required. Start learning now."
+    },
+    "tryLessonHero": {
+      "title": "Language Shadowing",
+      "subtitle": "Try a 2-minute listening and speaking exercise",
+      "description": "Train real understanding with language shadowing -",
+      "descriptionEmphasis": "listen, repeat, and understand",
+      "descriptionSuffix": ".",
+      "note": "No studying. No games. Just press play and practice.",
+      "callout": {
+        "label": "What you'll do",
+        "title": "Listen → Repeat → Understand",
+        "subtitle": "At your pace. Out loud. Real language."
+      },
+      "cta": "Try the 2-minute exercise",
+      "ctaNote": "Takes 30 seconds to start. No card required."
+    },
+    "whatIsShadowing": {
+      "title": "What is Language Shadowing?",
+      "subtitle": "Listen → Repeat",
+      "body": "As children, we mimic our parents and peers, until words and phrases become part of our every day speech. Using the shadowing method, you listen to a native phrase, then repeat it out loud - at a pace that matches your level. Over time, understanding and speaking become more automatic.",
+      "highlight": "Simple steps. Real progress.",
+      "cta": "Try a sample lesson"
+    },
+    "benefits": {
+      "title": "Easy, measurable improvements",
+      "body": "No games. No searching for podcasts. No tutors. Just press play and practice - while you're walking, doing chores, or even in the shower.",
+      "body2": "We measure one thing: the number of phrases you listen to.",
+      "cta": "Start practicing",
+      "note": "Takes 30 seconds to start. No payment required."
+    },
+    "templates": {
+      "title": "Never start from zero",
+      "subtitle": "Skip the \"what should I practice?\" problem. Choose a set and start speaking.",
+      "cards": {
+        "levels": "Templates by level and situation",
+        "common": "Most common phrases and verbs",
+        "stories": "Immersive stories"
+      },
+      "cta": "Start practicing",
+      "note": "Unlock the full Template Library."
+    },
+    "social": {
+      "title": "Built for learners who want to speak,",
+      "titleLine2": "not just study.",
+      "subtitle": "Used for shadowing in 20+ languages",
+      "cta": "Get started",
+      "note": "See why learners love shadowing."
+    },
+    "pricing": {
+      "title": "Try it free",
+      "subtitle": "Start with a free trial. No payment required to begin.",
+      "bestValue": "Best value",
+      "cta": "Start free trial",
+      "note": "No card required · Reminder before billing · Secure payments",
+      "plans": {
+        "monthly": {
+          "name": "Monthly",
+          "flexible": "Flexible and commitment-free"
+        },
+        "annual": {
+          "name": "Annual",
+          "savings": "{savings} with annual billing"
+        }
+      }
+    },
+    "faqs": {
+      "title": "Frequently Asked Questions",
+      "items": [
+        {
+          "q": "Is this for beginners, intermediate, or advanced learners?",
+          "a": "All levels. Beginners start with common phrases and basic conversations. Intermediate learners practice natural speech patterns and idiomatic expressions. Advanced learners work on native-speed dialogue and complex topics. The pace and difficulty adjust to your level."
+        },
+        {
+          "q": "Do I need to \"study\" grammar first?",
+          "a": "No. Shadowing builds the speaking reflex first. Grammar can come alongside it."
+        },
+        {
+          "q": "Can I use this while commuting?",
+          "a": "Yes - it's designed to be audio-first and enable you to press play once and not interact with your screen for an entire practice session if you don't want to."
+        },
+        {
+          "q": "Is this better than flashcards?",
+          "a": "Flashcards mainly test memory. Shadowing is different: you listen to native audio with adjustable playback speed and configurable pauses for speaking. It's immersive listening and speaking practice. You're training your ears and mouth to work at conversation speed, not just testing if you remember a translation. It's the difference between knowing a word and being able to use it when someone's actually talking to you. (We also have a quiz mode if you want traditional memory testing.)"
+        }
+      ]
+    },
+    "finalCta": {
+      "title": "Your next conversation starts with 10 minutes today.",
+      "subtitle": "No pressure - no card required. A simple system that makes speaking inevitable.",
+      "cta": "Start practicing"
+    }
+  }
+}

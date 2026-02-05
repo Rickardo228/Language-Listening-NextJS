@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { useTranslations } from 'next-intl'
 import { LanguageItem } from './ui/LanguageCarousel'
 import { languageOptions } from '../types'
 import { track } from '../../lib/mixpanelClient'
@@ -52,28 +53,12 @@ const prioritizedLanguages: LanguageItem[] = prioritizedLanguageCodes
   .map(code => languageOptions.find(lang => lang.code === code))
   .filter((lang): lang is LanguageItem => lang !== undefined)
 
-const faqs = [
-  {
-    q: "Is this for beginners, intermediate, or advanced learners?",
-    a: "All levels. Beginners start with common phrases and basic conversations. Intermediate learners practice natural speech patterns and idiomatic expressions. Advanced learners work on native-speed dialogue and complex topics. The pace and difficulty adjust to your level."
-  },
-  {
-    q: "Do I need to \"study\" grammar first?",
-    a: "No. Shadowing builds the speaking reflex first. Grammar can come alongside it."
-  },
-  {
-    q: "Can I use this while commuting?",
-    a: "Yes - it's designed to be audio-first and enable you to press play once and not interact with your screen for an entire practice session if you don't want to."
-  },
-  {
-    q: "Is this better than flashcards?",
-    a: "Flashcards mainly test memory. Shadowing is different: you listen to native audio with adjustable playback speed and configurable pauses for speaking. It's immersive listening and speaking practice. You're training your ears and mouth to work at conversation speed, not just testing if you remember a translation. It's the difference between knowing a word and being able to use it when someone's actually talking to you. (We also have a quiz mode if you want traditional memory testing.)"
-  }
-]
-
 export function LandingPage() {
+  const t = useTranslations('landing.faqs')
   const [openFaq, setOpenFaq] = useState<number | null>(null)
   const trackedViewRef = useRef(false)
+
+  const faqs = t.raw('items') as Array<{ q: string; a: string }>
 
   useEffect(() => {
     if (trackedViewRef.current) return
