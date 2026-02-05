@@ -29,17 +29,19 @@ function GetStartedContent() {
     }, [searchParams]);
 
     const preselectedInputLang = useMemo(() => {
-        const normalizedLocale = locale.toLowerCase();
-        let candidate = locale;
+        const defaultByLocale: Record<string, string> = {
+            en: 'en-US',
+            pt: 'pt-BR',
+        };
 
-        if (normalizedLocale === 'pt' || normalizedLocale === 'pt-br') {
-            candidate = 'pt-BR';
-        } else if (normalizedLocale === 'en') {
-            candidate = 'en-GB';
+        const normalizedLocale = locale.split('-')[0];
+        const mappedDefault = defaultByLocale[normalizedLocale];
+        if (mappedDefault && languageOptions.some((lang) => lang.code === mappedDefault)) {
+            return mappedDefault;
         }
 
-        const isValid = languageOptions.some((lang) => lang.code === candidate);
-        return isValid ? candidate : undefined;
+        const fallback = languageOptions.find((lang) => lang.code.startsWith(`${normalizedLocale}-`));
+        return fallback?.code ?? 'en-US';
     }, [locale]);
 
     // Sync step from URL on mount and when URL changes

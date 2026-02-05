@@ -28,12 +28,17 @@ const getAllLocalePrefixes = () =>
 const isLocaleRootPath = (pathname: string) =>
   pathname === '/' || getAllLocalePrefixes().some((prefix) => pathname === prefix);
 
-const resolveLocaleFromPath = (pathname: string) =>
-  routing.locales.find((locale) => {
+const resolveLocaleFromPath = (pathname: string) => {
+  for (const locale of routing.locales) {
     const prefix = getLocalePrefix(locale);
-    if (!prefix) return pathname === '/' || !pathname.startsWith('/pt/');
-    return pathname === prefix || pathname.startsWith(`${prefix}/`);
-  }) ?? routing.defaultLocale;
+    if (!prefix) continue;
+    if (pathname === prefix || pathname.startsWith(`${prefix}/`)) {
+      return locale;
+    }
+  }
+
+  return routing.defaultLocale;
+};
 
 export default function middleware(request: NextRequest) {
   let response = handleI18nRouting(request);
