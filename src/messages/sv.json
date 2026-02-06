@@ -1,0 +1,107 @@
+{
+  "landing": {
+    "title": "Välkommen till vår app!",
+    "cta": "Börja lära dig",
+    "hero": {
+      "title": "Tala naturligt och förstå infödda talare med lätthet",
+      "subtitle": "Shadowing är den snabbaste vägen till flytande konversation.",
+      "bullets": {
+        "listening": "Träna dina lyssnings- och talreflexer med shadowing",
+        "lowEffort": "En metod med låg ansträngning och stor effekt för alla nivåer",
+        "progress": "Se framsteg på en vecka"
+      },
+      "cta": "Prova 1 vecka gratis",
+      "note": "Inget åtagande. Börja lära dig nu."
+    },
+    "tryLessonHero": {
+      "title": "Språk-Shadowing",
+      "subtitle": "Prova en 2-minuters lyssnings- och talövning",
+      "description": "Träna verklig förståelse med shadowing -",
+      "descriptionEmphasis": "lyssna, upprepa och förstå",
+      "descriptionSuffix": ".",
+      "note": "Ingen pluggning. Inga spel. Tryck bara på play och öva.",
+      "callout": {
+        "label": "Vad du kommer göra",
+        "title": "Lyssna → Upprepa → Förstå",
+        "subtitle": "I din takt. Högt. Riktigt språk."
+      },
+      "cta": "Prova 2-minutersövningen",
+      "ctaNote": "Redo på 30 sekunder. Inget kort krävs."
+    },
+    "whatIsShadowing": {
+      "title": "Vad är Språk-Shadowing?",
+      "subtitle": "Lyssna → Upprepa",
+      "body": "Som barn härmar vi våra föräldrar och jämnåriga tills ord och fraser blir en del av vårt dagliga tal. Med shadowingmetoden lyssnar du på en infödd fras och upprepar den högt - i en takt som matchar din nivå. Med tiden blir förståelse och tal allt mer automatiskt.",
+      "highlight": "Enkla steg. Verkliga framsteg.",
+      "cta": "Prova en exempellektion"
+    },
+    "benefits": {
+      "title": "Enkla, mätbara förbättringar",
+      "body": "Inga spel. Inget letande efter poddar. Inga handledare. Tryck bara på play och öva - när du går, städar eller till och med i duschen.",
+      "body2": "Vi mäter en sak: antalet fraser du lyssnar på.",
+      "cta": "Börja öva",
+      "note": "Redo på 30 sekunder. Ingen betalning krävs."
+    },
+    "templates": {
+      "title": "Börja aldrig från noll",
+      "subtitle": "Slipp \"vad ska jag öva?\". Välj ett set och börja tala.",
+      "cards": {
+        "levels": "Mallar efter nivå och situation",
+        "common": "Vanligaste fraser och verb",
+        "stories": "Uppslukande berättelser"
+      },
+      "cta": "Börja öva",
+      "note": "Lås upp hela Mallbiblioteket."
+    },
+    "social": {
+      "title": "Byggt för de som vill tala,",
+      "titleLine2": "inte bara studera.",
+      "subtitle": "Används för shadowing på 20+ språk",
+      "cta": "Kom igång",
+      "note": "Se varför elever älskar shadowing."
+    },
+    "pricing": {
+      "title": "Prova gratis",
+      "subtitle": "Börja med en gratis provperiod. Ingen betalning krävs för att starta.",
+      "bestValue": "Bästa värde",
+      "cta": "Starta gratis provperiod",
+      "note": "Inget kort krävs · Påminnelse innan debitering · Säkra betalningar",
+      "plans": {
+        "monthly": {
+          "name": "Månadsvis",
+          "flexible": "Flexibelt och utan bindningstid"
+        },
+        "annual": {
+          "name": "Årsvis",
+          "savings": "{savings} med årlig debitering"
+        }
+      }
+    },
+    "faqs": {
+      "title": "Vanliga Frågor",
+      "items": [
+        {
+          "q": "Är detta för nybörjare, medelgoda eller avancerade?",
+          "a": "Alla nivåer. Nybörjare börjar med vanliga fraser och enkla samtal. Medelgoda övar naturliga talmönster och idiomatiska uttryck. Avancerade arbetar med dialoger i infödd hastighet och komplexa ämnen. Tempot och svårighetsgraden anpassar sig till din nivå."
+        },
+        {
+          "q": "Måste jag \"plugga\" grammatik först?",
+          "a": "Nej. Shadowing bygger talreflexen först. Grammatik kan komma parallellt."
+        },
+        {
+          "q": "Kan jag använda det när jag pendlar?",
+          "a": "Ja - det är designat som audio-first så att du kan trycka på play en gång och inte behöva röra skärmen under hela övningssessionen om du inte vill."
+        },
+        {
+          "q": "Är detta bättre än flashcards?",
+          "a": "Flashcards testar främst minnet. Shadowing är annorlunda: du lyssnar på infött ljud med justerbar hastighet och konfigurerbara pauser för att tala. Det är uppslukande lyssnings- och talträning. Du tränar dina öron och din mun att fungera i samtalshastighet, inte bara att komma ihåg en översättning. Det är skillnaden mellan att känna till ett ord och att kunna använda det när någon faktiskt pratar med dig. (Vi har också ett quizläge om du vill ha traditionell minnesträning.)"
+        }
+      ]
+    },
+    "finalCta": {
+      "title": "Ditt nästa samtal börjar med 10 minuter idag.",
+      "subtitle": "Ingen press - inget kort krävs. Ett enkelt system som gör talande oundvikligt.",
+      "cta": "Börja öva"
+    }
+  }
+}

@@ -1,0 +1,107 @@
+{
+  "landing": {
+    "title": "Willkommen in unserer App!",
+    "cta": "Jetzt lernen",
+    "hero": {
+      "title": "Sprich natürlich und verstehe Muttersprachler mühelos",
+      "subtitle": "Shadowing ist der schnellste Weg zu fließender Konversation.",
+      "bullets": {
+        "listening": "Trainiere deine Hör- und Sprechreflexe mit Shadowing",
+        "lowEffort": "Eine Methode mit geringem Aufwand und großer Wirkung für jedes Niveau",
+        "progress": "Sieh Fortschritte in einer Woche"
+      },
+      "cta": "1 Woche kostenlos testen",
+      "note": "Keine Verpflichtung. Jetzt mit dem Lernen beginnen."
+    },
+    "tryLessonHero": {
+      "title": "Sprach-Shadowing",
+      "subtitle": "Probiere eine 2-minütige Hör- und Sprechübung",
+      "description": "Trainiere echtes Verständnis mit Shadowing -",
+      "descriptionEmphasis": "hören, wiederholen und verstehen",
+      "descriptionSuffix": ".",
+      "note": "Kein Pauken. Keine Spiele. Einfach Play drücken und üben.",
+      "callout": {
+        "label": "Das wirst du tun",
+        "title": "Hören → Wiederholen → Verstehen",
+        "subtitle": "In deinem Tempo. Laut. Echte Sprache."
+      },
+      "cta": "Probiere die 2-Minuten-Übung",
+      "ctaNote": "In 30 Sekunden startklar. Keine Karte nötig."
+    },
+    "whatIsShadowing": {
+      "title": "Was ist Sprach-Shadowing?",
+      "subtitle": "Hören → Wiederholen",
+      "body": "Als Kinder ahmen wir unsere Eltern und Gleichaltrige nach, bis Wörter und Sätze Teil unserer täglichen Sprache werden. Beim Shadowing hörst du einen muttersprachlichen Satz und wiederholst ihn laut - in einem Tempo, das zu deinem Niveau passt. Mit der Zeit werden Verstehen und Sprechen immer automatischer.",
+      "highlight": "Einfache Schritte. Echter Fortschritt.",
+      "cta": "Probiere eine Beispiellektion"
+    },
+    "benefits": {
+      "title": "Einfache, messbare Verbesserungen",
+      "body": "Keine Spiele. Kein Podcast-Suchen. Keine Tutoren. Einfach Play drücken und üben - beim Spazierengehen, bei der Hausarbeit oder sogar unter der Dusche.",
+      "body2": "Wir messen eine Sache: die Anzahl der Sätze, die du hörst.",
+      "cta": "Jetzt üben",
+      "note": "In 30 Sekunden startklar. Keine Zahlung nötig."
+    },
+    "templates": {
+      "title": "Nie bei null anfangen",
+      "subtitle": "Schluss mit \"Was soll ich üben?\". Wähle ein Set und fang an zu sprechen.",
+      "cards": {
+        "levels": "Vorlagen nach Niveau und Situation",
+        "common": "Häufigste Sätze und Verben",
+        "stories": "Immersive Geschichten"
+      },
+      "cta": "Jetzt üben",
+      "note": "Schalte die komplette Vorlagen-Bibliothek frei."
+    },
+    "social": {
+      "title": "Gemacht für Lernende, die sprechen wollen,",
+      "titleLine2": "nicht nur lernen.",
+      "subtitle": "Für Shadowing in über 20 Sprachen genutzt",
+      "cta": "Loslegen",
+      "note": "Erfahre, warum Lernende Shadowing lieben."
+    },
+    "pricing": {
+      "title": "Kostenlos testen",
+      "subtitle": "Starte mit einer kostenlosen Testphase. Keine Zahlung nötig.",
+      "bestValue": "Bestes Angebot",
+      "cta": "Kostenlos starten",
+      "note": "Keine Karte nötig · Erinnerung vor der Abrechnung · Sichere Zahlungen",
+      "plans": {
+        "monthly": {
+          "name": "Monatlich",
+          "flexible": "Flexibel und unverbindlich"
+        },
+        "annual": {
+          "name": "Jährlich",
+          "savings": "{savings} bei jährlicher Abrechnung"
+        }
+      }
+    },
+    "faqs": {
+      "title": "Häufig gestellte Fragen",
+      "items": [
+        {
+          "q": "Ist das für Anfänger, Fortgeschrittene oder Profis?",
+          "a": "Für alle Niveaus. Anfänger starten mit gängigen Sätzen und einfachen Gesprächen. Fortgeschrittene üben natürliche Sprachmuster und idiomatische Ausdrücke. Profis arbeiten an Dialogen in Muttersprach-Geschwindigkeit und komplexen Themen. Tempo und Schwierigkeit passen sich deinem Niveau an."
+        },
+        {
+          "q": "Muss ich vorher Grammatik \"lernen\"?",
+          "a": "Nein. Shadowing baut zuerst den Sprechreflex auf. Grammatik kann parallel dazukommen."
+        },
+        {
+          "q": "Kann ich es beim Pendeln nutzen?",
+          "a": "Ja - es ist audio-first konzipiert und ermöglicht dir, einmal Play zu drücken und die ganze Übungssitzung lang nicht mit dem Bildschirm zu interagieren, wenn du nicht möchtest."
+        },
+        {
+          "q": "Ist das besser als Karteikarten?",
+          "a": "Karteikarten testen hauptsächlich das Gedächtnis. Shadowing ist anders: Du hörst muttersprachliches Audio mit einstellbarer Geschwindigkeit und konfigurierbaren Pausen zum Sprechen. Es ist immersives Hör- und Sprechtraining. Du trainierst Ohren und Mund, in Gesprächsgeschwindigkeit zu arbeiten - nicht nur, ob du dich an eine Übersetzung erinnerst. Es ist der Unterschied zwischen ein Wort zu kennen und es benutzen zu können, wenn jemand mit dir spricht. (Wir haben auch einen Quiz-Modus für klassisches Gedächtnistraining.)"
+        }
+      ]
+    },
+    "finalCta": {
+      "title": "Dein nächstes Gespräch beginnt mit 10 Minuten heute.",
+      "subtitle": "Kein Druck - keine Karte nötig. Ein einfaches System, das Sprechen unvermeidlich macht.",
+      "cta": "Jetzt üben"
+    }
+  }
+}

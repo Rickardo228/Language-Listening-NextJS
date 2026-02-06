@@ -1,0 +1,107 @@
+{
+  "landing": {
+    "title": "Chào mừng bạn đến với ứng dụng!",
+    "cta": "Bắt đầu học",
+    "hero": {
+      "title": "Nói tự nhiên và hiểu người bản xứ dễ dàng",
+      "subtitle": "Shadowing là con đường nhanh nhất đến giao tiếp trôi chảy.",
+      "bullets": {
+        "listening": "Rèn luyện phản xạ nghe và nói với shadowing",
+        "lowEffort": "Phương pháp ít nỗ lực, hiệu quả cao cho mọi trình độ",
+        "progress": "Thấy tiến bộ trong một tuần"
+      },
+      "cta": "Dùng thử 1 tuần miễn phí",
+      "note": "Không ràng buộc. Bắt đầu học ngay."
+    },
+    "tryLessonHero": {
+      "title": "Shadowing Ngôn Ngữ",
+      "subtitle": "Thử bài tập nghe và nói 2 phút",
+      "description": "Luyện khả năng hiểu thực sự với shadowing -",
+      "descriptionEmphasis": "nghe, nhắc lại và hiểu",
+      "descriptionSuffix": ".",
+      "note": "Không cần học bài. Không trò chơi. Chỉ cần bấm play và luyện tập.",
+      "callout": {
+        "label": "Bạn sẽ làm gì",
+        "title": "Nghe → Nhắc lại → Hiểu",
+        "subtitle": "Theo tốc độ của bạn. Nói to. Ngôn ngữ thực."
+      },
+      "cta": "Thử bài tập 2 phút",
+      "ctaNote": "Sẵn sàng trong 30 giây. Không cần thẻ."
+    },
+    "whatIsShadowing": {
+      "title": "Shadowing Ngôn Ngữ là gì?",
+      "subtitle": "Nghe → Nhắc lại",
+      "body": "Khi còn nhỏ, chúng ta bắt chước cha mẹ và bạn bè, cho đến khi từ ngữ và cụm từ trở thành một phần trong lời nói hàng ngày. Với phương pháp shadowing, bạn nghe một câu bản xứ rồi nhắc lại thành tiếng - ở tốc độ phù hợp với trình độ của bạn. Dần dần, việc hiểu và nói trở nên tự động hơn.",
+      "highlight": "Các bước đơn giản. Tiến bộ thực sự.",
+      "cta": "Thử một bài học mẫu"
+    },
+    "benefits": {
+      "title": "Cải thiện dễ dàng, đo lường được",
+      "body": "Không trò chơi. Không tìm podcast. Không gia sư. Chỉ cần bấm play và luyện tập - khi đi bộ, làm việc nhà, hay thậm chí khi tắm.",
+      "body2": "Chúng tôi đo một thứ: số câu bạn nghe được.",
+      "cta": "Bắt đầu luyện tập",
+      "note": "Sẵn sàng trong 30 giây. Không cần thanh toán."
+    },
+    "templates": {
+      "title": "Không bao giờ bắt đầu từ số không",
+      "subtitle": "Bỏ qua câu hỏi \"nên luyện gì?\". Chọn một bộ và bắt đầu nói.",
+      "cards": {
+        "levels": "Mẫu theo trình độ và tình huống",
+        "common": "Các câu và động từ phổ biến nhất",
+        "stories": "Câu chuyện nhập vai"
+      },
+      "cta": "Bắt đầu luyện tập",
+      "note": "Mở khóa toàn bộ Thư viện Mẫu."
+    },
+    "social": {
+      "title": "Dành cho người muốn nói,",
+      "titleLine2": "không chỉ học.",
+      "subtitle": "Được sử dụng để shadowing hơn 20 ngôn ngữ",
+      "cta": "Bắt đầu",
+      "note": "Xem tại sao người học yêu thích shadowing."
+    },
+    "pricing": {
+      "title": "Dùng thử miễn phí",
+      "subtitle": "Bắt đầu với bản dùng thử miễn phí. Không cần thanh toán để bắt đầu.",
+      "bestValue": "Giá tốt nhất",
+      "cta": "Bắt đầu dùng thử miễn phí",
+      "note": "Không cần thẻ · Nhắc nhở trước khi tính phí · Thanh toán an toàn",
+      "plans": {
+        "monthly": {
+          "name": "Hàng tháng",
+          "flexible": "Linh hoạt và không ràng buộc"
+        },
+        "annual": {
+          "name": "Hàng năm",
+          "savings": "Tiết kiệm {savings} với thanh toán hàng năm"
+        }
+      }
+    },
+    "faqs": {
+      "title": "Câu Hỏi Thường Gặp",
+      "items": [
+        {
+          "q": "Đây là cho người mới, trung cấp hay nâng cao?",
+          "a": "Mọi trình độ. Người mới bắt đầu với các câu phổ biến và hội thoại cơ bản. Trung cấp luyện các mẫu nói tự nhiên và thành ngữ. Nâng cao làm việc với hội thoại ở tốc độ bản xứ và chủ đề phức tạp. Tốc độ và độ khó điều chỉnh theo trình độ của bạn."
+        },
+        {
+          "q": "Tôi có cần \"học\" ngữ pháp trước không?",
+          "a": "Không. Shadowing xây dựng phản xạ nói trước. Ngữ pháp có thể học song song."
+        },
+        {
+          "q": "Tôi có thể dùng khi đi đường không?",
+          "a": "Có - nó được thiết kế audio-first để bạn bấm play một lần và không cần chạm màn hình trong suốt buổi luyện tập nếu muốn."
+        },
+        {
+          "q": "Đây có tốt hơn flashcard không?",
+          "a": "Flashcard chủ yếu kiểm tra trí nhớ. Shadowing khác biệt: bạn nghe âm thanh bản xứ với tốc độ có thể điều chỉnh và khoảng dừng để nói. Đây là luyện tập nghe và nói nhập vai. Bạn rèn luyện tai và miệng hoạt động ở tốc độ hội thoại, không chỉ nhớ bản dịch. Đó là sự khác biệt giữa biết một từ và có thể dùng nó khi ai đó đang nói chuyện với bạn. (Chúng tôi cũng có chế độ quiz nếu bạn muốn kiểm tra trí nhớ truyền thống.)"
+        }
+      ]
+    },
+    "finalCta": {
+      "title": "Cuộc hội thoại tiếp theo bắt đầu với 10 phút hôm nay.",
+      "subtitle": "Không áp lực - không cần thẻ. Một hệ thống đơn giản khiến việc nói trở thành tất yếu.",
+      "cta": "Bắt đầu luyện tập"
+    }
+  }
+}

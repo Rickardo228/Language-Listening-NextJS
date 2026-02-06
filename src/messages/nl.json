@@ -1,0 +1,107 @@
+{
+  "landing": {
+    "title": "Welkom bij onze app!",
+    "cta": "Begin met leren",
+    "hero": {
+      "title": "Spreek natuurlijk en begrijp moedertaalsprekers moeiteloos",
+      "subtitle": "Shadowing is de snelste weg naar vloeiend converseren.",
+      "bullets": {
+        "listening": "Train je luister- en spreekreflex met shadowing",
+        "lowEffort": "Een methode met weinig moeite en veel impact voor elk niveau",
+        "progress": "Zie vooruitgang in een week"
+      },
+      "cta": "Probeer 1 week gratis",
+      "note": "Zonder verplichtingen. Begin nu met leren."
+    },
+    "tryLessonHero": {
+      "title": "Taal-Shadowing",
+      "subtitle": "Probeer een luister- en spreekoefening van 2 minuten",
+      "description": "Train echt begrip met shadowing -",
+      "descriptionEmphasis": "luister, herhaal en begrijp",
+      "descriptionSuffix": ".",
+      "note": "Niet studeren. Geen spelletjes. Druk op play en oefen.",
+      "callout": {
+        "label": "Wat je gaat doen",
+        "title": "Luisteren → Herhalen → Begrijpen",
+        "subtitle": "Op jouw tempo. Hardop. Echte taal."
+      },
+      "cta": "Probeer de oefening van 2 minuten",
+      "ctaNote": "Klaar in 30 seconden. Geen kaart nodig."
+    },
+    "whatIsShadowing": {
+      "title": "Wat is Taal-Shadowing?",
+      "subtitle": "Luisteren → Herhalen",
+      "body": "Als kinderen bootsen we onze ouders en leeftijdsgenoten na, totdat woorden en zinnen deel worden van ons dagelijks taalgebruik. Met de shadowing-methode luister je naar een moedertaalzin en herhaalt die hardop - op een tempo dat past bij jouw niveau. Na verloop van tijd worden begrijpen en spreken steeds automatischer.",
+      "highlight": "Eenvoudige stappen. Echte vooruitgang.",
+      "cta": "Probeer een voorbeeldles"
+    },
+    "benefits": {
+      "title": "Makkelijke, meetbare verbeteringen",
+      "body": "Geen spelletjes. Geen podcasts zoeken. Geen tutoren. Druk gewoon op play en oefen - tijdens het wandelen, huishouden of zelfs onder de douche.",
+      "body2": "We meten één ding: het aantal zinnen dat je beluistert.",
+      "cta": "Begin met oefenen",
+      "note": "Klaar in 30 seconden. Geen betaling nodig."
+    },
+    "templates": {
+      "title": "Begin nooit vanaf nul",
+      "subtitle": "Geen \"wat moet ik oefenen?\" meer. Kies een set en begin te spreken.",
+      "cards": {
+        "levels": "Sjablonen per niveau en situatie",
+        "common": "Meest voorkomende zinnen en werkwoorden",
+        "stories": "Meeslepende verhalen"
+      },
+      "cta": "Begin met oefenen",
+      "note": "Ontgrendel de volledige Sjablonenbibliotheek."
+    },
+    "social": {
+      "title": "Gemaakt voor leerlingen die willen spreken,",
+      "titleLine2": "niet alleen studeren.",
+      "subtitle": "Gebruikt voor shadowing in meer dan 20 talen",
+      "cta": "Aan de slag",
+      "note": "Ontdek waarom leerlingen van shadowing houden."
+    },
+    "pricing": {
+      "title": "Probeer het gratis",
+      "subtitle": "Begin met een gratis proefperiode. Geen betaling nodig om te starten.",
+      "bestValue": "Beste waarde",
+      "cta": "Start gratis proefperiode",
+      "note": "Geen kaart nodig · Herinnering voor facturering · Veilige betalingen",
+      "plans": {
+        "monthly": {
+          "name": "Maandelijks",
+          "flexible": "Flexibel en vrijblijvend"
+        },
+        "annual": {
+          "name": "Jaarlijks",
+          "savings": "{savings} met jaarlijkse facturering"
+        }
+      }
+    },
+    "faqs": {
+      "title": "Veelgestelde Vragen",
+      "items": [
+        {
+          "q": "Is dit voor beginners, gevorderden of experts?",
+          "a": "Alle niveaus. Beginners starten met veelvoorkomende zinnen en eenvoudige gesprekken. Gevorderden oefenen natuurlijke spraakpatronen en idiomatische uitdrukkingen. Experts werken aan dialogen op moedertaalsnelheid en complexe onderwerpen. Het tempo en de moeilijkheidsgraad passen zich aan jouw niveau aan."
+        },
+        {
+          "q": "Moet ik eerst grammatica \"studeren\"?",
+          "a": "Nee. Shadowing bouwt eerst de spreekreflex op. Grammatica kan er tegelijkertijd bij komen."
+        },
+        {
+          "q": "Kan ik het gebruiken onderweg?",
+          "a": "Ja - het is ontworpen als audio-first zodat je één keer op play drukt en de hele oefensessie niet met je scherm hoeft te interacteren als je dat niet wilt."
+        },
+        {
+          "q": "Is dit beter dan flashcards?",
+          "a": "Flashcards testen vooral het geheugen. Shadowing is anders: je luistert naar moedertaalaudio met instelbare snelheid en configureerbare pauzes om te spreken. Het is meeslepende luister- en spreekpraktijk. Je traint je oren en mond om op gesprekssnelheid te werken, niet alleen om een vertaling te onthouden. Het is het verschil tussen een woord kennen en het kunnen gebruiken als iemand tegen je praat. (We hebben ook een quizmodus voor traditionele geheugentests.)"
+        }
+      ]
+    },
+    "finalCta": {
+      "title": "Je volgende gesprek begint met 10 minuten vandaag.",
+      "subtitle": "Geen druk - geen kaart nodig. Een eenvoudig systeem dat spreken onvermijdelijk maakt.",
+      "cta": "Begin met oefenen"
+    }
+  }
+}

@@ -1,0 +1,107 @@
+{
+  "landing": {
+    "title": "Witaj w naszej aplikacji!",
+    "cta": "Zacznij się uczyć",
+    "hero": {
+      "title": "Mów naturalnie i rozumiej native speakerów z łatwością",
+      "subtitle": "Shadowing to najszybsza droga do płynnej konwersacji.",
+      "bullets": {
+        "listening": "Trenuj refleksy słuchania i mówienia z shadowingiem",
+        "lowEffort": "Metoda niskiego wysiłku i dużego efektu dla każdego poziomu",
+        "progress": "Zobacz postępy w tydzień"
+      },
+      "cta": "Wypróbuj 1 tydzień za darmo",
+      "note": "Bez zobowiązań. Zacznij się uczyć teraz."
+    },
+    "tryLessonHero": {
+      "title": "Shadowing Językowy",
+      "subtitle": "Wypróbuj 2-minutowe ćwiczenie słuchania i mówienia",
+      "description": "Trenuj prawdziwe rozumienie z shadowingiem -",
+      "descriptionEmphasis": "słuchaj, powtarzaj i rozumiej",
+      "descriptionSuffix": ".",
+      "note": "Bez nauki. Bez gier. Po prostu naciśnij play i ćwicz.",
+      "callout": {
+        "label": "Co będziesz robić",
+        "title": "Słuchaj → Powtarzaj → Rozumiej",
+        "subtitle": "W swoim tempie. Na głos. Prawdziwy język."
+      },
+      "cta": "Wypróbuj 2-minutowe ćwiczenie",
+      "ctaNote": "Gotowe w 30 sekund. Bez karty."
+    },
+    "whatIsShadowing": {
+      "title": "Czym jest Shadowing Językowy?",
+      "subtitle": "Słuchaj → Powtarzaj",
+      "body": "Jako dzieci naśladujemy rodziców i rówieśników, aż słowa i zwroty stają się częścią naszej codziennej mowy. W metodzie shadowingu słuchasz natywnej frazy, a następnie powtarzasz ją na głos - w tempie dopasowanym do Twojego poziomu. Z czasem rozumienie i mówienie stają się bardziej automatyczne.",
+      "highlight": "Proste kroki. Prawdziwe postępy.",
+      "cta": "Wypróbuj przykładową lekcję"
+    },
+    "benefits": {
+      "title": "Łatwe, mierzalne postępy",
+      "body": "Bez gier. Bez szukania podcastów. Bez korepetytorów. Po prostu naciśnij play i ćwicz - na spacerze, podczas sprzątania, a nawet pod prysznicem.",
+      "body2": "Mierzymy jedną rzecz: liczbę fraz, których słuchasz.",
+      "cta": "Zacznij ćwiczyć",
+      "note": "Gotowe w 30 sekund. Bez płatności."
+    },
+    "templates": {
+      "title": "Nigdy nie zaczynaj od zera",
+      "subtitle": "Koniec z \"co powinienem ćwiczyć?\". Wybierz zestaw i zacznij mówić.",
+      "cards": {
+        "levels": "Szablony wg poziomu i sytuacji",
+        "common": "Najczęstsze frazy i czasowniki",
+        "stories": "Wciągające historie"
+      },
+      "cta": "Zacznij ćwiczyć",
+      "note": "Odblokuj pełną Bibliotekę Szablonów."
+    },
+    "social": {
+      "title": "Stworzone dla uczących się, którzy chcą mówić,",
+      "titleLine2": "a nie tylko się uczyć.",
+      "subtitle": "Używany do shadowingu w ponad 20 językach",
+      "cta": "Rozpocznij",
+      "note": "Zobacz, dlaczego uczący się kochają shadowing."
+    },
+    "pricing": {
+      "title": "Wypróbuj za darmo",
+      "subtitle": "Zacznij od darmowego okresu próbnego. Nie musisz płacić, żeby zacząć.",
+      "bestValue": "Najlepsza wartość",
+      "cta": "Rozpocznij darmowy okres próbny",
+      "note": "Bez karty · Przypomnienie przed rozliczeniem · Bezpieczne płatności",
+      "plans": {
+        "monthly": {
+          "name": "Miesięczny",
+          "flexible": "Elastyczny i bez zobowiązań"
+        },
+        "annual": {
+          "name": "Roczny",
+          "savings": "{savings} przy rozliczeniu rocznym"
+        }
+      }
+    },
+    "faqs": {
+      "title": "Najczęściej Zadawane Pytania",
+      "items": [
+        {
+          "q": "Czy to jest dla początkujących, średnio zaawansowanych czy zaawansowanych?",
+          "a": "Dla wszystkich poziomów. Początkujący zaczynają od popularnych fraz i prostych rozmów. Średnio zaawansowani ćwiczą naturalne wzorce mowy i wyrażenia idiomatyczne. Zaawansowani pracują nad dialogami w natywnym tempie i złożonymi tematami. Tempo i trudność dostosowują się do Twojego poziomu."
+        },
+        {
+          "q": "Czy muszę najpierw \"uczyć się\" gramatyki?",
+          "a": "Nie. Shadowing buduje najpierw odruch mówienia. Gramatyka może towarzyszyć temu procesowi."
+        },
+        {
+          "q": "Czy mogę tego używać w drodze do pracy?",
+          "a": "Tak - jest zaprojektowany jako audio-first, żebyś mógł nacisnąć play raz i nie dotykać ekranu przez całą sesję, jeśli nie chcesz."
+        },
+        {
+          "q": "Czy to lepsze niż fiszki?",
+          "a": "Fiszki testują głównie pamięć. Shadowing jest inny: słuchasz natywnego audio z regulowaną prędkością i konfigurowalnymi pauzami na mówienie. To immersyjna praktyka słuchania i mówienia. Trenujesz uszy i usta do pracy w tempie rozmowy, a nie tylko do zapamiętywania tłumaczeń. To różnica między znaniem słowa a umiejętnością jego użycia, gdy ktoś do Ciebie mówi. (Mamy też tryb quizu dla tradycyjnych testów pamięci.)"
+        }
+      ]
+    },
+    "finalCta": {
+      "title": "Twoja następna rozmowa zaczyna się od 10 minut dziś.",
+      "subtitle": "Bez presji - bez karty. Prosty system, który sprawia, że mówienie staje się nieuniknione.",
+      "cta": "Zacznij ćwiczyć"
+    }
+  }
+}
