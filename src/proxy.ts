@@ -9,7 +9,6 @@ const getLocalePrefix = (locale: string) => {
   const localePrefix = routing.localePrefix;
 
   if (typeof localePrefix === 'string') {
-    if (localePrefix === 'never') return '';
     if (localePrefix === 'as-needed' && locale === routing.defaultLocale) {
       return '';
     }
@@ -20,8 +19,6 @@ const getLocalePrefix = (locale: string) => {
     locale as keyof typeof localePrefix.prefixes
   ];
   if (customPrefix) return customPrefix;
-
-  if (localePrefix?.mode === 'never') return '';
 
   if (localePrefix?.mode === 'as-needed' && locale === routing.defaultLocale) {
     return '';

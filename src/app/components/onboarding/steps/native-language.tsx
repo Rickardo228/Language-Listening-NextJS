@@ -42,7 +42,7 @@ export function NativeLanguage({ data, updateData, onNext, onBack, isLoading }: 
           <User className="w-8 h-8 text-blue-600 dark:text-blue-300" />
         </div>
         <h1 className="text-3xl md:text-4xl">
-          I can already speak...
+          My native language is...
         </h1>
       </div>
 
