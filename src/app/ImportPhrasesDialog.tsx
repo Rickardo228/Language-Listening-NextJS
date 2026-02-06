@@ -97,7 +97,7 @@ export function ImportPhrasesDialog({
         setMotivationalIndex(Math.floor(Math.random() * motivationalPhrases.length))
         const interval = setInterval(() => {
             setMotivationalIndex(i => (i + 1) % motivationalPhrases.length)
-        }, 4000)
+        }, 10000)
         return () => clearInterval(interval)
     }, [isProcessing])
     const inputLangLabel = (languageOptions.find(lang => lang.code === (isSwapped ? targetLang : inputLang))?.label || inputLang).split(' (')[0];
