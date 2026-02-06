@@ -10,7 +10,9 @@ const getLocalePrefix = (locale: string) => {
     return `/${locale}`;
   }
 
-  const customPrefix = routing.localePrefix?.prefixes?.[locale as keyof typeof routing.localePrefix.prefixes];
+  const customPrefix = routing.localePrefix?.prefixes?.[
+    locale as keyof typeof routing.localePrefix.prefixes
+  ];
   if (customPrefix) return customPrefix;
 
   if (routing.localePrefix?.mode === 'as-needed' && locale === routing.defaultLocale) {
@@ -52,10 +54,9 @@ export default function middleware(request: NextRequest) {
     const resolvedLocale = resolveLocaleFromPath(resolvedPathname);
 
     if (isLocaleRootPath(resolvedPathname) && cookies.has('auth-hint')) {
-      response = NextResponse.redirect(
-        new URL(`/${resolvedLocale}/home`, request.url),
-        { headers: new Headers(response.headers) }
-      );
+      response = NextResponse.redirect(new URL(`/${resolvedLocale}/home`, request.url), {
+        headers: new Headers(response.headers),
+      });
     }
 
     response.cookies.set('checkout-success', '1', {
