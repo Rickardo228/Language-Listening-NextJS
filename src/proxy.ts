@@ -15,7 +15,7 @@ const getLocalePrefix = (locale: string) => {
   ];
   if (customPrefix) return customPrefix;
 
-  if (routing.localePrefix?.mode === 'as-needed' && locale === routing.defaultLocale) {
+  if (routing.localePrefix === 'as-needed' && locale === routing.defaultLocale) {
     return '';
   }
 

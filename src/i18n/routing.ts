@@ -8,6 +8,6 @@ const locales = Array.from(
 export const routing = defineRouting({
   locales,
   defaultLocale: 'en',
-  localePrefix: 'always',
+  localePrefix: 'as-needed',
   localeDetection: true,
 });
