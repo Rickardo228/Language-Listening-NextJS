@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { Home, Sun, Moon, CircleCheck } from 'lucide-react';
 import { useTheme } from '../ThemeProvider';
@@ -18,6 +18,35 @@ import { Button } from './ui/Button';
 import { CheckoutSuccessHandler } from './CheckoutSuccessHandler';
 import { Modal } from './ui';
 import Link from 'next/link';
+import { TourProvider, useTour, StepType } from '@reactour/tour';
+
+const createListTourSteps: StepType[] = [
+  {
+    selector: '[data-tour="create-list"]',
+    content: 'Create your own custom phrase list to practice with.',
+    position: 'bottom',
+  },
+];
+
+function CreateListTourController({ shouldOpen, onClose }: { shouldOpen: boolean; onClose: () => void }) {
+  const { setIsOpen, isOpen } = useTour();
+  const hasOpened = useRef(false);
+
+  useEffect(() => {
+    if (shouldOpen && !hasOpened.current) {
+      hasOpened.current = true;
+      setIsOpen(true);
+    }
+  }, [shouldOpen, setIsOpen]);
+
+  useEffect(() => {
+    if (hasOpened.current && !isOpen) {
+      onClose();
+    }
+  }, [isOpen, onClose]);
+
+  return null;
+}
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -32,6 +61,7 @@ export function AppLayout({ children }: AppLayoutProps) {
   const { theme, toggleTheme } = useTheme();
   const { isCollapsed, setIsCollapsed } = useSidebar();
   const [showCheckoutSuccessModal, setShowCheckoutSuccessModal] = useState(false);
+  const [showCreateListTour, setShowCreateListTour] = useState(false);
   const checkoutSuccessTrackedRef = useRef(false);
   const checkoutSuccessSourceRef = useRef<'query_param' | 'cookie' | 'session_storage' | 'unknown' | null>(null);
 
@@ -98,6 +128,19 @@ export function AppLayout({ children }: AppLayoutProps) {
   }, [user, refreshUserClaims, pathname, searchParams]);
 
 
+  const handleCheckoutModalClose = useCallback(() => {
+    setShowCheckoutSuccessModal(false);
+    // Show create list tour on desktop only for new trial users
+    const isDesktop = window.innerWidth >= 1024;
+    if (isDesktop && !hasTrialed) {
+      setTimeout(() => setShowCreateListTour(true), 400);
+    }
+  }, [hasTrialed]);
+
+  const handleTourClose = useCallback(() => {
+    setShowCreateListTour(false);
+  }, []);
+
   const handleHome = () => {
     track('Home Button Clicked', { source: 'header' });
 
@@ -145,6 +188,44 @@ export function AppLayout({ children }: AppLayoutProps) {
   return (
     <OnboardingGuard>
       <PaywallGuard>
+        <TourProvider
+          steps={createListTourSteps}
+          onClickMask={({ setIsOpen }) => setIsOpen(false)}
+          showBadge={false}
+          showCloseButton={true}
+          showNavigation={false}
+          showDots={false}
+          showPrevNextButtons={false}
+          disableInteraction={false}
+          padding={{ mask: 8, popover: [8, 12] }}
+          styles={{
+            popover: (base) => ({
+              ...base,
+              backgroundColor: 'hsl(var(--background))',
+              color: 'hsl(var(--foreground))',
+              borderRadius: '12px',
+              padding: '20px',
+              boxShadow: '0 10px 40px rgba(0, 0, 0, 0.4)',
+              maxWidth: '300px',
+              border: '1px solid hsl(var(--border))',
+            }),
+            maskArea: (base) => ({
+              ...base,
+              rx: 8,
+            }),
+            maskWrapper: (base) => ({
+              ...base,
+              color: 'rgba(0, 0, 0, 0.7)',
+            }),
+            close: (base) => ({
+              ...base,
+              color: 'hsl(var(--foreground))',
+              right: 8,
+              top: 8,
+            }),
+          }}
+        >
+        <CreateListTourController shouldOpen={showCreateListTour} onClose={handleTourClose} />
         <CheckoutSuccessHandler />
         {/* Saved Configs List - hide for certain routes */}
         {!isOnTemplatesPage && !hideSidebar && user && (
@@ -251,8 +332,8 @@ export function AppLayout({ children }: AppLayoutProps) {
         </div>
         <Modal
           isOpen={showCheckoutSuccessModal}
-          onClose={() => setShowCheckoutSuccessModal(false)}
-          title={hasTrialed ? 'You’re all set!' : 'Welcome aboard!'}
+          onClose={handleCheckoutModalClose}
+          title={hasTrialed ? 'You\u2019re all set!' : 'Welcome aboard!'}
           subtitle={hasTrialed
             ? 'Your account is active.'
             : 'Your free trial is active and everything is unlocked.'}
@@ -261,7 +342,7 @@ export function AppLayout({ children }: AppLayoutProps) {
             <Button
               onClick={() => {
                 track('Checkout Success Modal Continue Clicked');
-                setShowCheckoutSuccessModal(false);
+                handleCheckoutModalClose();
               }}
             >
               Start learning
@@ -271,10 +352,11 @@ export function AppLayout({ children }: AppLayoutProps) {
         >
           <p className="text-sm text-muted-foreground">
             {hasTrialed
-              ? 'We updated your account status and opened the full library, unlimited custom phrases, and progress tracking. Jump in whenever you’re ready.'
+              ? 'We updated your account status and opened the full library, unlimited custom phrases, and progress tracking. Jump in whenever you\u2019re ready.'
               : 'We refreshed your account status and unlocked the full library, unlimited custom phrases, and progress tracking. Jump into your first session whenever you are ready.'}
           </p>
         </Modal>
+        </TourProvider>
       </PaywallGuard>
     </OnboardingGuard>
   );
