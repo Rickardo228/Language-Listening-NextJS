@@ -20,24 +20,38 @@ import { Modal } from './ui';
 import Link from 'next/link';
 import { TourProvider, useTour, StepType } from '@reactour/tour';
 
-const createListTourSteps: StepType[] = [
+// Desktop and mobile use separate selectors because both elements exist in the DOM
+// simultaneously (desktop is hidden via CSS `hidden lg:flex`). querySelector returns
+// the first DOM match regardless of visibility, so a shared selector would always
+// find the hidden desktop button on mobile.
+const desktopCreateListTourSteps: StepType[] = [
   {
     selector: '[data-tour="create-list"]',
     content: 'Create your own custom phrase list to practice with.',
-    position: 'bottom',
+  },
+];
+
+const mobileCreateListTourSteps: StepType[] = [
+  {
+    selector: '[data-tour="create-list-mobile"]',
+    content: 'Create your own custom phrase list to practice with.',
   },
 ];
 
 function CreateListTourController({ shouldOpen, onClose }: { shouldOpen: boolean; onClose: () => void }) {
-  const { setIsOpen, isOpen } = useTour();
+  const { setIsOpen, setSteps, setCurrentStep, isOpen } = useTour();
   const hasOpened = useRef(false);
 
   useEffect(() => {
     if (shouldOpen && !hasOpened.current) {
       hasOpened.current = true;
+      const isDesktop = window.innerWidth >= 1024;
+      track('Create List Tour Shown', { platform: isDesktop ? 'desktop' : 'mobile' });
+      setSteps?.(isDesktop ? desktopCreateListTourSteps : mobileCreateListTourSteps);
+      setCurrentStep?.(0);
       setIsOpen(true);
     }
-  }, [shouldOpen, setIsOpen]);
+  }, [shouldOpen, setIsOpen, setSteps, setCurrentStep]);
 
   useEffect(() => {
     if (hasOpened.current && !isOpen) {
@@ -130,15 +144,14 @@ export function AppLayout({ children }: AppLayoutProps) {
 
   const handleCheckoutModalClose = useCallback(() => {
     setShowCheckoutSuccessModal(false);
-    // Show create list tour on desktop only for new trial users
-    const isDesktop = window.innerWidth >= 1024;
-    if (isDesktop && !hasTrialed) {
+    if (!hasTrialed) {
       setTimeout(() => setShowCreateListTour(true), 400);
     }
   }, [hasTrialed]);
 
   const handleTourClose = useCallback(() => {
     setShowCreateListTour(false);
+    track('Create List Tour Dismissed');
   }, []);
 
   const handleHome = () => {
@@ -189,7 +202,7 @@ export function AppLayout({ children }: AppLayoutProps) {
     <OnboardingGuard>
       <PaywallGuard>
         <TourProvider
-          steps={createListTourSteps}
+          steps={desktopCreateListTourSteps}
           onClickMask={({ setIsOpen }) => setIsOpen(false)}
           showBadge={false}
           showCloseButton={true}

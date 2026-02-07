@@ -1,7 +1,9 @@
 import { ImportPhrasesDialog, ImportPhrasesDialogProps } from './ImportPhrasesDialog';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { Plus } from 'lucide-react';
 import { useTour } from '@reactour/tour';
+import { track } from '../lib/mixpanelClient';
 
 export type ImportPhrasesProps = Omit<ImportPhrasesDialogProps, 'onClose' | 'isOpen'> & {
     className?: string;
@@ -18,10 +20,23 @@ export function ImportPhrases({
     processProgress,
     onProcess,
     onAddToCollection,
-    className = ''
+    className = '',
 }: ImportPhrasesProps) {
     const [isOpen, setIsOpen] = useState(false);
     const tour = useTour();
+    const searchParams = useSearchParams();
+    const router = useRouter();
+
+    // Auto-open when ?create=true is in the URL
+    useEffect(() => {
+        if (searchParams?.get('create') === 'true') {
+            setIsOpen(true);
+            const params = new URLSearchParams(searchParams.toString());
+            params.delete('create');
+            const nextQuery = params.toString();
+            router.replace(`${window.location.pathname}${nextQuery ? `?${nextQuery}` : ''}`, { scroll: false });
+        }
+    }, [searchParams, router]);
     const buttonText = onProcess ? 'Create List' : 'Add Phrases';
     const buttonClassName = onProcess
         ? "px-3 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white font-medium rounded-lg transition-all duration-200 shadow-sm hover:shadow-md"
@@ -30,7 +45,11 @@ export function ImportPhrases({
     return (
         <>
             <button
-                onClick={() => { tour.setIsOpen(false); setIsOpen(true); }}
+                onClick={() => {
+                    if (tour.isOpen) track('Create List Tour CTA Clicked', { platform: 'desktop' });
+                    tour.setIsOpen(false);
+                    setIsOpen(true);
+                }}
                 className={`${buttonClassName} ${className}`}
                 data-tour="create-list"
             >
