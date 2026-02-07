@@ -238,6 +238,7 @@ export function LikePhraseDialog({ isOpen, onClose, phrase, submitDisabled }: Li
       loading={saving}
       collectionsLoading={loadingCollections}
       onAddToCollection={handleAddToCollection}
+      showSuggestedTopicChips={false}
       variant="like"
       collectionOptions={collectionOptions}
       selectedCollectionId={selectedCollectionId}

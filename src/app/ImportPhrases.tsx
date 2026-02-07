@@ -59,6 +59,7 @@ export function ImportPhrases({
                 processProgress={processProgress}
                 onProcess={onProcess}
                 onAddToCollection={onAddToCollection}
+                showSuggestedTopicChips={!onAddToCollection}
             />
         </>
     );

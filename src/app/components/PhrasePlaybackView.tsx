@@ -1958,17 +1958,18 @@ export function PhrasePlaybackView({
                 />
             )}
             {insertDialogOpen && (
-                <ImportPhrasesDialog
-                    isOpen={insertDialogOpen}
-                    onClose={() => setInsertDialogOpen(false)}
+                    <ImportPhrasesDialog
+                        isOpen={insertDialogOpen}
+                        onClose={() => setInsertDialogOpen(false)}
                     inputLang={phrases[0]?.inputLang || 'en-GB'}
                     setInputLang={() => {}}
                     targetLang={phrases[0]?.targetLang || 'it-IT'}
                     setTargetLang={() => {}}
                     phrasesInput={insertPhrasesInput}
-                    setPhrasesInput={setInsertPhrasesInput}
-                    loading={insertLoading}
-                    onAddToCollection={async (inputLang, targetLang, isSwapped) => {
+                        setPhrasesInput={setInsertPhrasesInput}
+                        loading={insertLoading}
+                        showSuggestedTopicChips={false}
+                        onAddToCollection={async (inputLang, targetLang, isSwapped) => {
                         if (!setPhrases) return;
                         const splitPhrases = insertPhrasesInput
                             .split('\n')

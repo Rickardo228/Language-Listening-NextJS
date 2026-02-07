@@ -277,6 +277,8 @@ export function QuickAddDialog({ isOpen, onClose }: QuickAddDialogProps) {
       processProgress={processProgress}
       collectionsLoading={loadingCollections}
       onAddToCollection={handleAddToCollection}
+      showSuggestedTopicChips
+      showSuggestedTopicChipsForSelectedList={false}
       variant="quickAdd"
       collectionOptions={collectionOptions}
       selectedCollectionId={selectedCollectionId}

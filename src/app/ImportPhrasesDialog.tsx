@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { languageOptions, CollectionType } from './types'
-import { X, Plus, Lightbulb } from 'lucide-react'
+import { X, Plus, Lightbulb, Sparkles } from 'lucide-react'
 import { API_BASE_URL } from './consts'
 import { Dialog } from '@headlessui/react'
 import { LanguageSelector } from './components/LanguageSelector'
@@ -23,6 +23,12 @@ const motivationalPhrases = [
     "Language is the road map of a culture",
     "Almost there, hang tight!",
 ]
+
+const suggestedTopics = [
+    'Travel essentials',
+    'Food & restaurants',
+]
+const CREATE_NEW_COLLECTION_VALUE = '__create_new__'
 
 export interface ImportPhrasesDialogProps {
     isOpen: boolean
@@ -48,6 +54,8 @@ export interface ImportPhrasesDialogProps {
     submitDisabled?: boolean
     defaultCollectionId?: string | null
     onSetDefaultCollection?: () => void
+    showSuggestedTopicChips?: boolean
+    showSuggestedTopicChipsForSelectedList?: boolean
 }
 
 export function ImportPhrasesDialog({
@@ -74,6 +82,8 @@ export function ImportPhrasesDialog({
     submitDisabled = false,
     defaultCollectionId,
     onSetDefaultCollection,
+    showSuggestedTopicChips = true,
+    showSuggestedTopicChipsForSelectedList = true,
 }: ImportPhrasesDialogProps) {
     const [prompt, setPrompt] = useState('')
     const [generatingPhrases, setGeneratingPhrases] = useState(false)
@@ -83,7 +93,11 @@ export function ImportPhrasesDialog({
     const [isMobile, setIsMobile] = useState(false)
     const [isMac, setIsMac] = useState(false)
     const [motivationalIndex, setMotivationalIndex] = useState(() => Math.floor(Math.random() * motivationalPhrases.length))
+    const [isMagicOpen, setIsMagicOpen] = useState(false)
+    const [magicAction, setMagicAction] = useState<'generate' | 'just' | null>(null)
+    const [activeTopic, setActiveTopic] = useState<string | null>(null)
     const textareaRef = useRef<HTMLTextAreaElement>(null)
+    const magicInputRef = useRef<HTMLInputElement>(null)
 
     useEffect(() => {
         const checkMobile = () => {
@@ -108,17 +122,22 @@ export function ImportPhrasesDialog({
     const isLikeVariant = variant === 'like';
     const isQuickAddVariant = variant === 'quickAdd';
     const showCollectionPicker = isLikeVariant || isQuickAddVariant;
+    const showSuggestedTopics = showSuggestedTopicChips
+        && !phrasesInput.trim()
+        && (showSuggestedTopicChipsForSelectedList || !selectedCollectionId || selectedCollectionId === CREATE_NEW_COLLECTION_VALUE);
     const addToCollectionDisabled = loading
         || submitDisabled
         || !phrasesInput.trim()
         || (showCollectionPicker && collectionOptions.length > 0 && !selectedCollectionId);
 
-    const handleGeneratePhrases = async () => {
-        if (!prompt.trim()) return;
+    const generatePhrases = async (promptValue: string, allowEmpty = false) => {
+        const normalizedPrompt = promptValue.trim();
+        if (!allowEmpty && !normalizedPrompt) return;
+        const effectivePrompt = normalizedPrompt || 'Generate useful phrases';
 
         // Detect if prompt is a URL
         const urlRegex = /^https?:\/\/.+/i;
-        const isUrl = urlRegex.test(prompt.trim());
+        const isUrl = urlRegex.test(effectivePrompt);
 
         setGeneratingPhrases(true);
         setIsFetchingUrl(isUrl);
@@ -131,12 +150,12 @@ export function ImportPhrasesDialog({
             // Choose endpoint based on whether it's a URL
             const endpoint = isUrl ? '/fetch-url-content' : '/generate-phrases';
             const bodyData = isUrl ? {
-                url: prompt.trim(),
+                url: effectivePrompt,
                 inputLang: isSwapped ? targetLang : inputLang,
                 targetLang: isSwapped ? inputLang : targetLang,
                 type: collectionType
             } : {
-                prompt,
+                prompt: effectivePrompt,
                 inputLang: isSwapped ? targetLang : inputLang,
                 targetLang: isSwapped ? inputLang : targetLang,
                 type: collectionType
@@ -163,7 +182,7 @@ export function ImportPhrasesDialog({
                 // Track phrase generation event
                 const phraseCount = data.phrases.split('\n').filter((line: string) => line.trim()).length;
                 trackGeneratePhrases(
-                    isUrl ? `URL: ${prompt}` : prompt,
+                    isUrl ? `URL: ${effectivePrompt}` : effectivePrompt,
                     processInputLang,
                     processTargetLang,
                     collectionType,
@@ -179,6 +198,23 @@ export function ImportPhrasesDialog({
             setGeneratingPhrases(false);
             setIsFetchingUrl(false);
         }
+    };
+
+    const handleGeneratePhrases = async () => {
+        await generatePhrases(prompt, false);
+    };
+
+    const handleMagicGenerate = async (
+        promptValue?: string,
+        action: 'generate' | 'just' = 'generate',
+        topic?: string
+    ) => {
+        setMagicAction(action);
+        if (topic) setActiveTopic(topic);
+        await generatePhrases(promptValue ?? prompt, true);
+        setMagicAction(null);
+        setActiveTopic(null);
+        setIsMagicOpen(false);
     };
 
     const handleSubmit = async () => {
@@ -363,55 +399,51 @@ export function ImportPhrasesDialog({
                                 {!isLikeVariant && (
                                     <div>
                                         <label className="block text-sm font-medium mb-1">Phrases</label>
-                                        <textarea
-                                            ref={textareaRef}
-                                            value={phrasesInput}
-                                            onChange={(e) => setPhrasesInput(e.target.value)}
-                                            onKeyDown={handleTextareaKeyDown}
-                                            className="w-full h-32 p-2 rounded-md border bg-background resize-none"
-                                            placeholder={`Enter phrases or paste text in ${inputLangLabel} here...`}
-                                            disabled={loading}
-                                            autoFocus
-                                        />
+                                        <div className="relative">
+                                            <textarea
+                                                ref={textareaRef}
+                                                value={phrasesInput}
+                                                onChange={(e) => setPhrasesInput(e.target.value)}
+                                                onKeyDown={handleTextareaKeyDown}
+                                                className="w-full h-32 p-2 pr-20 pb-12 rounded-md border bg-background resize-none"
+                                                placeholder={`Enter phrases or paste text in ${inputLangLabel} here...`}
+                                                disabled={loading}
+                                                autoFocus
+                                            />
+                                            <div className="absolute bottom-2 right-2 flex items-center gap-2 justify-end">
+                                                {showSuggestedTopics && (
+                                                    <div className="flex items-center gap-2">
+                                                        {suggestedTopics.map(topic => (
+                                                            <button
+                                                                key={topic}
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    setPrompt(topic);
+                                                                    handleMagicGenerate(topic, 'generate', topic);
+                                                                }}
+                                                                className="px-2.5 py-1 text-xs rounded-full bg-secondary/80 text-secondary-foreground hover:bg-secondary disabled:opacity-60"
+                                                                disabled={generatingPhrases}
+                                                            >
+                                                                {generatingPhrases && activeTopic === topic ? 'Generating...' : topic}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setIsMagicOpen(true)}
+                                                    className="h-8 w-8 rounded-full bg-secondary text-secondary-foreground hover:bg-secondary/90 flex items-center justify-center shadow"
+                                                    title="Generate with AI"
+                                                >
+                                                    <Sparkles className="h-4 w-4" />
+                                                </button>
+                                            </div>
+                                        </div>
                                         {!isMobile && (
                                             <p className="text-xs text-muted-foreground mt-1">
                                                 {isMac ? '⌘' : 'Ctrl'}+Enter for new line
                                             </p>
                                         )}
-                                    </div>
-                                )}
-
-                                {!onProcess && !isLikeVariant && !isQuickAddVariant && (
-                                    <div>
-                                        <Input
-                                            label="Get phrase suggestions with AI"
-                                            type="text"
-                                            value={prompt}
-                                            onChange={(e) => setPrompt(e.target.value)}
-                                            placeholder="Ask for suggestions or paste a URL..."
-                                            disabled={loading}
-                                        />
-                                        <div className="flex flex-wrap gap-2 mt-2">
-                                            {prompt.trim() && (
-                                                <button
-                                                    onClick={handleGeneratePhrases}
-                                                    disabled={generatingPhrases || !prompt.trim()}
-                                                    className="px-4 py-2 bg-secondary text-secondary-foreground rounded hover:bg-secondary/90 disabled:bg-gray-400 whitespace-nowrap"
-                                                >
-                                                    {generatingPhrases ? (
-                                                        <div className="flex items-center gap-2">
-                                                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                                            <span>{isFetchingUrl ? 'Fetching from URL...' : 'Generating...'}</span>
-                                                        </div>
-                                                    ) : (
-                                                        <div className="flex items-center gap-1">
-                                                            <Lightbulb className="w-5 h-5" />
-                                                            Get Suggestions
-                                                        </div>
-                                                    )}
-                                                </button>
-                                            )}
-                                        </div>
                                     </div>
                                 )}
 
@@ -450,6 +482,61 @@ export function ImportPhrasesDialog({
                     </>)}
                 </Dialog.Panel>
             </div>
+            <Dialog open={isMagicOpen} onClose={() => setIsMagicOpen(false)} className="relative z-[500]" initialFocus={magicInputRef}>
+                <div className="fixed inset-0 bg-black/50" />
+                <div className="fixed inset-0 flex items-center justify-center">
+                    <Dialog.Panel className="bg-background text-foreground p-4 rounded-lg shadow-lg w-[420px] max-w-[90vw] border">
+                        <div className="flex justify-between items-center mb-3">
+                            <h3 className="text-lg font-semibold">Generate with AI</h3>
+                            <button
+                                type="button"
+                                onClick={() => setIsMagicOpen(false)}
+                                className="p-1 text-muted-foreground hover:text-foreground"
+                                title="Close"
+                            >
+                                <X className="h-5 w-5" />
+                            </button>
+                        </div>
+                        <div className="space-y-3">
+                            <Input
+                                label="Get phrase suggestions with AI"
+                                type="text"
+                                value={prompt}
+                                onChange={(e) => setPrompt(e.target.value)}
+                                onKeyDown={(e) => {
+                                    if (e.key !== 'Enter') return;
+                                    e.preventDefault();
+                                    if (!generatingPhrases) {
+                                        const hasPrompt = Boolean(prompt.trim());
+                                        handleMagicGenerate(hasPrompt ? prompt : undefined, hasPrompt ? 'generate' : 'just');
+                                    }
+                                }}
+                                placeholder="e.g. ordering coffee, airport check-in..."
+                                disabled={generatingPhrases || loading}
+                                ref={magicInputRef}
+                            />
+                            <div className="flex items-center gap-2 justify-end">
+                                <button
+                                    type="button"
+                                    onClick={() => handleMagicGenerate(undefined, 'just')}
+                                    className="px-3 py-2 rounded-md bg-secondary text-secondary-foreground text-sm hover:bg-secondary/90 disabled:opacity-50"
+                                    disabled={generatingPhrases}
+                                >
+                                    {generatingPhrases && magicAction === 'just' ? 'Generating...' : 'Just generate'}
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => handleMagicGenerate(prompt, 'generate')}
+                                    className="px-3 py-2 rounded-md bg-primary text-primary-foreground text-sm hover:bg-primary/90 disabled:opacity-50"
+                                    disabled={generatingPhrases || !prompt.trim()}
+                                >
+                                    {generatingPhrases && magicAction === 'generate' ? 'Generating...' : 'Generate'}
+                                </button>
+                            </div>
+                        </div>
+                    </Dialog.Panel>
+                </div>
+            </Dialog>
         </Dialog>
     )
-} 
+}
