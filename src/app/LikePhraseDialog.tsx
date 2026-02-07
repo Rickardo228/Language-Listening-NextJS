@@ -9,6 +9,7 @@ import { Phrase } from './types';
 import { useUser } from './contexts/UserContext';
 import { useCollections } from './contexts/CollectionsContext';
 import { createCollection } from './utils/collectionService';
+import { autoNameCollection } from './utils/generateCollectionName';
 import { firestore } from './firebase';
 
 const CREATE_NEW_VALUE = '__create_new__';
@@ -23,7 +24,7 @@ interface LikePhraseDialogProps {
 
 export function LikePhraseDialog({ isOpen, onClose, phrase, submitDisabled }: LikePhraseDialogProps) {
   const { user } = useUser();
-  const { upsertCollection, appendPhraseToCollection } = useCollections();
+  const { upsertCollection, appendPhraseToCollection, renameCollection } = useCollections();
   const [matchingCollections, setMatchingCollections] = useState<Array<{ id: string; name: string; isReversed: boolean }>>([]);
   const [selectedCollectionId, setSelectedCollectionId] = useState(CREATE_NEW_VALUE);
   const [defaultCollectionId, setDefaultCollectionId] = useState<string | null>(null);
@@ -186,6 +187,14 @@ export function LikePhraseDialog({ isOpen, onClose, phrase, submitDisabled }: Li
             name: 'Liked Phrases',
           },
         });
+        // Auto-generate a name in the background
+        autoNameCollection(
+          [newListPhrase],
+          phrase.inputLang,
+          collectionId,
+          user.uid,
+          (name) => renameCollection(collectionId, name)
+        );
         toast.success('Saved to new list.');
       } else {
         if (!selectedCollectionId) {

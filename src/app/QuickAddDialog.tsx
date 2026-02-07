@@ -10,6 +10,7 @@ import { Phrase, CollectionType } from './types';
 import { useUser } from './contexts/UserContext';
 import { useCollections } from './contexts/CollectionsContext';
 import { createCollection } from './utils/collectionService';
+import { autoNameCollection } from './utils/generateCollectionName';
 import { firestore } from './firebase';
 import { API_BASE_URL } from './consts';
 import { trackCreatePhrase } from '../lib/mixpanelClient';
@@ -25,7 +26,7 @@ interface QuickAddDialogProps {
 export function QuickAddDialog({ isOpen, onClose }: QuickAddDialogProps) {
   const router = useRouter();
   const { user, userProfile } = useUser();
-  const { upsertCollection, appendPhraseToCollection } = useCollections();
+  const { upsertCollection, appendPhraseToCollection, renameCollection } = useCollections();
 
   const [inputLang, setInputLang] = useState(userProfile?.preferredInputLang || 'en-GB');
   const [targetLang, setTargetLang] = useState(userProfile?.preferredTargetLang || 'it-IT');
@@ -157,6 +158,7 @@ export function QuickAddDialog({ isOpen, onClose }: QuickAddDialogProps) {
 
       if (selectedCollectionId === CREATE_NEW_VALUE) {
         // Create a new collection
+        const now = new Date().toISOString();
         const collectionId = await createCollection(
           processedPhrases,
           undefined,
@@ -166,6 +168,18 @@ export function QuickAddDialog({ isOpen, onClose }: QuickAddDialogProps) {
           { skipTracking: false }
         );
 
+        upsertCollection({
+          id: collectionId,
+          name: 'New List',
+          phrases: processedPhrases,
+          created_at: now,
+          collectionType: 'phrases',
+          presentationConfig: {
+            ...defaultPresentationConfigs.phrases,
+            name: 'New List',
+          },
+        });
+
         processedPhrases.forEach((phrase, index) => {
           trackCreatePhrase(
             `${collectionId}-${index}`,
@@ -174,6 +188,15 @@ export function QuickAddDialog({ isOpen, onClose }: QuickAddDialogProps) {
             !!(phrase.inputAudio || phrase.outputAudio)
           );
         });
+
+        // Auto-generate a name in the background
+        autoNameCollection(
+          processedPhrases,
+          inputLang,
+          collectionId,
+          user.uid,
+          (name) => renameCollection(collectionId, name)
+        );
 
         setPhrasesInput('');
         router.push(`/collection/${collectionId}`);

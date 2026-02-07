@@ -10,6 +10,7 @@ import { getFirestore, doc, updateDoc, getDoc, deleteDoc, collection, addDoc, qu
 import { useRouter } from 'next/navigation';
 import { CollectionHeader } from '@/app/CollectionHeader';
 import { useUser } from '@/app/contexts/UserContext';
+import { useCollections } from '@/app/contexts/CollectionsContext';
 import { PhrasePlaybackView, PhrasePlaybackMethods } from '@/app/components/PhrasePlaybackView';
 import { uploadBackgroundMedia, deleteBackgroundMedia } from '@/app/utils/backgroundUpload';
 import { toast } from 'sonner';
@@ -23,6 +24,7 @@ export default function CollectionPage() {
   const router = useRouter();
   const collectionId = params.id as string;
   const { user } = useUser();
+  const { collections } = useCollections();
 
   const [phrases, setPhrasesBase] = useState<Phrase[]>([]);
   const [selectedCollection, setSelectedCollection] = useState<string>(collectionId);
@@ -133,6 +135,14 @@ export default function CollectionPage() {
 
     loadCollection();
   }, [user, collectionId]);
+
+  // Sync name from CollectionsContext (e.g. after auto-naming)
+  useEffect(() => {
+    const contextCollection = collections.find((c) => c.id === collectionId);
+    if (contextCollection && collectionConfig && contextCollection.name !== collectionConfig.name) {
+      setCollectionConfig((prev) => prev ? { ...prev, name: contextCollection.name } : prev);
+    }
+  }, [collections, collectionId, collectionConfig?.name]);
 
   const handleAddToCollection = async (inputLang?: string, targetLang?: string, isSwapped?: boolean) => {
     const splitPhrases = phrasesInput

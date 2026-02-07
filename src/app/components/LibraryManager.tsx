@@ -13,6 +13,7 @@ import { useUser } from '../contexts/UserContext';
 import { useCollections } from '../contexts/CollectionsContext';
 import { trackSelectList, trackCreatePhrase, track } from '../../lib/mixpanelClient';
 import { createCollection } from '../utils/collectionService';
+import { autoNameCollection } from '../utils/generateCollectionName';
 import { defaultPresentationConfig, defaultPresentationConfigs } from '../defaultConfig';
 import { toast } from 'sonner';
 import { resetMainScroll } from '../utils/scroll';
@@ -47,7 +48,7 @@ export function LibraryManager({
     userProfile?.preferredTargetLang || 'it-IT'
   );
   const hasSetLanguages = useRef(false);
-  const { collections: savedCollections, setCollections: setSavedCollections, removeCollection } = useCollections();
+  const { collections: savedCollections, setCollections: setSavedCollections, removeCollection, renameCollection } = useCollections();
   const [collectionsLoading, setCollectionsLoading] = useState(false);
   const [collectionsLimited, setCollectionsLimited] = useState(true);
 
@@ -213,6 +214,18 @@ export function LibraryManager({
       }
 
       const collectionId = await handleCreateCollection(allProcessed, prompt, collectionType, undefined, false);
+
+      // Auto-generate a name if prompt is missing or is a URL
+      const isUrl = prompt && /^https?:\/\//i.test(prompt.trim());
+      if (!prompt || isUrl) {
+        autoNameCollection(
+          allProcessed,
+          effectiveInputLang,
+          collectionId,
+          user!.uid,
+          (name) => renameCollection(collectionId, name)
+        );
+      }
 
       allProcessed.forEach((phrase, index) => {
         trackCreatePhrase(

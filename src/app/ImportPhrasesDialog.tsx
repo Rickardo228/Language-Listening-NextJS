@@ -260,7 +260,7 @@ export function ImportPhrasesDialog({
                     ) : (<>
                         <div className="flex justify-between items-center mb-4">
                             <h2 className="text-xl font-bold">
-                                {isLikeVariant ? 'Add to List' : isQuickAddVariant ? 'Quick Add' : (onAddToCollection ? 'Add Phrases' : 'Create New List')}
+                                {isLikeVariant ? 'Add to List' : isQuickAddVariant ? 'Add Phrases' : (onAddToCollection ? 'Add Phrases' : 'Create New List')}
                             </h2>
                             <button
                                 onClick={onClose}

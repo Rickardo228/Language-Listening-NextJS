@@ -1,5 +1,6 @@
 import { Config } from './types';
 import { useState, useEffect } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
 import { Share2, Lock, Edit, Volume2, Trash2, MoreVertical } from 'lucide-react';
 import { VoiceSelectionModal } from './VoiceSelectionModal';
 import { MenuItem, Menu } from './Menu';
@@ -153,8 +154,18 @@ export function CollectionHeader({
 
     return (
         <div className={`flex items-center gap-2 ${className}`}>
-            <h2 className={`font-semibold truncate capitalize ${titleClassName}`}>
-                {currentCollection.name}
+            <h2 className={`font-semibold truncate capitalize ${titleClassName} relative`}>
+                <AnimatePresence mode="wait" initial={false}>
+                    <motion.span
+                        key={currentCollection.name}
+                        initial={{ opacity: 0, y: 4 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -4 }}
+                        transition={{ duration: 0.3 }}
+                    >
+                        {currentCollection.name}
+                    </motion.span>
+                </AnimatePresence>
             </h2>
             {hasMenuItems && (
                 <Menu
