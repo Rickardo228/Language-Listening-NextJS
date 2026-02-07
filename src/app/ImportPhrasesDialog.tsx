@@ -38,7 +38,7 @@ export interface ImportPhrasesDialogProps {
     collectionsLoading?: boolean
     onProcess?: (prompt?: string, inputLang?: string, targetLang?: string, collectionType?: CollectionType) => Promise<void>
     onAddToCollection?: (inputLang?: string, targetLang?: string, isSwapped?: boolean) => Promise<void>
-    variant?: 'default' | 'like'
+    variant?: 'default' | 'like' | 'quickAdd'
     collectionOptions?: Array<{ value: string; label: string }>
     selectedCollectionId?: string
     setSelectedCollectionId?: (id: string) => void
@@ -46,6 +46,8 @@ export interface ImportPhrasesDialogProps {
     autoFocusCollection?: boolean
     onCollectionSubmit?: () => void
     submitDisabled?: boolean
+    defaultCollectionId?: string | null
+    onSetDefaultCollection?: () => void
 }
 
 export function ImportPhrasesDialog({
@@ -70,6 +72,8 @@ export function ImportPhrasesDialog({
     autoFocusCollection = false,
     onCollectionSubmit,
     submitDisabled = false,
+    defaultCollectionId,
+    onSetDefaultCollection,
 }: ImportPhrasesDialogProps) {
     const [prompt, setPrompt] = useState('')
     const [generatingPhrases, setGeneratingPhrases] = useState(false)
@@ -102,10 +106,12 @@ export function ImportPhrasesDialog({
     }, [isProcessing])
     const inputLangLabel = (languageOptions.find(lang => lang.code === (isSwapped ? targetLang : inputLang))?.label || inputLang).split(' (')[0];
     const isLikeVariant = variant === 'like';
+    const isQuickAddVariant = variant === 'quickAdd';
+    const showCollectionPicker = isLikeVariant || isQuickAddVariant;
     const addToCollectionDisabled = loading
         || submitDisabled
         || !phrasesInput.trim()
-        || (isLikeVariant && collectionOptions.length > 0 && !selectedCollectionId);
+        || (showCollectionPicker && collectionOptions.length > 0 && !selectedCollectionId);
 
     const handleGeneratePhrases = async () => {
         if (!prompt.trim()) return;
@@ -217,7 +223,7 @@ export function ImportPhrasesDialog({
         <Dialog open={isOpen} onClose={onClose} className="relative z-[400]" initialFocus={textareaRef}>
             <div className="fixed inset-0 bg-black/50" />
             <div className="fixed inset-0 flex items-center justify-center">
-                <Dialog.Panel className={`bg-background text-foreground p-4 rounded-lg shadow-lg w-[500px] max-w-[90vw] ${isLikeVariant ? 'overflow-visible' : 'overflow-auto max-h-[90vh]'} border`}>
+                <Dialog.Panel className={`bg-background text-foreground p-4 rounded-lg shadow-lg w-[500px] max-w-[90vw] ${showCollectionPicker ? 'overflow-visible' : 'overflow-auto max-h-[90vh]'} border`}>
                     {processProgress ? (
                         <div className="flex flex-col items-center py-8 px-4 gap-4">
                             <div className="h-6 relative w-full">
@@ -254,7 +260,7 @@ export function ImportPhrasesDialog({
                     ) : (<>
                         <div className="flex justify-between items-center mb-4">
                             <h2 className="text-xl font-bold">
-                                {isLikeVariant ? 'Add to List' : (onAddToCollection ? 'Add Phrases' : 'Create New List')}
+                                {isLikeVariant ? 'Add to List' : isQuickAddVariant ? 'Quick Add' : (onAddToCollection ? 'Add Phrases' : 'Create New List')}
                             </h2>
                             <button
                                 onClick={onClose}
@@ -267,7 +273,7 @@ export function ImportPhrasesDialog({
 
                         <div className="space-y-4">
                             <div className="flex flex-col gap-4">
-                                {!onAddToCollection && !isLikeVariant && (
+                                {!onAddToCollection && !isLikeVariant && !isQuickAddVariant && (
                                     <Input
                                         label="List Name"
                                         type="text"
@@ -284,20 +290,19 @@ export function ImportPhrasesDialog({
                                         targetLang={targetLang}
                                         setTargetLang={setTargetLang}
                                         direction="row"
-                                        mode={onAddToCollection ? 'locked' : 'editable'}
+                                        mode={isQuickAddVariant ? 'editable' : (onAddToCollection ? 'locked' : 'editable')}
                                         disabled={loading}
-                                        isSwapped={onAddToCollection ? isSwapped : undefined}
-                                        onSwap={onAddToCollection
+                                        isSwapped={onAddToCollection && !isQuickAddVariant ? isSwapped : undefined}
+                                        onSwap={onAddToCollection && !isQuickAddVariant
                                             ? () => setIsSwapped(!isSwapped)
                                             : () => {
-                                                // When creating new collection, swap the actual language values
                                                 const temp = inputLang;
                                                 setInputLang(targetLang);
                                                 setTargetLang(temp);
                                             }}
                                     />
                                 )}
-                                {isLikeVariant && (
+                                {showCollectionPicker && (
                                     <div className="space-y-2">
                                         {collectionsLoading ? (
                                             <div>
@@ -324,6 +329,15 @@ export function ImportPhrasesDialog({
                                                 <label className="block text-sm font-medium mb-1">Collection</label>
                                                 <div className="text-sm text-muted-foreground">Liked Phrases</div>
                                             </div>
+                                        )}
+                                        {onSetDefaultCollection && selectedCollectionId && selectedCollectionId !== defaultCollectionId && (
+                                            <button
+                                                type="button"
+                                                onClick={onSetDefaultCollection}
+                                                className="text-xs text-primary hover:underline"
+                                            >
+                                                Set as default
+                                            </button>
                                         )}
                                     </div>
                                 )}
@@ -367,7 +381,7 @@ export function ImportPhrasesDialog({
                                     </div>
                                 )}
 
-                                {!onProcess && !isLikeVariant && (
+                                {!onProcess && !isLikeVariant && !isQuickAddVariant && (
                                     <div>
                                         <Input
                                             label="Get phrase suggestions with AI"

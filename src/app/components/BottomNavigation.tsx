@@ -1,11 +1,12 @@
 'use client'
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { Home, Library, Plus } from 'lucide-react';
 import { track } from '../../lib/mixpanelClient';
 import { ROUTES } from '../routes';
 import { useTour } from '@reactour/tour';
+import { QuickAddDialog } from '../QuickAddDialog';
 
 const LAST_TAB_KEY = 'bottom-nav-last-tab';
 
@@ -24,6 +25,7 @@ export function BottomNavigation() {
   const router = useRouter();
 
   const tour = useTour();
+  const [showQuickAdd, setShowQuickAdd] = useState(false);
   const isHomePath = pathname === ROUTES.HOME || pathname === ROUTES.TEMPLATES;
   const isLibraryPath = pathname === ROUTES.LIBRARY;
 
@@ -46,7 +48,7 @@ export function BottomNavigation() {
     if (tour.isOpen) track('Create List Tour CTA Clicked', { platform: 'mobile' });
     tour.setIsOpen(false);
     track('Bottom Nav Create Clicked');
-    router.push(ROUTES.LIBRARY + '?create=true');
+    setShowQuickAdd(true);
   };
 
   const handleLibraryClick = () => {
@@ -120,6 +122,7 @@ export function BottomNavigation() {
           </span>
         </button>
       </div>
+      <QuickAddDialog isOpen={showQuickAdd} onClose={() => setShowQuickAdd(false)} />
     </div>
   );
 }
