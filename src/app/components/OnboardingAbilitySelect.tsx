@@ -1,45 +1,6 @@
 import { Check } from 'lucide-react';
 import { OptionCard } from './ui/OptionCard';
-
-interface AbilityLevel {
-    id: string;
-    label: string;
-    description: string;
-    icon: string;
-}
-
-const abilityLevels: AbilityLevel[] = [
-    {
-        id: 'beginner',
-        label: 'Beginner',
-        description: 'Just starting out or know a few basic words',
-        icon: '🌱'
-    },
-    {
-        id: 'elementary',
-        label: 'Elementary',
-        description: 'Can understand simple phrases and questions',
-        icon: '📚'
-    },
-    {
-        id: 'intermediate',
-        label: 'Intermediate', 
-        description: 'Can handle everyday conversations',
-        icon: '💬'
-    },
-    {
-        id: 'advanced',
-        label: 'Advanced',
-        description: 'Comfortable with complex topics and nuanced language',
-        icon: '🎯'
-    },
-    {
-        id: 'native',
-        label: 'Native/Fluent',
-        description: 'Native speaker or near-native fluency',
-        icon: '⭐'
-    }
-];
+import { abilityLevels } from '../utils/abilityLevels';
 
 interface OnboardingAbilitySelectProps {
     selectedLevel: string;
