@@ -220,6 +220,7 @@ export function QuickAddDialog({ isOpen, onClose }: QuickAddDialogProps) {
 
         toast.success(`Added ${processedPhrases.length} phrase${processedPhrases.length > 1 ? 's' : ''} to "${data.name}"`);
         setPhrasesInput('');
+        router.push(`/collection/${selectedCollectionId}?scrollTo=${existingPhrases.length}`);
       }
     } catch (err) {
       console.error('Quick add error:', err);

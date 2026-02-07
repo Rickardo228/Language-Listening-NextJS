@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import { Config, Phrase, PresentationConfig } from '@/app/types';
 import { usePresentationConfig } from '@/app/hooks/usePresentationConfig';
 import { API_BASE_URL } from '@/app/consts';
@@ -23,6 +23,7 @@ export default function CollectionPage() {
   const params = useParams();
   const router = useRouter();
   const collectionId = params.id as string;
+  const searchParams = useSearchParams();
   const { user } = useUser();
   const { collections } = useCollections();
 
@@ -135,6 +136,17 @@ export default function CollectionPage() {
 
     loadCollection();
   }, [user, collectionId]);
+
+  // Parse ?scrollTo=N param once and persist in state so it survives URL cleanup
+  const [initialPhraseIndex] = useState(() => {
+    const raw = searchParams?.get('scrollTo');
+    return raw ? parseInt(raw, 10) : undefined;
+  });
+  useEffect(() => {
+    if (searchParams?.get('scrollTo')) {
+      router.replace(`/collection/${collectionId}`, { scroll: false });
+    }
+  }, []);
 
   // Sync name from CollectionsContext (e.g. after auto-naming)
   useEffect(() => {
@@ -418,6 +430,7 @@ export default function CollectionPage() {
       methodsRef={playbackMethodsRef}
       handleImageUpload={handleImageUpload}
       itemType="collection"
+      initialPhraseIndex={initialPhraseIndex}
       onCompleted={(userId, collectionId, inputLang, targetLang) => {
         if (inputLang && targetLang) {
           markCompleted(userId, collectionId, inputLang, targetLang);
