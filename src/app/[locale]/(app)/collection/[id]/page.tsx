@@ -383,7 +383,7 @@ export default function CollectionPage() {
           titleClassName="max-w-[250px]"
         />
       )}
-      <div className="w-fit whitespace-nowrap ml-auto">
+      <div className="w-fit whitespace-nowrap ml-auto pl-3">
         <ImportPhrases
           inputLang={addToCollectionInputLang}
           setInputLang={setAddToCollectionInputLang}

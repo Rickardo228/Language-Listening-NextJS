@@ -153,25 +153,26 @@ export function CollectionHeader({
     const hasMenuItems = menuItems.length > 0;
 
     return (
-        <div className={`flex items-center gap-2 ${className}`}>
-            <h2 className={`font-semibold truncate capitalize ${titleClassName} relative`}>
+        <div className={`flex items-center gap-2 min-w-0 ${className}`}>
+            <div className="min-w-0 flex-1 overflow-hidden">
                 <AnimatePresence mode="wait" initial={false}>
-                    <motion.span
+                    <motion.h2
                         key={currentCollection.name}
                         initial={{ opacity: 0, y: 4 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -4 }}
                         transition={{ duration: 0.3 }}
+                        className={`font-semibold truncate capitalize ${titleClassName}`}
                     >
                         {currentCollection.name}
-                    </motion.span>
+                    </motion.h2>
                 </AnimatePresence>
-            </h2>
+            </div>
             {hasMenuItems && (
                 <Menu
                     trigger={
                         <button
-                            className="p-1 rounded hover:bg-secondary"
+                            className="p-1 rounded hover:bg-secondary flex-shrink-0"
                             title="List options"
                         >
                             <MoreVertical className="w-4 h-4" strokeWidth={1.5} />
