@@ -99,7 +99,7 @@ export function QuickAddDialog({ isOpen, onClose }: QuickAddDialogProps) {
 
   const processPhrases = async (rawPhrases: string[]): Promise<Phrase[]> => {
     const BATCH_SIZE = 10;
-    const skipAudio = rawPhrases.length > 10;
+    const skipAudio = rawPhrases.length > 50;
     const allProcessed: Phrase[] = [];
 
     setProcessProgress({ completed: 0, total: rawPhrases.length });

@@ -171,7 +171,7 @@ export function LibraryManager({
       if (!allPhrases.length) return;
 
       const BATCH_SIZE = 10;
-      const skipAudio = allPhrases.length > 10;
+      const skipAudio = allPhrases.length > 50;
       const allProcessed: Phrase[] = [];
       let lastVoices = { inputVoice: '', targetVoice: '' };
 

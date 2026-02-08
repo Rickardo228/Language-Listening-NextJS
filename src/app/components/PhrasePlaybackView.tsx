@@ -410,9 +410,9 @@ export function PhrasePlaybackView({
                 return;
             }
             console.error('play failed:', reason, e);
-            // If playback fails, try to regenerate the audio (restored lost functionality)
+            // If playback fails, try to regenerate the audio and auto-play once ready
             if (indexRef.current >= 0) {
-                handleAudioError(phaseRef.current);
+                handleAudioError(phaseRef.current, true);
             }
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1382,8 +1382,8 @@ export function PhrasePlaybackView({
 
         if (audioRef.current && audioRef.current.paused) {
             if (!src) {
-                // If no source exists, generate it
-                handleAudioError(currentPhase);
+                // If no source exists, generate it and auto-play once ready
+                handleAudioError(currentPhase, true);
             } else {
                 // Always update the source to match the current phase
                 // This ensures that if the user clicked input audio while input playback is disabled,
