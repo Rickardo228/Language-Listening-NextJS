@@ -78,6 +78,7 @@ export async function saveProgress(
     // Base payload which is always written
     const basePayload: Record<string, unknown> = {
       itemId,
+      collectionId: data.collectionId,
       itemType: data.itemType,
       lastPhraseIndex: data.lastPhraseIndex,
       lastPhase: data.lastPhase,
@@ -151,7 +152,8 @@ export async function getRecentTemplates(
     return querySnapshot.docs.map((doc) => {
       const data = doc.data();
       return {
-        collectionId: data.collectionId, // itemId in Firestore is the collectionId
+        // Fallback to parsing doc.id for old documents without collectionId field
+        collectionId: data.collectionId || doc.id.split('_')[0],
         itemType: data.itemType,
         lastPhraseIndex: data.lastPhraseIndex,
         lastPhase: data.lastPhase,
@@ -172,9 +174,12 @@ export async function getRecentTemplates(
 
 export async function clearProgress(
   userId: string,
-  itemId: string,
+  collectionId: string,
+  inputLang: string,
+  targetLang: string,
 ): Promise<void> {
   try {
+    const itemId = getProgressItemId(collectionId, inputLang, targetLang);
     const progressRef = doc(firestore, "users", userId, "progress", itemId);
     await deleteDoc(progressRef);
   } catch (error) {

@@ -509,7 +509,12 @@ describe("progressService", () => {
       (doc as ReturnType<typeof vi.fn>).mockReturnValue(mockDocRef);
       (deleteDoc as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
 
-      await clearProgress(mockUserId, mockItemId);
+      await clearProgress(
+        mockUserId,
+        mockCollectionId,
+        mockInputLang,
+        mockTargetLang
+      );
 
       expect(doc).toHaveBeenCalledWith(
         firebaseModule.firestore,
@@ -528,7 +533,12 @@ describe("progressService", () => {
 
       // Should not throw
       await expect(
-        clearProgress(mockUserId, mockItemId)
+        clearProgress(
+          mockUserId,
+          mockCollectionId,
+          mockInputLang,
+          mockTargetLang
+        )
       ).resolves.toBeUndefined();
     });
   });
