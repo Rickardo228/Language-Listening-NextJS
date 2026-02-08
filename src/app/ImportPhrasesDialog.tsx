@@ -98,7 +98,18 @@ export function ImportPhrasesDialog({
     const [suggestedTopics, setSuggestedTopics] = useState<SuggestedTopic[]>([])
     const textareaRef = useRef<HTMLTextAreaElement>(null)
     const magicInputRef = useRef<HTMLInputElement>(null)
+    const proxyInputRef = useRef<HTMLInputElement>(null)
     const { userProfile } = useUser()
+
+    // On mobile, browsers block async .focus() calls. To keep the keyboard open,
+    // we synchronously focus a tiny proxy input during the tap, then transfer
+    // focus to the real target after it renders.
+    const claimFocusForMobile = (targetRef: React.RefObject<HTMLElement | null>) => {
+        proxyInputRef.current?.focus()
+        requestAnimationFrame(() => {
+            targetRef.current?.focus()
+        })
+    }
 
     useEffect(() => {
         const checkMobile = () => {
@@ -117,6 +128,24 @@ export function ImportPhrasesDialog({
             count: 2,
         }));
     }, [isOpen, userProfile?.contentPreferences, userProfile?.abilityLevel]);
+
+    // On mobile, HeadlessUI's initialFocus fires async and gets blocked.
+    // Retry focus after the dialog has rendered.
+    useEffect(() => {
+        if (!isOpen || !isMobile) return
+        const raf = requestAnimationFrame(() => {
+            textareaRef.current?.focus()
+        })
+        return () => cancelAnimationFrame(raf)
+    }, [isOpen, isMobile])
+
+    useEffect(() => {
+        if (!isMagicOpen || !isMobile) return
+        const raf = requestAnimationFrame(() => {
+            magicInputRef.current?.focus()
+        })
+        return () => cancelAnimationFrame(raf)
+    }, [isMagicOpen, isMobile])
 
     const isProcessing = !!processProgress
     useEffect(() => {
@@ -264,7 +293,15 @@ export function ImportPhrasesDialog({
         }
     };
 
-    return (
+    return (<>
+        {/* Invisible proxy input to claim keyboard focus on mobile */}
+        <input
+            ref={proxyInputRef}
+            aria-hidden
+            tabIndex={-1}
+            className="fixed opacity-0 pointer-events-none"
+            style={{ position: 'fixed', top: 0, left: 0, width: 1, height: 1 }}
+        />
         <Dialog open={isOpen} onClose={onClose} className="relative z-[400]" initialFocus={textareaRef}>
             <div className="fixed inset-0 bg-black/50" />
             <div className="fixed inset-0 flex items-center justify-center">
@@ -441,7 +478,10 @@ export function ImportPhrasesDialog({
                                                 )}
                                                 <button
                                                     type="button"
-                                                    onClick={() => setIsMagicOpen(true)}
+                                                    onClick={() => {
+                                                        claimFocusForMobile(magicInputRef)
+                                                        setIsMagicOpen(true)
+                                                    }}
                                                     className="h-8 w-8 rounded-full bg-secondary text-secondary-foreground hover:bg-secondary/90 flex items-center justify-center shadow"
                                                     title="Generate with AI"
                                                 >
@@ -548,5 +588,5 @@ export function ImportPhrasesDialog({
                 </div>
             </Dialog>
         </Dialog>
-    )
+    </>)
 }
