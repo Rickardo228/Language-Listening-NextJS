@@ -130,13 +130,10 @@ export function ImportPhrasesDialog({
     }, [isOpen, userProfile?.contentPreferences, userProfile?.abilityLevel]);
 
     // On mobile, HeadlessUI's initialFocus fires async and gets blocked.
-    // Retry focus after the dialog has rendered.
+    // Use the proxy input to claim focus synchronously.
     useEffect(() => {
         if (!isOpen || !isMobile) return
-        const raf = requestAnimationFrame(() => {
-            textareaRef.current?.focus()
-        })
-        return () => cancelAnimationFrame(raf)
+        claimFocusForMobile(textareaRef)
     }, [isOpen, isMobile])
 
     useEffect(() => {
@@ -297,10 +294,10 @@ export function ImportPhrasesDialog({
         {/* Invisible proxy input to claim keyboard focus on mobile */}
         <input
             ref={proxyInputRef}
-            aria-hidden
-            tabIndex={-1}
-            className="fixed opacity-0 pointer-events-none"
-            style={{ position: 'fixed', top: 0, left: 0, width: 1, height: 1 }}
+            aria-hidden="true"
+            readOnly
+            className="fixed opacity-0 -z-10"
+            style={{ position: 'fixed', top: '-9999px', left: '-9999px', width: '20px', height: '20px' }}
         />
         <Dialog open={isOpen} onClose={onClose} className="relative z-[400]" initialFocus={textareaRef}>
             <div className="fixed inset-0 bg-black/50" />
