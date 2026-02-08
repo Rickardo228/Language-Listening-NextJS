@@ -24,7 +24,7 @@ interface TemplatesBrowserProps {
     showHeader?: boolean;
     className?: string;
     tags?: string[];
-    title?: string;
+    title?: string | React.ReactNode;
     noTemplatesComponent?: React.ReactNode;
     pathId?: string;
     showAllOverride?: boolean;
