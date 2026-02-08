@@ -29,6 +29,7 @@ interface TemplatesBrowserProps {
     pathId?: string;
     showAllOverride?: boolean;
     browserId?: string;
+    groupIdQueryOverride?: string[];
 }
 
 export function TemplatesBrowser({
@@ -42,6 +43,7 @@ export function TemplatesBrowser({
     pathId,
     showAllOverride = false,
     browserId,
+    groupIdQueryOverride,
 }: TemplatesBrowserProps) {
     const router = useRouter();
     const { user, userProfile } = useUser();
@@ -81,6 +83,48 @@ export function TemplatesBrowser({
             try {
                 const templatesRef = collection(firestore, 'templates');
                 const FETCH_LIMIT = options?.limitCount || 10;
+
+                // Handle groupIdQueryOverride - fetch specific templates by groupId
+                if (groupIdQueryOverride && groupIdQueryOverride.length > 0) {
+                    const templates: TemplateWithTimestamp[] = [];
+                    const batchSize = 30; // Firestore 'in' query limit
+
+                    for (let i = 0; i < groupIdQueryOverride.length; i += batchSize) {
+                        const batch = groupIdQueryOverride.slice(i, i + batchSize);
+                        const q = query(templatesRef, where('groupId', 'in', batch));
+                        const querySnapshot = await getDocs(q);
+
+                        querySnapshot.docs.forEach(doc => {
+                            templates.push(normalizeTemplate(doc));
+                        });
+                    }
+
+                    // Group by groupId and filter for language pair
+                    const templatesByGroup = templates.reduce((acc, template) => {
+                        if (!acc[template.groupId]) {
+                            acc[template.groupId] = [] as TemplateWithTimestamp[];
+                        }
+                        (acc[template.groupId] as TemplateWithTimestamp[]).push(template);
+                        return acc;
+                    }, {} as Record<string, TemplateWithTimestamp[]>);
+
+                    const uniqueTemplates = Object.values(templatesByGroup)
+                        .filter((groupTemplates) => {
+                            const hasInput = groupTemplates.some((t) => t.lang === inputLangToUse);
+                            const hasTarget = groupTemplates.some((t) => t.lang === targetLangToUse);
+                            return hasInput && hasTarget;
+                        })
+                        .map((groupTemplates) => groupTemplates.find((t) => t.lang === inputLangToUse) || groupTemplates[0]);
+
+                    // Maintain the order from groupIdQueryOverride
+                    const orderedTemplates = groupIdQueryOverride
+                        .map(groupId => uniqueTemplates.find(t => t.groupId === groupId))
+                        .filter((t): t is TemplateWithTimestamp => t !== undefined);
+
+                    setTemplates(orderedTemplates);
+                    setLoading(false);
+                    return;
+                }
 
                 // Build base query conditions
                 const getPathConditions = () => {
@@ -239,7 +283,7 @@ export function TemplatesBrowser({
                 setLoading(false);
             }
         },
-        [inputLang, targetLang, pathId, tags]
+        [inputLang, targetLang, pathId, tags, groupIdQueryOverride]
     );
 
     // Update languages when user profile loads/changes

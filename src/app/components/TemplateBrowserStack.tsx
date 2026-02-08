@@ -9,6 +9,7 @@ import {
     DEFAULT_TARGET_LANG,
     getRecentTemplateBrowserIds,
 } from '../utils/templateBrowserRecency';
+import { RecentlyViewedTemplates } from './RecentlyViewedTemplates';
 
 interface TemplateBrowserStackProps {
     showAllOverride?: boolean;
@@ -109,6 +110,7 @@ export function TemplateBrowserStack({
     return (
         <div className={`p-4 space-y-16 ${className}`}>
             {sortedBrowsers}
+            <RecentlyViewedTemplates />
         </div>
     );
 }
