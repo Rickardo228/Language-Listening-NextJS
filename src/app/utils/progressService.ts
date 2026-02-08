@@ -78,7 +78,6 @@ export async function saveProgress(
     // Base payload which is always written
     const basePayload: Record<string, unknown> = {
       itemId,
-      collectionId: data.collectionId,
       itemType: data.itemType,
       lastPhraseIndex: data.lastPhraseIndex,
       lastPhase: data.lastPhase,
@@ -151,15 +150,8 @@ export async function getRecentTemplates(
 
     return querySnapshot.docs.map((doc) => {
       const data = doc.data();
-      // Fallback: if collectionId isn't stored, extract from itemId
-      let collectionId = data.collectionId;
-      if (!collectionId && data.itemId) {
-        const parts = data.itemId.split('_');
-        collectionId = parts.slice(0, -2).join('_');
-      }
-
       return {
-        collectionId,
+        collectionId: data.collectionId, // itemId in Firestore is the collectionId
         itemType: data.itemType,
         lastPhraseIndex: data.lastPhraseIndex,
         lastPhase: data.lastPhase,
