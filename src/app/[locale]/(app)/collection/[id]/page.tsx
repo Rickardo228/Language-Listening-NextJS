@@ -142,8 +142,16 @@ export default function CollectionPage() {
     const raw = searchParams?.get('scrollTo');
     return raw ? parseInt(raw, 10) : undefined;
   });
+
+  // Parse ?fullscreen=true param
+  const [initialFullscreen] = useState(() => {
+    return searchParams?.get('fullscreen') === 'true';
+  });
+
   useEffect(() => {
-    if (searchParams?.get('scrollTo')) {
+    const hasScrollTo = searchParams?.get('scrollTo');
+    const hasFullscreen = searchParams?.get('fullscreen');
+    if (hasScrollTo || hasFullscreen) {
       router.replace(`/collection/${collectionId}`, { scroll: false });
     }
   }, []);
@@ -431,6 +439,7 @@ export default function CollectionPage() {
       handleImageUpload={handleImageUpload}
       itemType="collection"
       initialPhraseIndex={initialPhraseIndex}
+      initialFullscreen={initialFullscreen}
       onCompleted={(userId, collectionId, inputLang, targetLang) => {
         if (inputLang && targetLang) {
           markCompleted(userId, collectionId, inputLang, targetLang);

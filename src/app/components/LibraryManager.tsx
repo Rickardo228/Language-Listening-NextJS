@@ -18,6 +18,8 @@ import { defaultPresentationConfig, defaultPresentationConfigs } from '../defaul
 import { toast } from 'sonner';
 import { resetMainScroll } from '../utils/scroll';
 import { ROUTES } from '../routes';
+import { AIGenerateInput } from './AIGenerateInput';
+import { AnimatedLibraryTitle } from './AnimatedLibraryTitle';
 
 const firestore = getFirestore();
 
@@ -151,8 +153,9 @@ export function LibraryManager({
     return docRef;
   };
 
-  const handleProcess = async (prompt?: string, inputLang?: string, targetLang?: string, collectionType?: CollectionTypeEnum) => {
-    if (!phrasesInput.trim()) return;
+  const handleProcess = async (prompt?: string, inputLang?: string, targetLang?: string, collectionType?: CollectionTypeEnum, phrasesOverride?: string) => {
+    const phrasesToProcess = phrasesOverride ?? phrasesInput;
+    if (!phrasesToProcess.trim()) return;
     setLoading(true);
     try {
       const effectiveInputLang = inputLang || newCollectionInputLang;
@@ -160,7 +163,7 @@ export function LibraryManager({
 
       // Split client-side to know total count for progress
       const segmenter = new Intl.Segmenter(effectiveInputLang || 'en', { granularity: 'sentence' });
-      const allPhrases = phrasesInput
+      const allPhrases = phrasesToProcess
         .split('\n')
         .map((line) => line.trim())
         .filter(Boolean)
@@ -237,7 +240,7 @@ export function LibraryManager({
       });
 
       setPhrasesInput('');
-      router.push(`/collection/${collectionId}`);
+      router.push(`/collection/${collectionId}?fullscreen=true`);
 
     } catch (err) {
       console.error('Processing error:', err);
@@ -365,6 +368,17 @@ export function LibraryManager({
             onProcess={handleProcess}
           />
         }
+        belowTitleAction={
+          <AIGenerateInput
+            inputLang={newCollectionInputLang}
+            targetLang={newCollectionTargetLang}
+            onGenerate={async (phrases, prompt) => {
+              await handleProcess(prompt, newCollectionInputLang, newCollectionTargetLang, 'phrases', phrases);
+            }}
+            disabled={loading}
+            clearAfterGenerate={true}
+          />
+        }
         title={
           mode === 'sidebar' ? (
             <div className="flex items-center">
@@ -381,10 +395,10 @@ export function LibraryManager({
                   strokeWidth={1.5}
                 />
               </button>
-              <span>Your Library</span>
+              <AnimatedLibraryTitle />
             </div>
           ) : (
-            <span>Your Library</span>
+            <AnimatedLibraryTitle />
           )
         }
         onShowAllClick={handleShowAllClick}

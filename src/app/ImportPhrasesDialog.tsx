@@ -9,6 +9,7 @@ import { LanguageSelector } from './components/LanguageSelector'
 import { trackGeneratePhrases } from '../lib/mixpanelClient'
 import { Combobox, Input, Select } from './components/ui'
 import { toast } from 'sonner'
+import { AIGenerateInput } from './components/AIGenerateInput'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useUser } from './contexts/UserContext'
 import { buildSuggestedPrompt, getSuggestedTopics, SuggestedTopic } from './utils/suggestedTopics'
@@ -84,7 +85,6 @@ export function ImportPhrasesDialog({
     showSuggestedTopicChipsForSelectedList = true,
 }: ImportPhrasesDialogProps) {
     const [prompt, setPrompt] = useState('')
-    const [aiPrompt, setAiPrompt] = useState('')
     const [generatingPhrases, setGeneratingPhrases] = useState(false)
     const [collectionType, setCollectionType] = useState<CollectionType>('phrases')
     const [isSwapped, setIsSwapped] = useState(false)
@@ -93,11 +93,9 @@ export function ImportPhrasesDialog({
     const [isMac, setIsMac] = useState(false)
     const [motivationalIndex, setMotivationalIndex] = useState(() => Math.floor(Math.random() * motivationalPhrases.length))
     const [isMagicOpen, setIsMagicOpen] = useState(false)
-    const [magicAction, setMagicAction] = useState<'generate' | 'just' | null>(null)
     const [activeTopic, setActiveTopic] = useState<string | null>(null)
     const [suggestedTopics, setSuggestedTopics] = useState<SuggestedTopic[]>([])
     const textareaRef = useRef<HTMLTextAreaElement>(null)
-    const magicInputRef = useRef<HTMLInputElement>(null)
     const proxyInputRef = useRef<HTMLInputElement>(null)
     const { userProfile } = useUser()
 
@@ -135,14 +133,6 @@ export function ImportPhrasesDialog({
         if (!isOpen || !isMobile) return
         claimFocusForMobile(textareaRef)
     }, [isOpen, isMobile])
-
-    useEffect(() => {
-        if (!isMagicOpen || !isMobile) return
-        const raf = requestAnimationFrame(() => {
-            magicInputRef.current?.focus()
-        })
-        return () => cancelAnimationFrame(raf)
-    }, [isMagicOpen, isMobile])
 
     const isProcessing = !!processProgress
     useEffect(() => {
@@ -240,14 +230,11 @@ export function ImportPhrasesDialog({
     };
 
     const handleMagicGenerate = async (
-        promptValue?: string,
-        action: 'generate' | 'just' = 'generate',
+        promptValue: string,
         topic?: string
     ) => {
-        setMagicAction(action);
         if (topic) setActiveTopic(topic);
-        await generatePhrases(promptValue ?? aiPrompt, true);
-        setMagicAction(null);
+        await generatePhrases(promptValue, true);
         setActiveTopic(null);
         setIsMagicOpen(false);
     };
@@ -463,7 +450,7 @@ export function ImportPhrasesDialog({
                                                                 onClick={() => {
                                                                     const promptText = buildSuggestedPrompt(topic, userProfile?.abilityLevel);
                                                                     setPrompt(topic.label);
-                                                                    handleMagicGenerate(promptText, 'generate', topic.id);
+                                                                    handleMagicGenerate(promptText, topic.id);
                                                                 }}
                                                                 className="px-2.5 py-1 text-xs rounded-full bg-secondary/80 text-secondary-foreground hover:bg-secondary disabled:opacity-60"
                                                                 disabled={generatingPhrases}
@@ -475,10 +462,7 @@ export function ImportPhrasesDialog({
                                                 )}
                                                 <button
                                                     type="button"
-                                                    onClick={() => {
-                                                        claimFocusForMobile(magicInputRef)
-                                                        setIsMagicOpen(true)
-                                                    }}
+                                                    onClick={() => setIsMagicOpen(true)}
                                                     className="h-8 w-8 rounded-full bg-secondary text-secondary-foreground hover:bg-secondary/90 flex items-center justify-center shadow"
                                                     title="Generate with AI"
                                                 >
@@ -529,7 +513,7 @@ export function ImportPhrasesDialog({
                     </>)}
                 </Dialog.Panel>
             </div>
-            <Dialog open={isMagicOpen} onClose={() => setIsMagicOpen(false)} className="relative z-[500]" initialFocus={magicInputRef}>
+            <Dialog open={isMagicOpen} onClose={() => setIsMagicOpen(false)} className="relative z-[500]">
                 <div className="fixed inset-0 bg-black/50" />
                 <div className="fixed inset-0 flex items-center justify-center">
                     <Dialog.Panel className="bg-background text-foreground p-4 rounded-lg shadow-lg w-[420px] max-w-[90vw] border">
@@ -544,42 +528,18 @@ export function ImportPhrasesDialog({
                                 <X className="h-5 w-5" />
                             </button>
                         </div>
-                        <div className="space-y-3">
-                            <Input
-                                label="Get phrase suggestions with AI"
-                                type="text"
-                                value={aiPrompt}
-                                onChange={(e) => setAiPrompt(e.target.value)}
-                                onKeyDown={(e) => {
-                                    if (e.key !== 'Enter') return;
-                                    e.preventDefault();
-                                    if (!generatingPhrases) {
-                                        const hasPrompt = Boolean(aiPrompt.trim());
-                                        handleMagicGenerate(hasPrompt ? aiPrompt : undefined, hasPrompt ? 'generate' : 'just');
-                                    }
+                        <div className="[&_input]:pr-28">
+                            <AIGenerateInput
+                                inputLang={isSwapped ? targetLang : inputLang}
+                                targetLang={isSwapped ? inputLang : targetLang}
+                                collectionType={collectionType}
+                                onGenerate={(phrases) => {
+                                    setPhrasesInput(phrases);
+                                    setIsMagicOpen(false);
                                 }}
-                                placeholder="e.g. ordering coffee, airport check-in..."
-                                disabled={generatingPhrases || loading}
-                                ref={magicInputRef}
+                                disabled={loading}
+                                placeholder="e.g. ordering coffee..."
                             />
-                            <div className="flex items-center gap-2 justify-end">
-                                <button
-                                    type="button"
-                                    onClick={() => handleMagicGenerate(undefined, 'just')}
-                                    className="px-3 py-2 rounded-md bg-secondary text-secondary-foreground text-sm hover:bg-secondary/90 disabled:opacity-50"
-                                    disabled={generatingPhrases}
-                                >
-                                    {generatingPhrases && magicAction === 'just' ? 'Generating...' : 'Just generate'}
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => handleMagicGenerate(aiPrompt, 'generate')}
-                                    className="px-3 py-2 rounded-md bg-primary text-primary-foreground text-sm hover:bg-primary/90 disabled:opacity-50"
-                                    disabled={generatingPhrases || !aiPrompt.trim()}
-                                >
-                                    {generatingPhrases && magicAction === 'generate' ? 'Generating...' : 'Generate'}
-                                </button>
-                            </div>
                         </div>
                     </Dialog.Panel>
                 </div>

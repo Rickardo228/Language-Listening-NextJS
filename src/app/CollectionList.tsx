@@ -18,6 +18,7 @@ interface CollectionListProps {
     showAllButton?: boolean;
     onShowAllClick?: () => void;
     actionButton?: React.ReactNode;
+    belowTitleAction?: React.ReactNode;
     // Controls the presentation style of each item
     itemVariant?: 'list' | 'card';
     // Controls the flow/layout of the list container
@@ -63,6 +64,7 @@ export function CollectionList({
     showAllButton = true,
     onShowAllClick,
     actionButton,
+    belowTitleAction,
     itemVariant = 'list',
     layout = 'vertical',
     showFlags = true,
@@ -194,15 +196,20 @@ export function CollectionList({
                         <h2 className="text-xl font-semibold">Your Library</h2>
                     )}
                 </div>
-                {actionButton && (
-                    <div>
-                        {actionButton}
-                    </div>
-                )}
                 {showAllButton && layout === 'horizontal' && (
                     <ShowAllButton />
                 )}
             </div>
+            {belowTitleAction && (
+                <div>
+                    {belowTitleAction}
+                </div>
+            )}
+            {actionButton && (
+                <div className="pt-2">
+                    {actionButton}
+                </div>
+            )}
             {loading ? (
                 <div
                     ref={layout === 'horizontal' ? containerRef : undefined}
