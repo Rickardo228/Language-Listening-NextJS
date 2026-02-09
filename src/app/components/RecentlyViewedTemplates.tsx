@@ -9,11 +9,13 @@ import { TemplatesBrowser } from './TemplatesBrowser';
 interface RecentlyViewedTemplatesProps {
     className?: string;
     limit?: number;
+    category?: 'learn' | 'news' | 'stories';
 }
 
 export function RecentlyViewedTemplates({
     className = '',
-    limit = 15
+    limit = 15,
+    category
 }: RecentlyViewedTemplatesProps) {
     const { user, userProfile } = useUser();
     const [recentGroupIds, setRecentGroupIds] = useState<string[]>([]);
@@ -78,6 +80,7 @@ export function RecentlyViewedTemplates({
             className={className}
             noTemplatesComponent={<></>}
             groupIdQueryOverride={recentGroupIds}
+            categoryFilter={category}
         />
     );
 }
