@@ -102,7 +102,20 @@ export function TrialPaywall({ data, updateData, onNext, onBack, showBack = true
         const responseData = await response.json();
 
         if (!response.ok) {
-          throw new Error(responseData?.error || 'Failed to start free trial.');
+          // If user already has a subscription, treat it as success since they're authenticated
+          const errorMessage = responseData?.error || '';
+          if (errorMessage.toLowerCase().includes('already has an active subscription')) {
+            track('Paywall Already Has Subscription', {
+              hasTrialed,
+              userId: user.uid,
+              variant: 'trial-no-plan-selection',
+              context: 'onboarding',
+            });
+            // User is authenticated and has a subscription - proceed as success
+            router.push(`${ROUTES.HOME}?checkout=success`);
+            return;
+          }
+          throw new Error(errorMessage || 'Failed to start free trial.');
         }
 
         setLoadingStage('Finishing up...');
