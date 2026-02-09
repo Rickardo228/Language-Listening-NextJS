@@ -46,10 +46,11 @@ type AnimationStage = 'english' | 'translated' | 'question'
 
 export function AnimatedLibraryTitle() {
     const { userProfile } = useUser()
-    const [stage, setStage] = useState<AnimationStage>('english')
+    const targetLang = userProfile?.preferredTargetLang || 'it-IT'
+    const shouldSkipEnglishGreeting = targetLang.startsWith('en-')
+    const [stage, setStage] = useState<AnimationStage>(() => shouldSkipEnglishGreeting ? 'question' : 'english')
 
     const userName = userProfile?.displayName?.split(' ')[0] || 'there'
-    const targetLang = userProfile?.preferredTargetLang || 'it-IT'
 
     // Get the target language name for context
     const targetLangOption = languageOptions.find(lang => lang.code === targetLang)
@@ -62,6 +63,11 @@ export function AnimatedLibraryTitle() {
     const shouldShowTranslated = translatedHi !== 'Hi' && translatedHi !== hiTranslations['en-GB']
 
     useEffect(() => {
+        if (shouldSkipEnglishGreeting) {
+            setStage('question')
+            return
+        }
+
         // Stage 1: English greeting (show for 1.5 seconds)
         const timer1 = setTimeout(() => {
             if (shouldShowTranslated) {
@@ -81,12 +87,12 @@ export function AnimatedLibraryTitle() {
             clearTimeout(timer1)
             if (timer2) clearTimeout(timer2)
         }
-    }, [shouldShowTranslated])
+    }, [shouldShowTranslated, shouldSkipEnglishGreeting])
 
     return (
         <div className="relative h-8 flex items-center">
             <AnimatePresence mode="wait">
-                {stage === 'english' && (
+                {stage === 'english' && !shouldSkipEnglishGreeting && (
                     <motion.h2
                         key="english"
                         initial={{ opacity: 0, y: 10 }}
