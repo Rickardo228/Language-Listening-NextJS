@@ -4,7 +4,6 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { ChevronRight, Library } from 'lucide-react';
 import { Config, languageOptions, Phrase, CollectionType as CollectionTypeEnum } from '../types';
-import { API_BASE_URL } from '../consts';
 import { ImportPhrases } from '../ImportPhrases';
 import { User } from 'firebase/auth';
 import { getFirestore, collection, getDocs, doc, updateDoc, deleteDoc, query, orderBy, limit as fbLimit } from 'firebase/firestore';
@@ -20,6 +19,8 @@ import { resetMainScroll } from '../utils/scroll';
 import { ROUTES } from '../routes';
 import { AIGenerateInput } from './AIGenerateInput';
 import { AnimatedLibraryTitle } from './AnimatedLibraryTitle';
+import { useProcessPhrases } from '../hooks/useProcessPhrases';
+import { TranslationProgressDialog } from './TranslationProgressDialog';
 
 const firestore = getFirestore();
 
@@ -62,7 +63,11 @@ export function LibraryManager({
     }
   }, [userProfile?.preferredInputLang, userProfile?.preferredTargetLang]);
   const [loading, setLoading] = useState<boolean>(false);
-  const [processProgress, setProcessProgress] = useState<{ completed: number; total: number } | null>(null);
+
+  const { processPhrases, progress: processProgress } = useProcessPhrases({
+    inputLang: newCollectionInputLang,
+    targetLang: newCollectionTargetLang,
+  });
 
   const fetchCollections = useCallback(async (opts?: { fetchAll?: boolean; limitCount?: number; setMainLoading?: boolean }) => {
     if (!user) return;
@@ -173,48 +178,10 @@ export function LibraryManager({
 
       if (!allPhrases.length) return;
 
-      const BATCH_SIZE = 10;
-      const skipAudio = allPhrases.length > 50;
-      const allProcessed: Phrase[] = [];
-      let lastVoices = { inputVoice: '', targetVoice: '' };
-
-      setProcessProgress({ completed: 0, total: allPhrases.length });
-
-      for (let i = 0; i < allPhrases.length; i += BATCH_SIZE) {
-        const batch = allPhrases.slice(i, i + BATCH_SIZE);
-        const response = await fetch(`${API_BASE_URL}/process`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            phrases: batch,
-            inputLang: effectiveInputLang,
-            targetLang: effectiveTargetLang,
-            skipAudio,
-          }),
-        });
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.error || 'Processing failed');
-
-        lastVoices = {
-          inputVoice: data.inputVoice || `${effectiveInputLang}-Standard-A`,
-          targetVoice: data.targetVoice || `${effectiveTargetLang}-Standard-A`,
-        };
-
-        const batchPhrases: Phrase[] = batch.map((p: string, index: number) => ({
-          input: p,
-          translated: data.translated?.[index] || '',
-          inputAudio: data.inputAudioSegments?.[index] || null,
-          outputAudio: data.outputAudioSegments?.[index] || null,
-          romanized: data.romanizedOutput?.[index] || '',
-          inputLang: effectiveInputLang,
-          targetLang: effectiveTargetLang,
-          inputVoice: lastVoices.inputVoice,
-          targetVoice: lastVoices.targetVoice,
-        }));
-
-        allProcessed.push(...batchPhrases);
-        setProcessProgress({ completed: Math.min(i + BATCH_SIZE, allPhrases.length), total: allPhrases.length });
-      }
+      const allProcessed = await processPhrases(allPhrases, {
+        inputLang: effectiveInputLang,
+        targetLang: effectiveTargetLang,
+      })
 
       const collectionId = await handleCreateCollection(allProcessed, prompt, collectionType, undefined, false);
 
@@ -247,7 +214,6 @@ export function LibraryManager({
       toast.error(String(err))
     }
     setLoading(false);
-    setProcessProgress(null);
   };
 
   const handleLoadCollection = async (config: Config, skipTracking?: boolean) => {
@@ -403,6 +369,13 @@ export function LibraryManager({
         }
         onShowAllClick={handleShowAllClick}
       />
+      {processProgress && (
+        <TranslationProgressDialog
+          isOpen={true}
+          completed={processProgress.completed}
+          total={processProgress.total}
+        />
+      )}
     </div>
   );
 }

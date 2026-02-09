@@ -4,8 +4,8 @@ import { useState, useRef, useEffect } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import { Config, Phrase, PresentationConfig } from '@/app/types';
 import { usePresentationConfig } from '@/app/hooks/usePresentationConfig';
-import { API_BASE_URL } from '@/app/consts';
 import { ImportPhrases } from '@/app/ImportPhrases';
+import { useProcessPhrases } from '@/app/hooks/useProcessPhrases';
 import { getFirestore, doc, updateDoc, getDoc, deleteDoc, collection, addDoc, query, where, getDocs } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { CollectionHeader } from '@/app/CollectionHeader';
@@ -35,6 +35,11 @@ export default function CollectionPage() {
   const [phrasesInput, setPhrasesInput] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
   const [collectionPresentationConfig, setCollectionPresentationConfig] = useState<PresentationConfig | null>(null);
+
+  const { processPhrases } = useProcessPhrases({
+    inputLang: addToCollectionInputLang,
+    targetLang: addToCollectionTargetLang,
+  });
 
   // Derive the merged presentation config from source states
   const { presentationConfig, setPresentationConfig: setBasePresentationConfig, isReady } = usePresentationConfig({
@@ -182,25 +187,25 @@ export default function CollectionPage() {
       const inputVoice = firstPhrase?.inputVoice || `${inputLang || addToCollectionInputLang}-Standard-D`;
       const targetVoice = firstPhrase?.targetVoice || `${targetLang || addToCollectionTargetLang}-Standard-D`;
 
-      const response = await fetch(`${API_BASE_URL}/process`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          phrases: splitPhrases,
-          inputLang: isSwapped ? targetLang : inputLang,
-          targetLang: isSwapped ? inputLang : targetLang,
-          inputVoice: isSwapped ? targetVoice : inputVoice,
-          targetVoice: isSwapped ? inputVoice : targetVoice
-        }),
+      const effectiveInputLang = isSwapped ? targetLang : inputLang;
+      const effectiveTargetLang = isSwapped ? inputLang : targetLang;
+      const effectiveInputVoice = isSwapped ? targetVoice : inputVoice;
+      const effectiveTargetVoice = isSwapped ? inputVoice : targetVoice;
+
+      const result = await processPhrases(splitPhrases, {
+        inputLang: effectiveInputLang,
+        targetLang: effectiveTargetLang,
+        inputVoice: effectiveInputVoice,
+        targetVoice: effectiveTargetVoice,
       });
-      const data = await response.json();
+
       const now = new Date().toISOString();
-      const processedPhrases: Phrase[] = splitPhrases.map((p, index) => ({
-        input: isSwapped ? data.translated ? data.translated[index] || '' : '' : p,
-        translated: isSwapped ? p : data.translated ? data.translated[index] || '' : '',
-        inputAudio: isSwapped ? data.outputAudioSegments ? data.outputAudioSegments[index] || null : null : data.inputAudioSegments ? data.inputAudioSegments[index] || null : null,
-        outputAudio: isSwapped ? data.inputAudioSegments ? data.inputAudioSegments[index] || null : null : data.outputAudioSegments ? data.outputAudioSegments[index] || null : null,
-        romanized: data.romanizedOutput ? data.romanizedOutput[index] || '' : '',
+      const processedPhrases: Phrase[] = result.map((processedPhrase) => ({
+        ...processedPhrase,
+        input: isSwapped ? processedPhrase.translated : processedPhrase.input,
+        translated: isSwapped ? processedPhrase.input : processedPhrase.translated,
+        inputAudio: isSwapped ? processedPhrase.outputAudio : processedPhrase.inputAudio,
+        outputAudio: isSwapped ? processedPhrase.inputAudio : processedPhrase.outputAudio,
         inputLang: inputLang || addToCollectionInputLang,
         targetLang: targetLang || addToCollectionTargetLang,
         inputVoice,

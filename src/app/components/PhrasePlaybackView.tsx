@@ -6,8 +6,8 @@ import { SettingsModal } from '../SettingsModal';
 import { LikePhraseDialog } from '../LikePhraseDialog';
 import { ImportPhrasesDialog } from '../ImportPhrasesDialog';
 import { Phrase, PresentationConfig } from '../types';
-import { API_BASE_URL } from '../consts';
 import { generateAudio } from '../utils/audioUtils';
+import { useProcessPhrases } from '../hooks/useProcessPhrases';
 import { BLEED_START_DELAY, DELAY_AFTER_INPUT_PHRASES_MULTIPLIER, DELAY_AFTER_OUTPUT_PHRASES_MULTIPLIER, } from '../consts';
 import { useUpdateUserStats } from '../utils/userStats/userStats';
 import { track, trackAudioEnded, trackPlaybackEvent } from '../../lib/mixpanelClient';
@@ -119,6 +119,13 @@ export function PhrasePlaybackView({
     const [insertAtIndex, setInsertAtIndex] = useState<number>(0);
     const [insertPhrasesInput, setInsertPhrasesInput] = useState('');
     const [insertLoading, setInsertLoading] = useState(false);
+
+    const inputLang = phrases[0]?.inputLang || 'en-GB';
+    const targetLang = phrases[0]?.targetLang || 'it-IT';
+    const { processPhrases } = useProcessPhrases({
+        inputLang,
+        targetLang,
+    });
 
     // Debouncing refs for spam prevention
     const updateUserStatsTimeout = useRef<NodeJS.Timeout | null>(null);
@@ -1983,25 +1990,25 @@ export function PhrasePlaybackView({
                             const inputVoice = firstPhrase?.inputVoice || `${inputLang}-Standard-D`;
                             const targetVoice = firstPhrase?.targetVoice || `${targetLang}-Standard-D`;
 
-                            const response = await fetch(`${API_BASE_URL}/process`, {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({
-                                    phrases: splitPhrases,
-                                    inputLang: isSwapped ? targetLang : inputLang,
-                                    targetLang: isSwapped ? inputLang : targetLang,
-                                    inputVoice: isSwapped ? targetVoice : inputVoice,
-                                    targetVoice: isSwapped ? inputVoice : targetVoice
-                                }),
+                            const effectiveInputLang = isSwapped ? targetLang : inputLang;
+                            const effectiveTargetLang = isSwapped ? inputLang : targetLang;
+                            const effectiveInputVoice = isSwapped ? targetVoice : inputVoice;
+                            const effectiveTargetVoice = isSwapped ? inputVoice : targetVoice;
+
+                            const result = await processPhrases(splitPhrases, {
+                                inputLang: effectiveInputLang,
+                                targetLang: effectiveTargetLang,
+                                inputVoice: effectiveInputVoice,
+                                targetVoice: effectiveTargetVoice,
                             });
-                            const data = await response.json();
+
                             const now = new Date().toISOString();
-                            const processedPhrases: Phrase[] = splitPhrases.map((p, index) => ({
-                                input: isSwapped ? data.translated?.[index] || '' : p,
-                                translated: isSwapped ? p : data.translated?.[index] || '',
-                                inputAudio: isSwapped ? data.outputAudioSegments?.[index] || null : data.inputAudioSegments?.[index] || null,
-                                outputAudio: isSwapped ? data.inputAudioSegments?.[index] || null : data.outputAudioSegments?.[index] || null,
-                                romanized: data.romanizedOutput?.[index] || '',
+                            const processedPhrases: Phrase[] = result.map((processedPhrase) => ({
+                                ...processedPhrase,
+                                input: isSwapped ? processedPhrase.translated : processedPhrase.input,
+                                translated: isSwapped ? processedPhrase.input : processedPhrase.translated,
+                                inputAudio: isSwapped ? processedPhrase.outputAudio : processedPhrase.inputAudio,
+                                outputAudio: isSwapped ? processedPhrase.inputAudio : processedPhrase.outputAudio,
                                 inputLang: inputLang || phrases[0]?.inputLang || 'en-GB',
                                 targetLang: targetLang || phrases[0]?.targetLang || 'it-IT',
                                 inputVoice,

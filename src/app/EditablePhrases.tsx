@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from 'react';
 import { SpeakerWaveIcon, MicrophoneIcon, EllipsisVerticalIcon, ArrowPathIcon } from '@heroicons/react/24/solid';
 import { Menu } from './Menu';
 import { generateAudio } from './utils/audioUtils';
-import { API_BASE_URL } from './consts';
+import { useProcessPhrases } from './hooks/useProcessPhrases';
 // import { ClipboardIcon, ClipboardDocumentCheckIcon } from '@heroicons/react/24/outline';
 
 interface EditablePhrasesProps {
@@ -70,6 +70,13 @@ function PhraseComponent({ phrase, phrases, isSelected, currentPhase, onPhraseCl
     const [prevInput, setPrevInput] = useState(phrase.input);
     const [prevTranslated, setPrevTranslated] = useState(phrase.translated);
     const [prevRomanized, setPrevRomanized] = useState(phrase.romanized);
+
+    const { processPhrases } = useProcessPhrases({
+        inputLang: phrase.inputLang,
+        targetLang: phrase.targetLang,
+        inputVoice: phrase.inputVoice,
+        targetVoice: phrase.targetVoice,
+    });
 
     const getLanguageLabel = (code?: string, fallback?: string) => {
         if (!code && !fallback) return '';
@@ -174,34 +181,30 @@ function PhraseComponent({ phrase, phrases, isSelected, currentPhase, onPhraseCl
         try {
             const inputVoice = phrase.inputVoice || `${phrase.inputLang}-Standard-D`;
             const targetVoice = phrase.targetVoice || `${phrase.targetLang}-Standard-D`;
-            const response = await fetch(`${API_BASE_URL}/process`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    phrases: [phrase.input],
-                    inputLang: phrase.inputLang,
-                    targetLang: phrase.targetLang,
-                    inputVoice,
-                    targetVoice
-                }),
-            });
-            const data = await response.json();
-            const translated = data?.translated?.[0] ?? phrase.translated;
-            const outputAudio = data?.outputAudioSegments?.[0] ?? phrase.outputAudio;
-            const romanized = data?.romanizedOutput?.[0];
 
-            const newPhrases = [...phrases];
-            const phraseIndex = phrases.indexOf(phrase);
-            newPhrases[phraseIndex] = {
-                ...newPhrases[phraseIndex],
-                translated,
-                outputAudio,
-                romanized: romanized ?? newPhrases[phraseIndex].romanized
-            };
-            setPhrases(newPhrases);
-            setPrevTranslated(translated);
-            if (romanized !== undefined) {
-                setPrevRomanized(romanized);
+            const result = await processPhrases([phrase.input], {
+                inputLang: phrase.inputLang,
+                targetLang: phrase.targetLang,
+                inputVoice,
+                targetVoice,
+                skipAudio: false,
+            });
+
+            if (result && result[0]) {
+                const processedPhrase = result[0];
+                const newPhrases = [...phrases];
+                const phraseIndex = phrases.indexOf(phrase);
+                newPhrases[phraseIndex] = {
+                    ...newPhrases[phraseIndex],
+                    translated: processedPhrase.translated,
+                    outputAudio: processedPhrase.outputAudio,
+                    romanized: processedPhrase.romanized ?? newPhrases[phraseIndex].romanized
+                };
+                setPhrases(newPhrases);
+                setPrevTranslated(processedPhrase.translated);
+                if (processedPhrase.romanized !== undefined) {
+                    setPrevRomanized(processedPhrase.romanized);
+                }
             }
         } catch (error) {
             console.error('Error regenerating output:', error);

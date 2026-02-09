@@ -12,8 +12,8 @@ import { useCollections } from './contexts/CollectionsContext';
 import { createCollection } from './utils/collectionService';
 import { autoNameCollection } from './utils/generateCollectionName';
 import { firestore } from './firebase';
-import { API_BASE_URL } from './consts';
 import { trackCreatePhrase } from '../lib/mixpanelClient';
+import { useProcessPhrases } from './hooks/useProcessPhrases';
 
 const CREATE_NEW_VALUE = '__create_new__';
 const DEFAULT_LIST_KEY = 'default-collection-id';
@@ -32,11 +32,15 @@ export function QuickAddDialog({ isOpen, onClose }: QuickAddDialogProps) {
   const [targetLang, setTargetLang] = useState(userProfile?.preferredTargetLang || 'it-IT');
   const [phrasesInput, setPhrasesInput] = useState('');
   const [loading, setLoading] = useState(false);
-  const [processProgress, setProcessProgress] = useState<{ completed: number; total: number } | null>(null);
   const [matchingCollections, setMatchingCollections] = useState<Array<{ id: string; name: string }>>([]);
   const [selectedCollectionId, setSelectedCollectionId] = useState(CREATE_NEW_VALUE);
   const [defaultCollectionId, setDefaultCollectionId] = useState<string | null>(null);
   const [loadingCollections, setLoadingCollections] = useState(false);
+
+  const { processPhrases, progress: processProgress } = useProcessPhrases({
+    inputLang,
+    targetLang,
+  });
 
   // Sync languages when user profile loads
   useEffect(() => {
@@ -97,46 +101,6 @@ export function QuickAddDialog({ isOpen, onClose }: QuickAddDialogProps) {
     return options;
   }, [matchingCollections]);
 
-  const processPhrases = async (rawPhrases: string[]): Promise<Phrase[]> => {
-    const BATCH_SIZE = 10;
-    const skipAudio = rawPhrases.length > 50;
-    const allProcessed: Phrase[] = [];
-
-    setProcessProgress({ completed: 0, total: rawPhrases.length });
-
-    for (let i = 0; i < rawPhrases.length; i += BATCH_SIZE) {
-      const batch = rawPhrases.slice(i, i + BATCH_SIZE);
-      const response = await fetch(`${API_BASE_URL}/process`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          phrases: batch,
-          inputLang,
-          targetLang,
-          skipAudio,
-        }),
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Processing failed');
-
-      const batchPhrases: Phrase[] = batch.map((p: string, index: number) => ({
-        input: p,
-        translated: data.translated?.[index] || '',
-        inputAudio: data.inputAudioSegments?.[index] || null,
-        outputAudio: data.outputAudioSegments?.[index] || null,
-        romanized: data.romanizedOutput?.[index] || '',
-        inputLang,
-        targetLang,
-        inputVoice: data.inputVoice || `${inputLang}-Standard-A`,
-        targetVoice: data.targetVoice || `${targetLang}-Standard-A`,
-      }));
-
-      allProcessed.push(...batchPhrases);
-      setProcessProgress({ completed: Math.min(i + BATCH_SIZE, rawPhrases.length), total: rawPhrases.length });
-    }
-
-    return allProcessed;
-  };
 
   const handleAddToCollection = useCallback(async () => {
     if (!user || !phrasesInput.trim()) return;
@@ -227,7 +191,6 @@ export function QuickAddDialog({ isOpen, onClose }: QuickAddDialogProps) {
       toast.error(String(err));
     } finally {
       setLoading(false);
-      setProcessProgress(null);
     }
   }, [user, phrasesInput, inputLang, targetLang, selectedCollectionId, router, appendPhraseToCollection]);
 
