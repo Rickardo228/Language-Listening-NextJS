@@ -4,6 +4,8 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { ArrowRight } from 'lucide-react';
 import Link from 'next/link';
+import { useScrollControls } from './hooks/useScrollControls';
+import { ScrollChevron } from './components/ScrollChevron';
 
 export type CollectionStatus = 'not-started' | 'in-progress' | 'completed' | 'next';
 
@@ -84,31 +86,17 @@ export function CollectionList({
     showItemIndex = false,
 }: CollectionListProps) {
     const router = useRouter();
-    const containerRef = useRef<HTMLDivElement | null>(null);
-    const [canScrollLeft, setCanScrollLeft] = useState(false);
-    const [canScrollRight, setCanScrollRight] = useState(false);
+    const {
+        containerRef,
+        canScrollLeft,
+        canScrollRight,
+        scrollLeft: handleScrollLeft,
+        scrollRight: handleScrollRight,
+    } = useScrollControls({
+        scrollAmount: 260,
+        deps: [loading, savedCollections.length] // Re-setup when loading state or content changes
+    });
 
-    const updateScrollButtons = () => {
-        if (!containerRef.current) return;
-        const el = containerRef.current;
-        setCanScrollLeft(el.scrollLeft > 0);
-        setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 1);
-    };
-
-    useEffect(() => {
-        if (layout !== 'horizontal') return;
-        updateScrollButtons();
-        const el = containerRef.current;
-        if (!el) return;
-        const onScroll = () => updateScrollButtons();
-        el.addEventListener('scroll', onScroll);
-        const ro = new ResizeObserver(() => updateScrollButtons());
-        ro.observe(el);
-        return () => {
-            el.removeEventListener('scroll', onScroll);
-            ro.disconnect();
-        };
-    }, [layout, savedCollections.length]);
 
     // Handle scrolling to a specific index
     useEffect(() => {
@@ -528,28 +516,8 @@ export function CollectionList({
                     </div>
                     {layout === 'horizontal' && enableCarouselControls && (
                         <>
-                            {canScrollLeft && (
-                                <button
-                                    className="absolute -left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-background/70 backdrop-blur border shadow hover:bg-background z-30"
-                                    onClick={() => containerRef.current?.scrollBy({ left: -260, behavior: 'smooth' })}
-                                    aria-label="Scroll left"
-                                >
-                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 mx-auto">
-                                        <path d="M15.75 19.5L8.25 12l7.5-7.5" />
-                                    </svg>
-                                </button>
-                            )}
-                            {canScrollRight && (
-                                <button
-                                    className="absolute -right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-background/70 backdrop-blur border shadow hover:bg-background z-30"
-                                    onClick={() => containerRef.current?.scrollBy({ left: 260, behavior: 'smooth' })}
-                                    aria-label="Scroll right"
-                                >
-                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 mx-auto">
-                                        <path d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-                                    </svg>
-                                </button>
-                            )}
+                            {canScrollLeft && <ScrollChevron direction="left" onClick={handleScrollLeft} className="-left-2" />}
+                            {canScrollRight && <ScrollChevron direction="right" onClick={handleScrollRight} className="-right-2" />}
                         </>
                     )}
                 </div>

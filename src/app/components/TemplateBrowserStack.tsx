@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState, useEffect } from 'react';
 import { BookOpen, Newspaper, BookText, Settings, type LucideIcon } from 'lucide-react';
 import { TemplatesBrowser } from './TemplatesBrowser';
 import { useUser } from '../contexts/UserContext';
@@ -12,6 +12,7 @@ import {
 } from '../utils/templateBrowserRecency';
 import { RecentlyViewedTemplates } from './RecentlyViewedTemplates';
 import { UserPreferencesModal } from './UserPreferencesModal';
+import { CategoryChips } from './CategoryChips';
 
 interface TemplateBrowserStackProps {
     showAllOverride?: boolean;
@@ -22,6 +23,7 @@ type TemplateCategory = 'learn' | 'news' | 'stories';
 
 const BEGINNER_PATH_ID = 'beginner_path';
 const NEWS_GENERATOR_TAG = 'process:news-generator';
+const LAST_CATEGORY_KEY = 'templateBrowserLastCategory';
 const CATEGORY_CHIPS: Array<{ id: TemplateCategory; label: string; icon: LucideIcon }> = [
     { id: 'learn', label: 'Learn', icon: BookOpen },
     { id: 'news', label: 'News', icon: Newspaper },
@@ -33,8 +35,20 @@ export function TemplateBrowserStack({
     className = ''
 }: TemplateBrowserStackProps) {
     const { user, userProfile } = useUser();
-    const [activeCategory, setActiveCategory] = useState<TemplateCategory>('learn');
+    const [activeCategory, setActiveCategory] = useState<TemplateCategory>(() => {
+        if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem(LAST_CATEGORY_KEY);
+            if (saved && (saved === 'learn' || saved === 'news' || saved === 'stories')) {
+                return saved as TemplateCategory;
+            }
+        }
+        return 'learn';
+    });
     const [preferencesModalOpen, setPreferencesModalOpen] = useState(false);
+
+    useEffect(() => {
+        localStorage.setItem(LAST_CATEGORY_KEY, activeCategory);
+    }, [activeCategory]);
 
     const learningPaths = getRecommendedPaths(userProfile?.abilityLevel);
     const inputLang = userProfile?.preferredInputLang || DEFAULT_INPUT_LANG;
@@ -145,34 +159,16 @@ export function TemplateBrowserStack({
     return (
         <div className={`p-4 space-y-12 ${className}`}>
             <div className="max-w-5xl mx-auto">
-                <div className="flex items-center gap-3">
-                    <div className="flex flex-wrap items-center gap-2">
-                        {CATEGORY_CHIPS.map((chip) => {
-                            const isActive = activeCategory === chip.id;
-                            const Icon = chip.icon;
-                            return (
-                                <button
-                                    key={chip.id}
-                                    type="button"
-                                    onClick={() => setActiveCategory(chip.id)}
-                                    className={[
-                                        'inline-flex items-center gap-1.5 rounded-full border px-4 py-1.5 text-sm font-medium transition-colors',
-                                        isActive
-                                            ? 'border-primary bg-primary text-primary-foreground'
-                                            : 'border-border bg-transparent text-muted-foreground hover:bg-muted hover:text-foreground',
-                                    ].join(' ')}
-                                    aria-pressed={isActive}
-                                >
-                                    <Icon className="h-4 w-4" />
-                                    {chip.label}
-                                </button>
-                            );
-                        })}
-                    </div>
+                <div className="flex items-center gap-2">
+                    <CategoryChips
+                        chips={CATEGORY_CHIPS}
+                        activeCategory={activeCategory}
+                        onCategoryChange={setActiveCategory}
+                    />
                     <button
                         type="button"
                         onClick={() => setPreferencesModalOpen(true)}
-                        className="ml-auto inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                        className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                         aria-label="Settings"
                         title="Settings"
                     >
