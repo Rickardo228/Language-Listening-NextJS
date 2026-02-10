@@ -51,7 +51,7 @@ export function LibraryManager({
     userProfile?.preferredTargetLang || 'it-IT'
   );
   const hasSetLanguages = useRef(false);
-  const { collections: savedCollections, setCollections: setSavedCollections, removeCollection, renameCollection } = useCollections();
+  const { collections: savedCollections, setCollections: setSavedCollections, upsertCollection, removeCollection, renameCollection } = useCollections();
   const [collectionsLoading, setCollectionsLoading] = useState(false);
   const [collectionsLimited, setCollectionsLimited] = useState(true);
 
@@ -153,8 +153,7 @@ export function LibraryManager({
       id: docRef
     };
 
-    setSavedCollections(prev => [...prev, newCollectionConfig]);
-    handleLoadCollection(newCollectionConfig, skipTracking);
+    upsertCollection(newCollectionConfig);
     return docRef;
   };
 
@@ -249,11 +248,7 @@ export function LibraryManager({
     try {
       const docRef = doc(firestore, 'users', user.uid, 'collections', id);
       await updateDoc(docRef, { name: newName.trim() });
-      setSavedCollections(prev =>
-        prev.map(col =>
-          col.id === id ? { ...col, name: newName.trim() } : col
-        )
-      );
+      renameCollection(id, newName.trim());
     } catch (err) {
       toast.error("Failed to rename list: " + err);
     }
