@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import { Config, Phrase, PresentationConfig } from '@/app/types';
 import { usePresentationConfig } from '@/app/hooks/usePresentationConfig';
 import { API_BASE_URL } from '@/app/consts';
@@ -10,6 +10,7 @@ import { getFirestore, doc, updateDoc, getDoc, deleteDoc, collection, addDoc, qu
 import { useRouter } from 'next/navigation';
 import { CollectionHeader } from '@/app/CollectionHeader';
 import { useUser } from '@/app/contexts/UserContext';
+import { useCollections } from '@/app/contexts/CollectionsContext';
 import { PhrasePlaybackView, PhrasePlaybackMethods } from '@/app/components/PhrasePlaybackView';
 import { uploadBackgroundMedia, deleteBackgroundMedia } from '@/app/utils/backgroundUpload';
 import { toast } from 'sonner';
@@ -22,7 +23,9 @@ export default function CollectionPage() {
   const params = useParams();
   const router = useRouter();
   const collectionId = params.id as string;
+  const searchParams = useSearchParams();
   const { user } = useUser();
+  const { collections } = useCollections();
 
   const [phrases, setPhrasesBase] = useState<Phrase[]>([]);
   const [selectedCollection, setSelectedCollection] = useState<string>(collectionId);
@@ -133,6 +136,33 @@ export default function CollectionPage() {
 
     loadCollection();
   }, [user, collectionId]);
+
+  // Parse ?scrollTo=N param once and persist in state so it survives URL cleanup
+  const [initialPhraseIndex] = useState(() => {
+    const raw = searchParams?.get('scrollTo');
+    return raw ? parseInt(raw, 10) : undefined;
+  });
+
+  // Parse ?fullscreen=true param
+  const [initialFullscreen] = useState(() => {
+    return searchParams?.get('fullscreen') === 'true';
+  });
+
+  useEffect(() => {
+    const hasScrollTo = searchParams?.get('scrollTo');
+    const hasFullscreen = searchParams?.get('fullscreen');
+    if (hasScrollTo || hasFullscreen) {
+      router.replace(`/collection/${collectionId}`, { scroll: false });
+    }
+  }, []);
+
+  // Sync name from CollectionsContext (e.g. after auto-naming)
+  useEffect(() => {
+    const contextCollection = collections.find((c) => c.id === collectionId);
+    if (contextCollection && collectionConfig && contextCollection.name !== collectionConfig.name) {
+      setCollectionConfig((prev) => prev ? { ...prev, name: contextCollection.name } : prev);
+    }
+  }, [collections, collectionId, collectionConfig?.name]);
 
   const handleAddToCollection = async (inputLang?: string, targetLang?: string, isSwapped?: boolean) => {
     const splitPhrases = phrasesInput
@@ -361,7 +391,7 @@ export default function CollectionPage() {
           titleClassName="max-w-[250px]"
         />
       )}
-      <div className="w-fit whitespace-nowrap ml-auto">
+      <div className="w-fit whitespace-nowrap ml-auto pl-3">
         <ImportPhrases
           inputLang={addToCollectionInputLang}
           setInputLang={setAddToCollectionInputLang}
@@ -408,6 +438,8 @@ export default function CollectionPage() {
       methodsRef={playbackMethodsRef}
       handleImageUpload={handleImageUpload}
       itemType="collection"
+      initialPhraseIndex={initialPhraseIndex}
+      initialFullscreen={initialFullscreen}
       onCompleted={(userId, collectionId, inputLang, targetLang) => {
         if (inputLang && targetLang) {
           markCompleted(userId, collectionId, inputLang, targetLang);

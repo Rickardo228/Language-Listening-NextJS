@@ -13,10 +13,13 @@ import { useUser } from '../contexts/UserContext';
 import { useCollections } from '../contexts/CollectionsContext';
 import { trackSelectList, trackCreatePhrase, track } from '../../lib/mixpanelClient';
 import { createCollection } from '../utils/collectionService';
+import { autoNameCollection } from '../utils/generateCollectionName';
 import { defaultPresentationConfig, defaultPresentationConfigs } from '../defaultConfig';
 import { toast } from 'sonner';
 import { resetMainScroll } from '../utils/scroll';
 import { ROUTES } from '../routes';
+import { AIGenerateInput } from './AIGenerateInput';
+import { AnimatedLibraryTitle } from './AnimatedLibraryTitle';
 
 const firestore = getFirestore();
 
@@ -47,7 +50,7 @@ export function LibraryManager({
     userProfile?.preferredTargetLang || 'it-IT'
   );
   const hasSetLanguages = useRef(false);
-  const { collections: savedCollections, setCollections: setSavedCollections, removeCollection } = useCollections();
+  const { collections: savedCollections, setCollections: setSavedCollections, removeCollection, renameCollection } = useCollections();
   const [collectionsLoading, setCollectionsLoading] = useState(false);
   const [collectionsLimited, setCollectionsLimited] = useState(true);
 
@@ -150,8 +153,9 @@ export function LibraryManager({
     return docRef;
   };
 
-  const handleProcess = async (prompt?: string, inputLang?: string, targetLang?: string, collectionType?: CollectionTypeEnum) => {
-    if (!phrasesInput.trim()) return;
+  const handleProcess = async (prompt?: string, inputLang?: string, targetLang?: string, collectionType?: CollectionTypeEnum, phrasesOverride?: string) => {
+    const phrasesToProcess = phrasesOverride ?? phrasesInput;
+    if (!phrasesToProcess.trim()) return;
     setLoading(true);
     try {
       const effectiveInputLang = inputLang || newCollectionInputLang;
@@ -159,7 +163,7 @@ export function LibraryManager({
 
       // Split client-side to know total count for progress
       const segmenter = new Intl.Segmenter(effectiveInputLang || 'en', { granularity: 'sentence' });
-      const allPhrases = phrasesInput
+      const allPhrases = phrasesToProcess
         .split('\n')
         .map((line) => line.trim())
         .filter(Boolean)
@@ -170,7 +174,7 @@ export function LibraryManager({
       if (!allPhrases.length) return;
 
       const BATCH_SIZE = 10;
-      const skipAudio = allPhrases.length > 10;
+      const skipAudio = allPhrases.length > 50;
       const allProcessed: Phrase[] = [];
       let lastVoices = { inputVoice: '', targetVoice: '' };
 
@@ -214,6 +218,18 @@ export function LibraryManager({
 
       const collectionId = await handleCreateCollection(allProcessed, prompt, collectionType, undefined, false);
 
+      // Auto-generate a name if prompt is missing or is a URL
+      const isUrl = prompt && /^https?:\/\//i.test(prompt.trim());
+      if (!prompt || isUrl) {
+        autoNameCollection(
+          allProcessed,
+          effectiveInputLang,
+          collectionId,
+          user!.uid,
+          (name) => renameCollection(collectionId, name)
+        );
+      }
+
       allProcessed.forEach((phrase, index) => {
         trackCreatePhrase(
           `${collectionId}-${index}`,
@@ -224,7 +240,7 @@ export function LibraryManager({
       });
 
       setPhrasesInput('');
-      router.push(`/collection/${collectionId}`);
+      router.push(`/collection/${collectionId}?fullscreen=true`);
 
     } catch (err) {
       console.error('Processing error:', err);
@@ -352,6 +368,17 @@ export function LibraryManager({
             onProcess={handleProcess}
           />
         }
+        belowTitleAction={
+          <AIGenerateInput
+            inputLang={newCollectionInputLang}
+            targetLang={newCollectionTargetLang}
+            onGenerate={async (phrases, prompt) => {
+              await handleProcess(prompt, newCollectionInputLang, newCollectionTargetLang, 'phrases', phrases);
+            }}
+            disabled={loading}
+            clearAfterGenerate={true}
+          />
+        }
         title={
           mode === 'sidebar' ? (
             <div className="flex items-center">
@@ -368,10 +395,10 @@ export function LibraryManager({
                   strokeWidth={1.5}
                 />
               </button>
-              <span>Your Library</span>
+              <AnimatedLibraryTitle />
             </div>
           ) : (
-            <span>Your Library</span>
+            <AnimatedLibraryTitle />
           )
         }
         onShowAllClick={handleShowAllClick}

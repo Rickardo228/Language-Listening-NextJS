@@ -17,7 +17,7 @@ import { ProgressData } from "../types";
 function getProgressItemId(
   collectionId: string,
   inputLang: string,
-  targetLang: string
+  targetLang: string,
 ): string {
   return `${collectionId}_${inputLang}_${targetLang}`;
 }
@@ -26,7 +26,7 @@ export async function loadProgress(
   userId: string,
   collectionId: string,
   inputLang: string,
-  targetLang: string
+  targetLang: string,
 ): Promise<ProgressData | null> {
   try {
     const progressRef = doc(
@@ -34,7 +34,7 @@ export async function loadProgress(
       "users",
       userId,
       "progress",
-      getProgressItemId(collectionId, inputLang, targetLang)
+      getProgressItemId(collectionId, inputLang, targetLang),
     );
     const progressSnap = await getDoc(progressRef);
 
@@ -64,20 +64,21 @@ export async function loadProgress(
 
 export async function saveProgress(
   userId: string,
-  data: ProgressData
+  data: ProgressData,
 ): Promise<void> {
   try {
     // Construct itemId from collectionId and language codes
     const itemId = getProgressItemId(
       data.collectionId,
       data.inputLang,
-      data.targetLang
+      data.targetLang,
     );
     const progressRef = doc(firestore, "users", userId, "progress", itemId);
 
     // Base payload which is always written
     const basePayload: Record<string, unknown> = {
       itemId,
+      collectionId: data.collectionId,
       itemType: data.itemType,
       lastPhraseIndex: data.lastPhraseIndex,
       lastPhase: data.lastPhase,
@@ -107,7 +108,7 @@ export async function markCompleted(
   userId: string,
   collectionId: string,
   inputLang: string,
-  targetLang: string
+  targetLang: string,
 ): Promise<void> {
   try {
     const progressRef = doc(
@@ -115,7 +116,7 @@ export async function markCompleted(
       "users",
       userId,
       "progress",
-      getProgressItemId(collectionId, inputLang, targetLang)
+      getProgressItemId(collectionId, inputLang, targetLang),
     );
 
     await setDoc(
@@ -123,7 +124,7 @@ export async function markCompleted(
       {
         completedAt: Timestamp.now(),
       },
-      { merge: true }
+      { merge: true },
     );
   } catch (error) {
     console.error("Error marking completed:", error);
@@ -132,26 +133,27 @@ export async function markCompleted(
 
 export async function getRecentTemplates(
   userId: string,
-  limitCount: number = 10
+  limitCount: number = 10,
 ): Promise<ProgressData[]> {
   try {
     const progressCollection = collection(
       firestore,
       "users",
       userId,
-      "progress"
+      "progress",
     );
     const q = query(
       progressCollection,
       orderBy("lastAccessedAt", "desc"),
-      limit(limitCount)
+      limit(limitCount),
     );
     const querySnapshot = await getDocs(q);
 
     return querySnapshot.docs.map((doc) => {
       const data = doc.data();
       return {
-        collectionId: data.collectionId, // itemId in Firestore is the collectionId
+        // Fallback to parsing doc.id for old documents without collectionId field
+        collectionId: data.collectionId || doc.id.split('_')[0],
         itemType: data.itemType,
         lastPhraseIndex: data.lastPhraseIndex,
         lastPhase: data.lastPhase,
@@ -172,9 +174,12 @@ export async function getRecentTemplates(
 
 export async function clearProgress(
   userId: string,
-  itemId: string
+  collectionId: string,
+  inputLang: string,
+  targetLang: string,
 ): Promise<void> {
   try {
+    const itemId = getProgressItemId(collectionId, inputLang, targetLang);
     const progressRef = doc(firestore, "users", userId, "progress", itemId);
     await deleteDoc(progressRef);
   } catch (error) {

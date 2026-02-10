@@ -4,8 +4,7 @@ import { auth } from '../firebase';
 import { BarChart3, MessageSquare, LogOut, Languages, Heart, Mail, CreditCard } from 'lucide-react';
 import { Menu } from '@headlessui/react';
 import { UserStatsModal } from './UserStatsModal';
-import { LanguagePreferencesModal } from './LanguagePreferencesModal';
-import { ContentPreferencesModal } from './ContentPreferencesModal';
+import { UserPreferencesModal } from './UserPreferencesModal';
 import { EmailNotificationPreferencesModal } from './EmailNotificationPreferencesModal';
 import { track } from '../../lib/mixpanelClient';
 import { API_BASE_URL } from '../consts';
@@ -17,8 +16,8 @@ interface UserAvatarProps {
 
 export function UserAvatar({ user }: UserAvatarProps) {
     const [statsModalOpen, setStatsModalOpen] = useState(false);
-    const [languagePrefsModalOpen, setLanguagePrefsModalOpen] = useState(false);
-    const [contentPrefsModalOpen, setContentPrefsModalOpen] = useState(false);
+    const [preferencesModalOpen, setPreferencesModalOpen] = useState(false);
+    const [preferencesInitialSection, setPreferencesInitialSection] = useState<'language' | 'content'>('language');
     const [emailPrefsModalOpen, setEmailPrefsModalOpen] = useState(false);
     const [portalError, setPortalError] = useState<string | null>(null);
     const [isOpeningPortal, setIsOpeningPortal] = useState(false);
@@ -100,7 +99,8 @@ export function UserAvatar({ user }: UserAvatarProps) {
                                     className={`w-full text-left px-4 py-2 flex items-center gap-2 ${active ? 'bg-secondary' : ''}`}
                                     onClick={() => {
                                         track('Language Preferences Clicked');
-                                        setLanguagePrefsModalOpen(true);
+                                        setPreferencesInitialSection('language');
+                                        setPreferencesModalOpen(true);
                                     }}
                                 >
                                     <Languages className="w-4 h-4" />
@@ -115,7 +115,8 @@ export function UserAvatar({ user }: UserAvatarProps) {
                                     className={`w-full text-left px-4 py-2 flex items-center gap-2 ${active ? 'bg-secondary' : ''}`}
                                     onClick={() => {
                                         track('Content Preferences Clicked');
-                                        setContentPrefsModalOpen(true);
+                                        setPreferencesInitialSection('content');
+                                        setPreferencesModalOpen(true);
                                     }}
                                 >
                                     <Heart className="w-4 h-4" />
@@ -204,18 +205,11 @@ export function UserAvatar({ user }: UserAvatarProps) {
             />
 
             {user && (
-                <LanguagePreferencesModal
-                    isOpen={languagePrefsModalOpen}
-                    onClose={() => setLanguagePrefsModalOpen(false)}
+                <UserPreferencesModal
+                    isOpen={preferencesModalOpen}
+                    onClose={() => setPreferencesModalOpen(false)}
                     user={user}
-                />
-            )}
-
-            {user && (
-                <ContentPreferencesModal
-                    isOpen={contentPrefsModalOpen}
-                    onClose={() => setContentPrefsModalOpen(false)}
-                    user={user}
+                    initialSection={preferencesInitialSection}
                 />
             )}
 

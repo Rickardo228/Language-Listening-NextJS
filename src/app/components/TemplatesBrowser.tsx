@@ -24,11 +24,14 @@ interface TemplatesBrowserProps {
     showHeader?: boolean;
     className?: string;
     tags?: string[];
-    title?: string;
+    excludeTags?: string[];
+    title?: string | React.ReactNode;
     noTemplatesComponent?: React.ReactNode;
     pathId?: string;
     showAllOverride?: boolean;
     browserId?: string;
+    groupIdQueryOverride?: string[];
+    categoryFilter?: 'learn' | 'news' | 'stories';
 }
 
 export function TemplatesBrowser({
@@ -37,11 +40,14 @@ export function TemplatesBrowser({
     showHeader = true,
     className,
     tags = [],
+    excludeTags = [],
     title,
     noTemplatesComponent,
     pathId,
     showAllOverride = false,
     browserId,
+    groupIdQueryOverride,
+    categoryFilter,
 }: TemplatesBrowserProps) {
     const router = useRouter();
     const { user, userProfile } = useUser();
@@ -59,11 +65,37 @@ export function TemplatesBrowser({
         userProfile?.preferredTargetLang || initialTargetLang
     );
     const hasInitialFetch = useRef(false);
+    const lastFilterKeyRef = useRef<string | null>(null);
     const normalizeTemplate = (doc: DocumentSnapshot) => {
         const data = doc.data() as Template | undefined;
         const createdAt = (data?.createdAt as Timestamp | undefined) || Timestamp.now();
         return { id: doc.id, ...data, createdAt } as TemplateWithTimestamp;
     };
+    const NEWS_GENERATOR_TAG = 'process:news-generator';
+    const BEGINNER_PATH_ID = 'beginner_path';
+    const matchesCategoryFilter = (template: TemplateWithTimestamp) => {
+        if (!categoryFilter) return true;
+        const isNews = template.tags?.includes(NEWS_GENERATOR_TAG) ?? false;
+        const isStory = Boolean(template.pathId && template.pathId !== BEGINNER_PATH_ID);
+        if (categoryFilter === 'news') return isNews;
+        if (categoryFilter === 'stories') return isStory;
+        return !isNews && !isStory;
+    };
+    const filterByCategory = (templateList: TemplateWithTimestamp[]) =>
+        categoryFilter ? templateList.filter(matchesCategoryFilter) : templateList;
+    const hasExcludedTag = (template: TemplateWithTimestamp) =>
+        excludeTags.some((tag) => template.tags?.includes(tag));
+    const filterExcludedTemplates = (templateList: TemplateWithTimestamp[]) =>
+        excludeTags.length > 0 ? templateList.filter((template) => !hasExcludedTag(template)) : templateList;
+    const applyTemplateFilters = (templateList: TemplateWithTimestamp[]) =>
+        filterExcludedTemplates(filterByCategory(templateList));
+    const filterChangeKey = [
+        pathId || '',
+        tags.join(','),
+        excludeTags.join(','),
+        (groupIdQueryOverride || []).join(','),
+        categoryFilter || '',
+    ].join('::');
 
     // Fetch templates for the current language pair (optionally overridden)
     const fetchTemplates = useCallback(
@@ -81,6 +113,48 @@ export function TemplatesBrowser({
             try {
                 const templatesRef = collection(firestore, 'templates');
                 const FETCH_LIMIT = options?.limitCount || 10;
+
+                // Handle groupIdQueryOverride - fetch specific templates by groupId
+                if (groupIdQueryOverride && groupIdQueryOverride.length > 0) {
+                    const templates: TemplateWithTimestamp[] = [];
+                    const batchSize = 30; // Firestore 'in' query limit
+
+                    for (let i = 0; i < groupIdQueryOverride.length; i += batchSize) {
+                        const batch = groupIdQueryOverride.slice(i, i + batchSize);
+                        const q = query(templatesRef, where('groupId', 'in', batch));
+                        const querySnapshot = await getDocs(q);
+
+                        querySnapshot.docs.forEach(doc => {
+                            templates.push(normalizeTemplate(doc));
+                        });
+                    }
+
+                    // Group by groupId and filter for language pair
+                    const templatesByGroup = templates.reduce((acc, template) => {
+                        if (!acc[template.groupId]) {
+                            acc[template.groupId] = [] as TemplateWithTimestamp[];
+                        }
+                        (acc[template.groupId] as TemplateWithTimestamp[]).push(template);
+                        return acc;
+                    }, {} as Record<string, TemplateWithTimestamp[]>);
+
+                    const uniqueTemplates = Object.values(templatesByGroup)
+                        .filter((groupTemplates) => {
+                            const hasInput = groupTemplates.some((t) => t.lang === inputLangToUse);
+                            const hasTarget = groupTemplates.some((t) => t.lang === targetLangToUse);
+                            return hasInput && hasTarget;
+                        })
+                        .map((groupTemplates) => groupTemplates.find((t) => t.lang === inputLangToUse) || groupTemplates[0]);
+
+                    // Maintain the order from groupIdQueryOverride
+                    const orderedTemplates = groupIdQueryOverride
+                        .map(groupId => uniqueTemplates.find(t => t.groupId === groupId))
+                        .filter((t): t is TemplateWithTimestamp => t !== undefined);
+
+                    setTemplates(applyTemplateFilters(orderedTemplates));
+                    setLoading(false);
+                    return;
+                }
 
                 // Build base query conditions
                 const getPathConditions = () => {
@@ -156,8 +230,9 @@ export function TemplatesBrowser({
 
                     // Randomize templates to ensure variety
                     const randomizedTemplates = uniqueTemplates.sort(() => Math.random() - 0.5);
+                    const filteredTemplates = applyTemplateFilters(randomizedTemplates);
 
-                    setTemplates(options?.fetchAll ? randomizedTemplates : randomizedTemplates.slice(0, FETCH_LIMIT));
+                    setTemplates(options?.fetchAll ? filteredTemplates : filteredTemplates.slice(0, FETCH_LIMIT));
                     return;
                 }
 
@@ -217,7 +292,7 @@ export function TemplatesBrowser({
                     .map((groupTemplates) => groupTemplates.find((t) => t.lang === inputLangToUse) || groupTemplates[0]);
 
                 // Sort by pathIndex or createdAt
-                const sortedTemplates = uniqueTemplates.sort((a, b) => {
+                const sortedTemplates = applyTemplateFilters(uniqueTemplates).sort((a, b) => {
                     if (pathId) {
                         const indexA = a.pathIndex || 0;
                         const indexB = b.pathIndex || 0;
@@ -239,7 +314,7 @@ export function TemplatesBrowser({
                 setLoading(false);
             }
         },
-        [inputLang, targetLang, pathId, tags]
+        [inputLang, targetLang, pathId, tags, groupIdQueryOverride, excludeTags, categoryFilter]
     );
 
     // Update languages when user profile loads/changes
@@ -262,6 +337,7 @@ export function TemplatesBrowser({
     useEffect(() => {
         if (!hasInitialFetch.current) {
             hasInitialFetch.current = true;
+            lastFilterKeyRef.current = filterChangeKey;
             // For learning paths, load all items to ensure scroll-to-incomplete works
             // For regular templates, load limited set for performance
             fetchTemplates(undefined, undefined, {
@@ -269,7 +345,19 @@ export function TemplatesBrowser({
                 limitCount: pathId ? undefined : 10
             });
         }
-    }, [pathId, fetchTemplates]);
+    }, [pathId, fetchTemplates, filterChangeKey]);
+
+    useEffect(() => {
+        if (!hasInitialFetch.current) return;
+        if (lastFilterKeyRef.current === filterChangeKey) return;
+        lastFilterKeyRef.current = filterChangeKey;
+        setTemplates([]);
+        setIsShowingAll(Boolean(pathId));
+        fetchTemplates(undefined, undefined, {
+            fetchAll: Boolean(pathId),
+            limitCount: pathId ? undefined : 10
+        });
+    }, [filterChangeKey, pathId, fetchTemplates]);
 
     const handleInputLangChange = (lang: string) => {
         setTemplates([]);

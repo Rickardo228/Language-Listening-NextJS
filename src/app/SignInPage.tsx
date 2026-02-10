@@ -42,28 +42,30 @@ export function SignInPage({
     const [isFirstVisit, setIsFirstVisit] = useState(false);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [isSignUp, setIsSignUp] = useState(false);
+    // const [isSignUp, setIsSignUp] = useState(false); // Commented out - now sign-in only
+    const isSignUp = false; // Always sign-in mode
     const [error, setError] = useState('');
     const [isGoogleLoading, setIsGoogleLoading] = useState(false);
     const [isEmailLoading, setIsEmailLoading] = useState(false);
 
-    useEffect(() => {
-        // Check for mode parameter in URL
-        const modeParam = searchParams.get('mode');
-
-        if (modeParam === 'signin') {
-            setIsSignUp(false); // Explicitly set to sign-in mode
-        } else if (modeParam === 'signup') {
-            setIsSignUp(true); // Explicitly set to sign-up mode
-        } else {
-            // Default behavior: show sign-up for first-time visitors
-            const hasVisited = localStorage.getItem('hasVisitedBefore');
-            if (!hasVisited) {
-                setIsFirstVisit(true);
-                setIsSignUp(true); // Default to sign-up mode on first visit
-            }
-        }
-    }, [searchParams]);
+    // Commented out - now sign-in only, no mode switching
+    // useEffect(() => {
+    //     // Check for mode parameter in URL
+    //     const modeParam = searchParams.get('mode');
+    //
+    //     if (modeParam === 'signin') {
+    //         setIsSignUp(false); // Explicitly set to sign-in mode
+    //     } else if (modeParam === 'signup') {
+    //         setIsSignUp(true); // Explicitly set to sign-up mode
+    //     } else {
+    //         // Default behavior: show sign-up for first-time visitors
+    //         const hasVisited = localStorage.getItem('hasVisitedBefore');
+    //         if (!hasVisited) {
+    //             setIsFirstVisit(true);
+    //             setIsSignUp(true); // Default to sign-up mode on first visit
+    //         }
+    //     }
+    // }, [searchParams]);
 
     useEffect(() => {
         const inputParam = searchParams.get('inputLang');
@@ -88,31 +90,34 @@ export function SignInPage({
             const provider = new GoogleAuthProvider();
             const result = await signInWithPopup(auth, provider);
 
-            // If this is the first visit, store the selected languages
-            if (isFirstVisit || isSignUp) {
-                localStorage.setItem('hasVisitedBefore', 'true');
-
-                // Store selected languages for onboarding
-                if (showLanguageSelect) {
-                    localStorage.setItem('signupInputLang', inputLang);
-                    localStorage.setItem('signupTargetLang', targetLang);
-                }
-
-                // Track sign up event for new users
-                if (isSignUp) {
-                    // Identify user in Mixpanel
-                    identifyUser(result.user.uid, result.user.email || undefined);
-                    trackSignUp(result.user.uid, result.user.providerData[0]?.providerId || 'google');
-                }
-            }
+            // Commented out - sign-up tracking logic (kept for potential future use)
+            // // If this is the first visit, store the selected languages
+            // if (isFirstVisit || isSignUp) {
+            //     localStorage.setItem('hasVisitedBefore', 'true');
+            //
+            //     // Store selected languages for onboarding
+            //     if (showLanguageSelect) {
+            //         localStorage.setItem('signupInputLang', inputLang);
+            //         localStorage.setItem('signupTargetLang', targetLang);
+            //     }
+            //
+            //     // Track sign up event for new users
+            //     if (isSignUp) {
+            //         // Identify user in Mixpanel
+            //         identifyUser(result.user.uid, result.user.email || undefined);
+            //         trackSignUp(result.user.uid, result.user.providerData[0]?.providerId || 'google');
+            //     }
+            // }
 
             // Handle post-auth navigation
             if (onAuthSuccess) {
                 onAuthSuccess(result.user);
-            } else if (isFirstVisit || isSignUp) {
-                // Default behavior - redirect to home page with query params
-                router.push(`${ROUTES.HOME}?firstVisit=true&inputLang=${inputLang}&targetLang=${targetLang}`);
             }
+            // Commented out - sign-up redirect logic
+            // else if (isFirstVisit || isSignUp) {
+            //     // Default behavior - redirect to home page with query params
+            //     router.push(`${ROUTES.HOME}?firstVisit=true&inputLang=${inputLang}&targetLang=${targetLang}`);
+            // }
         } catch (error) {
             console.error('Error signing in with Google:', error);
             setError('Failed to sign in with Google. Please try again.');
@@ -127,32 +132,37 @@ export function SignInPage({
         setError('');
 
         try {
-            let result;
-            if (isSignUp) {
-                result = await createUserWithEmailAndPassword(auth, email, password);
-                localStorage.setItem('hasVisitedBefore', 'true');
+            // Always sign in (sign-up logic commented out for potential future use)
+            const result = await signInWithEmailAndPassword(auth, email, password);
 
-                // Store selected languages for onboarding
-                if (showLanguageSelect) {
-                    localStorage.setItem('signupInputLang', inputLang);
-                    localStorage.setItem('signupTargetLang', targetLang);
-                }
-
-                // Identify user in Mixpanel
-                identifyUser(result.user.uid, result.user.email || undefined);
-                // Track sign up event for new users
-                trackSignUp(result.user.uid, 'email');
-            } else {
-                result = await signInWithEmailAndPassword(auth, email, password);
-            }
+            // Commented out - sign-up logic
+            // if (isSignUp) {
+            //     result = await createUserWithEmailAndPassword(auth, email, password);
+            //     localStorage.setItem('hasVisitedBefore', 'true');
+            //
+            //     // Store selected languages for onboarding
+            //     if (showLanguageSelect) {
+            //         localStorage.setItem('signupInputLang', inputLang);
+            //         localStorage.setItem('signupTargetLang', targetLang);
+            //     }
+            //
+            //     // Identify user in Mixpanel
+            //     identifyUser(result.user.uid, result.user.email || undefined);
+            //     // Track sign up event for new users
+            //     trackSignUp(result.user.uid, 'email');
+            // } else {
+            //     result = await signInWithEmailAndPassword(auth, email, password);
+            // }
 
             // Handle post-auth navigation
             if (onAuthSuccess) {
                 onAuthSuccess(result.user);
-            } else if (isSignUp) {
-                // Default behavior - redirect to home page with query params
-                router.push(`${ROUTES.HOME}?firstVisit=true&inputLang=${inputLang}&targetLang=${targetLang}`);
             }
+            // Commented out - sign-up redirect logic
+            // else if (isSignUp) {
+            //     // Default behavior - redirect to home page with query params
+            //     router.push(`${ROUTES.HOME}?firstVisit=true&inputLang=${inputLang}&targetLang=${targetLang}`);
+            // }
         } catch (error: unknown) {
             console.error('Error with email authentication:', error);
             if (error instanceof Error) {
@@ -169,7 +179,9 @@ export function SignInPage({
         if (typeof description === 'function') {
             return description(isSignUp);
         }
-        return isSignUp && showLanguageSelect ? 'Choose the languages you want to practice with' : description;
+        return description; // Always show provided description (sign-in mode)
+        // Commented out - sign-up mode description
+        // return isSignUp && showLanguageSelect ? 'Choose the languages you want to practice with' : description;
     };
 
     const isLoading = isGoogleLoading || isEmailLoading;
@@ -183,7 +195,8 @@ export function SignInPage({
 
             </div>
 
-            {isSignUp && showLanguageSelect && (
+            {/* Commented out - language selector only shown in sign-up mode */}
+            {/* {isSignUp && showLanguageSelect && (
                 <LanguageSelector
                     inputLang={inputLang}
                     setInputLang={setInputLang}
@@ -192,7 +205,7 @@ export function SignInPage({
                     direction="row"
                     disabled={isLoading}
                 />
-            )}
+            )} */}
 
             <div className="space-y-4">
                 <button
@@ -267,11 +280,14 @@ export function SignInPage({
                             <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                         )}
                         <span>
+                            {isEmailLoading ? 'Signing In...' : 'Sign In'}
+                        </span>
+                        {/* Commented out - sign-up button text
                             {isEmailLoading
                                 ? (isSignUp ? 'Creating Account...' : 'Signing In...')
                                 : (isSignUp ? 'Create Account' : 'Sign In')
                             }
-                        </span>
+                        */}
                     </button>
                 </form>
 

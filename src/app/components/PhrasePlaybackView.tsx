@@ -58,6 +58,7 @@ interface PhrasePlaybackViewProps {
     readOnly?: boolean;
     hidePhrases?: boolean;
     onCompleted?: (userId: string, collectionId: string, inputLang: string, targetLang: string) => void;
+    initialPhraseIndex?: number;
 }
 
 export function PhrasePlaybackView({
@@ -81,9 +82,11 @@ export function PhrasePlaybackView({
     readOnly = false,
     hidePhrases = false,
     onCompleted,
+    initialPhraseIndex,
 }: PhrasePlaybackViewProps) {
     const { user } = useUser();
     const { updateUserStats, StatsPopups, StatsModal, showStatsUpdate, incrementViewedAndCheckMilestone, initializeViewedCounter, phrasesViewed, setIsAutoplayActive, recentMilestones } = useUpdateUserStats();
+    const initialPhraseIndexRef = useRef(initialPhraseIndex);
     const [currentPhraseIndex, setCurrentPhraseIndex] = useState(0);
     const [currentPhase, setCurrentPhase] = useState<'input' | 'output'>(
         presentationConfig.enableInputPlayback ? 'input' : 'output'
@@ -268,17 +271,26 @@ export function PhrasePlaybackView({
         if (!user?.uid || !collectionId || !itemType) return;
 
         const loadSavedProgress = async () => {
-            const progress = await loadProgress(user.uid, collectionId, phrases[0]?.inputLang, phrases[0]?.targetLang);
-            console.log('Loaded progress:', progress);
-            if (progress && typeof progress.lastPhraseIndex === 'number') {
-                console.log('Setting current phrase index and phase to:', progress.lastPhraseIndex, progress.lastPhase);
-                // Update refs immediately to prevent race condition
-                indexRef.current = progress.lastPhraseIndex;
-                phaseRef.current = progress.lastPhase;
-                prevPhraseIndexRef.current = progress.lastPhraseIndex;
-                // Update state
-                setCurrentPhraseIndex(progress.lastPhraseIndex);
-                setCurrentPhase(progress.lastPhase);
+            const startIndex = initialPhraseIndexRef.current;
+            // initialPhraseIndex takes priority over saved progress (e.g. scrollTo from quick add)
+            if (typeof startIndex === 'number' && !isNaN(startIndex)) {
+                initialPhraseIndexRef.current = undefined; // Only use once
+                indexRef.current = startIndex;
+                prevPhraseIndexRef.current = startIndex;
+                setCurrentPhraseIndex(startIndex);
+            } else {
+                const progress = await loadProgress(user.uid, collectionId, phrases[0]?.inputLang, phrases[0]?.targetLang);
+                console.log('Loaded progress:', progress);
+                if (progress && typeof progress.lastPhraseIndex === 'number') {
+                    console.log('Setting current phrase index and phase to:', progress.lastPhraseIndex, progress.lastPhase);
+                    // Update refs immediately to prevent race condition
+                    indexRef.current = progress.lastPhraseIndex;
+                    phaseRef.current = progress.lastPhase;
+                    prevPhraseIndexRef.current = progress.lastPhraseIndex;
+                    // Update state
+                    setCurrentPhraseIndex(progress.lastPhraseIndex);
+                    setCurrentPhase(progress.lastPhase);
+                }
             }
             // Mark progress as loaded (even if no progress exists, we've attempted to load it)
             progressLoadedRef.current = true;
@@ -398,9 +410,9 @@ export function PhrasePlaybackView({
                 return;
             }
             console.error('play failed:', reason, e);
-            // If playback fails, try to regenerate the audio (restored lost functionality)
+            // If playback fails, try to regenerate the audio and auto-play once ready
             if (indexRef.current >= 0) {
-                handleAudioError(phaseRef.current);
+                handleAudioError(phaseRef.current, true);
             }
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1370,8 +1382,8 @@ export function PhrasePlaybackView({
 
         if (audioRef.current && audioRef.current.paused) {
             if (!src) {
-                // If no source exists, generate it
-                handleAudioError(currentPhase);
+                // If no source exists, generate it and auto-play once ready
+                handleAudioError(currentPhase, true);
             } else {
                 // Always update the source to match the current phase
                 // This ensures that if the user clicked input audio while input playback is disabled,
@@ -1946,17 +1958,18 @@ export function PhrasePlaybackView({
                 />
             )}
             {insertDialogOpen && (
-                <ImportPhrasesDialog
-                    isOpen={insertDialogOpen}
-                    onClose={() => setInsertDialogOpen(false)}
+                    <ImportPhrasesDialog
+                        isOpen={insertDialogOpen}
+                        onClose={() => setInsertDialogOpen(false)}
                     inputLang={phrases[0]?.inputLang || 'en-GB'}
                     setInputLang={() => {}}
                     targetLang={phrases[0]?.targetLang || 'it-IT'}
                     setTargetLang={() => {}}
                     phrasesInput={insertPhrasesInput}
-                    setPhrasesInput={setInsertPhrasesInput}
-                    loading={insertLoading}
-                    onAddToCollection={async (inputLang, targetLang, isSwapped) => {
+                        setPhrasesInput={setInsertPhrasesInput}
+                        loading={insertLoading}
+                        showSuggestedTopicChips={false}
+                        onAddToCollection={async (inputLang, targetLang, isSwapped) => {
                         if (!setPhrases) return;
                         const splitPhrases = insertPhrasesInput
                             .split('\n')

@@ -1,6 +1,6 @@
 'use client'
 
-import { InputHTMLAttributes, ReactNode } from 'react';
+import { InputHTMLAttributes, ReactNode, forwardRef } from 'react';
 import { Label } from './Label';
 
 export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
@@ -22,18 +22,21 @@ export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   inputClassName?: string;
 }
 
-export function Input({
-  label,
-  helperText,
-  error,
-  leftIcon,
-  rightIcon,
-  className = '',
-  inputClassName = '',
-  id,
-  required,
-  ...props
-}: InputProps) {
+export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
+  {
+    label,
+    helperText,
+    error,
+    leftIcon,
+    rightIcon,
+    className = '',
+    inputClassName = '',
+    id,
+    required,
+    ...props
+  },
+  ref
+) {
   const inputId = id || label?.toLowerCase().replace(/\s+/g, '-');
   const hasError = Boolean(error);
 
@@ -58,6 +61,7 @@ export function Input({
           className={`${baseInputClasses} ${errorClasses} ${iconPaddingLeft} ${iconPaddingRight} ${inputClassName}`}
           aria-invalid={hasError}
           aria-describedby={error ? `${inputId}-error` : helperText ? `${inputId}-helper` : undefined}
+          ref={ref}
           {...props}
         />
 
@@ -81,4 +85,4 @@ export function Input({
       )}
     </div>
   );
-}
+});

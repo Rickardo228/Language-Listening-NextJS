@@ -8,7 +8,7 @@ export type AbTestVariant = 'control' | 'variantB';
  * This should only be called once per user during account creation
  */
 export function assignAbTestVariant(): AbTestVariant {
-  return Math.random() < 0.5 ? 'control' : 'variantB';
+  return 'variantB';
 }
 
 /**

@@ -1,9 +1,14 @@
 'use client'
 
+import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { Home, Library } from 'lucide-react';
+import { Home, Library, Plus } from 'lucide-react';
 import { track } from '../../lib/mixpanelClient';
 import { ROUTES } from '../routes';
+import { useTour } from '@reactour/tour';
+import { QuickAddDialog } from '../QuickAddDialog';
+
+const LAST_TAB_KEY = 'bottom-nav-last-tab';
 
 /**
  * YouTube-style Bottom Navigation Component
@@ -19,15 +24,35 @@ export function BottomNavigation() {
   const pathname = usePathname();
   const router = useRouter();
 
+  const tour = useTour();
+  const [showQuickAdd, setShowQuickAdd] = useState(false);
   const isHomePath = pathname === ROUTES.HOME || pathname === ROUTES.TEMPLATES;
   const isLibraryPath = pathname === ROUTES.LIBRARY;
 
+  // Redirect to last selected tab when landing on home (mobile only)
+  useEffect(() => {
+    if (!isHomePath || window.innerWidth >= 1024) return;
+    const lastTab = localStorage.getItem(LAST_TAB_KEY);
+    if (lastTab === 'library') {
+      router.replace(ROUTES.LIBRARY);
+    }
+  }, [isHomePath, router]);
+
   const handleHomeClick = () => {
+    localStorage.setItem(LAST_TAB_KEY, 'home');
     track('Bottom Nav Home Clicked');
     router.push(ROUTES.HOME);
   };
 
+  const handleCreateClick = () => {
+    if (tour.isOpen) track('Create List Tour CTA Clicked', { platform: 'mobile' });
+    tour.setIsOpen(false);
+    track('Bottom Nav Create Clicked');
+    setShowQuickAdd(true);
+  };
+
   const handleLibraryClick = () => {
+    localStorage.setItem(LAST_TAB_KEY, 'library');
     track('Bottom Nav Library Clicked');
     router.push(ROUTES.LIBRARY);
   };
@@ -67,6 +92,18 @@ export function BottomNavigation() {
           </span>
         </button>
 
+        {/* Create Button */}
+        <button
+          onClick={handleCreateClick}
+          className="flex items-center justify-center -mt-5"
+          aria-label="Create list"
+          data-tour="create-list-mobile"
+        >
+          <div className="w-12 h-12 rounded-full bg-blue-600 dark:bg-blue-500 flex items-center justify-center shadow-lg">
+            <Plus className="w-6 h-6 text-white" strokeWidth={2} aria-hidden="true" />
+          </div>
+        </button>
+
         {/* Library Tab */}
         <button
           onClick={handleLibraryClick}
@@ -85,6 +122,7 @@ export function BottomNavigation() {
           </span>
         </button>
       </div>
+      <QuickAddDialog isOpen={showQuickAdd} onClose={() => setShowQuickAdd(false)} />
     </div>
   );
 }

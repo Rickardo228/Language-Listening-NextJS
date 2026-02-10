@@ -1,13 +1,14 @@
 'use client'
 
 import React, { createContext, useContext, useMemo, useState } from 'react';
-import { Config, Phrase } from '../types';
+import { Config, Phrase, PresentationConfig } from '../types';
 
 interface CollectionsContextType {
   collections: Config[];
   setCollections: React.Dispatch<React.SetStateAction<Config[]>>;
   upsertCollection: (collection: Config) => void;
   appendPhraseToCollection: (collectionId: string, phrase: Phrase) => void;
+  renameCollection: (collectionId: string, name: string) => void;
   removeCollection: (collectionId: string) => void;
 }
 
@@ -50,6 +51,21 @@ export const CollectionsProvider: React.FC<CollectionsProviderProps> = ({ childr
     );
   };
 
+  const renameCollection = (collectionId: string, name: string) => {
+    setCollections((prev) =>
+      prev.map((item) => {
+        if (item.id !== collectionId) return item;
+        return {
+          ...item,
+          name,
+          ...(item.presentationConfig && {
+            presentationConfig: { ...item.presentationConfig, name },
+          }),
+        };
+      })
+    );
+  };
+
   const removeCollection = (collectionId: string) => {
     setCollections((prev) => prev.filter((item) => item.id !== collectionId));
   };
@@ -60,6 +76,7 @@ export const CollectionsProvider: React.FC<CollectionsProviderProps> = ({ childr
       setCollections,
       upsertCollection,
       appendPhraseToCollection,
+      renameCollection,
       removeCollection,
     }),
     [collections]
