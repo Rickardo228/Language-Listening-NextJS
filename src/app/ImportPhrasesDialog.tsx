@@ -26,7 +26,7 @@ export interface ImportPhrasesDialogProps {
     loading: boolean
     processProgress?: { completed: number; total: number } | null
     collectionsLoading?: boolean
-    onProcess?: (prompt?: string, inputLang?: string, targetLang?: string, collectionType?: CollectionType) => Promise<void>
+    onProcess?: (prompt?: string, inputLang?: string, targetLang?: string, collectionType?: CollectionType, name?: string) => Promise<void>
     onAddToCollection?: (inputLang?: string, targetLang?: string, isSwapped?: boolean) => Promise<void>
     variant?: 'default' | 'like' | 'quickAdd'
     collectionOptions?: Array<{ value: string; label: string }>
@@ -155,7 +155,7 @@ export function ImportPhrasesDialog({
             onClose();
         } else if (onProcess) {
             if (loading || !phrasesInput.trim()) return;
-            await onProcess(prompt, inputLang, targetLang, collectionType);
+            await onProcess(undefined, inputLang, targetLang, collectionType, prompt.trim() || undefined);
             onClose();
         }
     };
@@ -381,7 +381,7 @@ export function ImportPhrasesDialog({
                                     ) : (
                                         <button
                                             onClick={async () => {
-                                                await onProcess?.(prompt, inputLang, targetLang, collectionType)
+                                                await onProcess?.(undefined, inputLang, targetLang, collectionType, prompt.trim() || undefined)
                                                 onClose()
                                             }}
                                             disabled={loading || !phrasesInput.trim()}

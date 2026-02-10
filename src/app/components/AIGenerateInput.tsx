@@ -8,7 +8,7 @@ interface AIGenerateInputProps {
     inputLang: string
     targetLang: string
     collectionType?: CollectionType
-    onGenerate: (phrases: string, prompt: string) => void | Promise<void>
+    onGenerate: (phrases: string, prompt: string, name?: string) => void | Promise<void>
     disabled?: boolean
     className?: string
     placeholder?: string
@@ -50,7 +50,7 @@ export function AIGenerateInput({
         targetLang,
         collectionType,
         onSuccess: async (phrases, normalizedPrompt) => {
-            await onGenerate(phrases, normalizedPrompt)
+            await onGenerate(phrases, normalizedPrompt, undefined)
             if (clearAfterGenerate) {
                 setPrompt('')
             }

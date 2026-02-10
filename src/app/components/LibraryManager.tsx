@@ -158,7 +158,7 @@ export function LibraryManager({
     return docRef;
   };
 
-  const handleProcess = async (prompt?: string, inputLang?: string, targetLang?: string, collectionType?: CollectionTypeEnum, phrasesOverride?: string) => {
+  const handleProcess = async (prompt?: string, inputLang?: string, targetLang?: string, collectionType?: CollectionTypeEnum, phrasesOverride?: string, name?: string) => {
     const phrasesToProcess = phrasesOverride ?? phrasesInput;
     if (!phrasesToProcess.trim()) return;
     setLoading(true);
@@ -183,11 +183,10 @@ export function LibraryManager({
         targetLang: effectiveTargetLang,
       })
 
-      const collectionId = await handleCreateCollection(allProcessed, prompt, collectionType, undefined, false);
+      const collectionId = await handleCreateCollection(allProcessed, name || prompt, collectionType, undefined, false);
 
-      // Auto-generate a name if prompt is missing or is a URL
-      const isUrl = prompt && /^https?:\/\//i.test(prompt.trim());
-      if (!prompt || isUrl) {
+      // Auto-generate a name if no explicit name was provided
+      if (!name) {
         autoNameCollection(
           allProcessed,
           effectiveInputLang,
@@ -338,8 +337,8 @@ export function LibraryManager({
           <AIGenerateInput
             inputLang={newCollectionInputLang}
             targetLang={newCollectionTargetLang}
-            onGenerate={async (phrases, prompt) => {
-              await handleProcess(prompt, newCollectionInputLang, newCollectionTargetLang, 'phrases', phrases);
+            onGenerate={async (phrases, prompt, name) => {
+              await handleProcess(prompt, newCollectionInputLang, newCollectionTargetLang, 'phrases', phrases, name);
             }}
             disabled={loading}
             clearAfterGenerate={true}
