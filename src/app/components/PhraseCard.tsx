@@ -35,7 +35,7 @@ function calculateFontSize(text: string, isFullScreen: boolean, hasRomanized: bo
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
 
   // Base sizes adjusted - increased for non-fullscreen
-  const baseSize = isFullScreen ? ((hasRomanized || isMobile) ? 50 : 70) : 32; // reduced romanized size in fullscreen
+  const baseSize = isFullScreen ? ((hasRomanized) ? isMobile ? 30 : 50 : 70) : 32; // reduced romanized size in fullscreen
   const maxChars = isFullScreen ? 30 : 20; // threshold for max characters
 
   // Special handling for long words on mobile
@@ -45,7 +45,7 @@ function calculateFontSize(text: string, isFullScreen: boolean, hasRomanized: bo
   const longWordScale = isMobile && longestWord > 10 ? 0.8 : 1;
 
   const scale = Math.min(1, maxChars / text.length) * longWordScale;
-  const fontSize = Math.max(baseSize * scale, isFullScreen ? 30 : 20); // increased minimum size for non-fullscreen
+  const fontSize = Math.max(baseSize * scale, isFullScreen ? ((hasRomanized) ? isMobile ? 15 : 20 : 30) : 20); // increased minimum size for non-fullscreen
 
   return `${fontSize}px`;
 }
@@ -1078,11 +1078,13 @@ export function PhraseCard({
               </h2>
               {romanized && !isMobileInline && (
                 <h2
-                  className={`font-bold mt-3 transition-opacity duration-300 ${phase !== "output" ? "opacity-60" : "opacity-100"} ${outputHoverClass}`}
+                  className={`font-bold transition-opacity duration-300 ${outputHoverClass}`}
                   style={{
                     margin: 0,
                     padding: 0,
+                    marginTop: isMobile ? '16px' : '12px',
                     fontSize: commonFontSize,
+                    opacity: phase !== "output" ? 0.54 : 0.7,
                     transform: isPlayingAudio && phase === "output" ? "scale(1.02)" : "scale(1)",
                     filter: isPlayingAudio && phase === "output" ? "drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3))" : "none",
                     transition: "opacity 0.3s ease, transform 0.3s ease, filter 0.3s ease"
@@ -1211,9 +1213,11 @@ export function PhraseCard({
       {phase === "output" && romanized && !isMobileInline && (
         <h2
           key={phase}
-          className="font-bold mt-3 transition-opacity duration-300 opacity-100 hover:opacity-90"
+          className="font-bold transition-opacity duration-300 hover:opacity-90"
           style={{
-            fontSize: calculateFontSize(romanized, fullScreen, true)
+            marginTop: isMobile ? '16px' : '12px',
+            fontSize: calculateFontSize(romanized, fullScreen, true),
+            opacity: 0.5
           }}
         >
           {romanized}
