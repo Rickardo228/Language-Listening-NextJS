@@ -31,7 +31,7 @@ export function CategoryChips<T extends string>({
                 ref={containerRef}
                 className={[
                     'flex items-center gap-2 overflow-x-auto scrollbar-hide',
-                    hasOverflow && 'px-10'
+                    hasOverflow && 'pr-10'
                 ].filter(Boolean).join(' ')}
             >
                 {chips.map((chip) => {

@@ -602,7 +602,6 @@ export function TemplatesBrowser({
                                         groupId: c.id,
                                         inputLang,
                                         targetLang,
-                                        autoplay: true,
                                     }));
                                 }}
                                 hideScrollbar
