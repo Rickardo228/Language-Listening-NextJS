@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { CollectionType } from '../types'
 import { useGeneratePhrases } from '../hooks/useGeneratePhrases'
 
@@ -15,6 +15,17 @@ interface AIGenerateInputProps {
     clearAfterGenerate?: boolean
 }
 
+const DEFAULT_PLACEHOLDERS = [
+    'e.g. ordering coffee...',
+    'e.g. airport check-in...',
+    'e.g. making small talk...',
+    'e.g. asking for directions...',
+    'e.g. grocery shopping...',
+    'e.g. booking a hotel...',
+    'e.g. restaurant conversation...',
+    'e.g. introducing yourself...',
+]
+
 export function AIGenerateInput({
     inputLang,
     targetLang,
@@ -22,11 +33,17 @@ export function AIGenerateInput({
     onGenerate,
     disabled = false,
     className = '',
-    placeholder = 'e.g. ordering coffee, airport check-in...',
+    placeholder,
     clearAfterGenerate = false,
 }: AIGenerateInputProps) {
     const [prompt, setPrompt] = useState('')
     const inputRef = useRef<HTMLInputElement>(null)
+
+    // Randomly select a placeholder on mount
+    const randomPlaceholder = useMemo(() => {
+        if (placeholder) return placeholder
+        return DEFAULT_PLACEHOLDERS[Math.floor(Math.random() * DEFAULT_PLACEHOLDERS.length)]
+    }, [])
 
     const { generatePhrases, isGenerating, isFetchingUrl } = useGeneratePhrases({
         inputLang,
@@ -66,10 +83,10 @@ export function AIGenerateInput({
                             handleGenerate()
                         }
                     }}
-                    placeholder={placeholder}
+                    placeholder={randomPlaceholder}
                     disabled={isGenerating || disabled}
                     ref={inputRef}
-                    className="w-full h-14 pl-5 pr-32 rounded-xl border-2 bg-background/50 backdrop-blur-sm text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all placeholder:text-muted-foreground/60"
+                    className="w-full h-14 pl-5 pr-32 rounded-xl border-2 bg-background/50 backdrop-blur-sm text-base md:text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all placeholder:text-muted-foreground/60"
                 />
                 <button
                     type="button"
