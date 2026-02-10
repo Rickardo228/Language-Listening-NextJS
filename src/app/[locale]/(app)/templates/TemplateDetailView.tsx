@@ -39,7 +39,6 @@ interface TemplateDetailViewProps {
     groupId: string | null;
     initialInputLang?: string;
     initialTargetLang?: string;
-    autoplay?: boolean;
     readOnly?: boolean;
 }
 
@@ -77,7 +76,6 @@ export default function TemplateDetailView({
     groupId,
     initialInputLang = 'en-GB',
     initialTargetLang = 'it-IT',
-    autoplay = false,
     readOnly = false,
 }: TemplateDetailViewProps) {
     const router = useRouter();
@@ -336,12 +334,11 @@ export default function TemplateDetailView({
                 const nextTemplateDoc = nextTemplateSnapshot.docs[0];
                 const nextTemplateData = nextTemplateDoc.data() as Template;
 
-                // Navigate to the next template, preserving language preferences and enabling autoplay
+                // Navigate to the next template, preserving language preferences
                 router.push(buildTemplateUrl({
                     groupId: nextTemplateData.groupId,
                     inputLang: selectedInputLang,
                     targetLang: selectedTargetLang,
-                    autoplay: true,
                 }));
             } else {
                 // End of path - no next template found
@@ -509,7 +506,6 @@ export default function TemplateDetailView({
                     collectionId={groupId as string}
                     stickyHeaderContent={collectionHeaderContent}
                     showImportPhrases={true}
-                    autoplay={autoplay}
                     itemType="template"
                     pathId={currentPathId}
                     pathIndex={currentPathIndex}

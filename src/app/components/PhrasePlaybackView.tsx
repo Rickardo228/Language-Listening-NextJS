@@ -48,7 +48,6 @@ interface PhrasePlaybackViewProps {
     stickyHeaderContent?: React.ReactNode;
     methodsRef?: React.MutableRefObject<PhrasePlaybackMethods | null>;
     handleImageUpload?: (e: React.ChangeEvent<HTMLInputElement>) => void;
-    autoplay?: boolean;
     transport?: WebMediaSessionTransport; // Optional transport for testing/external control
     itemType?: 'template' | 'collection';
     pathId?: string; // Learning path ID if this collection is part of a path
@@ -72,7 +71,6 @@ export function PhrasePlaybackView({
     stickyHeaderContent,
     methodsRef,
     handleImageUpload,
-    autoplay = false,
     transport: externalTransport,
     itemType,
     pathId,
@@ -1069,23 +1067,11 @@ export function PhrasePlaybackView({
 
 
 
-    // Autoplay effect - triggers play when autoplay prop is true and component is ready
-    const autoplayTriggeredRef = useRef(false);
-    useEffect(() => {
-        if (autoplay && phrases.length > 0 && !autoplayTriggeredRef.current) {
-            autoplayTriggeredRef.current = true;
-            // Small delay to ensure audio element is ready
-            setTimeout(() => {
-                handleReplay();
-            }, 300);
-        }
-    }, [autoplay, phrases.length, handleReplay]);
-
     // Track autoplay active state for milestone popup suppression
     useEffect(() => {
-        // Autoplay is considered active when autoplay prop is true and playback is not paused
-        setIsAutoplayActive(autoplay && !paused);
-    }, [autoplay, paused, setIsAutoplayActive]);
+        // User is actively listening when not paused
+        setIsAutoplayActive(!paused);
+    }, [paused, setIsAutoplayActive]);
 
 
     const handlePlayPhrase = (index: number, phase: 'input' | 'output') => {

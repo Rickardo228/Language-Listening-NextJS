@@ -13,7 +13,6 @@ export default function TemplateDetailPage() {
     const groupId = rawGroupId ? decodeURIComponent(rawGroupId as string) : null;
     const initialInputLang = searchParams.get('inputLang') || 'en-GB';
     const initialTargetLang = searchParams.get('targetLang') || 'it-IT';
-    const shouldAutoplay = searchParams.get('autoplay') === '1' || searchParams.get('autoplay') === 'true';
 
     // Redirect legacy query-param route to canonical path
     useEffect(() => {
@@ -22,10 +21,9 @@ export default function TemplateDetailPage() {
             groupId,
             inputLang: initialInputLang,
             targetLang: initialTargetLang,
-            autoplay: shouldAutoplay,
         });
         router.replace(canonicalUrl, { scroll: false });
-    }, [groupId, initialInputLang, initialTargetLang, shouldAutoplay, router]);
+    }, [groupId, initialInputLang, initialTargetLang, router]);
 
     return (
         <div className="flex items-center justify-center min-h-screen bg-background">
