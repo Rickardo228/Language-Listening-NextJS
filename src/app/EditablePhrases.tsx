@@ -222,8 +222,8 @@ function PhraseComponent({ phrase, phrases, isSelected, currentPhase, onPhraseCl
         <div
             className={`group w-full transition-colors relative px-3 py-2.5 border-t border-b
                 ${isSelected
-                    ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-700'
-                    : 'bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800/50 border-gray-100 dark:border-gray-800'}
+                    ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-gray-700'
+                    : 'bg-transparent hover:bg-gray-50 dark:hover:bg-gray-800/50 border-gray-100 dark:border-gray-700/50'}
                 ${onPhraseClick ? 'cursor-pointer' : ''}
                 ${isReadOnly ? 'mb-0' : ''}`}
             onClick={(e) => {
@@ -262,7 +262,7 @@ function PhraseComponent({ phrase, phrases, isSelected, currentPhase, onPhraseCl
 
                 {/* Input field */}
                 {isReadOnly ? (
-                    <div className={`flex-1 text-sm ${isSelected && currentPhase === 'input' ? 'text-blue-600 dark:text-blue-400' : 'text-gray-900 dark:text-gray-100'}`}>
+                    <div className={`flex-1 text-base ${isSelected && currentPhase === 'input' ? 'text-blue-600 dark:text-blue-400' : 'text-gray-900 dark:text-gray-100'}`}>
                         {phrase.input || <span className="text-gray-400 dark:text-gray-500">-</span>}
                     </div>
                 ) : (
@@ -283,8 +283,8 @@ function PhraseComponent({ phrase, phrases, isSelected, currentPhase, onPhraseCl
                         onBlur={() => handleBlur('input')}
                         disabled={inputLoading}
                         placeholder={`Enter ${inputLanguageLabel || 'input'} text`}
-                        className={`flex-1 bg-transparent text-sm
-                            focus:outline-none focus:bg-white dark:focus:bg-gray-800 focus:px-2 focus:py-0.5 focus:rounded
+                        className={`flex-1 bg-transparent text-base border-b border-transparent hover:border-gray-300 dark:hover:border-gray-600
+                            focus:outline-none focus:bg-white dark:focus:bg-gray-800 focus:px-2 focus:py-0.5 focus:rounded focus:border-transparent
                             focus:ring-1 focus:ring-blue-400 dark:focus:ring-blue-500 focus:text-gray-900 dark:focus:text-gray-100 transition-all
                             ${inputLoading ? 'opacity-50' : ''}
                             ${isSelected && currentPhase === 'input' ? 'text-blue-600 dark:text-blue-400' : 'text-gray-900 dark:text-gray-100'}`}
@@ -362,7 +362,7 @@ function PhraseComponent({ phrase, phrases, isSelected, currentPhase, onPhraseCl
             </div>
 
             {/* Row 2: Output language */}
-            <div className="flex items-center gap-2 mb-1">
+            <div className={`flex items-center gap-2 ${phrase.romanized ? 'mb-1' : ''}`}>
                 {/* Play output audio button */}
                 {phrase.outputAudio && !phrase.useRomanizedForAudio && (
                     <button
@@ -416,8 +416,8 @@ function PhraseComponent({ phrase, phrases, isSelected, currentPhase, onPhraseCl
                         onBlur={() => handleBlur('translated')}
                         disabled={outputLoading}
                         placeholder={`Enter ${outputLanguageLabel || 'output'} text`}
-                        className={`flex-1 bg-transparent text-base
-                            focus:outline-none focus:bg-white dark:focus:bg-gray-800 focus:px-2 focus:py-0.5 focus:rounded
+                        className={`flex-1 bg-transparent text-base border-b border-transparent hover:border-gray-300 dark:hover:border-gray-600
+                            focus:outline-none focus:bg-white dark:focus:bg-gray-800 focus:px-2 focus:py-0.5 focus:rounded focus:border-transparent
                             focus:ring-1 focus:ring-blue-400 dark:focus:ring-blue-500 focus:text-gray-800 dark:focus:text-gray-200 transition-all
                             ${outputLoading ? 'opacity-50' : ''}
                             ${isSelected && currentPhase === 'output' ? 'text-blue-600 dark:text-blue-400' : 'text-gray-800 dark:text-gray-200'}`}
@@ -480,8 +480,8 @@ function PhraseComponent({ phrase, phrases, isSelected, currentPhase, onPhraseCl
                             }}
                             onBlur={() => handleBlur('romanized')}
                             placeholder="Enter romanization"
-                            className="flex-1 bg-transparent text-xs text-gray-500 dark:text-gray-400 italic
-                                focus:outline-none focus:bg-white dark:focus:bg-gray-800 focus:px-2 focus:py-0.5 focus:rounded
+                            className="flex-1 bg-transparent text-xs text-gray-500 dark:text-gray-400 italic border-b border-transparent hover:border-gray-300 dark:hover:border-gray-600
+                                focus:outline-none focus:bg-white dark:focus:bg-gray-800 focus:px-2 focus:py-0.5 focus:rounded focus:border-transparent
                                 focus:ring-1 focus:ring-blue-400 dark:focus:ring-blue-500 focus:text-gray-800 dark:focus:text-gray-200 transition-all"
                         />
                     )}
