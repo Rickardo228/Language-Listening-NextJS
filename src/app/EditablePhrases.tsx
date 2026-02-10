@@ -1,6 +1,6 @@
 import { Phrase, languageOptions } from './types';
 import { useState, useEffect, useRef } from 'react';
-import { SpeakerWaveIcon, MicrophoneIcon, EllipsisVerticalIcon, ArrowPathIcon } from '@heroicons/react/24/solid';
+import { Volume2, Mic, MoreVertical, RefreshCw } from 'lucide-react';
 import { Menu } from './Menu';
 import { generateAudio } from './utils/audioUtils';
 import { useProcessPhrases } from './hooks/useProcessPhrases';
@@ -70,6 +70,7 @@ function PhraseComponent({ phrase, phrases, isSelected, currentPhase, onPhraseCl
     const [prevInput, setPrevInput] = useState(phrase.input);
     const [prevTranslated, setPrevTranslated] = useState(phrase.translated);
     const [prevRomanized, setPrevRomanized] = useState(phrase.romanized);
+    const [showMenu, setShowMenu] = useState(false);
 
     const { processPhrases } = useProcessPhrases({
         inputLang: phrase.inputLang,
@@ -213,83 +214,57 @@ function PhraseComponent({ phrase, phrases, isSelected, currentPhase, onPhraseCl
         }
     };
 
-    const PlayOutputAudioButton = () => {
-        return (
-            phrase.outputAudio && (
-                <button
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        onPlayPhrase?.(phrases.indexOf(phrase), phrase.useRomanizedForAudio ? 'output' : 'output');
-                    }}
-                    className="px-3 py-1 text-sm bg-indigo-100 hover:bg-indigo-200 dark:bg-indigo-600 dark:hover:bg-indigo-500 rounded text-indigo-700 dark:text-white transition-colors"
-                    title="Play translated audio"
-                >
-                    <SpeakerWaveIcon className="w-4 h-4" />
-                </button>
-            )
-        )
-    }
-    const menuButton = isReadOnly ? (
-        <div className="w-8 px-4" />
-    ) : (
-        <Menu
-            trigger={
-                <button
-                    className="px-2 py-1 text-sm hover:bg-secondary rounded text-gray-700 dark:text-white transition-colors w-8"
-                    title="More options"
-                >
-                    <EllipsisVerticalIcon className="w-4 h-4" />
-                </button>
-            }
-            items={[
-                {
-                    label: 'Select',
-                    onClick: (e) => {
-                        e.stopPropagation();
-                        setIsMultiSelectMode(true);
-                        onCheckChange(true);
-                    },
-                    className: 'text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/20'
-                },
-                {
-                    label: 'Delete phrase',
-                    onClick: onDelete,
-                    className: 'text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20'
+    const inputLanguageLabel = getLanguageLabel(inputLanguage, phrase.inputLang);
+    const outputLanguageLabel = getLanguageLabel(outputLanguage, phrase.targetLang);
+    const regenerateTooltip = `Regenerate ${outputLanguageLabel || 'output'} from ${inputLanguageLabel || 'input'}`;
+
+    return (
+        <div
+            className={`group w-full transition-colors relative px-3 py-2.5 border-t border-b
+                ${isSelected
+                    ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-700'
+                    : 'bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800/50 border-gray-100 dark:border-gray-800'}
+                ${onPhraseClick ? 'cursor-pointer' : ''}
+                ${isReadOnly ? 'mb-0' : ''}`}
+            onClick={(e) => {
+                if (!(e.target as HTMLElement).closest('input[type="checkbox"]') && !(e.target as HTMLElement).closest('button')) {
+                    onPhraseClick?.();
                 }
-            ]}
-        />
-    )
-
-    const readOnlyFieldClasses = 'bg-slate-50 border-slate-200 shadow-inner dark:bg-slate-900/40 dark:border-slate-700';
-    const editableFieldClasses = 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600';
-    const focusClasses = isReadOnly ? 'focus:ring-0 focus:border-slate-300 dark:focus:border-slate-600' : '';
-    const textClasses = isReadOnly ? 'text-slate-700 dark:text-slate-200' : 'text-gray-900 dark:text-gray-100';
-
-    const renderInputs = () => {
-        const readOnlyField = (value: string) => (
-            <div
-                onClick={(e) => e.stopPropagation()}
-                className={`w-full p-2 border rounded 
-                    ${readOnlyFieldClasses}
-                    ${textClasses} ${focusClasses}`}
-            >
-                {value || <span className="text-slate-400 dark:text-slate-500">-</span>}
-            </div>
-        );
-
-        const inputField = (
-            <div className="flex items-center gap-2">
+            }}
+            ref={ref}
+        >
+            {/* Row 1: Input language */}
+            <div className="flex items-center gap-2 mb-1.5">
                 {isMultiSelectMode && !isReadOnly && (
                     <input
                         type="checkbox"
                         checked={isChecked}
                         onChange={(e) => onCheckChange(e.target.checked)}
                         onClick={(e) => e.stopPropagation()}
-                        className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
+                        className="w-3.5 h-3.5 rounded border-gray-300 text-blue-600 focus:ring-blue-400 flex-shrink-0"
                     />
                 )}
+
+                {/* Play input audio button */}
+                {phrase.inputAudio && (
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onPlayPhrase?.(phrases.indexOf(phrase), 'input');
+                        }}
+                        className="opacity-100 md:opacity-0 md:group-hover:opacity-100 p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-all flex-shrink-0"
+                        title="Play input audio"
+                    >
+                        <Volume2 className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" />
+                    </button>
+                )}
+                {!phrase.inputAudio && <div className="w-[26px] flex-shrink-0" />}
+
+                {/* Input field */}
                 {isReadOnly ? (
-                    readOnlyField(phrase.input)
+                    <div className={`flex-1 text-sm ${isSelected && currentPhase === 'input' ? 'text-blue-600 dark:text-blue-400' : 'text-gray-900 dark:text-gray-100'}`}>
+                        {phrase.input || <span className="text-gray-400 dark:text-gray-500">-</span>}
+                    </div>
                 ) : (
                     <input
                         type="text"
@@ -305,44 +280,124 @@ function PhraseComponent({ phrase, phrases, isSelected, currentPhase, onPhraseCl
                                 e.currentTarget.blur();
                             }
                         }}
-                        onBlur={() => {
-                            handleBlur('input');
-                        }}
-                        className={`w-full p-2 border rounded 
-                            ${editableFieldClasses}
-                            ${isSelected && currentPhase === 'input'
-                                ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-400'
-                                : ''}
-                            ${textClasses}
-                            ${inputLoading ? 'opacity-50' : ''} ${focusClasses}`}
+                        onBlur={() => handleBlur('input')}
                         disabled={inputLoading}
+                        placeholder={`Enter ${inputLanguageLabel || 'input'} text`}
+                        className={`flex-1 bg-transparent text-sm
+                            focus:outline-none focus:bg-white dark:focus:bg-gray-800 focus:px-2 focus:py-0.5 focus:rounded
+                            focus:ring-1 focus:ring-blue-400 dark:focus:ring-blue-500 focus:text-gray-900 dark:focus:text-gray-100 transition-all
+                            ${inputLoading ? 'opacity-50' : ''}
+                            ${isSelected && currentPhase === 'input' ? 'text-blue-600 dark:text-blue-400' : 'text-gray-900 dark:text-gray-100'}`}
                     />
                 )}
-                {phrase.inputAudio && (
+
+                {/* Regenerate button (only on first row) */}
+                {!isReadOnly && !enableOutputBeforeInput && (
                     <button
                         onClick={(e) => {
                             e.stopPropagation();
-                            onPlayPhrase?.(phrases.indexOf(phrase), 'input');
+                            handleRegenerateOutput();
                         }}
-                        className="px-3 py-1 text-sm bg-indigo-100 hover:bg-indigo-200 dark:bg-indigo-600 dark:hover:bg-indigo-500 rounded text-indigo-700 dark:text-white transition-colors"
-                        title="Play input audio"
+                        disabled={outputLoading || !phrase.input}
+                        className={`opacity-100 md:opacity-0 md:group-hover:opacity-100 p-1 hover:bg-blue-100 dark:hover:bg-blue-900 rounded transition-all flex-shrink-0
+                            ${outputLoading || !phrase.input ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        title={regenerateTooltip}
                     >
-                        <SpeakerWaveIcon className="w-4 h-4" />
+                        <RefreshCw className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                     </button>
                 )}
-                {!enableOutputBeforeInput ? menuButton : <div className="w-8 px-4"></div>}
-                {inputLoading && <span className="text-gray-500 dark:text-gray-400 text-sm">Processing...</span>}
+
+                {/* Menu button */}
+                {!isReadOnly && (
+                    <div className="relative flex-shrink-0">
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                setShowMenu(!showMenu);
+                            }}
+                            className="opacity-100 md:opacity-0 md:group-hover:opacity-100 p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-all"
+                            title="More options"
+                        >
+                            <MoreVertical className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                        </button>
+
+                        {showMenu && (
+                            <>
+                                <div className="absolute right-0 top-full mt-1 w-36 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg py-1 z-10">
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setShowMenu(false);
+                                            setIsMultiSelectMode(true);
+                                            onCheckChange(true);
+                                        }}
+                                        className="w-full px-3 py-1.5 text-left text-xs hover:bg-blue-50 dark:hover:bg-blue-900/20 text-blue-600 dark:text-blue-400 transition-colors"
+                                    >
+                                        Select
+                                    </button>
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setShowMenu(false);
+                                            onDelete();
+                                        }}
+                                        className="w-full px-3 py-1.5 text-left text-xs text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                                    >
+                                        Delete phrase
+                                    </button>
+                                </div>
+                                <div
+                                    className="fixed inset-0 z-0"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setShowMenu(false);
+                                    }}
+                                />
+                            </>
+                        )}
+                    </div>
+                )}
+
+                {inputLoading && <span className="text-gray-500 dark:text-gray-400 text-xs flex-shrink-0">Processing...</span>}
             </div>
-        );
 
-        const inputLanguageLabel = getLanguageLabel(inputLanguage, phrase.inputLang);
-        const outputLanguageLabel = getLanguageLabel(outputLanguage, phrase.targetLang);
-        const regenerateTooltip = `Regenerate ${outputLanguageLabel || 'output'} from ${inputLanguageLabel || 'input'}`;
+            {/* Row 2: Output language */}
+            <div className="flex items-center gap-2 mb-1">
+                {/* Play output audio button */}
+                {phrase.outputAudio && !phrase.useRomanizedForAudio && (
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onPlayPhrase?.(phrases.indexOf(phrase), 'output');
+                        }}
+                        className="opacity-100 md:opacity-0 md:group-hover:opacity-100 p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-all flex-shrink-0"
+                        title="Play translated audio"
+                    >
+                        <Volume2 className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" />
+                    </button>
+                )}
+                {phrase.useRomanizedForAudio && !isReadOnly && (
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            handleGenerateOutputAudio();
+                        }}
+                        disabled={outputLoading}
+                        className={`opacity-100 md:opacity-0 md:group-hover:opacity-100 p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-all flex-shrink-0
+                            ${outputLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        title="Generate audio for translated text"
+                    >
+                        <Mic className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" />
+                    </button>
+                )}
+                {/* Placeholder for the above button to useRomanizedForAudio */}
+                {!phrase.outputAudio && !phrase.useRomanizedForAudio && <div className="w-[24px] flex-shrink-0" />}
 
-        const outputField = (
-            <div className="flex items-center gap-2">
+                {/* Output field */}
                 {isReadOnly ? (
-                    readOnlyField(phrase.translated)
+                    <div className={`flex-1 text-base ${isSelected && currentPhase === 'output' ? 'text-blue-600 dark:text-blue-400' : 'text-gray-800 dark:text-gray-200'}`}>
+                        {phrase.translated || <span className="text-gray-400 dark:text-gray-500">-</span>}
+                    </div>
                 ) : (
                     <input
                         type="text"
@@ -358,123 +413,85 @@ function PhraseComponent({ phrase, phrases, isSelected, currentPhase, onPhraseCl
                                 e.currentTarget.blur();
                             }
                         }}
-                        onBlur={() => {
-                            handleBlur('translated');
-                        }}
-                        className={`w-full p-2 border rounded 
-                            ${editableFieldClasses}
-                            ${isSelected && currentPhase === 'output'
-                                ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-400'
-                                : ''}
-                            ${textClasses}
-                            ${outputLoading ? 'opacity-50' : ''} ${focusClasses}`}
+                        onBlur={() => handleBlur('translated')}
                         disabled={outputLoading}
+                        placeholder={`Enter ${outputLanguageLabel || 'output'} text`}
+                        className={`flex-1 bg-transparent text-base
+                            focus:outline-none focus:bg-white dark:focus:bg-gray-800 focus:px-2 focus:py-0.5 focus:rounded
+                            focus:ring-1 focus:ring-blue-400 dark:focus:ring-blue-500 focus:text-gray-800 dark:focus:text-gray-200 transition-all
+                            ${outputLoading ? 'opacity-50' : ''}
+                            ${isSelected && currentPhase === 'output' ? 'text-blue-600 dark:text-blue-400' : 'text-gray-800 dark:text-gray-200'}`}
                     />
                 )}
-                {!isReadOnly && (
-                    <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            handleRegenerateOutput();
-                        }}
-                        disabled={outputLoading || !phrase.input}
-                        className={`px-3 py-1 text-sm bg-indigo-100 hover:bg-indigo-200 dark:bg-indigo-600 dark:hover:bg-indigo-500 rounded text-indigo-700 dark:text-white transition-colors ${outputLoading || !phrase.input ? 'opacity-50 cursor-not-allowed' : ''}`}
-                        title={regenerateTooltip}
-                    >
-                        <ArrowPathIcon className="w-4 h-4" />
-                    </button>
-                )}
-                {!phrase.useRomanizedForAudio && <PlayOutputAudioButton />}
-                {phrase.useRomanizedForAudio && !isReadOnly && (
-                    <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            handleGenerateOutputAudio();
-                        }}
-                        disabled={outputLoading}
-                        className={`px-3 py-1 text-sm bg-indigo-100 hover:bg-indigo-200 dark:bg-indigo-600 dark:hover:bg-indigo-500 rounded text-indigo-700 dark:text-white transition-colors ${outputLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
-                        title="Generate audio for output"
-                    >
-                        <MicrophoneIcon className="w-4 h-4" />
-                    </button>
-                )}
-                {enableOutputBeforeInput ? menuButton : <div className="w-8 px-4"></div>}
-                {outputLoading && <span className="text-gray-500 dark:text-gray-400 text-sm">Processing...</span>}
+
+                {/* Spacer to align with row 1 */}
+                <div className={`${isReadOnly ? 'w-0' : 'w-[56px]'} flex-shrink-0`} />
+
+                {outputLoading && <span className="text-gray-500 dark:text-gray-400 text-xs flex-shrink-0">Processing...</span>}
             </div>
-        );
 
-        return enableOutputBeforeInput ? (
-            <>
-                {outputField}
-                {inputField}
-            </>
-        ) : (
-            <>
-                {inputField}
-                {outputField}
-            </>
-        );
-    };
+            {/* Row 3: Romanization (if present) */}
+            {phrase.romanized && (
+                <div className="flex items-center gap-2">
+                    {/* Play romanized audio button */}
+                    {phrase.outputAudio && phrase.useRomanizedForAudio && (
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onPlayPhrase?.(phrases.indexOf(phrase), 'output');
+                            }}
+                            className="opacity-100 md:opacity-0 md:group-hover:opacity-100 p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-all flex-shrink-0"
+                            title="Play romanized audio"
+                        >
+                            <Volume2 className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" />
+                        </button>
+                    )}
+                    {!phrase.useRomanizedForAudio && !isReadOnly && (
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                handleGenerateRomanizedAudio();
+                            }}
+                            disabled={romanizedLoading}
+                            className={`opacity-100 md:opacity-0 md:group-hover:opacity-100 p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-all flex-shrink-0
+                                ${romanizedLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            title="Generate audio from romanized text"
+                        >
+                            <Mic className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" />
+                        </button>
+                    )}
+                    {!phrase.outputAudio && phrase.useRomanizedForAudio && <div className="w-[26px] flex-shrink-0" />}
+                    {!phrase.useRomanizedForAudio && isReadOnly && <div className="w-[26px] flex-shrink-0" />}
 
-    return (
-        <div
-            className={`border p-2 rounded transition-colors flex flex-col gap-2
-                ${isSelected
-                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-400'
-                    : 'border-gray-200 dark:border-gray-700 bg-background hover:bg-secondary dark:hover:bg-blue-900/20'}
-                ${onPhraseClick ? 'cursor-pointer' : ''}
-                ${isReadOnly ? 'mb-4' : ''}`}
-            onClick={(e) => {
-                if (!(e.target as HTMLElement).closest('input[type="checkbox"]')) {
-                    onPhraseClick?.();
-                }
-            }}
-            ref={ref}
-        >
-            {renderInputs()}
-            {phrase.romanized && <div className="mt-2 mb-2 flex items-center gap-2">
-                <label className="block font-medium mb-1 text-gray-700 dark:text-gray-200">Romanized:</label>
-                {isReadOnly ? (
-                    <div
-                        onClick={(e) => e.stopPropagation()}
-                        className={`w-full p-2 border rounded 
-                            ${readOnlyFieldClasses}
-                            ${textClasses} ${focusClasses}`}
-                    >
-                        {phrase.romanized}
-                    </div>
-                ) : (
-                    <input
-                        type="text"
-                        value={phrase.romanized}
-                        onClick={(e) => e.stopPropagation()}
-                        onChange={(e) => {
-                            const newPhrases = [...phrases];
-                            newPhrases[phrases.indexOf(phrase)] = { ...newPhrases[phrases.indexOf(phrase)], romanized: e.target.value };
-                            setPhrases(newPhrases);
-                        }}
-                        onBlur={() => {
-                            handleBlur('romanized');
-                        }}
-                        className={`w-full p-2 border rounded 
-                            ${editableFieldClasses}
-                            ${textClasses} ${focusClasses}`}
-                    />
-                )}
-                {phrase.useRomanizedForAudio && <PlayOutputAudioButton />}
-                {!phrase.useRomanizedForAudio && !isReadOnly && <button
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        handleGenerateRomanizedAudio();
-                    }}
-                    disabled={romanizedLoading}
-                    className={`px-3 py-1 text-sm bg-indigo-100 hover:bg-indigo-200 dark:bg-indigo-600 dark:hover:bg-indigo-500 rounded text-indigo-700 dark:text-white transition-colors ${romanizedLoading ? 'opacity-50 cursor-not-allowed' : ''} flex flex-row items-center`}
-                    title="Generate audio from romanized text"
-                >
-                    <MicrophoneIcon className="w-4 h-4" />
-                </button>}
-                {romanizedLoading && <span className="text-gray-500 dark:text-gray-400 text-sm">Processing...</span>}
-            </div>}
+                    {/* Romanization field */}
+                    {isReadOnly ? (
+                        <div className="flex-1 text-xs text-gray-500 dark:text-gray-400 italic">
+                            {phrase.romanized}
+                        </div>
+                    ) : (
+                        <input
+                            type="text"
+                            value={phrase.romanized}
+                            onClick={(e) => e.stopPropagation()}
+                            onChange={(e) => {
+                                const newPhrases = [...phrases];
+                                newPhrases[phrases.indexOf(phrase)] = { ...newPhrases[phrases.indexOf(phrase)], romanized: e.target.value };
+                                setPhrases(newPhrases);
+                            }}
+                            onBlur={() => handleBlur('romanized')}
+                            placeholder="Enter romanization"
+                            className="flex-1 bg-transparent text-xs text-gray-500 dark:text-gray-400 italic
+                                focus:outline-none focus:bg-white dark:focus:bg-gray-800 focus:px-2 focus:py-0.5 focus:rounded
+                                focus:ring-1 focus:ring-blue-400 dark:focus:ring-blue-500 focus:text-gray-800 dark:focus:text-gray-200 transition-all"
+                        />
+                    )}
+
+                    {/* Spacer to align with row 1 */}
+                    <div className={`${isReadOnly ? 'w-0' : 'w-[56px]'} flex-shrink-0`} />
+
+                    {romanizedLoading && <span className="text-gray-500 dark:text-gray-400 text-xs flex-shrink-0">Processing...</span>}
+                </div>
+            )}
         </div>
     );
 }
@@ -606,7 +623,7 @@ export function EditablePhrases({ phrases, setPhrases, inputLanguage, outputLang
                                 onClick={handleDeleteSelected}
                                 className="px-3 py-1 text-sm bg-red-500 hover:bg-red-600 text-white rounded flex items-center gap-1"
                             >
-                                                                Delete Selected
+                                Delete Selected
                             </button>
                             <button
                                 onClick={() => {
