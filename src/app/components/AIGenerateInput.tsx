@@ -66,7 +66,22 @@ export function AIGenerateInput({
     }, [])
 
     const handleGenerate = () => {
-        generatePhrases({ prompt })
+        const trimmed = prompt.trim()
+
+        // Slash command: /article -> force article mode and strip the prefix from the prompt
+        let effectiveCollectionType: CollectionType | undefined = collectionType
+        let effectivePrompt = prompt
+
+        if (trimmed.toLowerCase().startsWith('/article')) {
+            effectiveCollectionType = 'article'
+            // Remove the /article prefix and following whitespace from the original prompt
+            effectivePrompt = prompt.replace(/^\/article\s*/i, '')
+        }
+
+        generatePhrases({
+            prompt: effectivePrompt,
+            collectionTypeOverride: effectiveCollectionType,
+        })
     }
 
     return (

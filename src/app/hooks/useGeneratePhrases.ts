@@ -16,6 +16,11 @@ interface UseGeneratePhrasesOptions {
 interface GeneratePhrasesParams {
     prompt: string
     allowEmpty?: boolean
+    /**
+     * Optional per-call override for the collection type.
+     * Falls back to the hook's configured collectionType when omitted.
+     */
+    collectionTypeOverride?: CollectionType
 }
 
 export function useGeneratePhrases({
@@ -27,11 +32,16 @@ export function useGeneratePhrases({
     const [isGenerating, setIsGenerating] = useState(false)
     const [isFetchingUrl, setIsFetchingUrl] = useState(false)
 
-    const generatePhrases = async ({ prompt, allowEmpty = false }: GeneratePhrasesParams) => {
+    const generatePhrases = async ({
+        prompt,
+        allowEmpty = false,
+        collectionTypeOverride,
+    }: GeneratePhrasesParams) => {
         const normalizedPrompt = prompt.trim()
         if (!allowEmpty && !normalizedPrompt) return null
 
         const effectivePrompt = normalizedPrompt || 'Generate useful phrases'
+        const effectiveCollectionType = collectionTypeOverride ?? collectionType
 
         // Detect if prompt is a URL
         const urlRegex = /^https?:\/\/.+/i
@@ -48,13 +58,13 @@ export function useGeneratePhrases({
                       url: effectivePrompt,
                       inputLang,
                       targetLang,
-                      type: collectionType,
+                      type: effectiveCollectionType,
                   }
                 : {
                       prompt: effectivePrompt,
                       inputLang,
                       targetLang,
-                      type: collectionType,
+                      type: effectiveCollectionType,
                   }
 
             const response = await fetch(`${API_BASE_URL}${endpoint}`, {
@@ -80,7 +90,7 @@ export function useGeneratePhrases({
                     isUrl ? `URL: ${effectivePrompt}` : effectivePrompt,
                     inputLang,
                     targetLang,
-                    collectionType,
+                    effectiveCollectionType,
                     phraseCount
                 )
 
