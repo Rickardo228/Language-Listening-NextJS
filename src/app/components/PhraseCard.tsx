@@ -968,7 +968,7 @@ export function PhraseCard({
       >
         {(() => {
           const phraseFontSize = phrase ? calculateFontSize(phrase, fullScreen, false) : '0px';
-          const translatedFontSize = translated ? calculateFontSize(translated, fullScreen, romanized ? true : false) : '0px';
+          const translatedFontSize = translated ? calculateFontSize(translated, fullScreen, romanized?.trim() ? true : false) : '0px';
 
           const phraseSize = parseInt(phraseFontSize);
           const translatedSize = parseInt(translatedFontSize);
@@ -1178,7 +1178,7 @@ export function PhraseCard({
           fontSize: isMobileInline ? '16px' : calculateFontSize(
             phase === "input" ? phrase : translated,
             fullScreen,
-            romanized ? true : false
+            romanized?.trim() ? true : false
           ),
           ...(isMobileInline && {
             whiteSpace: 'nowrap',
