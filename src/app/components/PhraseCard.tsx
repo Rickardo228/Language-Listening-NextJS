@@ -35,7 +35,7 @@ function calculateFontSize(text: string, isFullScreen: boolean, hasRomanized: bo
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
 
   // Base sizes adjusted - increased for non-fullscreen
-  const baseSize = isFullScreen ? ((hasRomanized) ? isMobile ? 30 : 50 : 70) : 32; // reduced romanized size in fullscreen
+  const baseSize = isFullScreen ? ((hasRomanized) ? isMobile ? 30 : 50 : isMobile ? 50 : 70) : 32; // reduced size for mobile fullscreen
   const maxChars = isFullScreen ? 30 : 20; // threshold for max characters
 
   // Special handling for long words on mobile
@@ -45,7 +45,7 @@ function calculateFontSize(text: string, isFullScreen: boolean, hasRomanized: bo
   const longWordScale = isMobile && longestWord > 10 ? 0.8 : 1;
 
   const scale = Math.min(1, maxChars / text.length) * longWordScale;
-  const fontSize = Math.max(baseSize * scale, isFullScreen ? ((hasRomanized) ? isMobile ? 15 : 20 : 30) : 20); // increased minimum size for non-fullscreen
+  const fontSize = Math.max(baseSize * scale, isFullScreen ? ((hasRomanized) ? isMobile ? 15 : 20 : isMobile ? 24 : 30) : 20); // reduced minimum for mobile fullscreen
 
   return `${fontSize}px`;
 }
